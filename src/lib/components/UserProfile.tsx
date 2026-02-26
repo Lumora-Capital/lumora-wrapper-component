@@ -18,6 +18,7 @@ interface UserProfileProps {
 	onProfileClick?: () => void;
 	onAccountClick?: () => void;
 	onSettingsClick?: () => void;
+	showSettings?: boolean;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -27,7 +28,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
 	onLogout,
 	onProfileClick,
 	onAccountClick,
-	onSettingsClick
+	onSettingsClick,
+	showSettings = false
 }) => {
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
@@ -128,10 +130,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
 				<MenuItem onClick={() => handleMenuItemClick(onAccountClick)}>
 					My account
 				</MenuItem>
-				<Divider />
-				<MenuItem onClick={() => handleMenuItemClick(onSettingsClick)}>
-					Settings
-				</MenuItem>
+				{showSettings && (
+					<>
+						<Divider />
+						<MenuItem onClick={() => handleMenuItemClick(onSettingsClick)}>
+							Settings
+						</MenuItem>
+					</>
+				)}
 				<Divider />
 				<MenuItem onClick={() => handleMenuItemClick(onLogout)}>
 					<Typography sx={{ flexGrow: 1 }}>Logout</Typography>

@@ -113,6 +113,7 @@ export declare interface LumoraWrapperProps {
     onProfileClick?: () => void;
     onAccountClick?: () => void;
     onSettingsClick?: () => void;
+    showSettings?: boolean;
     showNotifications?: boolean;
     notificationCount?: number;
     showSearchbar?: boolean;

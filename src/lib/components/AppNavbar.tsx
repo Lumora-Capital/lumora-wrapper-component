@@ -45,6 +45,7 @@ interface AppNavbarProps {
 	onProfileClick?: () => void;
 	onAccountClick?: () => void;
 	onSettingsClick?: () => void;
+	showSettings?: boolean;
 	onLogout?: () => void;
 	showNotifications?: boolean;
 	notificationCount?: number;
@@ -86,6 +87,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	onProfileClick,
 	onAccountClick,
 	onSettingsClick,
+	showSettings = true,
 	onLogout,
 	showNotifications = false,
 	notificationCount = 0,
@@ -386,14 +388,18 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 									}
 								}}
 							>
-								<MenuItem
-									onClick={() =>
-										handleMenuItemClick(onSettingsClick)
-									}
-								>
-									Settings
-								</MenuItem>
-								<Divider />
+								{showSettings && (
+									<>
+										<MenuItem
+											onClick={() =>
+												handleMenuItemClick(onSettingsClick)
+											}
+										>
+											Settings
+										</MenuItem>
+										<Divider />
+									</>
+								)}
 								<MenuItem
 									onClick={() =>
 										handleMenuItemClick(onLogout)

@@ -37,6 +37,7 @@ export interface LumoraWrapperProps {
 	onProfileClick?: () => void;
 	onAccountClick?: () => void;
 	onSettingsClick?: () => void;
+	showSettings?: boolean;
 	// Notification props
 	showNotifications?: boolean;
 	notificationCount?: number;
@@ -110,6 +111,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onProfileClick,
 	onAccountClick,
 	onSettingsClick,
+	showSettings = true,
 	showNotifications = true,
 	notificationCount = 0,
 	showSearchbar = true,
@@ -306,6 +308,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					onProfileClick={onProfileClick}
 					onAccountClick={onAccountClick}
 					onSettingsClick={onSettingsClick}
+					showSettings={showSettings}
 					onLogout={handleLogout}
 					showNotifications={showNotifications}
 					notificationCount={notificationCount}
