@@ -1,5 +1,13 @@
 import type { SxProps, Theme } from '@mui/material';
-import { Box, CircularProgress, CssBaseline, Drawer, Grid, useMediaQuery, useTheme } from '@mui/material';
+import {
+	Box,
+	CircularProgress,
+	CssBaseline,
+	Drawer,
+	Grid,
+	useMediaQuery,
+	useTheme
+} from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { clearAuthTokens, getCurrentUser, isAuthenticated } from '../authUtils';
 import { createAxiosClient } from '../axiosClient';
@@ -41,6 +49,8 @@ export interface LumoraWrapperProps {
 	// Notification props
 	showNotifications?: boolean;
 	notificationCount?: number;
+	/** Content component for the notification drawer; receives onClose. When provided, navbar bell opens this drawer. */
+	NotificationSidebarContent?: React.ComponentType<{ onClose: () => void }>;
 	// Search bar props
 	showSearchbar?: boolean;
 	searchValue?: string;
@@ -50,7 +60,12 @@ export interface LumoraWrapperProps {
 	showProfile?: boolean;
 	userRole?: string;
 	// User data callback
-	onVerify?: (userData: { name: string; email: string; profilePicture: string; role: string }) => void;
+	onVerify?: (userData: {
+		name: string;
+		email: string;
+		profilePicture: string;
+		role: string;
+	}) => void;
 	// Alert card props
 	alertProps?: {
 		title?: string;
@@ -76,6 +91,7 @@ export interface LumoraWrapperProps {
 	GlobalChatSidebar?: React.ComponentType;
 	useChatSidebar?: () => { isOpen: boolean };
 	rightExtraContent?: Array<{
+		key: string;
 		name: string;
 		role: string;
 		avatar?: string;
@@ -114,6 +130,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSettings = true,
 	showNotifications = true,
 	notificationCount = 0,
+	NotificationSidebarContent,
 	showSearchbar = true,
 	searchValue,
 	onSearchChange,
@@ -141,6 +158,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const [userData, setUserData] = useState<{
@@ -155,7 +173,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const hasLoadedUserDataRef = useRef(false);
 
 	// Create axios client instance with the provided API base URL
-	const axiosClient = useMemo(() => createAxiosClient(apiBaseUrl), [apiBaseUrl]);
+	const axiosClient = useMemo(
+		() => createAxiosClient(apiBaseUrl),
+		[apiBaseUrl]
+	);
 
 	// Update ref when callback changes
 	useEffect(() => {
@@ -203,7 +224,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		const checkSession = () => {
 			try {
 				// Check authentication status using centralized utility
-				const { isAuthenticated: authenticated, error: authError } = isAuthenticated();
+				const { isAuthenticated: authenticated, error: authError } =
+					isAuthenticated();
 
 				if (!authenticated) {
 					// No valid tokens found, clear all tokens and redirect to login
@@ -272,9 +294,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					justifyContent: 'center',
 					minHeight: '100vh',
 					backgroundColor: 'background.default'
-				}}>
-				<CircularProgress size={60} thickness={4} sx={{ color: accentColor }} />
-				<Box sx={{ mt: 2, color: 'text.secondary' }}>Checking session...</Box>
+				}}
+			>
+				<CircularProgress
+					size={60}
+					thickness={4}
+					sx={{ color: accentColor }}
+				/>
+				<Box sx={{ mt: 2, color: 'text.secondary' }}>
+					Checking session...
+				</Box>
 			</Box>
 		);
 	}
@@ -291,7 +320,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				display: 'flex',
 				minHeight: '100vh',
 				...style
-			}}>
+			}}
+		>
 			<CssBaseline />
 
 			{/* Header */}
@@ -299,7 +329,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<AppNavbar
 					appName={appName}
 					pageName={pageName}
-					onMenuClick={isMobile && showSidebar ? handleMobileSidebarToggle : undefined}
+					onMenuClick={
+						isMobile && showSidebar
+							? handleMobileSidebarToggle
+							: undefined
+					}
 					showMenuButton={isMobile && showSidebar}
 					headerStyles={headerStyles}
 					userName={userName}
@@ -312,6 +346,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					onLogout={handleLogout}
 					showNotifications={showNotifications}
 					notificationCount={notificationCount}
+					onNotificationBellClick={
+						showNotifications && NotificationSidebarContent
+							? () => setNotificationDrawerOpen(true)
+							: undefined
+					}
 					showSearchbar={showSearchbar && !CustomNavbar}
 					searchValue={searchValue}
 					onSearchChange={onSearchChange}
@@ -331,7 +370,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			{/* Desktop Sidebar */}
 			{showSidebar && !isMobile && (
 				<Drawer
-					variant="permanent"
+					variant='permanent'
 					sx={{
 						width: 80,
 						flexShrink: 0,
@@ -345,7 +384,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							height: showHeader ? 'calc(100vh - 60px)' : '100vh'
 						},
 						...sidebarStyles
-					}}>
+					}}
+				>
 					<Box
 						sx={{
 							overflow: 'auto',
@@ -353,7 +393,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							display: 'flex',
 							flexDirection: 'column',
 							pt: 2
-						}}>
+						}}
+					>
 						<MenuContent
 							mainLinks={sidebarLinks}
 							secondaryLinks={secondarySidebarLinks}
@@ -382,6 +423,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					onProfileClick={onProfileClick}
 					showNotifications={showNotifications}
 					notificationCount={notificationCount}
+					onNotificationBellClick={
+						showNotifications && NotificationSidebarContent
+							? () => {
+									setMobileSidebarOpen(false);
+									setNotificationDrawerOpen(true);
+								}
+							: undefined
+					}
 					alertProps={alertProps}
 					accentColor={accentColor}
 				/>
@@ -389,17 +438,22 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 
 			{/* Main Content Area */}
 			<Box
-				component="main"
+				component='main'
 				sx={{
 					flexGrow: 1,
 					p: 3,
 					m: 1,
-					width: isMobile ? '100%' : showSidebar ? `calc(100% - 80px)` : '100%',
+					width: isMobile
+						? '100%'
+						: showSidebar
+							? `calc(100% - 80px)`
+							: '100%',
 					mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
 					ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
 					backgroundColor: contentBackgroundColor, // White background for main content
 					...contentStyles
-				}}>
+				}}
+			>
 				<Grid container spacing={3}>
 					<Grid
 						size={{
@@ -409,7 +463,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						sx={{
 							display: 'flex',
 							flexDirection: 'column'
-						}}>
+						}}
+					>
 						{children}
 					</Grid>
 					{isChatOpen && GlobalChatSidebar && (
@@ -426,18 +481,39 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								alignSelf: 'flex-start',
 								height: {
 									xs: 'auto',
-									md: showHeader ? 'calc(100vh - 60px - 24px - 8px)' : 'calc(100vh - 24px - 8px)'
+									md: showHeader
+										? 'calc(100vh - 60px - 24px - 8px)'
+										: 'calc(100vh - 24px - 8px)'
 								}, // Viewport - navbar - top padding - top margin
 								maxHeight: {
 									xs: 'none',
-									md: showHeader ? 'calc(100vh - 60px - 24px - 8px)' : 'calc(100vh - 24px - 8px)'
+									md: showHeader
+										? 'calc(100vh - 60px - 24px - 8px)'
+										: 'calc(100vh - 24px - 8px)'
 								} // Viewport - navbar - top padding - top margin
-							}}>
+							}}
+						>
 							<GlobalChatSidebar />
 						</Grid>
 					)}
 				</Grid>
 			</Box>
+
+			{/* Notification sidebar drawer (container + toggle only; content from host) */}
+			{showNotifications && NotificationSidebarContent && (
+				<Drawer
+					anchor='right'
+					open={notificationDrawerOpen}
+					onClose={() => setNotificationDrawerOpen(false)}
+					slotProps={{
+						paper: { sx: { width: 380, maxWidth: '100vw' } }
+					}}
+				>
+					<NotificationSidebarContent
+						onClose={() => setNotificationDrawerOpen(false)}
+					/>
+				</Drawer>
+			)}
 		</Box>
 	);
 };

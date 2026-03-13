@@ -27,6 +27,7 @@ interface MobileSidebarProps {
 	onProfileClick?: () => void;
 	showNotifications?: boolean;
 	notificationCount?: number;
+	onNotificationBellClick?: () => void;
 	alertProps?: {
 		title?: string;
 		message?: string;
@@ -49,6 +50,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 	onLogout,
 	showNotifications = false,
 	notificationCount = 0,
+	onNotificationBellClick,
 	alertProps,
 	accentColor = '#01584f'
 }) => {
@@ -94,11 +96,15 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 					{showNotifications && (
 						<Badge
 							color='error'
-							variant='dot'
+							badgeContent={notificationCount}
 							invisible={notificationCount === 0}
 							sx={{ '& .MuiBadge-badge': { right: 2, top: 2 } }}
 						>
-							<IconButton size='small'>
+							<IconButton
+								size='small'
+								onClick={onNotificationBellClick}
+								aria-label='Notifications'
+							>
 								<NotificationsRoundedIcon />
 							</IconButton>
 						</Badge>

@@ -116,6 +116,10 @@ export declare interface LumoraWrapperProps {
     showSettings?: boolean;
     showNotifications?: boolean;
     notificationCount?: number;
+    /** Content component for the notification drawer; receives onClose. When provided, navbar bell opens this drawer. */
+    NotificationSidebarContent?: default_2.ComponentType<{
+        onClose: () => void;
+    }>;
     showSearchbar?: boolean;
     searchValue?: string;
     onSearchChange?: (value: string) => void;
@@ -149,6 +153,7 @@ export declare interface LumoraWrapperProps {
         isOpen: boolean;
     };
     rightExtraContent?: Array<{
+        key: string;
         name: string;
         role: string;
         avatar?: string;

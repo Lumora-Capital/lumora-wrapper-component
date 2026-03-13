@@ -49,6 +49,7 @@ interface AppNavbarProps {
 	onLogout?: () => void;
 	showNotifications?: boolean;
 	notificationCount?: number;
+	onNotificationBellClick?: () => void;
 	// Search bar props
 	showSearchbar?: boolean;
 	searchValue?: string;
@@ -67,6 +68,7 @@ interface AppNavbarProps {
 	customNavbar?: React.ComponentType<any>;
 	customNavbarProps?: Record<string, any>;
 	rightExtraContent?: Array<{
+		key: string;
 		name: string;
 		role: string;
 		avatar?: string;
@@ -91,6 +93,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	onLogout,
 	showNotifications = false,
 	notificationCount = 0,
+	onNotificationBellClick,
 	showSearchbar = true,
 	searchValue,
 	onSearchChange,
@@ -267,7 +270,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 					{showNotifications && (
 						<Badge
 							color='error'
-							variant='dot'
+							badgeContent={notificationCount}
 							invisible={notificationCount === 0}
 							sx={{
 								'& .MuiBadge-badge': {
@@ -278,6 +281,12 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						>
 							<IconButton
 								size='small'
+								onClick={onNotificationBellClick}
+								aria-label={
+									notificationCount
+										? `Notifications, ${notificationCount} unread`
+										: 'Notifications'
+								}
 								sx={{ color: navbarAccentColor }}
 							>
 								<NotificationsOutlinedIcon />
@@ -388,18 +397,17 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 									}
 								}}
 							>
-								{showSettings && (
-									<>
-										<MenuItem
-											onClick={() =>
-												handleMenuItemClick(onSettingsClick)
-											}
-										>
-											Settings
-										</MenuItem>
-										<Divider />
-									</>
-								)}
+								{showSettings && [
+									<MenuItem
+										key='settings'
+										onClick={() =>
+											handleMenuItemClick(onSettingsClick)
+										}
+									>
+										Settings
+									</MenuItem>,
+									<Divider key='settings-divider' />
+								]}
 								<MenuItem
 									onClick={() =>
 										handleMenuItemClick(onLogout)
@@ -424,6 +432,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							if (d.type === 'divider') {
 								return (
 									<Divider
+										key={d.key}
 										orientation='vertical'
 										flexItem
 										sx={{
@@ -438,6 +447,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							if (d.type === 'profile') {
 								return (
 									<Stack
+										key={d.key}
 										direction='row'
 										onClick={d.onClick}
 										sx={{
