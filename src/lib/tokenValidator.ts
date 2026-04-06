@@ -8,7 +8,10 @@ import { clearAuthTokens, getAuthTokens, logAuthError, storeAuthTokens } from '.
  * automatically by axiosClient interceptors.
  * @param axiosClient - The axios client instance to use for API calls
  */
-export const validateAndRefreshTokens = async (axiosClient: AxiosInstance): Promise<boolean> => {
+export const validateAndRefreshTokens = async (
+	axiosClient: AxiosInstance,
+	redirectToLogin?: () => void
+): Promise<boolean> => {
 	const { accessToken, refreshToken } = getAuthTokens();
 
 	// If we have an access token, we're good
@@ -35,7 +38,10 @@ export const validateAndRefreshTokens = async (axiosClient: AxiosInstance): Prom
 
 	// No tokens or refresh failed - clear everything and redirect
 	clearAuthTokens();
-	// Use window.location.href since this is a utility function without router access
-	window.location.href = '/login';
+	if (redirectToLogin) {
+		redirectToLogin();
+	} else {
+		window.location.href = '/login';
+	}
 	return false;
 };

@@ -1,6 +1,6 @@
 import { waitFor } from '@testing-library/react';
 import LumoraWrapper from '../LumoraWrapper';
-import { render, mockTokenExpiry, mockExpiredToken } from './testUtils';
+import { lumoraTestRequiredProps, render } from './testUtils';
 import '@testing-library/jest-dom';
 import axios from 'axios';
 
@@ -8,17 +8,16 @@ import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Mock axios interceptors
-const mockInterceptors = {
-	request: {
-		use: jest.fn()
+/** Instance returned by axios.create (must carry its own interceptors like the real API). */
+const mockAxiosInstance = {
+	interceptors: {
+		request: { use: jest.fn() },
+		response: { use: jest.fn() }
 	},
-	response: {
-		use: jest.fn()
-	}
+	post: jest.fn().mockResolvedValue({
+		data: { success: true, accessToken: 'new-token' }
+	})
 };
-
-mockedAxios.interceptors = mockInterceptors as any;
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -46,14 +45,12 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 		mockLocalStorage.removeItem.mockClear();
 
 		// Reset axios mocks
-		mockedAxios.create.mockReturnValue(mockedAxios);
-		mockedAxios.post.mockResolvedValue({
+		mockedAxios.create.mockReturnValue(mockAxiosInstance as any);
+		mockAxiosInstance.post.mockResolvedValue({
 			data: { success: true, accessToken: 'new-token' }
 		});
-
-		// Reset interceptor mocks
-		mockInterceptors.request.use.mockClear();
-		mockInterceptors.response.use.mockClear();
+		mockAxiosInstance.interceptors.request.use.mockClear();
+		mockAxiosInstance.interceptors.response.use.mockClear();
 	});
 
 	afterEach(() => {
@@ -63,7 +60,7 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 	describe('Token Refresh Interceptor Setup', () => {
 		it('does not set up interceptors when enableRefreshToken is false', async () => {
 			render(
-				<LumoraWrapper enableRefreshToken={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={false}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -84,7 +81,7 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 			});
 
 			render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -99,7 +96,7 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 			mockLocalStorage.getItem.mockReturnValue(null);
 
 			render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -110,30 +107,43 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 	});
 
 	describe('API Client Configuration', () => {
-		it('creates axios instance with correct configuration', () => {
-			// The apiClient is created when the module is imported
-			expect(mockedAxios.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					baseURL: expect.any(String),
-					headers: expect.objectContaining({
-						'X-API-Key': expect.any(String),
-						'Content-Type': 'application/json'
-					})
-				})
+		it('creates axios instance with correct configuration', async () => {
+			render(
+				<LumoraWrapper {...lumoraTestRequiredProps}>
+					<div>Test</div>
+				</LumoraWrapper>
 			);
+
+			await waitFor(() => {
+				expect(mockedAxios.create).toHaveBeenCalledWith(
+					expect.objectContaining({
+						baseURL: 'https://api.test',
+						headers: expect.objectContaining({
+							'Content-Type': 'application/json'
+						})
+					})
+				);
+			});
 		});
 
-		it('sets up request and response interceptors', () => {
-			// The interceptors are set up when the module is imported
-			expect(mockInterceptors.request.use).toHaveBeenCalled();
-			expect(mockInterceptors.response.use).toHaveBeenCalled();
+		it('sets up request and response interceptors', async () => {
+			render(
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
+					<div>Test</div>
+				</LumoraWrapper>
+			);
+
+			await waitFor(() => {
+				expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalled();
+				expect(mockAxiosInstance.interceptors.response.use).toHaveBeenCalled();
+			});
 		});
 	});
 
 	describe('Component Integration', () => {
 		it('renders without errors when enableRefreshToken is true', () => {
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -143,7 +153,7 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 
 		it('renders without errors when enableRefreshToken is false', () => {
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={false}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -153,14 +163,14 @@ describe('LumoraWrapper - Token Refresh Logic', () => {
 
 		it('handles enableRefreshToken prop changes', () => {
 			const { rerender } = render(
-				<LumoraWrapper enableRefreshToken={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={false}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);
 
 			// Change prop to true
 			rerender(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div>Test Content</div>
 				</LumoraWrapper>
 			);

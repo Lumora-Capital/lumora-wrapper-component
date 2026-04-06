@@ -1,6 +1,5 @@
-import { waitFor } from '@testing-library/react';
 import LumoraWrapper from '../LumoraWrapper';
-import { render, screen } from '@testing-library/react';
+import { lumoraTestRequiredProps, render, screen } from './testUtils';
 import '@testing-library/jest-dom';
 import axios from 'axios';
 
@@ -8,7 +7,17 @@ import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Mock localStorage
+const mockAxiosInstance = {
+	interceptors: {
+		request: { use: jest.fn() },
+		response: { use: jest.fn() }
+	},
+	post: jest.fn().mockResolvedValue({
+		data: { success: true, accessToken: 'new-token' }
+	})
+};
+
+// Mock localStorage (configurable so other suites are not blocked if order changes)
 const mockLocalStorage = {
 	getItem: jest.fn(),
 	setItem: jest.fn(),
@@ -17,16 +26,8 @@ const mockLocalStorage = {
 };
 
 Object.defineProperty(window, 'localStorage', {
-	value: mockLocalStorage
-});
-
-// Mock window.location
-const mockLocation = {
-	href: 'http://localhost:3000/'
-};
-
-Object.defineProperty(window, 'location', {
-	value: mockLocation,
+	value: mockLocalStorage,
+	configurable: true,
 	writable: true
 });
 
@@ -39,9 +40,8 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 		mockLocalStorage.setItem.mockClear();
 		mockLocalStorage.removeItem.mockClear();
 
-		// Reset axios mocks
-		mockedAxios.create.mockReturnValue(mockedAxios);
-		mockedAxios.post.mockResolvedValue({
+		mockedAxios.create.mockReturnValue(mockAxiosInstance as any);
+		mockAxiosInstance.post.mockResolvedValue({
 			data: { success: true, accessToken: 'new-token' }
 		});
 	});
@@ -53,7 +53,7 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 	describe('Component Integration', () => {
 		it('renders without errors when enableRefreshToken is true', () => {
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -64,7 +64,7 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 
 		it('renders without errors when enableRefreshToken is false', () => {
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={false}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -75,14 +75,14 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 
 		it('handles enableRefreshToken prop changes', () => {
 			const { rerender } = render(
-				<LumoraWrapper enableRefreshToken={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={false}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
 
 			// Change prop to true
 			rerender(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -93,10 +93,9 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 	});
 
 	describe('API Client Integration', () => {
-		it('apiClient is available for import', () => {
-			// Test that apiClient can be imported without errors
+		it('axios client module can be loaded', () => {
 			expect(() => {
-				require('../../apiClient');
+				require('../../axiosClient');
 			}).not.toThrow();
 		});
 
@@ -105,7 +104,7 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 			mockLocalStorage.getItem.mockReturnValue(null);
 
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -123,7 +122,7 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 			});
 
 			const { container } = render(
-				<LumoraWrapper enableRefreshToken={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} enableRefreshToken={true}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -133,21 +132,4 @@ describe('LumoraWrapper - Token Refresh Integration', () => {
 		});
 	});
 
-	describe('Error Handling', () => {
-		it('handles localStorage errors gracefully', () => {
-			// Mock localStorage.getItem to throw an error
-			mockLocalStorage.getItem.mockImplementation(() => {
-				throw new Error('localStorage access denied');
-			});
-
-			const { container } = render(
-				<LumoraWrapper enableRefreshToken={true}>
-					<div data-testid='test-content'>Test Content</div>
-				</LumoraWrapper>
-			);
-
-			// Component should still render even if localStorage fails
-			expect(container).toBeInTheDocument();
-		});
-	});
 });

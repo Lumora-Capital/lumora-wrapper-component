@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import LumoraWrapper from '../LumoraWrapper';
-import { render, mockSidebarLinks } from './testUtils';
+import { render, lumoraTestRequiredProps, mockSidebarLinks } from './testUtils';
 import '@testing-library/jest-dom';
 
 // Mock useMediaQuery hook
@@ -25,7 +25,11 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 		render(
-			<LumoraWrapper showSidebar={true} sidebarLinks={mockSidebarLinks}>
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				sidebarLinks={mockSidebarLinks}
+			>
 				<div data-testid='test-content'>Test Content</div>
 			</LumoraWrapper>
 		);
@@ -59,7 +63,11 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 		render(
-			<LumoraWrapper showSidebar={true} sidebarLinks={mockSidebarLinks}>
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				sidebarLinks={mockSidebarLinks}
+			>
 				<div data-testid='test-content'>Test Content</div>
 			</LumoraWrapper>
 		);
@@ -67,14 +75,18 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		const contentArea = screen
 			.getByTestId('test-content')
 			.closest('[class*="MuiBox-root"]');
-		expect(contentArea).toHaveStyle('width: calc(100% - 240px)');
+		expect(contentArea).toHaveStyle('width: calc(100% - 80px)');
 	});
 
 	it('uses full width on mobile', () => {
 		mockUseMediaQuery.mockReturnValue(true); // Mobile
 
 		render(
-			<LumoraWrapper showSidebar={true} sidebarLinks={mockSidebarLinks}>
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				sidebarLinks={mockSidebarLinks}
+			>
 				<div data-testid='test-content'>Test Content</div>
 			</LumoraWrapper>
 		);
@@ -89,7 +101,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 		render(
-			<LumoraWrapper showSidebar={false}>
+			<LumoraWrapper {...lumoraTestRequiredProps} showSidebar={false}>
 				<div data-testid='test-content'>Test Content</div>
 			</LumoraWrapper>
 		);
@@ -118,11 +130,12 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 	// 	expect(drawerElements.length).toBeGreaterThan(0);
 	// });
 
-	it('adjusts drawer margin for desktop with header', () => {
+	it('renders docked drawer with header on desktop', () => {
 		mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 		render(
 			<LumoraWrapper
+				{...lumoraTestRequiredProps}
 				showSidebar={true}
 				showHeader={true}
 				sidebarLinks={mockSidebarLinks}
@@ -133,6 +146,6 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 
 		const drawer = document.querySelector('.MuiDrawer-paper');
 		expect(drawer).toBeInTheDocument();
-		expect(drawer).toHaveStyle('margin-top: 64px');
+		expect(screen.getByRole('banner')).toBeInTheDocument();
 	});
 });

@@ -6,26 +6,13 @@ import LumoraWrapper, {
 	type LumoraWrapperProps,
 	type SidebarLink
 } from '../LumoraWrapper';
+import { lumoraTestRequiredProps } from './testUtils';
 import '@testing-library/jest-dom';
-
-// Mock js-cookie
-jest.mock('js-cookie', () => ({
-	get: jest.fn(),
-	set: jest.fn(),
-	remove: jest.fn()
-}));
 
 // Mock fetch
 (globalThis as any).fetch = jest.fn();
 
-// Mock window.location to avoid navigation errors
-delete (window as any).location;
-(window as any).location = {
-	href: 'http://localhost:3000',
-	assign: jest.fn(),
-	replace: jest.fn(),
-	reload: jest.fn()
-};
+// window.location is mocked in setupTests.ts
 
 // Test theme
 const theme = createTheme();
@@ -54,6 +41,7 @@ const mockAppLogo = <div data-testid='app-logo'>Test Logo</div>;
 // Helper function to render component with theme
 const renderWithTheme = (props: Partial<LumoraWrapperProps> = {}) => {
 	const defaultProps: LumoraWrapperProps = {
+		...lumoraTestRequiredProps,
 		children: <div data-testid='test-content'>Test Content</div>,
 		...props
 	};
@@ -102,12 +90,14 @@ describe('LumoraWrapper - Basic Functionality', () => {
 			expect(screen.getByText('My App')).toBeInTheDocument();
 		});
 
-		it('renders page name when provided', () => {
+		it('accepts pageName prop (navbar shows app name only)', () => {
 			renderWithTheme({
 				showHeader: true,
+				appName: 'Nav App',
 				pageName: 'My Application'
 			});
-			expect(screen.getByText('My Application')).toBeInTheDocument();
+			expect(screen.getByText('Nav App')).toBeInTheDocument();
+			expect(screen.getByTestId('test-content')).toBeInTheDocument();
 		});
 	});
 
@@ -118,18 +108,26 @@ describe('LumoraWrapper - Basic Functionality', () => {
 				sidebarLinks: mockSidebarLinks
 			});
 
-			// Check if sidebar links are rendered
-			expect(screen.getByText('Home')).toBeInTheDocument();
-			expect(screen.getByText('Settings')).toBeInTheDocument();
-			expect(screen.getByText('Profile')).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /home/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /settings/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /profile/i })
+			).toBeInTheDocument();
 		});
 
 		it('does not render sidebar when showSidebar is false', () => {
 			renderWithTheme({ showSidebar: false });
 
-			// Check that sidebar links are not rendered
-			expect(screen.queryByText('Home')).not.toBeInTheDocument();
-			expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole('link', { name: /home/i })
+			).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole('link', { name: /settings/i })
+			).not.toBeInTheDocument();
 		});
 
 		it('renders sidebar links with correct paths and icons', () => {
@@ -138,16 +136,16 @@ describe('LumoraWrapper - Basic Functionality', () => {
 				sidebarLinks: mockSidebarLinks
 			});
 
-			// Check links have correct href attributes
-			const homeLink = screen.getByText('Home').closest('a');
-			const settingsLink = screen.getByText('Settings').closest('a');
-			const profileLink = screen.getByText('Profile').closest('a');
+			const homeLink = screen.getByRole('link', { name: /home/i });
+			const settingsLink = screen.getByRole('link', {
+				name: /settings/i
+			});
+			const profileLink = screen.getByRole('link', { name: /profile/i });
 
 			expect(homeLink).toHaveAttribute('href', '/home');
 			expect(settingsLink).toHaveAttribute('href', '/settings');
 			expect(profileLink).toHaveAttribute('href', '/profile');
 
-			// Check icons are rendered
 			expect(screen.getByTestId('home-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('profile-icon')).toBeInTheDocument();
@@ -159,8 +157,8 @@ describe('LumoraWrapper - Basic Functionality', () => {
 				sidebarLinks: []
 			});
 
-			// Sidebar should still be rendered but with no links
-			expect(screen.getByRole('list')).toBeInTheDocument();
+			expect(document.querySelector('.MuiDrawer-root')).toBeInTheDocument();
+			expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		});
 	});
 
@@ -168,19 +166,15 @@ describe('LumoraWrapper - Basic Functionality', () => {
 		it('applies correct margin when header is shown', () => {
 			renderWithTheme({ showHeader: true });
 
-			const contentArea = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('margin-top: 64px');
+			const contentArea = screen.getByRole('main');
+			expect(contentArea).toHaveStyle({ marginTop: '60px' });
 		});
 
 		it('applies no margin when header is not shown', () => {
 			renderWithTheme({ showHeader: false });
 
-			const contentArea = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('margin-top: 0px');
+			const contentArea = screen.getByRole('main');
+			expect(contentArea).toHaveStyle({ marginTop: '0px' });
 		});
 	});
 
@@ -197,11 +191,16 @@ describe('LumoraWrapper - Basic Functionality', () => {
 			// Check all components are rendered
 			expect(screen.getByRole('banner')).toBeInTheDocument();
 			expect(screen.getByText('My App')).toBeInTheDocument();
-			expect(screen.getByText('Dashboard')).toBeInTheDocument();
-			expect(screen.getByRole('list')).toBeInTheDocument();
-			expect(screen.getByText('Home')).toBeInTheDocument();
-			expect(screen.getByText('Settings')).toBeInTheDocument();
-			expect(screen.getByText('Profile')).toBeInTheDocument();
+			expect(document.querySelector('.MuiDrawer-root')).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /home/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /settings/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /profile/i })
+			).toBeInTheDocument();
 			expect(screen.getByTestId('test-content')).toBeInTheDocument();
 		});
 

@@ -8,17 +8,14 @@ export default {
 	},
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/src/$1',
+		'^js-cookie$': '<rootDir>/src/testMocks/js-cookie.ts',
 		'\\.(css|less|scss|sass)$': 'identity-obj-proxy'
 	},
 	transform: {
 		'^.+\\.(ts|tsx)$': [
 			'ts-jest',
 			{
-				tsconfig: {
-					jsx: 'react-jsx',
-					esModuleInterop: true,
-					allowSyntheticDefaultImports: true
-				}
+				tsconfig: '<rootDir>/tsconfig.jest.json'
 			}
 		]
 	},

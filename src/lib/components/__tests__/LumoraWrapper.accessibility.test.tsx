@@ -2,14 +2,14 @@ import React from 'react';
 import { screen } from '@testing-library/react';
 import { Home, Settings, Person } from '@mui/icons-material';
 import LumoraWrapper from '../LumoraWrapper';
-import { render, mockSidebarLinks } from './testUtils';
+import { lumoraTestRequiredProps, render, mockSidebarLinks } from './testUtils';
 import '@testing-library/jest-dom';
 
 describe('LumoraWrapper - Accessibility', () => {
 	describe('Header Accessibility', () => {
 		it('has proper header structure with banner role', () => {
 			render(
-				<LumoraWrapper showHeader={true} appName='Test Application'>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={true} appName='Test Application'>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -20,19 +20,19 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('has accessible header title', () => {
 			render(
-				<LumoraWrapper showHeader={true} appName='My Application'>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={true} appName='My Application'>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
 
 			const title = screen.getByText('My Application');
 			expect(title).toBeInTheDocument();
-			expect(title.tagName).toBe('P'); // MUI Typography with variant="body1" renders as p
+			expect(title.tagName).toBe('H6');
 		});
 
 		it('header is not rendered when showHeader is false', () => {
 			render(
-				<LumoraWrapper showHeader={false} appName='Should not appear'>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={false} appName='Should not appear'>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -47,7 +47,7 @@ describe('LumoraWrapper - Accessibility', () => {
 	describe('Sidebar Accessibility', () => {
 		it('has proper navigation structure', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showSidebar={true}
 					sidebarLinks={mockSidebarLinks}
 				>
@@ -69,7 +69,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('has proper link attributes', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showSidebar={true}
 					sidebarLinks={mockSidebarLinks}
 				>
@@ -91,7 +91,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('has proper icon structure', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showSidebar={true}
 					sidebarLinks={mockSidebarLinks}
 				>
@@ -107,7 +107,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('sidebar is not rendered when showSidebar is false', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showSidebar={false}
 					sidebarLinks={mockSidebarLinks}
 				>
@@ -128,7 +128,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('handles empty sidebar links gracefully', () => {
 			render(
-				<LumoraWrapper showSidebar={true} sidebarLinks={[]}>
+				<LumoraWrapper {...lumoraTestRequiredProps} showSidebar={true} sidebarLinks={[]}>
 					<div data-testid='test-content'>Test Content</div>
 				</LumoraWrapper>
 			);
@@ -141,7 +141,7 @@ describe('LumoraWrapper - Accessibility', () => {
 	describe('Content Area Accessibility', () => {
 		it('has proper main content structure', () => {
 			render(
-				<LumoraWrapper>
+				<LumoraWrapper {...lumoraTestRequiredProps}>
 					<div data-testid='main-content'>Main content here</div>
 				</LumoraWrapper>
 			);
@@ -156,7 +156,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('content is accessible when header is shown', () => {
 			render(
-				<LumoraWrapper showHeader={true}>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={true}>
 					<div data-testid='content'>Content</div>
 				</LumoraWrapper>
 			);
@@ -167,7 +167,7 @@ describe('LumoraWrapper - Accessibility', () => {
 
 		it('content is accessible when header is hidden', () => {
 			render(
-				<LumoraWrapper showHeader={false}>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={false}>
 					<div data-testid='content'>Content</div>
 				</LumoraWrapper>
 			);
@@ -180,7 +180,7 @@ describe('LumoraWrapper - Accessibility', () => {
 	describe('Keyboard Navigation', () => {
 		it('sidebar links are keyboard accessible', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showSidebar={true}
 					sidebarLinks={mockSidebarLinks}
 				>
@@ -206,7 +206,7 @@ describe('LumoraWrapper - Accessibility', () => {
 	describe('Screen Reader Support', () => {
 		it('provides meaningful text for screen readers', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showHeader={true}
 					showSidebar={true}
 					appName='My Application'
@@ -219,23 +219,28 @@ describe('LumoraWrapper - Accessibility', () => {
 			// Header title should be readable
 			expect(screen.getByText('My Application')).toBeInTheDocument();
 
-			// Sidebar links should have descriptive text
-			expect(screen.getByText('Home')).toBeInTheDocument();
-			expect(screen.getByText('Settings')).toBeInTheDocument();
-			expect(screen.getByText('Profile')).toBeInTheDocument();
+			// Rail links expose labels via aria-label (icons only in the rail)
+			expect(
+				screen.getByRole('link', { name: /home/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /settings/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /profile/i })
+			).toBeInTheDocument();
 		});
 
 		it('maintains proper heading hierarchy', () => {
 			render(
-				<LumoraWrapper showHeader={true} appName='Application Title'>
+				<LumoraWrapper {...lumoraTestRequiredProps} showHeader={true} appName='Application Title'>
 					<h1>Page Title</h1>
 					<h2>Section Title</h2>
 				</LumoraWrapper>
 			);
 
-			// Header title should be p (MUI Typography with variant="body1" renders as p)
 			const headerTitle = screen.getByText('Application Title');
-			expect(headerTitle.tagName).toBe('P');
+			expect(headerTitle.tagName).toBe('H6');
 
 			// Page content should maintain proper hierarchy
 			expect(
@@ -250,7 +255,7 @@ describe('LumoraWrapper - Accessibility', () => {
 	describe('Focus Management', () => {
 		it('maintains focus order with header and sidebar', () => {
 			render(
-				<LumoraWrapper
+				<LumoraWrapper {...lumoraTestRequiredProps}
 					showHeader={true}
 					showSidebar={true}
 					appName='Test App'

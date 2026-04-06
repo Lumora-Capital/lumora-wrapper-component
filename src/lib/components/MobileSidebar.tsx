@@ -113,6 +113,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 				<Divider />
 				<Stack sx={{ flexGrow: 1 }}>
 					<MenuContent
+						variant='drawer'
 						mainLinks={mainLinks}
 						secondaryLinks={secondaryLinks}
 						activePath={activePath}

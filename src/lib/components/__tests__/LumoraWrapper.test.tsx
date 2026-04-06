@@ -1,18 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Home, Settings, Person } from '@mui/icons-material';
-import Cookies from 'js-cookie';
 import LumoraWrapper, {
 	type LumoraWrapperProps,
 	type SidebarLink
 } from '../LumoraWrapper';
+import { lumoraTestRequiredProps } from './testUtils';
 import '@testing-library/jest-dom';
 
-// Mock js-cookie
-const mockCookies = Cookies as jest.Mocked<typeof Cookies>;
+jest.mock('../../tokenValidator', () => ({
+	validateAndRefreshTokens: jest.fn().mockResolvedValue(true)
+}));
 
-// Mock fetch
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+import { validateAndRefreshTokens } from '../../tokenValidator';
 
 // Mock window.location is handled in setupTests.ts
 
@@ -43,6 +43,7 @@ const mockAppLogo = <div data-testid='app-logo'>Test Logo</div>;
 // Helper function to render component with theme
 const renderWithTheme = (props: Partial<LumoraWrapperProps> = {}) => {
 	const defaultProps: LumoraWrapperProps = {
+		...lumoraTestRequiredProps,
 		children: <div data-testid='test-content'>Test Content</div>,
 		...props
 	};
@@ -72,14 +73,10 @@ describe('LumoraWrapper', () => {
 
 		it('applies custom styles to main container', () => {
 			const customStyle = { backgroundColor: 'red' };
-			renderWithTheme({ style: customStyle });
+			const { container } = renderWithTheme({ style: customStyle });
 
-			const mainContainer = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(mainContainer).toHaveStyle(
-				'background-color: rgba(0, 0, 0, 0)'
-			);
+			const root = container.firstElementChild as HTMLElement;
+			expect(root).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' });
 		});
 	});
 
@@ -103,27 +100,25 @@ describe('LumoraWrapper', () => {
 			expect(screen.getByText('My App')).toBeInTheDocument();
 		});
 
-		it('renders page name when provided', () => {
+		it('accepts pageName prop (navbar shows app name only)', () => {
 			renderWithTheme({
 				showHeader: true,
+				appName: 'Nav App',
 				pageName: 'My Application'
 			});
-			expect(screen.getByText('My Application')).toBeInTheDocument();
+			expect(screen.getByText('Nav App')).toBeInTheDocument();
+			expect(screen.getByTestId('test-content')).toBeInTheDocument();
 		});
 
 		it('applies custom styles to main container', () => {
 			const customStyle = { backgroundColor: 'blue' };
-			renderWithTheme({
+			const { container } = renderWithTheme({
 				showHeader: true,
 				style: customStyle
 			});
 
-			const mainContainer = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(mainContainer).toHaveStyle(
-				'background-color: rgb(0, 0, 255)'
-			);
+			const root = container.firstElementChild as HTMLElement;
+			expect(root).toHaveStyle({ backgroundColor: 'rgb(0, 0, 255)' });
 		});
 	});
 
@@ -134,18 +129,27 @@ describe('LumoraWrapper', () => {
 				sidebarLinks: mockSidebarLinks
 			});
 
-			// Check if sidebar links are rendered
-			expect(screen.getByText('Home')).toBeInTheDocument();
-			expect(screen.getByText('Settings')).toBeInTheDocument();
-			expect(screen.getByText('Profile')).toBeInTheDocument();
+			// Rail sidebar uses icon links with aria-label (no visible link text)
+			expect(
+				screen.getByRole('link', { name: /home/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /settings/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /profile/i })
+			).toBeInTheDocument();
 		});
 
 		it('does not render sidebar when showSidebar is false', () => {
 			renderWithTheme({ showSidebar: false });
 
-			// Check that sidebar links are not rendered
-			expect(screen.queryByText('Home')).not.toBeInTheDocument();
-			expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole('link', { name: /home/i })
+			).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole('link', { name: /settings/i })
+			).not.toBeInTheDocument();
 		});
 
 		it('renders sidebar links with correct paths and icons', () => {
@@ -154,16 +158,16 @@ describe('LumoraWrapper', () => {
 				sidebarLinks: mockSidebarLinks
 			});
 
-			// Check links have correct href attributes
-			const homeLink = screen.getByText('Home').closest('a');
-			const settingsLink = screen.getByText('Settings').closest('a');
-			const profileLink = screen.getByText('Profile').closest('a');
+			const homeLink = screen.getByRole('link', { name: /home/i });
+			const settingsLink = screen.getByRole('link', {
+				name: /settings/i
+			});
+			const profileLink = screen.getByRole('link', { name: /profile/i });
 
 			expect(homeLink).toHaveAttribute('href', '/home');
 			expect(settingsLink).toHaveAttribute('href', '/settings');
 			expect(profileLink).toHaveAttribute('href', '/profile');
 
-			// Check icons are rendered
 			expect(screen.getByTestId('home-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('profile-icon')).toBeInTheDocument();
@@ -175,8 +179,8 @@ describe('LumoraWrapper', () => {
 				sidebarLinks: []
 			});
 
-			// Sidebar should still be rendered but with no links
-			expect(screen.getByRole('list')).toBeInTheDocument();
+			expect(document.querySelector('.MuiDrawer-root')).toBeInTheDocument();
+			expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		});
 
 		it('applies custom sidebar styles', () => {
@@ -186,10 +190,11 @@ describe('LumoraWrapper', () => {
 				sidebarStyles
 			});
 
-			const sidebar = screen
-				.getByRole('list')
-				.closest('[class*="MuiDrawer-root"]');
-			expect(sidebar).toHaveStyle('background-color: rgb(0, 128, 0)');
+			const drawer = document.querySelector(
+				'.MuiDrawer-root'
+			) as HTMLElement | null;
+			expect(drawer).toBeInTheDocument();
+			expect(drawer).toHaveStyle({ backgroundColor: 'rgb(0, 128, 0)' });
 		});
 	});
 
@@ -197,19 +202,15 @@ describe('LumoraWrapper', () => {
 		it('applies correct margin when header is shown', () => {
 			renderWithTheme({ showHeader: true });
 
-			const contentArea = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('margin-top: 64px');
+			const contentArea = screen.getByRole('main');
+			expect(contentArea).toHaveStyle({ marginTop: '60px' });
 		});
 
 		it('applies no margin when header is not shown', () => {
 			renderWithTheme({ showHeader: false });
 
-			const contentArea = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('margin-top: 0px');
+			const contentArea = screen.getByRole('main');
+			expect(contentArea).toHaveStyle({ marginTop: '0px' });
 		});
 
 		it('applies custom content styles', () => {
@@ -225,57 +226,28 @@ describe('LumoraWrapper', () => {
 
 	describe('Token Refresh Logic', () => {
 		beforeEach(() => {
-			// Mock current time
-			jest.useFakeTimers();
-			jest.setSystemTime(new Date('2024-01-01T10:00:00Z'));
+			jest.clearAllMocks();
+			(validateAndRefreshTokens as jest.Mock).mockResolvedValue(true);
 		});
 
-		afterEach(() => {
-			jest.useRealTimers();
-		});
-
-		it('does not run token refresh logic when enableRefreshToken is false', async () => {
-			mockCookies.get.mockReturnValue(undefined as any);
-			mockFetch.mockResolvedValueOnce(new Response());
-
+		it('does not call validateAndRefreshTokens when enableRefreshToken is false', async () => {
 			renderWithTheme({ enableRefreshToken: false });
 
 			await waitFor(() => {
-				expect(mockFetch).not.toHaveBeenCalled();
+				expect(screen.getByTestId('test-content')).toBeInTheDocument();
 			});
 
-			expect(console.warn).not.toHaveBeenCalled();
+			expect(validateAndRefreshTokens).not.toHaveBeenCalled();
 		});
 
-		it('does not refresh token when tokenExpiry cookie is not present', async () => {
-			mockCookies.get.mockReturnValue(undefined as any);
-			mockFetch.mockResolvedValueOnce(new Response());
-
+		it('calls validateAndRefreshTokens when enableRefreshToken is true', async () => {
 			renderWithTheme({ enableRefreshToken: true });
 
 			await waitFor(() => {
-				expect(mockFetch).not.toHaveBeenCalled();
+				expect(validateAndRefreshTokens).toHaveBeenCalled();
 			});
-
-			expect(console.warn).toHaveBeenCalledWith(
-				'No tokenExpiry cookie found'
-			);
-		});
-
-		it('does not refresh token when token is still valid', async () => {
-			// Set token expiry to 20 minutes from now (beyond threshold)
-			const futureTime = new Date('2024-01-01T10:20:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).not.toHaveBeenCalled();
-			});
-
-			expect(console.log).toHaveBeenCalledWith(
-				'Token is still valid, no refresh needed'
-			);
+			const call = (validateAndRefreshTokens as jest.Mock).mock.calls[0];
+			expect(call[1]).toBe(lumoraTestRequiredProps.redirectToLogin);
 		});
 
 		/** 
@@ -431,23 +403,6 @@ describe('LumoraWrapper', () => {
 		*/
 	});
 
-	describe('Error Handling', () => {
-		it('handles errors in token expiry check', async () => {
-			mockCookies.get.mockImplementation(() => {
-				throw new Error('Cookie access error');
-			});
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(console.error).toHaveBeenCalledWith(
-					'Error checking token expiry:',
-					expect.any(Error)
-				);
-			});
-		});
-	});
-
 	describe('Integration Tests', () => {
 		it('renders complete layout with all features enabled', () => {
 			renderWithTheme({
@@ -461,11 +416,15 @@ describe('LumoraWrapper', () => {
 			// Check all components are rendered
 			expect(screen.getByRole('banner')).toBeInTheDocument();
 			expect(screen.getByText('My App')).toBeInTheDocument();
-			expect(screen.getByText('Dashboard')).toBeInTheDocument();
-			expect(screen.getByRole('list')).toBeInTheDocument();
-			expect(screen.getByText('Home')).toBeInTheDocument();
-			expect(screen.getByText('Settings')).toBeInTheDocument();
-			expect(screen.getByText('Profile')).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /home/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /settings/i })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole('link', { name: /profile/i })
+			).toBeInTheDocument();
 			expect(screen.getByTestId('test-content')).toBeInTheDocument();
 		});
 

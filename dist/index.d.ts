@@ -167,8 +167,16 @@ export declare interface LumoraWrapperProps {
 
 export declare type SidebarLink = {
     text: string;
-    path: string;
+    path?: string;
     icon: default_2.ReactNode;
+    subitems?: SidebarSubLink[];
+};
+
+/** One level of children under a sidebar parent; no further nesting. */
+export declare type SidebarSubLink = {
+    text: string;
+    path: string;
+    icon?: default_2.ReactNode;
 };
 
 /**

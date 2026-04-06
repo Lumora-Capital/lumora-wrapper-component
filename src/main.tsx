@@ -99,7 +99,24 @@ const demoMainLinks: SidebarLink[] = [
 	{
 		text: 'Home',
 		path: '/home',
-		icon: <DashboardIcon />
+		icon: <DashboardIcon />,
+		subitems: [
+			{
+				text: 'Home',
+				path: '/home-1',
+				icon: <DashboardIcon />
+			},
+			{
+				text: 'Not Home',
+				path: '/home-2',
+				icon: <DashboardIcon />
+			},
+			{
+				text: 'Not Home 2',
+				path: '/home',
+				icon: <DashboardIcon />
+			}
+		]
 	},
 	{
 		text: 'Analytics',
@@ -305,6 +322,7 @@ createRoot(document.getElementById('root')!).render(
 				onSettingsClick={() => console.log('Settings clicked')}
 				onLinkClick={path => console.log('Link clicked:', path)}
 				enableRefreshToken={false}
+				apiBaseUrl='https://dev.api.lumora.capital'
 				// Uncomment the lines below to test conditional rendering:
 				// showHeader={false}  // Hide the header completely
 				// showSidebar={false} // Hide the sidebar completely

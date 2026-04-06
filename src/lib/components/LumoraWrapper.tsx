@@ -17,11 +17,19 @@ import CardAlert from './CardAlert';
 import MenuContent from './MenuContent';
 import MobileSidebar from './MobileSidebar';
 
-// Type for sidebar navigation links
-export type SidebarLink = {
+/** One level of children under a sidebar parent; no further nesting. */
+export type SidebarSubLink = {
 	text: string;
 	path: string;
+	icon?: React.ReactNode;
+};
+
+// Type for sidebar navigation links (optional path when used only as a group parent)
+export type SidebarLink = {
+	text: string;
+	path?: string;
 	icon: React.ReactNode;
+	subitems?: SidebarSubLink[];
 };
 
 // Interface for LumoraWrapper props
@@ -280,7 +288,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		}
 
 		// Validate tokens on mount only
-		validateAndRefreshTokens(axiosClient);
+		validateAndRefreshTokens(axiosClient, redirectToLogin);
 	}, [enableRefreshToken, axiosClient]);
 
 	// Show loading state while checking session
@@ -396,11 +404,13 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						}}
 					>
 						<MenuContent
+							variant='rail'
 							mainLinks={sidebarLinks}
 							secondaryLinks={secondarySidebarLinks}
 							activePath={activePath}
 							onLinkClick={onLinkClick}
 							accentColor={accentColor}
+							surfaceBackgroundColor={contentBackgroundColor}
 						/>
 						{alertProps?.show && <CardAlert {...alertProps} />}
 					</Box>

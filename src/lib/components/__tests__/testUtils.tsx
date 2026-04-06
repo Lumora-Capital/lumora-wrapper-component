@@ -29,9 +29,20 @@ export const mockSidebarLinks: SidebarLink[] = [
 // Mock app logo for testing
 export const mockAppLogo = <div data-testid='app-logo'>Test Logo</div>;
 
+/** Required LumoraWrapper props for unit tests (session gate is mocked in suites that need it). */
+export const lumoraTestRequiredProps: Pick<
+	LumoraWrapperProps,
+	'onLogout' | 'apiBaseUrl' | 'redirectToLogin'
+> = {
+	onLogout: jest.fn(),
+	apiBaseUrl: 'https://api.test',
+	redirectToLogin: jest.fn()
+};
+
 // Default test props
 export const defaultTestProps: Partial<LumoraWrapperProps> = {
-	children: <div data-testid='test-content'>Test Content</div>
+	children: <div data-testid='test-content'>Test Content</div>,
+	...lumoraTestRequiredProps
 };
 
 // Custom render function with theme provider
@@ -55,6 +66,7 @@ export const createTestProps = (
 	overrides: Partial<LumoraWrapperProps> = {}
 ): LumoraWrapperProps =>
 	({
+		...lumoraTestRequiredProps,
 		...defaultTestProps,
 		...overrides
 	}) as LumoraWrapperProps;
