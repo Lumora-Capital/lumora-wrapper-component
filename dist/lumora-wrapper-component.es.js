@@ -911,7 +911,8 @@ const y = {
     minHeight: K,
     flexDirection: "column",
     py: 0.5,
-    px: 0.25,
+    // Horizontal padding so labels (esp. active fill) do not touch the box edges
+    px: 1,
     borderRadius: "4px",
     color: S ? "#ffffff" : B,
     backgroundColor: S ? U : "transparent",
@@ -1164,7 +1165,7 @@ const y = {
     minHeight: n,
     flexDirection: "column",
     py: 0.5,
-    px: 0.25,
+    px: 1,
     borderRadius: "4px",
     color: s ? "#ffffff" : b,
     backgroundColor: s ? E : "transparent",
@@ -1447,6 +1448,8 @@ const y = {
     {
       sx: {
         flexGrow: 1,
+        width: "100%",
+        boxSizing: "border-box",
         justifyContent: "flex-start",
         alignItems: "center",
         pt: 2,
@@ -1791,7 +1794,10 @@ const y = {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  pt: 2
+                  pt: 2,
+                  // Inset rail content from drawer edges (esp. left) so items do not sit flush
+                  px: 1.5,
+                  boxSizing: "border-box"
                 },
                 children: [
                   /* @__PURE__ */ r(

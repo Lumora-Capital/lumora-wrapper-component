@@ -411,7 +411,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							height: '100%',
 							display: 'flex',
 							flexDirection: 'column',
-							pt: 2
+							pt: 2,
+							// Inset rail content from drawer edges (esp. left) so items do not sit flush
+							px: 1.5,
+							boxSizing: 'border-box'
 						}}
 					>
 						<MenuContent

@@ -214,7 +214,8 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 		minHeight: size,
 		flexDirection: 'column' as const,
 		py: 0.5,
-		px: 0.25,
+		// Horizontal padding so labels (esp. active fill) do not touch the box edges
+		px: 1,
 		borderRadius: '4px',
 		color: active ? '#ffffff' : inactiveColor,
 		backgroundColor: active ? selectedRailFill : 'transparent',
@@ -505,7 +506,7 @@ const RailLeafRow: React.FC<RailLeafProps> = ({
 		minHeight: size,
 		flexDirection: 'column' as const,
 		py: 0.5,
-		px: 0.25,
+		px: 1,
 		borderRadius: '4px',
 		color: active ? '#ffffff' : inactiveColor,
 		backgroundColor: active ? activeBg : 'transparent',
@@ -881,6 +882,8 @@ const MenuContent: React.FC<MenuContentProps> = ({
 		<Stack
 			sx={{
 				flexGrow: 1,
+				width: '100%',
+				boxSizing: 'border-box',
 				justifyContent: 'flex-start',
 				alignItems: 'center',
 				pt: 2,
