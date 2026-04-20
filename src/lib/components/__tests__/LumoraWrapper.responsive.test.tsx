@@ -75,7 +75,70 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		const contentArea = screen
 			.getByTestId('test-content')
 			.closest('[class*="MuiBox-root"]');
-		expect(contentArea).toHaveStyle('width: calc(100% - 80px)');
+		expect(contentArea).toHaveStyle('width: calc(100% - 100px)');
+	});
+
+	it('uses same main width when showSidebarRailTitles is true as when false', () => {
+		mockUseMediaQuery.mockReturnValue(false);
+
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				showSidebarRailTitles={true}
+				sidebarLinks={mockSidebarLinks}
+			>
+				<div data-testid='test-content'>Test Content</div>
+			</LumoraWrapper>
+		);
+
+		const contentArea = screen
+			.getByTestId('test-content')
+			.closest('[class*="MuiBox-root"]');
+		expect(contentArea).toHaveStyle('width: calc(100% - 100px)');
+	});
+
+	it('shows visible rail captions when showSidebarRailTitles is true', () => {
+		mockUseMediaQuery.mockReturnValue(false);
+
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				showSidebarRailTitles={true}
+				sidebarLinks={mockSidebarLinks}
+			>
+				<div data-testid='test-content'>Test Content</div>
+			</LumoraWrapper>
+		);
+
+		expect(
+			screen.getByTestId('rail-item-caption-Home')
+		).toBeInTheDocument();
+		expect(
+			screen.getByTestId('rail-item-caption-Settings')
+		).toBeInTheDocument();
+		expect(
+			screen.getByTestId('rail-item-caption-Profile')
+		).toBeInTheDocument();
+	});
+
+	it('does not render rail captions when showSidebarRailTitles is false', () => {
+		mockUseMediaQuery.mockReturnValue(false);
+
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				showSidebar={true}
+				sidebarLinks={mockSidebarLinks}
+			>
+				<div data-testid='test-content'>Test Content</div>
+			</LumoraWrapper>
+		);
+
+		expect(
+			screen.queryByTestId('rail-item-caption-Home')
+		).not.toBeInTheDocument();
 	});
 
 	it('uses full width on mobile', () => {

@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
@@ -32,6 +33,8 @@ interface MenuContentProps {
 	accentColor?: string;
 	/** Popover panel behind sublinks; matches desktop sidebar strip (e.g. contentBackgroundColor). */
 	surfaceBackgroundColor?: string;
+	/** Desktop rail only: show `link.text` under each icon */
+	railShowTitles?: boolean;
 }
 
 // Parent active if its path or any direct subitem path matches
@@ -48,6 +51,74 @@ const isSidebarLinkActive = (link: SidebarLink, activePath?: string) => {
 const isSubLinkActive = (sub: SidebarSubLink, activePath?: string) =>
 	Boolean(activePath && sub.path === activePath);
 
+/** Caption under rail icon: MUI Tooltip only when text is truncated (ellipsis) */
+type RailTruncatingCaptionProps = {
+	text: string;
+	testId: string;
+};
+
+const RailTruncatingCaption: React.FC<RailTruncatingCaptionProps> = ({
+	text,
+	testId
+}) => {
+	const ref = React.useRef<HTMLElement>(null);
+	const [truncated, setTruncated] = React.useState(false);
+
+	const measure = React.useCallback(() => {
+		const el = ref.current;
+		if (!el) {
+			return;
+		}
+		setTruncated(el.scrollWidth > el.clientWidth + 0.5);
+	}, []);
+
+	React.useLayoutEffect(() => {
+		measure();
+	}, [measure, text]);
+
+	React.useEffect(() => {
+		const el = ref.current;
+		if (!el) {
+			return undefined;
+		}
+		const ro = new ResizeObserver(() => measure());
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [measure]);
+
+	return (
+		<Tooltip
+			title={text}
+			placement='right'
+			arrow
+			enterDelay={400}
+			disableHoverListener={!truncated}
+			disableFocusListener={!truncated}
+			disableTouchListener={!truncated}
+		>
+			<Typography
+				ref={ref}
+				variant='caption'
+				component='span'
+				aria-hidden
+				data-testid={testId}
+				sx={{
+					display: 'block',
+					width: '100%',
+					textAlign: 'center',
+					lineHeight: 1.1,
+					overflow: 'hidden',
+					textOverflow: 'ellipsis',
+					whiteSpace: 'nowrap',
+					color: 'inherit'
+				}}
+			>
+				{text}
+			</Typography>
+		</Tooltip>
+	);
+};
+
 // --- Desktop rail: item with hover/keyboard submenu (subitems only in popper; parent uses icon click for path)
 type RailSubmenuProps = {
 	link: SidebarLink;
@@ -56,6 +127,7 @@ type RailSubmenuProps = {
 	accentColor: string;
 	isSecondary: boolean;
 	surfaceBackgroundColor: string;
+	railShowTitles?: boolean;
 };
 
 const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
@@ -64,7 +136,8 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 	onLinkClick,
 	accentColor,
 	isSecondary,
-	surfaceBackgroundColor
+	surfaceBackgroundColor,
+	railShowTitles = false
 }) => {
 	const theme = useTheme();
 	const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
@@ -132,7 +205,83 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 	// Filled rail look when this parent or one of its subitems is active (not for the whole popover)
 	const selectedRailFill = isSecondary ? '#01584F' : accentColor;
 
-	const iconButton = (
+	// Icon + label share one hit target and active background when railShowTitles
+	const titledRailTriggerSx = {
+		width: '100%',
+		maxWidth: '100%',
+		minWidth: size,
+		height: 'auto',
+		minHeight: size,
+		flexDirection: 'column' as const,
+		py: 0.5,
+		px: 0.25,
+		borderRadius: '4px',
+		color: active ? '#ffffff' : inactiveColor,
+		backgroundColor: active ? selectedRailFill : 'transparent',
+		'&:hover': {
+			backgroundColor: active ? selectedRailFill : 'action.hover',
+			borderRadius: '4px',
+			color: active ? '#ffffff' : inactiveColor
+		}
+	};
+
+	const iconButton = railShowTitles ? (
+		<IconButton
+			ref={triggerRef}
+			component={link.path ? 'a' : 'button'}
+			href={link.path || undefined}
+			aria-label={link.text}
+			onFocus={() => {
+				if (!mouseOnTriggerRef.current) {
+					handleOpen();
+				}
+			}}
+			onBlur={(e: React.FocusEvent) => {
+				const next = e.relatedTarget as Node | null;
+				if (next && popoverRef.current?.contains(next)) {
+					return;
+				}
+				scheduleClose();
+			}}
+			onKeyDown={(e: React.KeyboardEvent) => {
+				if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					focusFirstOnOpenRef.current = true;
+					handleOpen();
+				}
+			}}
+			onClick={(e: React.MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				if (link.path) {
+					onLinkClick?.(link.path);
+				}
+			}}
+			aria-haspopup='menu'
+			aria-expanded={open}
+			aria-controls={open ? menuListId : undefined}
+			data-testid={`rail-submenu-trigger-${link.text}`}
+			sx={titledRailTriggerSx}
+		>
+			<Stack alignItems='center' spacing={1} sx={{ width: '100%' }}>
+				<Box
+					sx={{
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'inherit',
+						'& .MuiSvgIcon-root': { color: 'inherit' }
+					}}
+				>
+					{link.icon}
+				</Box>
+				<RailTruncatingCaption
+					text={link.text}
+					testId={`rail-item-caption-${link.text}`}
+				/>
+			</Stack>
+		</IconButton>
+	) : (
 		<IconButton
 			ref={triggerRef}
 			component={link.path ? 'a' : 'button'}
@@ -196,7 +345,7 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 			<Box
 				ref={setAnchorEl}
 				data-testid={`rail-submenu-anchor-${link.text}`}
-				sx={{ display: 'inline-flex' }}
+				sx={{ display: 'inline-flex', maxWidth: '100%' }}
 				onMouseEnter={() => {
 					mouseOnTriggerRef.current = true;
 					handleOpen();
@@ -206,9 +355,13 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 					scheduleClose();
 				}}
 			>
-				<Tooltip title={link.text} placement='right' arrow>
-					{iconButton}
-				</Tooltip>
+				{railShowTitles ? (
+					iconButton
+				) : (
+					<Tooltip title={link.text} placement='right' arrow>
+						{iconButton}
+					</Tooltip>
+				)}
 			</Box>
 			<Popper
 				open={open && Boolean(anchorEl)}
@@ -328,6 +481,7 @@ type RailLeafProps = {
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
 	isSecondary: boolean;
+	railShowTitles?: boolean;
 };
 
 const RailLeafRow: React.FC<RailLeafProps> = ({
@@ -335,14 +489,67 @@ const RailLeafRow: React.FC<RailLeafProps> = ({
 	activePath,
 	onLinkClick,
 	accentColor,
-	isSecondary
+	isSecondary,
+	railShowTitles = false
 }) => {
 	const active = Boolean(link.path && activePath === link.path);
 	const size = isSecondary ? 48 : 44;
 	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
 	const activeBg = isSecondary ? '#01584F' : accentColor;
 
-	const iconButton = (
+	const titledRailLeafSx = {
+		width: '100%',
+		maxWidth: '100%',
+		minWidth: size,
+		height: 'auto',
+		minHeight: size,
+		flexDirection: 'column' as const,
+		py: 0.5,
+		px: 0.25,
+		borderRadius: '4px',
+		color: active ? '#ffffff' : inactiveColor,
+		backgroundColor: active ? activeBg : 'transparent',
+		'&:hover': {
+			backgroundColor: active ? activeBg : 'action.hover',
+			borderRadius: '4px',
+			color: active ? '#ffffff' : inactiveColor
+		}
+	};
+
+	const iconButton = railShowTitles ? (
+		<IconButton
+			component={link.path ? 'a' : 'button'}
+			href={link.path || undefined}
+			aria-label={link.text}
+			onClick={(e: React.MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				if (link.path) {
+					onLinkClick?.(link.path);
+				}
+			}}
+			disabled={!link.path}
+			sx={titledRailLeafSx}
+		>
+			<Stack alignItems='center' spacing={1} sx={{ width: '100%' }}>
+				<Box
+					sx={{
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'inherit',
+						'& .MuiSvgIcon-root': { color: 'inherit' }
+					}}
+				>
+					{link.icon}
+				</Box>
+				<RailTruncatingCaption
+					text={link.text}
+					testId={`rail-item-caption-${link.text}`}
+				/>
+			</Stack>
+		</IconButton>
+	) : (
 		<IconButton
 			component={link.path ? 'a' : 'button'}
 			href={link.path || undefined}
@@ -371,7 +578,9 @@ const RailLeafRow: React.FC<RailLeafProps> = ({
 		</IconButton>
 	);
 
-	return (
+	return railShowTitles ? (
+		iconButton
+	) : (
 		<Tooltip title={link.text} placement='right' arrow>
 			{iconButton}
 		</Tooltip>
@@ -519,7 +728,8 @@ const MenuContent: React.FC<MenuContentProps> = ({
 	activePath,
 	onLinkClick,
 	accentColor = '#01584f',
-	surfaceBackgroundColor: surfaceBackgroundColorProp
+	surfaceBackgroundColor: surfaceBackgroundColorProp,
+	railShowTitles = false
 }) => {
 	const theme = useTheme();
 	const railSubmenuSurface =
@@ -561,6 +771,7 @@ const MenuContent: React.FC<MenuContentProps> = ({
 					accentColor={accentColor}
 					isSecondary={isSecondary}
 					surfaceBackgroundColor={railSubmenuSurface}
+					railShowTitles={railShowTitles}
 				/>
 			);
 		}
@@ -571,6 +782,7 @@ const MenuContent: React.FC<MenuContentProps> = ({
 				onLinkClick={handleLinkClick}
 				accentColor={accentColor}
 				isSecondary={isSecondary}
+				railShowTitles={railShowTitles}
 			/>
 		);
 	};
@@ -672,7 +884,7 @@ const MenuContent: React.FC<MenuContentProps> = ({
 				justifyContent: 'flex-start',
 				alignItems: 'center',
 				pt: 2,
-				gap: 1
+				gap: railShowTitles ? 1.25 : 1
 			}}
 		>
 			{mainLinks.map((link, index) => (
@@ -696,7 +908,10 @@ const MenuContent: React.FC<MenuContentProps> = ({
 						/>
 					</Box>
 					<Box sx={{ mt: 'auto', pb: 2 }}>
-						<Stack gap={1} alignItems='center'>
+						<Stack
+							gap={railShowTitles ? 1.25 : 1}
+							alignItems='center'
+						>
 							{secondaryLinks.map((link, index) => (
 								<React.Fragment key={index}>
 									{renderRailLink(link, true)}

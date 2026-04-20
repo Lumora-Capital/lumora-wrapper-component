@@ -323,6 +323,8 @@ createRoot(document.getElementById('root')!).render(
 				onLinkClick={path => console.log('Link clicked:', path)}
 				enableRefreshToken={false}
 				apiBaseUrl='https://dev.api.lumora.capital'
+				// Desktop rail: show link text under icons (widens the permanent drawer)
+				showSidebarRailTitles={true}
 				// Uncomment the lines below to test conditional rendering:
 				// showHeader={false}  // Hide the header completely
 				// showSidebar={false} // Hide the sidebar completely

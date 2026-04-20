@@ -43,3 +43,13 @@ globalThis.console = {
 	warn: jest.fn(),
 	error: jest.fn()
 };
+
+// jsdom does not implement ResizeObserver (used for rail caption truncation checks)
+globalThis.ResizeObserver = class ResizeObserver {
+	constructor(_callback: ResizeObserverCallback) {
+		void _callback;
+	}
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+};

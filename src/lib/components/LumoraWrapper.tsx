@@ -17,6 +17,9 @@ import CardAlert from './CardAlert';
 import MenuContent from './MenuContent';
 import MobileSidebar from './MobileSidebar';
 
+/** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
+const DESKTOP_RAIL_WIDTH_PX = 100;
+
 /** One level of children under a sidebar parent; no further nesting. */
 export type SidebarSubLink = {
 	text: string;
@@ -42,6 +45,8 @@ export interface LumoraWrapperProps {
 	pageName?: string;
 	showHeader?: boolean;
 	showSidebar?: boolean;
+	/** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
+	showSidebarRailTitles?: boolean;
 	enableRefreshToken?: boolean;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
@@ -125,6 +130,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	pageName = 'Home',
 	showHeader = true,
 	showSidebar = true,
+	showSidebarRailTitles = false,
 	enableRefreshToken = false,
 	activePath,
 	onLinkClick,
@@ -165,6 +171,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 }) => {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	// Keep drawer paper width and main `calc(100% - …)` in sync (fixed rail width)
+	let desktopRailWidthPx = 0;
+	if (showSidebar && !isMobile) {
+		desktopRailWidthPx = DESKTOP_RAIL_WIDTH_PX;
+	}
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -380,11 +391,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<Drawer
 					variant='permanent'
 					sx={{
-						width: 80,
+						width: desktopRailWidthPx,
 						flexShrink: 0,
 						zIndex: 2, // Higher z-index than app bar
 						'& .MuiDrawer-paper': {
-							width: 80,
+							width: desktopRailWidthPx,
 							boxSizing: 'border-box',
 							bgcolor: contentBackgroundColor,
 							borderRight: 'none',
@@ -411,6 +422,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							onLinkClick={onLinkClick}
 							accentColor={accentColor}
 							surfaceBackgroundColor={contentBackgroundColor}
+							railShowTitles={showSidebarRailTitles}
 						/>
 						{alertProps?.show && <CardAlert {...alertProps} />}
 					</Box>
@@ -456,7 +468,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					width: isMobile
 						? '100%'
 						: showSidebar
-							? `calc(100% - 80px)`
+							? `calc(100% - ${desktopRailWidthPx}px)`
 							: '100%',
 					mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
 					ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop

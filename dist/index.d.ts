@@ -103,6 +103,8 @@ export declare interface LumoraWrapperProps {
     pageName?: string;
     showHeader?: boolean;
     showSidebar?: boolean;
+    /** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
+    showSidebarRailTitles?: boolean;
     enableRefreshToken?: boolean;
     activePath?: string;
     onLinkClick?: (path: string) => void;

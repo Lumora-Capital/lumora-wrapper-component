@@ -129,7 +129,7 @@ describe('LumoraWrapper', () => {
 				sidebarLinks: mockSidebarLinks
 			});
 
-			// Rail sidebar uses icon links with aria-label (no visible link text)
+			// Default rail: icon links with aria-label; captions off unless showSidebarRailTitles
 			expect(
 				screen.getByRole('link', { name: /home/i })
 			).toBeInTheDocument();
