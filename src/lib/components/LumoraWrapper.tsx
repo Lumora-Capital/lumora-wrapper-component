@@ -8,7 +8,9 @@ import {
 	useMediaQuery,
 	useTheme
 } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getDesignTokens } from '../../themePrimitives';
 import { clearAuthTokens, getCurrentUser, isAuthenticated } from '../authUtils';
 import { createAxiosClient } from '../axiosClient';
 import { validateAndRefreshTokens } from '../tokenValidator';
@@ -98,6 +100,8 @@ export interface LumoraWrapperProps {
 	// Navbar styling props
 	navbarBackground?: string;
 	navbarAccentColor?: string;
+	// Theme mode
+	theme?: 'dark' | 'light';
 	// API base URL for axios client
 	apiBaseUrl: string;
 	// Chat sidebar props
@@ -157,10 +161,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	headerStyles,
 	sidebarStyles,
 	contentStyles,
-	accentColor = '#01584f',
-	contentBackgroundColor = '#f2f9fc',
-	navbarBackground = '#ffffff',
-	navbarAccentColor = '#000000',
+	accentColor,
+	contentBackgroundColor,
+	navbarBackground,
+	navbarAccentColor,
+	theme: themeMode = 'light',
 	GlobalChatSidebar,
 	useChatSidebar,
 	rightExtraContent,
@@ -169,8 +174,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	redirectToLogin,
 	apiBaseUrl
 }) => {
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const muiNativeTheme = useTheme();
+	const isMobile = useMediaQuery(muiNativeTheme.breakpoints.down('md'));
+	const muiTheme = useMemo(() => createTheme(getDesignTokens(themeMode)), [themeMode]);
+	const isDark = themeMode === 'dark';
+	const resolvedAccentColor = accentColor ?? '#01584f';
+	const resolvedContentBg = contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
+	const resolvedNavbarBg = navbarBackground ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const resolvedNavbarAccent = navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
 	// Keep drawer paper width and main `calc(100% - …)` in sync (fixed rail width)
 	let desktopRailWidthPx = 0;
 	if (showSidebar && !isMobile) {
@@ -305,25 +316,27 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Show loading state while checking session
 	if (isCheckingSession) {
 		return (
-			<Box
-				sx={{
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'center',
-					minHeight: '100vh',
-					backgroundColor: 'background.default'
-				}}
-			>
-				<CircularProgress
-					size={60}
-					thickness={4}
-					sx={{ color: accentColor }}
-				/>
-				<Box sx={{ mt: 2, color: 'text.secondary' }}>
-					Checking session...
+			<ThemeProvider theme={muiTheme}>
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '100vh',
+						backgroundColor: 'background.default'
+					}}
+				>
+					<CircularProgress
+						size={60}
+						thickness={4}
+						sx={{ color: resolvedAccentColor }}
+					/>
+					<Box sx={{ mt: 2, color: 'text.secondary' }}>
+						Checking session...
+					</Box>
 				</Box>
-			</Box>
+			</ThemeProvider>
 		);
 	}
 
@@ -334,6 +347,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	}
 
 	return (
+		<ThemeProvider theme={muiTheme}>
 		<Box
 			sx={{
 				display: 'flex',
@@ -376,10 +390,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					onSearchSubmit={onSearchSubmit}
 					showProfile={showProfile}
 					userRole={userRole}
-					accentColor={accentColor}
-					contentBackgroundColor={contentBackgroundColor}
-					navbarBackground={navbarBackground}
-					navbarAccentColor={navbarAccentColor}
+					accentColor={resolvedAccentColor}
+					contentBackgroundColor={resolvedContentBg}
+					navbarBackground={resolvedNavbarBg}
+					navbarAccentColor={resolvedNavbarAccent}
 					rightExtraContent={rightExtraContent}
 					customNavbar={CustomNavbar}
 					customNavbarProps={customNavbarProps}
@@ -397,7 +411,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						'& .MuiDrawer-paper': {
 							width: desktopRailWidthPx,
 							boxSizing: 'border-box',
-							bgcolor: contentBackgroundColor,
+							bgcolor: resolvedContentBg,
 							borderRight: 'none',
 							top: showHeader ? '60px' : 0, // Position below header
 							height: showHeader ? 'calc(100vh - 60px)' : '100vh'
@@ -423,8 +437,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							secondaryLinks={secondarySidebarLinks}
 							activePath={activePath}
 							onLinkClick={onLinkClick}
-							accentColor={accentColor}
-							surfaceBackgroundColor={contentBackgroundColor}
+							accentColor={resolvedAccentColor}
+							surfaceBackgroundColor={resolvedContentBg}
 							railShowTitles={showSidebarRailTitles}
 						/>
 						{alertProps?.show && <CardAlert {...alertProps} />}
@@ -457,7 +471,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							: undefined
 					}
 					alertProps={alertProps}
-					accentColor={accentColor}
+					accentColor={resolvedAccentColor}
 				/>
 			)}
 
@@ -475,7 +489,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							: '100%',
 					mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
 					ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
-					backgroundColor: contentBackgroundColor, // White background for main content
+					backgroundColor: resolvedContentBg,
 					...contentStyles
 				}}
 			>
@@ -540,6 +554,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				</Drawer>
 			)}
 		</Box>
+		</ThemeProvider>
 	);
 };
 
