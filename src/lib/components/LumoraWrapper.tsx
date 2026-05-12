@@ -176,12 +176,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 }) => {
 	const muiNativeTheme = useTheme();
 	const isMobile = useMediaQuery(muiNativeTheme.breakpoints.down('md'));
-	const muiTheme = useMemo(() => createTheme(getDesignTokens(themeMode)), [themeMode]);
+	const muiTheme = useMemo(
+		() => createTheme(getDesignTokens(themeMode)),
+		[themeMode]
+	);
 	const isDark = themeMode === 'dark';
 	const resolvedAccentColor = accentColor ?? '#01584f';
-	const resolvedContentBg = contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
-	const resolvedNavbarBg = navbarBackground ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
-	const resolvedNavbarAccent = navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
+	const resolvedContentBg =
+		contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
+	const resolvedNavbarBg =
+		navbarBackground ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const resolvedNavbarAccent =
+		navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
 	// Keep drawer paper width and main `calc(100% - …)` in sync (fixed rail width)
 	let desktopRailWidthPx = 0;
 	if (showSidebar && !isMobile) {
@@ -348,212 +354,215 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 
 	return (
 		<ThemeProvider theme={muiTheme}>
-		<Box
-			sx={{
-				display: 'flex',
-				minHeight: '100vh',
-				...style
-			}}
-		>
-			<CssBaseline />
-
-			{/* Header */}
-			{showHeader && (
-				<AppNavbar
-					appName={appName}
-					pageName={pageName}
-					onMenuClick={
-						isMobile && showSidebar
-							? handleMobileSidebarToggle
-							: undefined
-					}
-					showMenuButton={isMobile && showSidebar}
-					headerStyles={headerStyles}
-					userName={userName}
-					userEmail={userEmail}
-					userAvatar={userAvatar}
-					onProfileClick={onProfileClick}
-					onAccountClick={onAccountClick}
-					onSettingsClick={onSettingsClick}
-					showSettings={showSettings}
-					onLogout={handleLogout}
-					showNotifications={showNotifications}
-					notificationCount={notificationCount}
-					onNotificationBellClick={
-						showNotifications && NotificationSidebarContent
-							? () => setNotificationDrawerOpen(true)
-							: undefined
-					}
-					showSearchbar={showSearchbar && !CustomNavbar}
-					searchValue={searchValue}
-					onSearchChange={onSearchChange}
-					onSearchSubmit={onSearchSubmit}
-					showProfile={showProfile}
-					userRole={userRole}
-					accentColor={resolvedAccentColor}
-					contentBackgroundColor={resolvedContentBg}
-					navbarBackground={resolvedNavbarBg}
-					navbarAccentColor={resolvedNavbarAccent}
-					rightExtraContent={rightExtraContent}
-					customNavbar={CustomNavbar}
-					customNavbarProps={customNavbarProps}
-				/>
-			)}
-
-			{/* Desktop Sidebar */}
-			{showSidebar && !isMobile && (
-				<Drawer
-					variant='permanent'
-					sx={{
-						width: desktopRailWidthPx,
-						flexShrink: 0,
-						zIndex: 2, // Higher z-index than app bar
-						'& .MuiDrawer-paper': {
-							width: desktopRailWidthPx,
-							boxSizing: 'border-box',
-							bgcolor: resolvedContentBg,
-							borderRight: 'none',
-							top: showHeader ? '60px' : 0, // Position below header
-							height: showHeader ? 'calc(100vh - 60px)' : '100vh'
-						},
-						...sidebarStyles
-					}}
-				>
-					<Box
-						sx={{
-							overflow: 'auto',
-							height: '100%',
-							display: 'flex',
-							flexDirection: 'column',
-							pt: 2,
-							// Inset rail content from drawer edges (esp. left) so items do not sit flush
-							px: 1.5,
-							boxSizing: 'border-box'
-						}}
-					>
-						<MenuContent
-							variant='rail'
-							mainLinks={sidebarLinks}
-							secondaryLinks={secondarySidebarLinks}
-							activePath={activePath}
-							onLinkClick={onLinkClick}
-							accentColor={resolvedAccentColor}
-							surfaceBackgroundColor={resolvedContentBg}
-							railShowTitles={showSidebarRailTitles}
-						/>
-						{alertProps?.show && <CardAlert {...alertProps} />}
-					</Box>
-				</Drawer>
-			)}
-
-			{/* Mobile Sidebar */}
-			{showSidebar && isMobile && (
-				<MobileSidebar
-					open={mobileSidebarOpen}
-					onClose={handleMobileSidebarClose}
-					mainLinks={sidebarLinks}
-					secondaryLinks={secondarySidebarLinks}
-					activePath={activePath}
-					onLinkClick={onLinkClick}
-					userName={userName}
-					userEmail={userEmail}
-					userAvatar={userAvatar}
-					onLogout={handleLogout}
-					onProfileClick={onProfileClick}
-					showNotifications={showNotifications}
-					notificationCount={notificationCount}
-					onNotificationBellClick={
-						showNotifications && NotificationSidebarContent
-							? () => {
-									setMobileSidebarOpen(false);
-									setNotificationDrawerOpen(true);
-								}
-							: undefined
-					}
-					alertProps={alertProps}
-					accentColor={resolvedAccentColor}
-				/>
-			)}
-
-			{/* Main Content Area */}
 			<Box
-				component='main'
 				sx={{
-					flexGrow: 1,
-					p: 3,
-					m: 1,
-					width: isMobile
-						? '100%'
-						: showSidebar
-							? `calc(100% - ${desktopRailWidthPx}px)`
-							: '100%',
-					mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
-					ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
-					backgroundColor: resolvedContentBg,
-					...contentStyles
+					display: 'flex',
+					minHeight: '100vh',
+					...style
 				}}
 			>
-				<Grid container spacing={3}>
-					<Grid
-						size={{
-							xs: 12,
-							md: isChatOpen && GlobalChatSidebar ? 8.5 : 12
-						}}
+				<CssBaseline />
+
+				{/* Header */}
+				{showHeader && (
+					<AppNavbar
+						appName={appName}
+						pageName={pageName}
+						onMenuClick={
+							isMobile && showSidebar
+								? handleMobileSidebarToggle
+								: undefined
+						}
+						showMenuButton={isMobile && showSidebar}
+						headerStyles={headerStyles}
+						userName={userName}
+						userEmail={userEmail}
+						userAvatar={userAvatar}
+						onProfileClick={onProfileClick}
+						onAccountClick={onAccountClick}
+						onSettingsClick={onSettingsClick}
+						showSettings={showSettings}
+						onLogout={handleLogout}
+						showNotifications={showNotifications}
+						notificationCount={notificationCount}
+						onNotificationBellClick={
+							showNotifications && NotificationSidebarContent
+								? () => setNotificationDrawerOpen(true)
+								: undefined
+						}
+						showSearchbar={showSearchbar && !CustomNavbar}
+						searchValue={searchValue}
+						onSearchChange={onSearchChange}
+						onSearchSubmit={onSearchSubmit}
+						showProfile={showProfile}
+						userRole={userRole}
+						accentColor={resolvedAccentColor}
+						contentBackgroundColor={resolvedContentBg}
+						navbarBackground={resolvedNavbarBg}
+						navbarAccentColor={resolvedNavbarAccent}
+						rightExtraContent={rightExtraContent}
+						customNavbar={CustomNavbar}
+						customNavbarProps={customNavbarProps}
+					/>
+				)}
+
+				{/* Desktop Sidebar */}
+				{showSidebar && !isMobile && (
+					<Drawer
+						variant='permanent'
 						sx={{
-							display: 'flex',
-							flexDirection: 'column'
+							width: desktopRailWidthPx,
+							flexShrink: 0,
+							zIndex: 2, // Higher z-index than app bar
+							'& .MuiDrawer-paper': {
+								width: desktopRailWidthPx,
+								boxSizing: 'border-box',
+								bgcolor: resolvedContentBg,
+								borderRight: 'none',
+								top: showHeader ? '60px' : 0, // Position below header
+								height: showHeader
+									? 'calc(100vh - 60px)'
+									: '100vh'
+							},
+							...sidebarStyles
 						}}
 					>
-						{children}
-					</Grid>
-					{isChatOpen && GlobalChatSidebar && (
-						<Grid
-							size={{ xs: 12, md: 3.5 }}
+						<Box
 							sx={{
+								overflow: 'auto',
+								height: '100%',
 								display: 'flex',
 								flexDirection: 'column',
-								position: { xs: 'static', md: 'sticky' },
-								top: {
-									xs: 'auto',
-									md: showHeader ? '60px' : '0px'
-								}, // Stick below navbar
-								alignSelf: 'flex-start',
-								height: {
-									xs: 'auto',
-									md: showHeader
-										? 'calc(100vh - 60px - 24px - 8px)'
-										: 'calc(100vh - 24px - 8px)'
-								}, // Viewport - navbar - top padding - top margin
-								maxHeight: {
-									xs: 'none',
-									md: showHeader
-										? 'calc(100vh - 60px - 24px - 8px)'
-										: 'calc(100vh - 24px - 8px)'
-								} // Viewport - navbar - top padding - top margin
+								pt: 2,
+								// Inset rail content from drawer edges (esp. left) so items do not sit flush
+								px: 1.5,
+								boxSizing: 'border-box'
 							}}
 						>
-							<GlobalChatSidebar />
-						</Grid>
-					)}
-				</Grid>
-			</Box>
+							<MenuContent
+								variant='rail'
+								mainLinks={sidebarLinks}
+								secondaryLinks={secondarySidebarLinks}
+								activePath={activePath}
+								onLinkClick={onLinkClick}
+								accentColor={resolvedAccentColor}
+								surfaceBackgroundColor={resolvedContentBg}
+								railShowTitles={showSidebarRailTitles}
+							/>
+							{alertProps?.show && <CardAlert {...alertProps} />}
+						</Box>
+					</Drawer>
+				)}
 
-			{/* Notification sidebar drawer (container + toggle only; content from host) */}
-			{showNotifications && NotificationSidebarContent && (
-				<Drawer
-					anchor='right'
-					open={notificationDrawerOpen}
-					onClose={() => setNotificationDrawerOpen(false)}
-					slotProps={{
-						paper: { sx: { width: 380, maxWidth: '100vw' } }
+				{/* Mobile Sidebar */}
+				{showSidebar && isMobile && (
+					<MobileSidebar
+						open={mobileSidebarOpen}
+						onClose={handleMobileSidebarClose}
+						mainLinks={sidebarLinks}
+						secondaryLinks={secondarySidebarLinks}
+						activePath={activePath}
+						onLinkClick={onLinkClick}
+						userName={userName}
+						userEmail={userEmail}
+						userAvatar={userAvatar}
+						onLogout={handleLogout}
+						onProfileClick={onProfileClick}
+						showNotifications={showNotifications}
+						notificationCount={notificationCount}
+						onNotificationBellClick={
+							showNotifications && NotificationSidebarContent
+								? () => {
+										setMobileSidebarOpen(false);
+										setNotificationDrawerOpen(true);
+									}
+								: undefined
+						}
+						alertProps={alertProps}
+						accentColor={resolvedAccentColor}
+					/>
+				)}
+
+				{/* Main Content Area */}
+				<Box
+					component='main'
+					sx={{
+						flexGrow: 1,
+						p: 3,
+						width: isMobile
+							? '100%'
+							: showSidebar
+								? `calc(100% - ${desktopRailWidthPx}px)`
+								: '100%',
+						mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
+						ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
+						backgroundColor: resolvedContentBg,
+						mb: 0,
+						mr: 0,
+						...contentStyles
 					}}
 				>
-					<NotificationSidebarContent
+					<Grid container spacing={3}>
+						<Grid
+							size={{
+								xs: 12,
+								md: isChatOpen && GlobalChatSidebar ? 8.5 : 12
+							}}
+							sx={{
+								display: 'flex',
+								flexDirection: 'column'
+							}}
+						>
+							{children}
+						</Grid>
+						{isChatOpen && GlobalChatSidebar && (
+							<Grid
+								size={{ xs: 12, md: 3.5 }}
+								sx={{
+									display: 'flex',
+									flexDirection: 'column',
+									position: { xs: 'static', md: 'sticky' },
+									top: {
+										xs: 'auto',
+										md: showHeader ? '60px' : '0px'
+									}, // Stick below navbar
+									alignSelf: 'flex-start',
+									height: {
+										xs: 'auto',
+										md: showHeader
+											? 'calc(100vh - 60px - 24px - 8px)'
+											: 'calc(100vh - 24px - 8px)'
+									}, // Viewport - navbar - top padding - top margin
+									maxHeight: {
+										xs: 'none',
+										md: showHeader
+											? 'calc(100vh - 60px - 24px - 8px)'
+											: 'calc(100vh - 24px - 8px)'
+									} // Viewport - navbar - top padding - top margin
+								}}
+							>
+								<GlobalChatSidebar />
+							</Grid>
+						)}
+					</Grid>
+				</Box>
+
+				{/* Notification sidebar drawer (container + toggle only; content from host) */}
+				{showNotifications && NotificationSidebarContent && (
+					<Drawer
+						anchor='right'
+						open={notificationDrawerOpen}
 						onClose={() => setNotificationDrawerOpen(false)}
-					/>
-				</Drawer>
-			)}
-		</Box>
+						slotProps={{
+							paper: { sx: { width: 380, maxWidth: '100vw' } }
+						}}
+					>
+						<NotificationSidebarContent
+							onClose={() => setNotificationDrawerOpen(false)}
+						/>
+					</Drawer>
+				)}
+			</Box>
 		</ThemeProvider>
 	);
 };

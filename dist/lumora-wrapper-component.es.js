@@ -1853,7 +1853,10 @@ const O = {
   redirectToLogin: le,
   apiBaseUrl: Ue
 }) => {
-  const mt = Ot(), Q = It(mt.breakpoints.down("md")), ke = Xe(() => rt(Yt(Y)), [Y]), be = Y === "dark", ce = Ee ?? "#01584f", he = ye ?? (be ? "hsl(220, 35%, 9%)" : "#f2f9fc"), xt = Re ?? (be ? "hsl(220, 30%, 7%)" : "#ffffff"), wt = ie ?? (be ? "#ffffff" : "#000000");
+  const mt = Ot(), Q = It(mt.breakpoints.down("md")), ke = Xe(
+    () => rt(Yt(Y)),
+    [Y]
+  ), be = Y === "dark", ce = Ee ?? "#01584f", he = ye ?? (be ? "hsl(220, 35%, 9%)" : "#f2f9fc"), xt = Re ?? (be ? "hsl(220, 30%, 7%)" : "#ffffff"), wt = ie ?? (be ? "#ffffff" : "#000000");
   let de = 0;
   s && !Q && (de = dr);
   const [Be, Te] = te(!1), [St, ue] = te(!1), [Et, yt] = te(!0), [Rt, vt] = te(!1), [ur, fe] = te(null), Oe = ve == null ? void 0 : ve(), He = (Oe == null ? void 0 : Oe.isOpen) ?? !1, Ie = Ye(D), Ge = Ye(!1), Pe = Xe(
@@ -2055,13 +2058,14 @@ const O = {
             sx: {
               flexGrow: 1,
               p: 3,
-              m: 1,
               width: Q ? "100%" : s ? `calc(100% - ${de}px)` : "100%",
               mt: c ? "60px" : 0,
               // Account for AppNavbar height (60px)
               ml: 0,
               // Offset for sidebar on desktop
               backgroundColor: he,
+              mb: 0,
+              mr: 0,
               ...Se
             },
             children: /* @__PURE__ */ d(_e, { container: !0, spacing: 3, children: [
