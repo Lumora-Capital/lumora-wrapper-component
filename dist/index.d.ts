@@ -150,6 +150,8 @@ export declare interface LumoraWrapperProps {
     navbarBackground?: string;
     navbarAccentColor?: string;
     theme?: 'dark' | 'light';
+    showThemeToggler?: boolean;
+    onThemeToggle?: () => void;
     apiBaseUrl: string;
     GlobalChatSidebar?: default_2.ComponentType;
     useChatSidebar?: () => {

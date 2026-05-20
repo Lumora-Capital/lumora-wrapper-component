@@ -1,4 +1,6 @@
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
@@ -17,6 +19,7 @@ import Stack from '@mui/material/Stack';
 import { styled } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import MuiToolbar from '@mui/material/Toolbar';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import * as React from 'react';
@@ -50,6 +53,10 @@ interface AppNavbarProps {
 	showNotifications?: boolean;
 	notificationCount?: number;
 	onNotificationBellClick?: () => void;
+	// Theme toggler props
+	theme?: 'dark' | 'light';
+	showThemeToggler?: boolean;
+	onThemeToggle?: () => void;
 	// Search bar props
 	showSearchbar?: boolean;
 	searchValue?: string;
@@ -94,6 +101,9 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	showNotifications = false,
 	notificationCount = 0,
 	onNotificationBellClick,
+	theme = 'light',
+	showThemeToggler = false,
+	onThemeToggle,
 	showSearchbar = true,
 	searchValue,
 	onSearchChange,
@@ -112,6 +122,10 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	const [profileMenuAnchor, setProfileMenuAnchor] =
 		React.useState<null | HTMLElement>(null);
 	const profileMenuOpen = Boolean(profileMenuAnchor);
+	const isDarkTheme = theme === 'dark';
+	const themeToggleLabel = isDarkTheme
+		? 'Switch to light mode'
+		: 'Switch to dark mode';
 
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		onSearchChange?.(event.target.value);
@@ -266,6 +280,31 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						flexShrink: 0
 					}}
 				>
+					{/* Theme Toggler */}
+					{showThemeToggler && (
+						<Tooltip title={themeToggleLabel} placement='bottom'>
+							<span>
+								<IconButton
+									size='small'
+									onClick={onThemeToggle}
+									disabled={!onThemeToggle}
+									aria-label={themeToggleLabel}
+									sx={{
+										color: navbarAccentColor,
+										'&:hover': {
+											backgroundColor: 'action.hover'
+										}
+									}}
+								>
+									{isDarkTheme ? (
+										<LightModeIcon fontSize='small' />
+									) : (
+										<DarkModeIcon fontSize='small' />
+									)}
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
 					{/* Notifications */}
 					{showNotifications && (
 						<Badge

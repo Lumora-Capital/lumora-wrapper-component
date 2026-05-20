@@ -323,6 +323,9 @@ createRoot(document.getElementById('root')!).render(
 				onLinkClick={path => console.log('Link clicked:', path)}
 				enableRefreshToken={false}
 				apiBaseUrl='https://dev.api.lumora.capital'
+				showThemeToggler={true}
+				onThemeToggle={() => console.log('Theme toggled')}
+				theme='light'
 				// Desktop rail: show link text under icons (widens the permanent drawer)
 				showSidebarRailTitles={true}
 				// Uncomment the lines below to test conditional rendering:

@@ -102,6 +102,8 @@ export interface LumoraWrapperProps {
 	navbarAccentColor?: string;
 	// Theme mode
 	theme?: 'dark' | 'light';
+	showThemeToggler?: boolean;
+	onThemeToggle?: () => void;
 	// API base URL for axios client
 	apiBaseUrl: string;
 	// Chat sidebar props
@@ -166,6 +168,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	navbarBackground,
 	navbarAccentColor,
 	theme: themeMode = 'light',
+	showThemeToggler = false,
+	onThemeToggle,
 	GlobalChatSidebar,
 	useChatSidebar,
 	rightExtraContent,
@@ -400,6 +404,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						contentBackgroundColor={resolvedContentBg}
 						navbarBackground={resolvedNavbarBg}
 						navbarAccentColor={resolvedNavbarAccent}
+						theme={themeMode}
+						showThemeToggler={showThemeToggler}
+						onThemeToggle={onThemeToggle}
 						rightExtraContent={rightExtraContent}
 						customNavbar={CustomNavbar}
 						customNavbarProps={customNavbarProps}

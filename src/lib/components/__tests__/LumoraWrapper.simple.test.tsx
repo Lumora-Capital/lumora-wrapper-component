@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Home, Settings, Person } from '@mui/icons-material';
 import LumoraWrapper, {
@@ -98,6 +98,45 @@ describe('LumoraWrapper - Basic Functionality', () => {
 			});
 			expect(screen.getByText('Nav App')).toBeInTheDocument();
 			expect(screen.getByTestId('test-content')).toBeInTheDocument();
+		});
+
+		it('does not render the theme toggler by default', () => {
+			renderWithTheme({
+				showHeader: true
+			});
+
+			expect(
+				screen.queryByRole('button', { name: /switch to dark mode/i })
+			).not.toBeInTheDocument();
+		});
+
+		it('renders the theme toggler when enabled', () => {
+			renderWithTheme({
+				showHeader: true,
+				showThemeToggler: true,
+				theme: 'light'
+			});
+
+			expect(
+				screen.getByRole('button', { name: /switch to dark mode/i })
+			).toBeInTheDocument();
+		});
+
+		it('calls onThemeToggle when the theme toggler is clicked', () => {
+			const onThemeToggle = jest.fn();
+
+			renderWithTheme({
+				showHeader: true,
+				showThemeToggler: true,
+				onThemeToggle,
+				theme: 'dark'
+			});
+
+			fireEvent.click(
+				screen.getByRole('button', { name: /switch to light mode/i })
+			);
+
+			expect(onThemeToggle).toHaveBeenCalledTimes(1);
 		});
 	});
 
