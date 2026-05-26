@@ -82,6 +82,7 @@ interface AppNavbarProps {
 		onClick?: () => void;
 		type: 'profile' | 'divider';
 		disabled?: boolean;
+		tooltip?: string;
 	}>;
 }
 
@@ -486,8 +487,13 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 
 							if (d.type === 'profile') {
 								return (
-									<Stack
+									<Tooltip
 										key={d.key}
+										title={d.tooltip || ''}
+										disableHoverListener={!d.tooltip}
+										arrow
+									>
+										<Stack
 										direction='row'
 										onClick={d.disabled ? undefined : d.onClick}
 										sx={{
@@ -556,6 +562,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 											</Typography>
 										</Box>
 									</Stack>
+									</Tooltip>
 								);
 							}
 

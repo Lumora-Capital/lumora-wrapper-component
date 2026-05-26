@@ -165,6 +165,7 @@ export declare interface LumoraWrapperProps {
         onClick?: () => void;
         type: 'profile' | 'divider';
         disabled?: boolean;
+        tooltip?: string;
     }>;
     customNavbar?: default_2.ComponentType<any>;
     customNavbarProps?: Record<string, any>;
