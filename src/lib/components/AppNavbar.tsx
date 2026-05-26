@@ -81,6 +81,7 @@ interface AppNavbarProps {
 		avatar?: string;
 		onClick?: () => void;
 		type: 'profile' | 'divider';
+		disabled?: boolean;
 	}>;
 }
 
@@ -488,16 +489,20 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 									<Stack
 										key={d.key}
 										direction='row'
-										onClick={d.onClick}
+										onClick={d.disabled ? undefined : d.onClick}
 										sx={{
 											alignItems: 'center',
 											gap: 1,
-											cursor: 'pointer',
+											cursor: d.disabled ? 'not-allowed' : 'pointer',
 											borderRadius: '8px',
 											padding: '4px 8px',
-											'&:hover': {
-												backgroundColor: 'action.hover'
-											}
+											opacity: d.disabled ? 0.5 : 1,
+											transition: 'opacity 0.2s',
+											...(!d.disabled && {
+												'&:hover': {
+													backgroundColor: 'action.hover'
+												}
+											})
 										}}
 									>
 										{d.avatar ? (

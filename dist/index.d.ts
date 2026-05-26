@@ -164,6 +164,7 @@ export declare interface LumoraWrapperProps {
         avatar?: string;
         onClick?: () => void;
         type: 'profile' | 'divider';
+        disabled?: boolean;
     }>;
     customNavbar?: default_2.ComponentType<any>;
     customNavbarProps?: Record<string, any>;
