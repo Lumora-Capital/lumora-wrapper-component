@@ -116,6 +116,7 @@ export interface LumoraWrapperProps {
 		avatar?: string;
 		onClick?: () => void;
 		type: 'profile' | 'divider';
+		disabled?: boolean;
 	}>;
 	// Custom navbar component (replaces search bar)
 	customNavbar?: React.ComponentType<any>;
