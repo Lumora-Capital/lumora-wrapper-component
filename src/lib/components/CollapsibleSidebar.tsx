@@ -470,13 +470,26 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			);
 		}
 
-		// Leaf: single icon with a label tooltip.
-		return renderCollapsedIcon(
-			link.text,
-			link.text,
-			link.icon,
-			Boolean(link.path && activePath === link.path),
-			link.path ? () => handleClick(link.path!) : undefined
+		// Leaf: single icon with a label tooltip. Wrapped in a full-width,
+		// center-justified row so it lines up with the (full-width) group items
+		// regardless of the Stack's alignment or any host-app icon-button styles.
+		return (
+			<Box
+				key={link.text}
+				sx={{
+					width: '100%',
+					display: 'flex',
+					justifyContent: 'center'
+				}}
+			>
+				{renderCollapsedIcon(
+					link.text,
+					link.text,
+					link.icon,
+					Boolean(link.path && activePath === link.path),
+					link.path ? () => handleClick(link.path!) : undefined
+				)}
+			</Box>
 		);
 	};
 
