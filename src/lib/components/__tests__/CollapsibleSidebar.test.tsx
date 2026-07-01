@@ -1,8 +1,11 @@
 import { Business, Home, People, Settings } from '@mui/icons-material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import * as React from 'react';
 import CollapsibleSidebar from '../CollapsibleSidebar';
 import type { SidebarLink } from '../LumoraWrapper';
 import { fireEvent, render, screen } from './testUtils';
+
+const darkTheme = createTheme({ palette: { mode: 'dark' } });
 
 const mainLinks: SidebarLink[] = [
 	{ text: 'Dashboard', path: '/dashboard', icon: <Home /> },
@@ -151,6 +154,41 @@ describe('CollapsibleSidebar', () => {
 				'data-active',
 				'false'
 			);
+		});
+	});
+
+	describe('light / dark mode', () => {
+		it('defaults the surface to white in light mode', () => {
+			renderSidebar({ collapsed: false });
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
+				backgroundColor: 'rgb(255, 255, 255)'
+			});
+		});
+
+		it('defaults the surface to the theme paper color in dark mode', () => {
+			render(
+				<ThemeProvider theme={darkTheme}>
+					<CollapsibleSidebar mainLinks={mainLinks} />
+				</ThemeProvider>
+			);
+			// MUI dark palette background.paper is #121212
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
+				backgroundColor: 'rgb(18, 18, 18)'
+			});
+		});
+
+		it('lets surfaceBackgroundColor override the theme default', () => {
+			render(
+				<ThemeProvider theme={darkTheme}>
+					<CollapsibleSidebar
+						mainLinks={mainLinks}
+						surfaceBackgroundColor='#123456'
+					/>
+				</ThemeProvider>
+			);
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
+				backgroundColor: 'rgb(18, 52, 86)'
+			});
 		});
 	});
 

@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -23,86 +23,86 @@ storeAuthTokens('demo-access-token', 'demo-refresh-token', {
 	role: 'Admin'
 });
 
-// Create theme using the comprehensive design system
-const theme = createTheme(getDesignTokens('light'), {
-	components: {
-		MuiCssBaseline: {
-			styleOverrides: {
-				'*': {
-					// Webkit scrollbar styling
-					'&::-webkit-scrollbar': {
-						width: '8px',
-						height: '8px'
-					},
-					'&::-webkit-scrollbar-track': {
-						background: 'transparent'
-					},
-					'&::-webkit-scrollbar-thumb': {
-						background: 'rgba(0, 0, 0, 0.1)',
-						borderRadius: '4px',
-						'&:hover': {
-							background: 'rgba(0, 0, 0, 0.2)'
-						}
-					},
-					'&::-webkit-scrollbar-corner': {
-						background: 'transparent'
-					},
-					// Firefox scrollbar styling
-					scrollbarWidth: 'thin',
-					scrollbarColor: 'rgba(0, 0, 0, 0.1) transparent'
-				}
-			}
-		},
-		MuiDataGrid: {
-			styleOverrides: {
-				root: ({ theme }: { theme: any }) => ({
-					border: 'none',
-					'& .MuiDataGrid-cell': {
-						borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`
-					},
-					'& .MuiDataGrid-columnHeaders': {
-						borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
-						backgroundColor: (theme.vars || theme).palette
-							.background.paper
-					},
-					'& .MuiDataGrid-columnHeader': {
-						fontWeight: 600,
-						color: (theme.vars || theme).palette.text.primary
-					},
-					'& .MuiDataGrid-row': {
-						'&:hover': {
-							backgroundColor: (theme.vars || theme).palette
-								.action.hover
-						},
-						'&.Mui-selected': {
-							backgroundColor: (theme.vars || theme).palette
-								.action.selected,
-							'&:hover': {
-								backgroundColor: (theme.vars || theme).palette
-									.action.selected
-							}
-						}
-					},
-					'& .MuiDataGrid-footerContainer': {
-						borderTop: `1px solid ${(theme.vars || theme).palette.divider}`,
-						backgroundColor: (theme.vars || theme).palette
-							.background.paper
-					},
-					...theme.applyStyles('dark', {
-						'& .MuiDataGrid-columnHeaders': {
-							backgroundColor: (theme.vars || theme).palette
-								.background.paper
-						},
-						'& .MuiDataGrid-footerContainer': {
-							backgroundColor: (theme.vars || theme).palette
-								.background.paper
-						}
-					})
-				})
+// Component overrides shared across light/dark themes. The palette comes from
+// getDesignTokens(mode); these overrides read from the active theme via
+// theme.vars/applyStyles so they adapt automatically.
+const themeComponents = {
+	MuiCssBaseline: {
+		styleOverrides: {
+			'*': {
+				// Webkit scrollbar styling
+				'&::-webkit-scrollbar': {
+					width: '8px',
+					height: '8px'
+				},
+				'&::-webkit-scrollbar-track': {
+					background: 'transparent'
+				},
+				'&::-webkit-scrollbar-thumb': {
+					background: 'rgba(0, 0, 0, 0.1)',
+					borderRadius: '4px',
+					'&:hover': {
+						background: 'rgba(0, 0, 0, 0.2)'
+					}
+				},
+				'&::-webkit-scrollbar-corner': {
+					background: 'transparent'
+				},
+				// Firefox scrollbar styling
+				scrollbarWidth: 'thin',
+				scrollbarColor: 'rgba(0, 0, 0, 0.1) transparent'
 			}
 		}
+	},
+	MuiDataGrid: {
+		styleOverrides: {
+			root: ({ theme }: { theme: any }) => ({
+				border: 'none',
+				'& .MuiDataGrid-cell': {
+					borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`
+				},
+				'& .MuiDataGrid-columnHeaders': {
+					borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
+					backgroundColor: (theme.vars || theme).palette.background
+						.paper
+				},
+				'& .MuiDataGrid-columnHeader': {
+					fontWeight: 600,
+					color: (theme.vars || theme).palette.text.primary
+				},
+				'& .MuiDataGrid-row': {
+					'&:hover': {
+						backgroundColor: (theme.vars || theme).palette.action
+							.hover
+					},
+					'&.Mui-selected': {
+						backgroundColor: (theme.vars || theme).palette.action
+							.selected,
+						'&:hover': {
+							backgroundColor: (theme.vars || theme).palette
+								.action.selected
+						}
+					}
+				},
+				'& .MuiDataGrid-footerContainer': {
+					borderTop: `1px solid ${(theme.vars || theme).palette.divider}`,
+					backgroundColor: (theme.vars || theme).palette.background
+						.paper
+				},
+				...theme.applyStyles('dark', {
+					'& .MuiDataGrid-columnHeaders': {
+						backgroundColor: (theme.vars || theme).palette
+							.background.paper
+					},
+					'& .MuiDataGrid-footerContainer': {
+						backgroundColor: (theme.vars || theme).palette
+							.background.paper
+					}
+				})
+			})
+		}
 	}
-});
+};
 
 // Demo links for the collapsible sidebar variant (mirrors the mockup)
 const collapsibleMainLinks: SidebarLink[] = [
@@ -287,8 +287,20 @@ const DemoContent = () => (
 	</div>
 );
 
-createRoot(document.getElementById('root')!).render(
-	<StrictMode>
+// Demo app owns the theme mode so the navbar theme toggler actually switches
+// the palette. The mode drives both the outer MUI ThemeProvider and the
+// LumoraWrapper `theme` prop (which builds its own themed subtree internally).
+const DemoApp = () => {
+	const [mode, setMode] = useState<'light' | 'dark'>('light');
+	const theme = useMemo(
+		() =>
+			createTheme(getDesignTokens(mode), { components: themeComponents }),
+		[mode]
+	);
+	const toggleTheme = () =>
+		setMode(prev => (prev === 'light' ? 'dark' : 'light'));
+
+	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
 			<LumoraWrapper
@@ -311,13 +323,15 @@ createRoot(document.getElementById('root')!).render(
 				enableRefreshToken={false}
 				apiBaseUrl='https://dev.api.lumora.capital'
 				showThemeToggler={true}
-				onThemeToggle={() => console.log('Theme toggled')}
-				theme='light'
+				onThemeToggle={toggleTheme}
+				theme={mode}
 				// Collapsible desktop sidebar variant (persists collapsed state)
 				sidebarVariant='collapsible'
 				sidebarSectionTitle='Environment'
 				accentColor='#01584f'
-				groupAccentColor='#d5e9e4'
+				// Light mode uses the mockup tint; dark mode falls back to the
+				// component's adaptive (translucent) default.
+				groupAccentColor={mode === 'light' ? '#d5e9e4' : undefined}
 				// Uncomment the lines below to test conditional rendering:
 				// showHeader={false}  // Hide the header completely
 				// showSidebar={false} // Hide the sidebar completely
@@ -326,5 +340,11 @@ createRoot(document.getElementById('root')!).render(
 				<DemoContent />
 			</LumoraWrapper>
 		</ThemeProvider>
+	);
+};
+
+createRoot(document.getElementById('root')!).render(
+	<StrictMode>
+		<DemoApp />
 	</StrictMode>
 );

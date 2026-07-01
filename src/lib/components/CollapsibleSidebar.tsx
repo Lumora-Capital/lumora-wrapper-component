@@ -10,6 +10,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
@@ -79,6 +80,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX
 }) => {
+	const theme = useTheme();
+	const isDark = theme.palette.mode === 'dark';
 	const isControlled = collapsedProp !== undefined;
 
 	// Uncontrolled: restore from localStorage on first render (SSR-safe).
@@ -95,7 +98,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const activeAccent = activeAccentColor;
 	const activeFg = activeForegroundColor ?? getContrastText(activeAccent);
 	const groupTint = groupAccentColor ?? deriveGroupTint(activeAccent);
-	const surface = surfaceBackgroundColor ?? '#ffffff';
+	// Surface defaults to white in light mode and the theme's paper (dark chrome)
+	// in dark mode; overridable via surfaceBackgroundColor.
+	const surface =
+		surfaceBackgroundColor ??
+		(isDark ? theme.palette.background.paper : '#ffffff');
+	// Accent-colored chrome (brand title, toggle, logo, inactive icons) uses the
+	// brand accent in light mode (per the mockup); in dark mode the accent is too
+	// dim on the dark surface, so fall back to the theme's primary text color.
+	const accentOnSurface = isDark ? 'text.primary' : activeAccent;
 
 	const setCollapsed = (next: boolean) => {
 		if (!isControlled) {
@@ -131,7 +142,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					color: active ? activeFg : 'text.primary',
 					bgcolor: active ? activeAccent : 'transparent',
 					'& .MuiListItemIcon-root': {
-						color: active ? activeFg : activeAccent,
+						color: active ? activeFg : accentOnSurface,
 						minWidth: 36
 					},
 					'&:hover': {
@@ -172,7 +183,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						color: parentActive ? activeFg : 'text.primary',
 						bgcolor: parentActive ? activeAccent : 'transparent',
 						'& .MuiListItemIcon-root': {
-							color: parentActive ? activeFg : activeAccent,
+							color: parentActive ? activeFg : accentOnSurface,
 							minWidth: 36
 						},
 						'&:hover': {
@@ -220,7 +231,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					color: active ? activeFg : 'text.primary',
 					bgcolor: active ? activeAccent : 'transparent',
 					'& .MuiListItemIcon-root': {
-						color: active ? activeFg : activeAccent,
+						color: active ? activeFg : accentOnSurface,
 						minWidth: 32
 					},
 					'&:hover': {
@@ -260,7 +271,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				sx={{
 					width: 44,
 					height: 44,
-					color: active ? activeFg : activeAccent,
+					color: active ? activeFg : accentOnSurface,
 					bgcolor: active ? activeAccent : 'transparent',
 					borderRadius: active ? '8px' : '50%',
 					'&:hover': {
@@ -396,7 +407,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							fontSize: '20px',
 							lineHeight: 1,
 							textTransform: 'uppercase',
-							color: activeAccent,
+							color: accentOnSurface,
 							whiteSpace: 'nowrap',
 							overflow: 'hidden',
 							textOverflow: 'ellipsis'
@@ -412,7 +423,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							display: 'flex',
 							alignItems: 'center',
 							flexShrink: 0,
-							color: activeAccent,
+							color: accentOnSurface,
 							'& svg': { color: 'inherit', fill: 'currentColor' }
 						}}
 					>
@@ -455,7 +466,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						}
 						data-testid='sidebar-toggle'
 						onClick={() => setCollapsed(!collapsed)}
-						sx={{ color: activeAccent }}
+						disableFocusRipple
+						sx={{
+							color: accentOnSurface,
+							'&:focus, &:focus-visible': { outline: 'none' }
+						}}
 					>
 						{collapsed ? (
 							<KeyboardDoubleArrowRightRounded fontSize='small' />

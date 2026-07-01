@@ -235,7 +235,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				width: 28,
 				height: 28,
 				flexShrink: 0,
-				bgcolor: resolvedAccentColor,
+				// Accent in light mode; a legible light fill in dark mode.
+				bgcolor: isDark ? '#ffffff' : resolvedAccentColor,
 				maskImage: 'url(/lumora-logo.svg)',
 				maskRepeat: 'no-repeat',
 				maskPosition: 'center',
