@@ -197,7 +197,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					borderRadius: '6px',
 					py: 1,
 					px: 1.5,
-					color: active ? activeFg : 'text.primary',
+					color: active ? activeFg : accentOnSurface,
 					bgcolor: active ? activeAccent : 'transparent',
 					'& .MuiListItemIcon-root': {
 						color: active ? activeFg : accentOnSurface,
@@ -247,7 +247,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						borderRadius: '6px',
 						py: 1,
 						px: 1.5,
-						color: parentActive ? activeFg : 'text.primary',
+						color: parentActive ? activeFg : accentOnSurface,
 						bgcolor: parentActive ? activeAccent : 'transparent',
 						'& .MuiListItemIcon-root': {
 							color: parentActive ? activeFg : accentOnSurface,
@@ -294,7 +294,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					mx: 0.5,
 					py: 0.75,
 					pl: 4,
-					color: active ? activeFg : 'text.primary',
+					color: active ? activeFg : accentOnSurface,
 					bgcolor: active ? activeAccent : 'transparent',
 					'& .MuiListItemIcon-root': {
 						color: active ? activeFg : accentOnSurface,
@@ -514,7 +514,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							fontWeight: 600,
 							letterSpacing: '0.06em',
 							textTransform: 'uppercase',
-							color: 'text.primary'
+							color: accentOnSurface
 						}}
 					>
 						{sectionTitle}
