@@ -27,6 +27,64 @@ const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
 
+/**
+ * Expanded-row label that ellipsizes when it overflows and reveals the full text
+ * as a tooltip only while truncated (same pattern as MenuContent's rail caption).
+ */
+const TruncatingLabel: React.FC<{ text: string }> = ({ text }) => {
+	const ref = React.useRef<HTMLSpanElement>(null);
+	const [truncated, setTruncated] = React.useState(false);
+
+	const measure = React.useCallback(() => {
+		const el = ref.current;
+		if (!el) {
+			return;
+		}
+		setTruncated(el.scrollWidth > el.clientWidth + 0.5);
+	}, []);
+
+	React.useLayoutEffect(() => {
+		measure();
+	}, [measure, text]);
+
+	React.useEffect(() => {
+		const el = ref.current;
+		if (!el) {
+			return undefined;
+		}
+		const ro = new ResizeObserver(() => measure());
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [measure]);
+
+	return (
+		<Tooltip
+			title={text}
+			placement='right'
+			arrow
+			enterDelay={400}
+			disableHoverListener={!truncated}
+			disableFocusListener={!truncated}
+			disableTouchListener={!truncated}
+		>
+			<Typography
+				ref={ref}
+				component='span'
+				variant='body1'
+				sx={{
+					display: 'block',
+					overflow: 'hidden',
+					textOverflow: 'ellipsis',
+					whiteSpace: 'nowrap',
+					color: 'inherit'
+				}}
+			>
+				{text}
+			</Typography>
+		</Tooltip>
+	);
+};
+
 export interface CollapsibleSidebarProps {
 	mainLinks: SidebarLink[];
 	/** Bottom group; rendered after a divider and pinned to the bottom. */
@@ -155,8 +213,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			>
 				<ListItemIcon>{link.icon}</ListItemIcon>
 				<ListItemText
-					primary={link.text}
-					primaryTypographyProps={{ noWrap: true }}
+					disableTypography
+					primary={<TruncatingLabel text={link.text} />}
 				/>
 			</ListItemButton>
 		);
@@ -166,8 +224,17 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
 		const showChildren = groupActive || Boolean(openGroups[link.text]);
+		// When the group is open, parent + children share one tinted container so
+		// the parent reads as part of the active group (matches the collapsed rail).
 		return (
-			<Box key={link.text} data-testid={`sidebar-group-${link.text}`}>
+			<Box
+				key={link.text}
+				data-testid={`sidebar-group-${link.text}`}
+				sx={{
+					borderRadius: '6px',
+					bgcolor: showChildren ? groupTint : 'transparent'
+				}}
+			>
 				<ListItemButton
 					onClick={() =>
 						link.path
@@ -187,25 +254,24 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							minWidth: 36
 						},
 						'&:hover': {
-							bgcolor: parentActive ? activeAccent : groupTint
+							bgcolor: parentActive
+								? activeAccent
+								: showChildren
+									? 'transparent'
+									: groupTint
 						}
 					}}
 				>
 					<ListItemIcon>{link.icon}</ListItemIcon>
 					<ListItemText
-						primary={link.text}
-						primaryTypographyProps={{ noWrap: true }}
+						disableTypography
+						primary={<TruncatingLabel text={link.text} />}
 					/>
 				</ListItemButton>
 				<Collapse in={showChildren} timeout='auto' unmountOnExit>
 					<Box
 						data-testid={`sidebar-children-${link.text}`}
-						sx={{
-							mt: 0.5,
-							borderRadius: '6px',
-							bgcolor: groupTint,
-							py: 0.5
-						}}
+						sx={{ pb: 0.5 }}
 					>
 						{link.subitems!.map(sub => renderExpandedChild(sub))}
 					</Box>
@@ -244,8 +310,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			>
 				{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
 				<ListItemText
-					primary={sub.text}
-					primaryTypographyProps={{ noWrap: true }}
+					disableTypography
+					primary={<TruncatingLabel text={sub.text} />}
 				/>
 			</ListItemButton>
 		);

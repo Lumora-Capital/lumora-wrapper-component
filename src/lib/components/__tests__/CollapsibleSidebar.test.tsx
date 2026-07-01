@@ -157,6 +157,34 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
+	describe('truncated label tooltips', () => {
+		// jsdom has no layout, so simulate an overflowing label.
+		beforeEach(() => {
+			Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+				configurable: true,
+				get: () => 500
+			});
+			Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+				configurable: true,
+				get: () => 100
+			});
+		});
+		afterEach(() => {
+			delete (HTMLElement.prototype as { scrollWidth?: number })
+				.scrollWidth;
+			delete (HTMLElement.prototype as { clientWidth?: number })
+				.clientWidth;
+		});
+
+		it('reveals the full label as a tooltip when an expanded label is truncated', async () => {
+			renderSidebar({ collapsed: false });
+			fireEvent.mouseOver(screen.getByText('Dashboard'));
+			expect(await screen.findByRole('tooltip')).toHaveTextContent(
+				'Dashboard'
+			);
+		});
+	});
+
 	describe('light / dark mode', () => {
 		it('defaults the surface to white in light mode', () => {
 			renderSidebar({ collapsed: false });
