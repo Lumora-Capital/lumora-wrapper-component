@@ -1,3 +1,5 @@
+import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
+import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardDoubleArrowLeftRounded from '@mui/icons-material/KeyboardDoubleArrowLeftRounded';
 import KeyboardDoubleArrowRightRounded from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
 import Box from '@mui/material/Box';
@@ -26,8 +28,10 @@ const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
-/** Grace period before an inactive group collapses again after the pointer leaves. */
-const HOVER_CLOSE_DELAY_MS = 180;
+/** Chevron indicator size; kept clearly smaller than the item's own icon. */
+const CHEVRON_FONT_SIZE_PX = 16;
+/** Subtler chevron beneath the icon on the narrow collapsed rail. */
+const CHEVRON_FONT_SIZE_RAIL_PX = 14;
 
 /**
  * Expanded-row label that ellipsizes when it overflows and reveals the full text
@@ -87,57 +91,16 @@ const TruncatingLabel: React.FC<{ text: string }> = ({ text }) => {
 	);
 };
 
-/**
- * Group wrapper that exposes a `hovered` flag to its render-prop so a parent can
- * reveal its child group on hover/focus, then hide it again after a short grace
- * period once the pointer leaves. Shared by the collapsed rail (inline icon stack)
- * and the expanded panel (indented child list).
- */
-const HoverRevealGroup: React.FC<{
-	testId: string;
-	children: (hovered: boolean) => React.ReactNode;
-}> = ({ testId, children }) => {
-	const [hovered, setHovered] = React.useState(false);
-	const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-		null
+/** Small up/down chevron marking a parent that has a collapsible child group. */
+const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
+	open,
+	size = CHEVRON_FONT_SIZE_PX
+}) =>
+	open ? (
+		<KeyboardArrowUpRounded sx={{ fontSize: size, opacity: 0.75 }} />
+	) : (
+		<KeyboardArrowDownRounded sx={{ fontSize: size, opacity: 0.75 }} />
 	);
-
-	const cancelClose = () => {
-		if (closeTimerRef.current) {
-			clearTimeout(closeTimerRef.current);
-			closeTimerRef.current = null;
-		}
-	};
-
-	const open = () => {
-		cancelClose();
-		setHovered(true);
-	};
-
-	const scheduleClose = () => {
-		cancelClose();
-		closeTimerRef.current = setTimeout(() => {
-			setHovered(false);
-			closeTimerRef.current = null;
-		}, HOVER_CLOSE_DELAY_MS);
-	};
-
-	// Clear a pending timer if we unmount mid-close.
-	React.useEffect(() => cancelClose, []);
-
-	return (
-		<Box
-			data-testid={testId}
-			sx={{ width: '100%' }}
-			onMouseEnter={open}
-			onMouseLeave={scheduleClose}
-			onFocus={open}
-			onBlur={scheduleClose}
-		>
-			{children(hovered)}
-		</Box>
-	);
-};
 
 export interface CollapsibleSidebarProps {
 	mainLinks: SidebarLink[];
@@ -232,9 +195,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		onLinkClick?.(path);
 	};
 
-	const toggleGroup = (key: string) => {
-		setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+	// Explicit toggle: pass the group's current open state so an auto-opened
+	// active group can also be collapsed by the user.
+	const toggleGroup = (key: string, open: boolean) => {
+		setOpenGroups(prev => ({ ...prev, [key]: !open }));
 	};
+
+	// Active groups auto-open; once the user toggles, their choice wins.
+	const isGroupOpen = (link: SidebarLink) =>
+		openGroups[link.text] ?? isSidebarLinkActive(link, activePath);
 
 	// --- Expanded rows -----------------------------------------------------
 	const renderExpandedLeaf = (link: SidebarLink) => {
@@ -275,29 +244,28 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	};
 
 	const renderExpandedGroup = (link: SidebarLink) => {
+		// The tinted group container is reserved for the active group (the current
+		// URL is the parent or one of its sub-items); a merely toggled-open group
+		// reveals its children without the accent background.
 		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
-		// Active/toggled groups stay open; otherwise the group reveals on hover.
-		const forcedOpen = groupActive || Boolean(openGroups[link.text]);
+		// Clicking the parent row toggles its child group open/closed.
+		const open = isGroupOpen(link);
 
-		// When open, parent + children share one tinted container so the parent
-		// reads as part of the group (matches the collapsed rail).
-		const renderContent = (showChildren: boolean) => (
+		return (
 			<Box
+				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
 				sx={{
 					borderRadius: '6px',
-					bgcolor: showChildren ? groupTint : 'transparent'
+					bgcolor: groupActive ? groupTint : 'transparent'
 				}}
 			>
 				<ListItemButton
-					onClick={() =>
-						link.path
-							? handleClick(link.path)
-							: toggleGroup(link.text)
-					}
+					onClick={() => toggleGroup(link.text, open)}
 					data-testid={`sidebar-item-${link.text}`}
 					data-active={parentActive ? 'true' : 'false'}
+					aria-expanded={open}
 					sx={{
 						borderRadius: '6px',
 						py: 1,
@@ -309,11 +277,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							minWidth: 36
 						},
 						'&:hover': {
-							bgcolor: parentActive
-								? activeAccent
-								: showChildren
-									? 'transparent'
-									: groupTint
+							bgcolor: parentActive ? activeAccent : groupTint
 						}
 					}}
 				>
@@ -322,8 +286,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						disableTypography
 						primary={<TruncatingLabel text={link.text} />}
 					/>
+					<GroupChevron open={open} />
 				</ListItemButton>
-				<Collapse in={showChildren} timeout='auto' unmountOnExit>
+				<Collapse in={open} timeout='auto' unmountOnExit>
 					<Box
 						data-testid={`sidebar-children-${link.text}`}
 						sx={{ pb: 0.5 }}
@@ -332,15 +297,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Box>
 				</Collapse>
 			</Box>
-		);
-
-		return (
-			<HoverRevealGroup
-				key={link.text}
-				testId={`sidebar-group-hover-${link.text}`}
-			>
-				{hovered => renderContent(forcedOpen || hovered)}
-			</HoverRevealGroup>
 		);
 	};
 
@@ -424,26 +380,46 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		);
 	};
 
-	// A collapsed parent group: just the parent icon when not expanded, or the
-	// tinted stacked group (parent + child icons) inline on the rail when it is.
-	const renderCollapsedGroup = (link: SidebarLink, expanded: boolean) => {
+	// A collapsed parent group: the parent icon with a small chevron beneath it
+	// marking that it has children. The icon + chevron share one button so the
+	// active (solid) and hover (tint) background covers the chevron too. Clicking
+	// toggles the inline stack of child icons.
+	const renderCollapsedGroup = (link: SidebarLink, open: boolean) => {
+		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
-		const parentIcon = renderCollapsedIcon(
-			link.text,
-			link.text,
-			link.icon,
-			parentActive,
-			link.path
-				? () => handleClick(link.path!)
-				: expanded
-					? undefined
-					: () => setCollapsed(false),
-			{ insideGroup: true }
-		);
 
-		if (!expanded) {
-			return parentIcon;
-		}
+		const parentButton = (
+			<Tooltip title={link.text} placement='right' arrow>
+				<IconButton
+					aria-label={link.text}
+					aria-expanded={open}
+					onClick={() => toggleGroup(link.text, open)}
+					data-testid={`sidebar-item-${link.text}`}
+					data-active={parentActive ? 'true' : 'false'}
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 0,
+						width: 44,
+						py: 0.75,
+						borderRadius: '10px',
+						color: parentActive ? activeFg : accentOnSurface,
+						bgcolor: parentActive ? activeAccent : 'transparent',
+						// The outer pill supplies the hover tint; keep only the
+						// solid active fill on the button itself.
+						'&:hover': {
+							bgcolor: parentActive ? activeAccent : 'transparent'
+						}
+					}}
+				>
+					{link.icon}
+					<GroupChevron
+						open={open}
+						size={CHEVRON_FONT_SIZE_RAIL_PX}
+					/>
+				</IconButton>
+			</Tooltip>
+		);
 
 		return (
 			<Box
@@ -451,28 +427,32 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				sx={{
 					width: '100%',
 					borderRadius: '10px',
-					bgcolor: groupTint,
 					py: 0.5,
 					display: 'flex',
 					flexDirection: 'column',
 					alignItems: 'center',
-					gap: 0.5
+					gap: 0.5,
+					// The active group's pill stays tinted; any group tints on hover.
+					bgcolor: groupActive ? groupTint : 'transparent',
+					'&:hover': { bgcolor: groupTint }
 				}}
 			>
-				{parentIcon}
-				{link.subitems!.map(sub =>
-					renderCollapsedIcon(
-						sub.path,
-						sub.text,
-						sub.icon ?? link.icon,
-						isSubLinkActive(sub, activePath),
-						() => handleClick(sub.path),
-						{
-							insideGroup: true,
-							testId: `sidebar-subitem-${sub.text}`
-						}
-					)
-				)}
+				{parentButton}
+				{open
+					? link.subitems!.map(sub =>
+							renderCollapsedIcon(
+								sub.path,
+								sub.text,
+								sub.icon ?? link.icon,
+								isSubLinkActive(sub, activePath),
+								() => handleClick(sub.path),
+								{
+									insideGroup: true,
+									testId: `sidebar-subitem-${sub.text}`
+								}
+							)
+						)
+					: null}
 			</Box>
 		);
 	};
@@ -481,23 +461,12 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const hasChildren = Boolean(link.subitems?.length);
 
 		if (hasChildren) {
-			// Active group is pinned open inline; an inactive group reveals the
-			// same inline child stack on hover/focus (no separate popup panel).
-			const groupActive = isSidebarLinkActive(link, activePath);
-			if (groupActive) {
-				return (
-					<React.Fragment key={link.text}>
-						{renderCollapsedGroup(link, true)}
-					</React.Fragment>
-				);
-			}
+			// Clicking the parent toggles its inline child stack on the rail;
+			// active groups start open.
 			return (
-				<HoverRevealGroup
-					key={link.text}
-					testId={`sidebar-group-hover-${link.text}`}
-				>
-					{hovered => renderCollapsedGroup(link, hovered)}
-				</HoverRevealGroup>
+				<React.Fragment key={link.text}>
+					{renderCollapsedGroup(link, isGroupOpen(link))}
+				</React.Fragment>
 			);
 		}
 
@@ -637,7 +606,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			</Stack>
 
 			{/* Main links */}
-			<Stack spacing={0.5} sx={{ width: '100%' }}>
+			<Stack
+				spacing={0.5}
+				sx={{
+					width: '100%',
+					alignItems: collapsed ? 'center' : 'stretch'
+				}}
+			>
 				{mainLinks.map(link => renderItem(link))}
 			</Stack>
 
@@ -645,7 +620,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			{secondaryLinks.length > 0 ? (
 				<Box sx={{ mt: 'auto', pt: 2 }}>
 					<Divider sx={{ mb: 1, borderColor: 'divider' }} />
-					<Stack spacing={0.5} sx={{ width: '100%' }}>
+					<Stack
+						spacing={0.5}
+						sx={{
+							width: '100%',
+							alignItems: collapsed ? 'center' : 'stretch'
+						}}
+					>
 						{secondaryLinks.map(link => renderItem(link))}
 					</Stack>
 				</Box>

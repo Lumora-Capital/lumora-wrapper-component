@@ -157,31 +157,34 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
-	describe('collapsed group hover', () => {
-		it('reveals an inactive parent’s sub-items inline on the rail on hover when collapsed', async () => {
+	describe('collapsed group toggle', () => {
+		it('reveals an inactive parent’s sub-items inline on the rail on click when collapsed', () => {
 			renderSidebar({ collapsed: true, activePath: '/dashboard' });
 
-			// CRM is not the active group, so its children are not on the rail
-			expect(
-				screen.queryByTestId('sidebar-group-CRM')
-			).not.toBeInTheDocument();
+			// CRM is not the active group, so its children are not on the rail yet
 			expect(
 				screen.queryByTestId('sidebar-subitem-People')
 			).not.toBeInTheDocument();
 
-			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
 
-			// The same tinted inline group appears — no separate popup panel
-			const group = await screen.findByTestId('sidebar-group-CRM');
+			// The tinted inline group now shows the child icons — no popup panel
+			const group = screen.getByTestId('sidebar-group-CRM');
 			expect(
 				within(group).getByTestId('sidebar-subitem-People')
 			).toBeInTheDocument();
 			expect(
 				within(group).getByTestId('sidebar-subitem-Company')
 			).toBeInTheDocument();
+
+			// Clicking the parent again collapses the stack
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			expect(
+				screen.queryByTestId('sidebar-subitem-People')
+			).not.toBeInTheDocument();
 		});
 
-		it('navigates when an inline sub-item is clicked after hover', async () => {
+		it('navigates when an inline sub-item is clicked after opening', () => {
 			const onLinkClick = jest.fn();
 			renderSidebar({
 				collapsed: true,
@@ -189,32 +192,58 @@ describe('CollapsibleSidebar', () => {
 				onLinkClick
 			});
 
-			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
-			const people = await screen.findByTestId('sidebar-subitem-People');
-			fireEvent.click(people);
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			fireEvent.click(screen.getByTestId('sidebar-subitem-People'));
 
 			expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
 		});
 	});
 
-	describe('expanded group hover', () => {
-		it('reveals an inactive parent’s children inline on hover in the expanded panel', async () => {
+	describe('expanded group toggle', () => {
+		it('reveals an inactive parent’s children inline on click in the expanded panel', () => {
 			renderSidebar({ collapsed: false, activePath: '/dashboard' });
 
-			// CRM is not active, so its child group is collapsed (unmounted)
+			// CRM is not active, so its child group starts collapsed (unmounted)
 			expect(
 				screen.queryByTestId('sidebar-children-CRM')
 			).not.toBeInTheDocument();
 
-			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
 
-			const children = await screen.findByTestId('sidebar-children-CRM');
+			const children = screen.getByTestId('sidebar-children-CRM');
 			expect(
 				within(children).getByTestId('sidebar-subitem-People')
 			).toBeInTheDocument();
 			expect(
 				within(children).getByTestId('sidebar-subitem-Company')
 			).toBeInTheDocument();
+
+			// The parent row advertises its expanded state for assistive tech
+			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
+				'aria-expanded',
+				'true'
+			);
+		});
+
+		it('collapses an auto-opened active group when its parent is clicked', () => {
+			renderSidebar({ collapsed: false, activePath: '/crm' });
+
+			// Active group starts open
+			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
+				'aria-expanded',
+				'true'
+			);
+			expect(
+				screen.getByTestId('sidebar-children-CRM')
+			).toBeInTheDocument();
+
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+
+			// The group is now marked collapsed (the child block animates out)
+			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
+				'aria-expanded',
+				'false'
+			);
 		});
 	});
 
