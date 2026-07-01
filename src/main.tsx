@@ -11,7 +11,17 @@ import {
 	People as PeopleIcon
 } from '@mui/icons-material';
 import './index.css';
-import { LumoraWrapper, type SidebarLink } from './lib';
+import { LumoraWrapper, storeAuthTokens, type SidebarLink } from './lib';
+
+// Seed a fake session so the demo renders. LumoraWrapper checks localStorage
+// for auth tokens on mount and redirects to login when none are found, which
+// leaves the page blank in a fresh browser. This gives it a demo session.
+storeAuthTokens('demo-access-token', 'demo-refresh-token', {
+	name: 'Riley Carter',
+	email: 'riley@email.com',
+	profilePicture: '/static/images/avatar/7.jpg',
+	role: 'Admin'
+});
 
 // Create theme using the comprehensive design system
 const theme = createTheme(getDesignTokens('light'), {
@@ -94,63 +104,39 @@ const theme = createTheme(getDesignTokens('light'), {
 	}
 });
 
-// Demo sidebar links - Main navigation
-const demoMainLinks: SidebarLink[] = [
+// Demo links for the collapsible sidebar variant (mirrors the mockup)
+const collapsibleMainLinks: SidebarLink[] = [
 	{
-		text: 'Home',
-		path: '/home',
-		icon: <DashboardIcon />,
+		text: 'Dashboard',
+		path: '/dashboard',
+		icon: <DashboardIcon />
+	},
+	{
+		text: 'Deals',
+		path: '/deals',
+		icon: <AnalyticsIcon />
+	},
+	{
+		text: 'CRM',
+		path: '/crm',
+		icon: <AdbIcon />,
 		subitems: [
-			{
-				text: 'Home',
-				path: '/home-1',
-				icon: <DashboardIcon />
-			},
-			{
-				text: 'Not Home',
-				path: '/home-2',
-				icon: <DashboardIcon />
-			},
-			{
-				text: 'Not Home 2',
-				path: '/home',
-				icon: <DashboardIcon />
-			}
+			{ text: 'People', path: '/crm/people', icon: <PeopleIcon /> },
+			{ text: 'Company', path: '/crm/company', icon: <AnalyticsIcon /> }
 		]
 	},
 	{
-		text: 'Analytics',
-		path: '/analytics',
-		icon: <AnalyticsIcon />
-	},
-	{
-		text: 'Clients',
-		path: '/clients',
+		text: 'Funding Partners',
+		path: '/funding-partners',
 		icon: <PeopleIcon />
-	},
-	{
-		text: 'Tasks',
-		path: '/tasks',
-		icon: <AdbIcon />
 	}
 ];
 
-// Demo sidebar links - Secondary navigation
-const demoSecondaryLinks: SidebarLink[] = [
+const collapsibleSecondaryLinks: SidebarLink[] = [
 	{
-		text: 'Settings',
-		path: '/settings',
+		text: 'Configuration',
+		path: '/configuration',
 		icon: <SettingsIcon />
-	},
-	{
-		text: 'About',
-		path: '/about',
-		icon: <AnalyticsIcon />
-	},
-	{
-		text: 'Feedback',
-		path: '/feedback',
-		icon: <PeopleIcon />
 	}
 ];
 
@@ -306,11 +292,11 @@ createRoot(document.getElementById('root')!).render(
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
 			<LumoraWrapper
-				sidebarLinks={demoMainLinks}
-				secondarySidebarLinks={demoSecondaryLinks}
-				appName='Lumora Custom App'
+				sidebarLinks={collapsibleMainLinks}
+				secondarySidebarLinks={collapsibleSecondaryLinks}
+				appName='CENTRA'
 				pageName='Home'
-				activePath='/home'
+				activePath='/crm'
 				userName='Riley Carter'
 				userEmail='riley@email.com'
 				userAvatar='/static/images/avatar/7.jpg'
@@ -321,13 +307,17 @@ createRoot(document.getElementById('root')!).render(
 				onAccountClick={() => console.log('Account clicked')}
 				onSettingsClick={() => console.log('Settings clicked')}
 				onLinkClick={path => console.log('Link clicked:', path)}
+				redirectToLogin={() => console.log('Redirect to login')}
 				enableRefreshToken={false}
 				apiBaseUrl='https://dev.api.lumora.capital'
 				showThemeToggler={true}
 				onThemeToggle={() => console.log('Theme toggled')}
 				theme='light'
-				// Desktop rail: show link text under icons (widens the permanent drawer)
-				showSidebarRailTitles={true}
+				// Collapsible desktop sidebar variant (persists collapsed state)
+				sidebarVariant='collapsible'
+				sidebarSectionTitle='Environment'
+				accentColor='#01584f'
+				groupAccentColor='#d5e9e4'
 				// Uncomment the lines below to test conditional rendering:
 				// showHeader={false}  // Hide the header completely
 				// showSidebar={false} // Hide the sidebar completely

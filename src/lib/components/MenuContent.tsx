@@ -16,7 +16,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
-import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
+import type { SidebarLink } from './LumoraWrapper';
+import { isSidebarLinkActive, isSubLinkActive } from './sidebarUtils';
 
 const CLOSE_DELAY_MS = 180;
 /** Max width for rail subitem popover; longer labels truncate with ellipsis */
@@ -36,20 +37,6 @@ interface MenuContentProps {
 	/** Desktop rail only: show `link.text` under each icon */
 	railShowTitles?: boolean;
 }
-
-// Parent active if its path or any direct subitem path matches
-const isSidebarLinkActive = (link: SidebarLink, activePath?: string) => {
-	if (!activePath) {
-		return false;
-	}
-	if (link.path && activePath === link.path) {
-		return true;
-	}
-	return link.subitems?.some(s => s.path === activePath) ?? false;
-};
-
-const isSubLinkActive = (sub: SidebarSubLink, activePath?: string) =>
-	Boolean(activePath && sub.path === activePath);
 
 /** Caption under rail icon: MUI Tooltip only when text is truncated (ellipsis) */
 type RailTruncatingCaptionProps = {

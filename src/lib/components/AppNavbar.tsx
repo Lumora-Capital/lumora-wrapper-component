@@ -40,6 +40,8 @@ interface AppNavbarProps {
 	pageName?: string;
 	onMenuClick?: () => void;
 	showMenuButton?: boolean;
+	/** Show the logo + app name block. Off when branding lives in the sidebar. */
+	showBrand?: boolean;
 	headerStyles?: SxProps<Theme>;
 	// Right side content
 	userName?: string;
@@ -91,6 +93,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	pageName = 'Home',
 	onMenuClick,
 	showMenuButton = true,
+	showBrand = true,
 	headerStyles,
 	userName = 'User Name',
 	userEmail,
@@ -201,34 +204,36 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						</IconButton>
 					)}
 					{/* Logo */}
-					<Stack
-						direction='row'
-						sx={{
-							alignItems: 'center',
-							gap: 1,
-							flexShrink: 0
-						}}
-					>
-						<Typography
-							variant='h6'
+					{showBrand && (
+						<Stack
+							direction='row'
 							sx={{
-								color: navbarAccentColor,
-								fontWeight: 600,
-								fontSize: '20px',
-								lineHeight: 1,
-								textTransform: 'uppercase'
+								alignItems: 'center',
+								gap: 1,
+								flexShrink: 0
 							}}
 						>
-							{appName}
-						</Typography>
-						<img
-							src='/lumora-logo.svg'
-							alt='NEXA Logo'
-							width={24}
-							height={24}
-							style={{ flexShrink: 0 }}
-						/>
-					</Stack>
+							<Typography
+								variant='h6'
+								sx={{
+									color: navbarAccentColor,
+									fontWeight: 600,
+									fontSize: '20px',
+									lineHeight: 1,
+									textTransform: 'uppercase'
+								}}
+							>
+								{appName}
+							</Typography>
+							<img
+								src='/lumora-logo.svg'
+								alt='NEXA Logo'
+								width={24}
+								height={24}
+								style={{ flexShrink: 0 }}
+							/>
+						</Stack>
+					)}
 					{/* Custom Navbar or Search Bar */}
 					{CustomNavbar ? (
 						<CustomNavbar {...(customNavbarProps || {})} />
@@ -494,74 +499,86 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 										arrow
 									>
 										<Stack
-										direction='row'
-										onClick={d.disabled ? undefined : d.onClick}
-										sx={{
-											alignItems: 'center',
-											gap: 1,
-											cursor: d.disabled ? 'not-allowed' : 'pointer',
-											borderRadius: '8px',
-											padding: '4px 8px',
-											opacity: d.disabled ? 0.5 : 1,
-											transition: 'opacity 0.2s',
-											...(!d.disabled && {
-												'&:hover': {
-													backgroundColor: 'action.hover'
-												}
-											})
-										}}
-									>
-										{d.avatar ? (
-											<Avatar
-												src={d.avatar}
-												sx={{ width: 32, height: 32 }}
-											/>
-										) : (
-											<AccountCircleRoundedIcon
-												sx={{
-													width: 32,
-													height: 32,
-													color: navbarAccentColor
-												}}
-											/>
-										)}
-										<Box
+											direction='row'
+											onClick={
+												d.disabled
+													? undefined
+													: d.onClick
+											}
 											sx={{
-												display: 'flex',
-												flexDirection: 'column',
-												alignItems: 'flex-start',
-												minWidth: 0
+												alignItems: 'center',
+												gap: 1,
+												cursor: d.disabled
+													? 'not-allowed'
+													: 'pointer',
+												borderRadius: '8px',
+												padding: '4px 8px',
+												opacity: d.disabled ? 0.5 : 1,
+												transition: 'opacity 0.2s',
+												...(!d.disabled && {
+													'&:hover': {
+														backgroundColor:
+															'action.hover'
+													}
+												})
 											}}
 										>
-											<Typography
-												variant='body2'
+											{d.avatar ? (
+												<Avatar
+													src={d.avatar}
+													sx={{
+														width: 32,
+														height: 32
+													}}
+												/>
+											) : (
+												<AccountCircleRoundedIcon
+													sx={{
+														width: 32,
+														height: 32,
+														color: navbarAccentColor
+													}}
+												/>
+											)}
+											<Box
 												sx={{
-													color: navbarAccentColor,
-													fontWeight: 500,
-													lineHeight: 1.2,
-													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													whiteSpace: 'nowrap',
-													maxWidth: '150px'
+													display: 'flex',
+													flexDirection: 'column',
+													alignItems: 'flex-start',
+													minWidth: 0
 												}}
 											>
-												{d.name}
-											</Typography>
-											<Typography
-												variant='caption'
-												sx={{
-													color: navbarAccentColor,
-													lineHeight: 1.2,
-													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													whiteSpace: 'nowrap',
-													maxWidth: '150px'
-												}}
-											>
-												{d.role}
-											</Typography>
-										</Box>
-									</Stack>
+												<Typography
+													variant='body2'
+													sx={{
+														color: navbarAccentColor,
+														fontWeight: 500,
+														lineHeight: 1.2,
+														overflow: 'hidden',
+														textOverflow:
+															'ellipsis',
+														whiteSpace: 'nowrap',
+														maxWidth: '150px'
+													}}
+												>
+													{d.name}
+												</Typography>
+												<Typography
+													variant='caption'
+													sx={{
+														color: navbarAccentColor,
+														lineHeight: 1.2,
+														overflow: 'hidden',
+														textOverflow:
+															'ellipsis',
+														whiteSpace: 'nowrap',
+														maxWidth: '150px'
+													}}
+												>
+													{d.role}
+												</Typography>
+											</Box>
+										</Stack>
 									</Tooltip>
 								);
 							}

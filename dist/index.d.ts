@@ -1,4 +1,5 @@
 import { default as default_2 } from 'react';
+import * as React_2 from 'react';
 import { SxProps } from '@mui/material';
 import { Theme } from '@mui/material';
 
@@ -53,6 +54,39 @@ export declare interface AuthTokens {
  */
 export declare const clearAuthTokens: () => StorageResult;
 
+export declare const CollapsibleSidebar: React_2.FC<CollapsibleSidebarProps>;
+
+export declare interface CollapsibleSidebarProps {
+    mainLinks: SidebarLink[];
+    /** Bottom group; rendered after a divider and pinned to the bottom. */
+    secondaryLinks?: SidebarLink[];
+    activePath?: string;
+    onLinkClick?: (path: string) => void;
+    /** Always visible, in both states. */
+    logo?: React_2.ReactNode;
+    /** App title; shown only when expanded. */
+    title?: string;
+    /** Section header above the main links (e.g. "Environment"); expanded only. */
+    sectionTitle?: string;
+    /** Solid background of the active item (default '#01584f'). */
+    activeAccentColor?: string;
+    /** Light tint for a parent's child group and hover (default derived). */
+    groupAccentColor?: string;
+    /** Foreground on the active item; default auto-contrast from the accent. */
+    activeForegroundColor?: string;
+    /** Sidebar surface background (default '#ffffff'). */
+    surfaceBackgroundColor?: string;
+    /** Controlled collapsed state. When provided, the owner also persists it. */
+    collapsed?: boolean;
+    /** Uncontrolled initial state used only when nothing is persisted. */
+    defaultCollapsed?: boolean;
+    onCollapsedChange?: (collapsed: boolean) => void;
+    /** localStorage key for the uncontrolled/persisted state. */
+    persistKey?: string;
+    expandedWidth?: number;
+    collapsedWidth?: number;
+}
+
 /**
  * Handle authentication errors with user-friendly messages
  * @param error - The error to handle
@@ -105,6 +139,22 @@ export declare interface LumoraWrapperProps {
     showSidebar?: boolean;
     /** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
     showSidebarRailTitles?: boolean;
+    /**
+     * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
+     * is a full-height panel that toggles between expanded (logo + title + labels) and a
+     * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
+     */
+    sidebarVariant?: 'rail' | 'collapsible';
+    /** Branding shown in the collapsible sidebar header; defaults to the Lumora logo. */
+    logo?: default_2.ReactNode;
+    /** Section header above the main links in the collapsible sidebar (e.g. "Environment"). */
+    sidebarSectionTitle?: string;
+    /** Surface background of the collapsible sidebar (default '#ffffff'). */
+    sidebarBackgroundColor?: string;
+    /** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
+    groupAccentColor?: string;
+    /** Foreground for active items; defaults to auto-contrast from `accentColor`. */
+    activeSidebarForegroundColor?: string;
     enableRefreshToken?: boolean;
     activePath?: string;
     onLinkClick?: (path: string) => void;

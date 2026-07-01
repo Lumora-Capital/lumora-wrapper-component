@@ -16,11 +16,19 @@ import { createAxiosClient } from '../axiosClient';
 import { validateAndRefreshTokens } from '../tokenValidator';
 import AppNavbar from './AppNavbar';
 import CardAlert from './CardAlert';
+import CollapsibleSidebar from './CollapsibleSidebar';
 import MenuContent from './MenuContent';
 import MobileSidebar from './MobileSidebar';
+import { readStoredCollapsed, writeStoredCollapsed } from './sidebarUtils';
 
 /** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
 const DESKTOP_RAIL_WIDTH_PX = 100;
+
+/** Collapsible sidebar variant widths and persistence key. */
+const COLLAPSIBLE_EXPANDED_WIDTH_PX = 264;
+const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
+const SIDEBAR_PERSIST_KEY = 'lumora:sidebar-collapsed';
+const SIDEBAR_TRANSITION = 'width 200ms ease, left 200ms ease';
 
 /** One level of children under a sidebar parent; no further nesting. */
 export type SidebarSubLink = {
@@ -49,6 +57,22 @@ export interface LumoraWrapperProps {
 	showSidebar?: boolean;
 	/** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
 	showSidebarRailTitles?: boolean;
+	/**
+	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
+	 * is a full-height panel that toggles between expanded (logo + title + labels) and a
+	 * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
+	 */
+	sidebarVariant?: 'rail' | 'collapsible';
+	/** Branding shown in the collapsible sidebar header; defaults to the Lumora logo. */
+	logo?: React.ReactNode;
+	/** Section header above the main links in the collapsible sidebar (e.g. "Environment"). */
+	sidebarSectionTitle?: string;
+	/** Surface background of the collapsible sidebar (default '#ffffff'). */
+	sidebarBackgroundColor?: string;
+	/** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
+	groupAccentColor?: string;
+	/** Foreground for active items; defaults to auto-contrast from `accentColor`. */
+	activeSidebarForegroundColor?: string;
 	enableRefreshToken?: boolean;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
@@ -139,6 +163,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showHeader = true,
 	showSidebar = true,
 	showSidebarRailTitles = false,
+	sidebarVariant = 'rail',
+	logo,
+	sidebarSectionTitle,
+	sidebarBackgroundColor,
+	groupAccentColor,
+	activeSidebarForegroundColor,
 	enableRefreshToken = false,
 	activePath,
 	onLinkClick,
@@ -194,10 +224,48 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		navbarBackground ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const resolvedNavbarAccent =
 		navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
-	// Keep drawer paper width and main `calc(100% - …)` in sync (fixed rail width)
-	let desktopRailWidthPx = 0;
+	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
+	// Default logo tinted to the sidebar accent via a CSS mask, so it stays in
+	// sync when the accent color is overridden. Consumers can pass their own.
+	const resolvedLogo = logo ?? (
+		<Box
+			role='img'
+			aria-label={`${appName} logo`}
+			sx={{
+				width: 28,
+				height: 28,
+				flexShrink: 0,
+				bgcolor: resolvedAccentColor,
+				maskImage: 'url(/lumora-logo.svg)',
+				maskRepeat: 'no-repeat',
+				maskPosition: 'center',
+				maskSize: 'contain',
+				WebkitMaskImage: 'url(/lumora-logo.svg)',
+				WebkitMaskRepeat: 'no-repeat',
+				WebkitMaskPosition: 'center',
+				WebkitMaskSize: 'contain'
+			}}
+		/>
+	);
+	// Collapsible sidebar collapsed state is owned here so the navbar/content
+	// offsets stay in sync with the sidebar width. Restored from localStorage.
+	const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+		() => readStoredCollapsed(SIDEBAR_PERSIST_KEY) ?? false
+	);
+	const handleSidebarCollapsedChange = (next: boolean) => {
+		setSidebarCollapsed(next);
+		writeStoredCollapsed(SIDEBAR_PERSIST_KEY, next);
+	};
+	// Keep sidebar, drawer paper width and main `calc(100% - …)` in sync.
+	let desktopSidebarWidthPx = 0;
 	if (showSidebar && !isMobile) {
-		desktopRailWidthPx = DESKTOP_RAIL_WIDTH_PX;
+		if (useCollapsibleSidebar) {
+			desktopSidebarWidthPx = sidebarCollapsed
+				? COLLAPSIBLE_COLLAPSED_WIDTH_PX
+				: COLLAPSIBLE_EXPANDED_WIDTH_PX;
+		} else {
+			desktopSidebarWidthPx = DESKTOP_RAIL_WIDTH_PX;
+		}
 	}
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
@@ -380,7 +448,17 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								: undefined
 						}
 						showMenuButton={isMobile && showSidebar}
-						headerStyles={headerStyles}
+						showBrand={!(useCollapsibleSidebar && !isMobile)}
+						headerStyles={
+							useCollapsibleSidebar && !isMobile && showSidebar
+								? ({
+										left: `${desktopSidebarWidthPx}px`,
+										width: `calc(100% - ${desktopSidebarWidthPx}px)`,
+										transition: SIDEBAR_TRANSITION,
+										...(headerStyles as object)
+									} as SxProps<Theme>)
+								: headerStyles
+						}
 						userName={userName}
 						userEmail={userEmail}
 						userAvatar={userAvatar}
@@ -415,16 +493,56 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					/>
 				)}
 
-				{/* Desktop Sidebar */}
-				{showSidebar && !isMobile && (
+				{/* Desktop Sidebar — collapsible variant */}
+				{showSidebar && !isMobile && useCollapsibleSidebar && (
+					<Box
+						component='aside'
+						sx={{
+							width: desktopSidebarWidthPx,
+							minWidth: desktopSidebarWidthPx,
+							flexShrink: 0,
+							zIndex: 2, // Higher z-index than app bar
+							position: 'sticky',
+							top: 0,
+							alignSelf: 'flex-start',
+							height: '100vh',
+							transition: SIDEBAR_TRANSITION,
+							...sidebarStyles
+						}}
+					>
+						<CollapsibleSidebar
+							mainLinks={sidebarLinks}
+							secondaryLinks={secondarySidebarLinks}
+							activePath={activePath}
+							onLinkClick={onLinkClick}
+							logo={resolvedLogo}
+							title={appName}
+							sectionTitle={sidebarSectionTitle}
+							activeAccentColor={resolvedAccentColor}
+							groupAccentColor={groupAccentColor}
+							activeForegroundColor={activeSidebarForegroundColor}
+							surfaceBackgroundColor={sidebarBackgroundColor}
+							collapsed={sidebarCollapsed}
+							onCollapsedChange={handleSidebarCollapsedChange}
+							expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
+							collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
+						/>
+						{alertProps?.show && !sidebarCollapsed && (
+							<CardAlert {...alertProps} />
+						)}
+					</Box>
+				)}
+
+				{/* Desktop Sidebar — fixed rail variant */}
+				{showSidebar && !isMobile && !useCollapsibleSidebar && (
 					<Drawer
 						variant='permanent'
 						sx={{
-							width: desktopRailWidthPx,
+							width: desktopSidebarWidthPx,
 							flexShrink: 0,
 							zIndex: 2, // Higher z-index than app bar
 							'& .MuiDrawer-paper': {
-								width: desktopRailWidthPx,
+								width: desktopSidebarWidthPx,
 								boxSizing: 'border-box',
 								bgcolor: resolvedContentBg,
 								borderRight: 'none',
@@ -501,8 +619,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						width: isMobile
 							? '100%'
 							: showSidebar
-								? `calc(100% - ${desktopRailWidthPx}px)`
+								? `calc(100% - ${desktopSidebarWidthPx}px)`
 								: '100%',
+						transition: SIDEBAR_TRANSITION,
 						mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
 						ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
 						backgroundColor: resolvedContentBg,
