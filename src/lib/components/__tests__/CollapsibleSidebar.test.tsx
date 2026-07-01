@@ -3,7 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import * as React from 'react';
 import CollapsibleSidebar from '../CollapsibleSidebar';
 import type { SidebarLink } from '../LumoraWrapper';
-import { fireEvent, render, screen } from './testUtils';
+import { fireEvent, render, screen, within } from './testUtils';
 
 const darkTheme = createTheme({ palette: { mode: 'dark' } });
 
@@ -154,6 +154,67 @@ describe('CollapsibleSidebar', () => {
 				'data-active',
 				'false'
 			);
+		});
+	});
+
+	describe('collapsed group hover', () => {
+		it('reveals an inactive parent’s sub-items inline on the rail on hover when collapsed', async () => {
+			renderSidebar({ collapsed: true, activePath: '/dashboard' });
+
+			// CRM is not the active group, so its children are not on the rail
+			expect(
+				screen.queryByTestId('sidebar-group-CRM')
+			).not.toBeInTheDocument();
+			expect(
+				screen.queryByTestId('sidebar-subitem-People')
+			).not.toBeInTheDocument();
+
+			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
+
+			// The same tinted inline group appears — no separate popup panel
+			const group = await screen.findByTestId('sidebar-group-CRM');
+			expect(
+				within(group).getByTestId('sidebar-subitem-People')
+			).toBeInTheDocument();
+			expect(
+				within(group).getByTestId('sidebar-subitem-Company')
+			).toBeInTheDocument();
+		});
+
+		it('navigates when an inline sub-item is clicked after hover', async () => {
+			const onLinkClick = jest.fn();
+			renderSidebar({
+				collapsed: true,
+				activePath: '/dashboard',
+				onLinkClick
+			});
+
+			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
+			const people = await screen.findByTestId('sidebar-subitem-People');
+			fireEvent.click(people);
+
+			expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
+		});
+	});
+
+	describe('expanded group hover', () => {
+		it('reveals an inactive parent’s children inline on hover in the expanded panel', async () => {
+			renderSidebar({ collapsed: false, activePath: '/dashboard' });
+
+			// CRM is not active, so its child group is collapsed (unmounted)
+			expect(
+				screen.queryByTestId('sidebar-children-CRM')
+			).not.toBeInTheDocument();
+
+			fireEvent.mouseOver(screen.getByTestId('sidebar-group-hover-CRM'));
+
+			const children = await screen.findByTestId('sidebar-children-CRM');
+			expect(
+				within(children).getByTestId('sidebar-subitem-People')
+			).toBeInTheDocument();
+			expect(
+				within(children).getByTestId('sidebar-subitem-Company')
+			).toBeInTheDocument();
 		});
 	});
 

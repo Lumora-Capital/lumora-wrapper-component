@@ -26,6 +26,8 @@ const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
+/** Grace period before an inactive group collapses again after the pointer leaves. */
+const HOVER_CLOSE_DELAY_MS = 180;
 
 /**
  * Expanded-row label that ellipsizes when it overflows and reveals the full text
@@ -82,6 +84,58 @@ const TruncatingLabel: React.FC<{ text: string }> = ({ text }) => {
 				{text}
 			</Typography>
 		</Tooltip>
+	);
+};
+
+/**
+ * Group wrapper that exposes a `hovered` flag to its render-prop so a parent can
+ * reveal its child group on hover/focus, then hide it again after a short grace
+ * period once the pointer leaves. Shared by the collapsed rail (inline icon stack)
+ * and the expanded panel (indented child list).
+ */
+const HoverRevealGroup: React.FC<{
+	testId: string;
+	children: (hovered: boolean) => React.ReactNode;
+}> = ({ testId, children }) => {
+	const [hovered, setHovered] = React.useState(false);
+	const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+		null
+	);
+
+	const cancelClose = () => {
+		if (closeTimerRef.current) {
+			clearTimeout(closeTimerRef.current);
+			closeTimerRef.current = null;
+		}
+	};
+
+	const open = () => {
+		cancelClose();
+		setHovered(true);
+	};
+
+	const scheduleClose = () => {
+		cancelClose();
+		closeTimerRef.current = setTimeout(() => {
+			setHovered(false);
+			closeTimerRef.current = null;
+		}, HOVER_CLOSE_DELAY_MS);
+	};
+
+	// Clear a pending timer if we unmount mid-close.
+	React.useEffect(() => cancelClose, []);
+
+	return (
+		<Box
+			data-testid={testId}
+			sx={{ width: '100%' }}
+			onMouseEnter={open}
+			onMouseLeave={scheduleClose}
+			onFocus={open}
+			onBlur={scheduleClose}
+		>
+			{children(hovered)}
+		</Box>
 	);
 };
 
@@ -223,12 +277,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const renderExpandedGroup = (link: SidebarLink) => {
 		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
-		const showChildren = groupActive || Boolean(openGroups[link.text]);
-		// When the group is open, parent + children share one tinted container so
-		// the parent reads as part of the active group (matches the collapsed rail).
-		return (
+		// Active/toggled groups stay open; otherwise the group reveals on hover.
+		const forcedOpen = groupActive || Boolean(openGroups[link.text]);
+
+		// When open, parent + children share one tinted container so the parent
+		// reads as part of the group (matches the collapsed rail).
+		const renderContent = (showChildren: boolean) => (
 			<Box
-				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
 				sx={{
 					borderRadius: '6px',
@@ -277,6 +332,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Box>
 				</Collapse>
 			</Box>
+		);
+
+		return (
+			<HoverRevealGroup
+				key={link.text}
+				testId={`sidebar-group-hover-${link.text}`}
+			>
+				{hovered => renderContent(forcedOpen || hovered)}
+			</HoverRevealGroup>
 		);
 	};
 
@@ -360,65 +424,90 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		);
 	};
 
+	// A collapsed parent group: just the parent icon when not expanded, or the
+	// tinted stacked group (parent + child icons) inline on the rail when it is.
+	const renderCollapsedGroup = (link: SidebarLink, expanded: boolean) => {
+		const parentActive = Boolean(link.path && activePath === link.path);
+		const parentIcon = renderCollapsedIcon(
+			link.text,
+			link.text,
+			link.icon,
+			parentActive,
+			link.path
+				? () => handleClick(link.path!)
+				: expanded
+					? undefined
+					: () => setCollapsed(false),
+			{ insideGroup: true }
+		);
+
+		if (!expanded) {
+			return parentIcon;
+		}
+
+		return (
+			<Box
+				data-testid={`sidebar-group-${link.text}`}
+				sx={{
+					width: '100%',
+					borderRadius: '10px',
+					bgcolor: groupTint,
+					py: 0.5,
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					gap: 0.5
+				}}
+			>
+				{parentIcon}
+				{link.subitems!.map(sub =>
+					renderCollapsedIcon(
+						sub.path,
+						sub.text,
+						sub.icon ?? link.icon,
+						isSubLinkActive(sub, activePath),
+						() => handleClick(sub.path),
+						{
+							insideGroup: true,
+							testId: `sidebar-subitem-${sub.text}`
+						}
+					)
+				)}
+			</Box>
+		);
+	};
+
 	const renderCollapsedItem = (link: SidebarLink) => {
 		const hasChildren = Boolean(link.subitems?.length);
-		const groupActive = isSidebarLinkActive(link, activePath);
 
-		// Active parent → show the whole group inline on the rail.
-		if (hasChildren && groupActive) {
-			const parentActive = Boolean(link.path && activePath === link.path);
+		if (hasChildren) {
+			// Active group is pinned open inline; an inactive group reveals the
+			// same inline child stack on hover/focus (no separate popup panel).
+			const groupActive = isSidebarLinkActive(link, activePath);
+			if (groupActive) {
+				return (
+					<React.Fragment key={link.text}>
+						{renderCollapsedGroup(link, true)}
+					</React.Fragment>
+				);
+			}
 			return (
-				<Box
+				<HoverRevealGroup
 					key={link.text}
-					data-testid={`sidebar-group-${link.text}`}
-					sx={{
-						width: '100%',
-						borderRadius: '10px',
-						bgcolor: groupTint,
-						py: 0.5,
-						display: 'flex',
-						flexDirection: 'column',
-						alignItems: 'center',
-						gap: 0.5
-					}}
+					testId={`sidebar-group-hover-${link.text}`}
 				>
-					{renderCollapsedIcon(
-						link.text,
-						link.text,
-						link.icon,
-						parentActive,
-						link.path ? () => handleClick(link.path!) : undefined,
-						{ insideGroup: true }
-					)}
-					{link.subitems!.map(sub =>
-						renderCollapsedIcon(
-							sub.path,
-							sub.text,
-							sub.icon ?? link.icon,
-							isSubLinkActive(sub, activePath),
-							() => handleClick(sub.path),
-							{
-								insideGroup: true,
-								testId: `sidebar-subitem-${sub.text}`
-							}
-						)
-					)}
-				</Box>
+					{hovered => renderCollapsedGroup(link, hovered)}
+				</HoverRevealGroup>
 			);
 		}
 
-		// Leaf, or an inactive parent: single icon. A path-less parent expands.
-		const onClick = link.path
-			? () => handleClick(link.path!)
-			: hasChildren
-				? () => setCollapsed(false)
-				: undefined;
+		// Leaf: single icon with a label tooltip.
 		return renderCollapsedIcon(
 			link.text,
 			link.text,
 			link.icon,
 			Boolean(link.path && activePath === link.path),
-			onClick
+			link.path ? () => handleClick(link.path!) : undefined
 		);
 	};
 

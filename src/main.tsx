@@ -114,7 +114,11 @@ const collapsibleMainLinks: SidebarLink[] = [
 	{
 		text: 'Deals',
 		path: '/deals',
-		icon: <AnalyticsIcon />
+		icon: <AnalyticsIcon />,
+		subitems: [
+			{ text: 'People', path: '/crm/people', icon: <PeopleIcon /> },
+			{ text: 'Company', path: '/crm/company', icon: <AnalyticsIcon /> }
+		]
 	},
 	{
 		text: 'CRM',
