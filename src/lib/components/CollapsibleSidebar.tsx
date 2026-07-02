@@ -1,7 +1,5 @@
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
-import KeyboardDoubleArrowLeftRounded from '@mui/icons-material/KeyboardDoubleArrowLeftRounded';
-import KeyboardDoubleArrowRightRounded from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
@@ -20,8 +18,7 @@ import {
 	getContrastText,
 	isSidebarLinkActive,
 	isSubLinkActive,
-	readStoredCollapsed,
-	writeStoredCollapsed
+	readStoredCollapsed
 } from './sidebarUtils';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
@@ -141,16 +138,12 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	secondaryLinks = [],
 	activePath,
 	onLinkClick,
-	logo,
-	title,
-	sectionTitle,
 	activeAccentColor = '#01584f',
 	groupAccentColor,
 	activeForegroundColor,
 	surfaceBackgroundColor,
 	collapsed: collapsedProp,
 	defaultCollapsed = false,
-	onCollapsedChange,
 	persistKey = DEFAULT_PERSIST_KEY,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX
@@ -159,8 +152,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const isDark = theme.palette.mode === 'dark';
 	const isControlled = collapsedProp !== undefined;
 
-	// Uncontrolled: restore from localStorage on first render (SSR-safe).
-	const [internalCollapsed, setInternalCollapsed] = React.useState<boolean>(
+	// Uncontrolled: restore the initial value from localStorage on first render
+	// (SSR-safe). The collapse toggle now lives in the navbar, so this component
+	// only reads the state — it no longer mutates it.
+	const [internalCollapsed] = React.useState<boolean>(
 		() => readStoredCollapsed(persistKey) ?? defaultCollapsed
 	);
 	const collapsed = isControlled ? Boolean(collapsedProp) : internalCollapsed;
@@ -182,14 +177,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// brand accent in light mode (per the mockup); in dark mode the accent is too
 	// dim on the dark surface, so fall back to the theme's primary text color.
 	const accentOnSurface = isDark ? 'text.primary' : activeAccent;
-
-	const setCollapsed = (next: boolean) => {
-		if (!isControlled) {
-			setInternalCollapsed(next);
-			writeStoredCollapsed(persistKey, next);
-		}
-		onCollapsedChange?.(next);
-	};
 
 	const handleClick = (path: string) => {
 		onLinkClick?.(path);
@@ -524,100 +511,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				overflowY: 'auto',
 				transition: WIDTH_TRANSITION,
 				px: collapsed ? 1 : 2,
-				py: 2
+				pt: 1,
+				pb: 2
 			}}
 		>
-			{/* Header: title (expanded only) + logo (always), logo on the right */}
-			<Stack
-				direction='row'
-				alignItems='center'
-				justifyContent={collapsed ? 'center' : 'flex-start'}
-				spacing={1.5}
-				sx={{ minHeight: 40, px: collapsed ? 0 : 0.5 }}
-			>
-				{!collapsed && title ? (
-					<Typography
-						data-testid='sidebar-title'
-						variant='h6'
-						sx={{
-							fontWeight: 700,
-							fontSize: '20px',
-							lineHeight: 1,
-							textTransform: 'uppercase',
-							color: accentOnSurface,
-							whiteSpace: 'nowrap',
-							overflow: 'hidden',
-							textOverflow: 'ellipsis'
-						}}
-					>
-						{title}
-					</Typography>
-				) : null}
-				{logo ? (
-					<Box
-						data-testid='sidebar-logo'
-						sx={{
-							display: 'flex',
-							alignItems: 'center',
-							flexShrink: 0,
-							color: accentOnSurface,
-							'& svg': { color: 'inherit', fill: 'currentColor' }
-						}}
-					>
-						{logo}
-					</Box>
-				) : null}
-			</Stack>
-
-			{/* Section title + collapse/expand toggle */}
-			<Stack
-				direction='row'
-				alignItems='center'
-				justifyContent={collapsed ? 'center' : 'space-between'}
-				sx={{ mt: 2, mb: 1, minHeight: 32 }}
-			>
-				{!collapsed && sectionTitle ? (
-					<Typography
-						data-testid='sidebar-section-title'
-						variant='caption'
-						sx={{
-							px: 0.5,
-							fontWeight: 600,
-							letterSpacing: '0.06em',
-							textTransform: 'uppercase',
-							color: accentOnSurface
-						}}
-					>
-						{sectionTitle}
-					</Typography>
-				) : null}
-				<Tooltip
-					title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-					placement='right'
-					arrow
-				>
-					<IconButton
-						size='small'
-						aria-label={
-							collapsed ? 'Expand sidebar' : 'Collapse sidebar'
-						}
-						data-testid='sidebar-toggle'
-						onClick={() => setCollapsed(!collapsed)}
-						disableFocusRipple
-						sx={{
-							color: accentOnSurface,
-							'&:focus, &:focus-visible': { outline: 'none' }
-						}}
-					>
-						{collapsed ? (
-							<KeyboardDoubleArrowRightRounded fontSize='small' />
-						) : (
-							<KeyboardDoubleArrowLeftRounded fontSize='small' />
-						)}
-					</IconButton>
-				</Tooltip>
-			</Stack>
-
 			{/* Main links */}
 			<Stack
 				spacing={0.5}

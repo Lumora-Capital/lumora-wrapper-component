@@ -40,8 +40,24 @@ interface AppNavbarProps {
 	pageName?: string;
 	onMenuClick?: () => void;
 	showMenuButton?: boolean;
-	/** Show the logo + app name block. Off when branding lives in the sidebar. */
+	/**
+	 * Mobile viewport flag from the wrapper. When true, the profile block and theme
+	 * toggle are omitted here because they live in the mobile sidebar instead.
+	 */
+	isMobile?: boolean;
+	/**
+	 * Current collapsed state of the sidebar. Only used to label the menu
+	 * (hamburger) button as "Expand sidebar" / "Collapse sidebar" when the button
+	 * toggles a desktop collapsible sidebar. Leave undefined for the mobile drawer.
+	 */
+	sidebarCollapsed?: boolean;
+	/** Show the logo + app name block. */
 	showBrand?: boolean;
+	/**
+	 * Brand logo node. When provided it is rendered in the brand block (already
+	 * sized/tinted by the caller). Falls back to the bundled logo asset otherwise.
+	 */
+	logo?: React.ReactNode;
 	headerStyles?: SxProps<Theme>;
 	// Right side content
 	userName?: string;
@@ -93,7 +109,10 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	pageName = 'Home',
 	onMenuClick,
 	showMenuButton = true,
+	isMobile = false,
+	sidebarCollapsed,
 	showBrand = true,
+	logo,
 	headerStyles,
 	userName = 'User Name',
 	userEmail,
@@ -128,9 +147,21 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 		React.useState<null | HTMLElement>(null);
 	const profileMenuOpen = Boolean(profileMenuAnchor);
 	const isDarkTheme = theme === 'dark';
+	// Brand chrome (menu button, app name, logo) follows the accent color in light
+	// mode; in dark mode the accent is too dim on the dark bar, so fall back to the
+	// theme's primary text color — matching the sidebar items and the tinted logo.
+	const brandColor = isDarkTheme ? 'text.primary' : accentColor;
 	const themeToggleLabel = isDarkTheme
 		? 'Switch to light mode'
 		: 'Switch to dark mode';
+	// When the menu button drives a desktop collapsible sidebar we know its state
+	// and can label the action precisely; otherwise it opens the mobile drawer.
+	const menuButtonLabel =
+		sidebarCollapsed === undefined
+			? 'Open navigation menu'
+			: sidebarCollapsed
+				? 'Expand sidebar'
+				: 'Collapse sidebar';
 
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		onSearchChange?.(event.target.value);
@@ -189,19 +220,28 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						flexGrow: 1
 					}}
 				>
-					{showMenuButton && !isUpMd && (
-						<IconButton
-							aria-label='menu'
-							onClick={onMenuClick}
-							sx={{
-								color: navbarAccentColor,
-								'&:hover': {
-									backgroundColor: 'action.hover'
-								}
-							}}
-						>
-							<MenuRoundedIcon />
-						</IconButton>
+					{showMenuButton && (
+						<Tooltip title={menuButtonLabel} placement='bottom'>
+							<IconButton
+								aria-label={menuButtonLabel}
+								onClick={onMenuClick}
+								disableFocusRipple
+								sx={{
+									// Nudge left so the icon centers on the sidebar
+									// icon rail (72px wide → 36px center) below it.
+									ml: -1,
+									color: brandColor,
+									'&:hover': {
+										backgroundColor: 'action.hover'
+									},
+									'&:focus, &:focus-visible': {
+										outline: 'none'
+									}
+								}}
+							>
+								<MenuRoundedIcon />
+							</IconButton>
+						</Tooltip>
 					)}
 					{/* Logo */}
 					{showBrand && (
@@ -216,7 +256,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							<Typography
 								variant='h6'
 								sx={{
-									color: navbarAccentColor,
+									color: brandColor,
 									fontWeight: 600,
 									fontSize: '20px',
 									lineHeight: 1,
@@ -225,13 +265,30 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							>
 								{appName}
 							</Typography>
-							<img
-								src='/lumora-logo.svg'
-								alt='NEXA Logo'
-								width={24}
-								height={24}
-								style={{ flexShrink: 0 }}
-							/>
+							{logo ? (
+								<Box
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										flexShrink: 0,
+										color: brandColor,
+										'& svg': {
+											color: 'inherit',
+											fill: 'currentColor'
+										}
+									}}
+								>
+									{logo}
+								</Box>
+							) : (
+								<img
+									src='/lumora-logo.svg'
+									alt={`${appName} logo`}
+									width={24}
+									height={24}
+									style={{ flexShrink: 0 }}
+								/>
+							)}
 						</Stack>
 					)}
 					{/* Custom Navbar or Search Bar */}
@@ -287,8 +344,8 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						flexShrink: 0
 					}}
 				>
-					{/* Theme Toggler */}
-					{showThemeToggler && (
+					{/* Theme Toggler (desktop only; on mobile it lives in the sidebar) */}
+					{showThemeToggler && !isMobile && (
 						<Tooltip title={themeToggleLabel} placement='bottom'>
 							<span>
 								<IconButton
@@ -340,7 +397,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 						</Badge>
 					)}
 					{/* Divider */}
-					{showNotifications && showProfile && (
+					{showNotifications && showProfile && !isMobile && (
 						<Divider
 							orientation='vertical'
 							flexItem
@@ -351,8 +408,8 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							}}
 						/>
 					)}
-					{/* Profile */}
-					{showProfile && (
+					{/* Profile (desktop only; on mobile it lives in the sidebar) */}
+					{showProfile && !isMobile && (
 						<>
 							<Stack
 								direction='row'

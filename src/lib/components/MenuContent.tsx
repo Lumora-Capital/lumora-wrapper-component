@@ -17,7 +17,12 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import type { SidebarLink } from './LumoraWrapper';
-import { isSidebarLinkActive, isSubLinkActive } from './sidebarUtils';
+import {
+	deriveGroupTint,
+	getContrastText,
+	isSidebarLinkActive,
+	isSubLinkActive
+} from './sidebarUtils';
 
 const CLOSE_DELAY_MS = 180;
 /** Max width for rail subitem popover; longer labels truncate with ellipsis */
@@ -32,6 +37,9 @@ interface MenuContentProps {
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	accentColor?: string;
+	/** Light tint behind an active parent's child group and on hover (drawer variant).
+	 * Defaults to a low-alpha wash derived from `accentColor`. */
+	groupAccentColor?: string;
 	/** Popover panel behind sublinks; matches desktop sidebar strip (e.g. contentBackgroundColor). */
 	surfaceBackgroundColor?: string;
 	/** Desktop rail only: show `link.text` under each icon */
@@ -582,6 +590,10 @@ type DrawerGroupProps = {
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
+	/** Light tint behind the active group container and on hover. */
+	groupTint: string;
+	/** Foreground on the active (solid) row. */
+	activeFg: string;
 	isSecondary: boolean;
 };
 
@@ -592,23 +604,46 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 	activePath,
 	onLinkClick,
 	accentColor,
+	groupTint,
+	activeFg,
 	isSecondary
 }) => {
-	const active = isSidebarLinkActive(link, activePath);
-	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
+	// The whole group reads as "active" when the parent path or any child matches
+	// (tinted container); the parent row itself is filled solid only when its own
+	// path is the active route.
+	const groupActive = isSidebarLinkActive(link, activePath);
+	const parentActive = Boolean(link.path && activePath === link.path);
+	// Inactive items follow the accent in light mode; in dark mode the accent is too
+	// dim on the dark surface, so fall back to the primary text color (matches the
+	// desktop collapsible sidebar and the navbar brand).
+	const isDark = useTheme().palette.mode === 'dark';
+	const inactiveColor = isSecondary
+		? 'text.secondary'
+		: isDark
+			? 'text.primary'
+			: accentColor;
 	const activeBg = isSecondary ? '#01584F' : accentColor;
 
+	// A parent with its own path navigates on row click; the chevron toggles the
+	// submenu independently. A parent without a path just toggles on row click.
 	return (
-		<>
+		<Box
+			sx={{
+				borderRadius: '6px',
+				bgcolor: groupActive ? groupTint : 'transparent'
+			}}
+		>
 			<ListItemButton
-				onClick={onToggle}
+				onClick={() =>
+					link.path ? onLinkClick?.(link.path) : onToggle()
+				}
 				sx={{
 					py: 1.5,
 					px: 2,
-					color: active ? '#ffffff' : inactiveColor,
-					bgcolor: active ? activeBg : 'transparent',
+					color: parentActive ? activeFg : inactiveColor,
+					bgcolor: parentActive ? activeBg : 'transparent',
 					'&:hover': {
-						bgcolor: active ? activeBg : 'action.hover'
+						bgcolor: parentActive ? activeBg : groupTint
 					}
 				}}
 				data-testid={`drawer-expand-trigger-${link.text}`}
@@ -617,42 +652,61 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 					{link.icon}
 				</ListItemIcon>
 				<ListItemText primary={link.text} />
-				{expanded ? <ExpandLess /> : <ExpandMore />}
+				<IconButton
+					size='small'
+					edge='end'
+					aria-label={
+						expanded
+							? `Collapse ${link.text}`
+							: `Expand ${link.text}`
+					}
+					onClick={e => {
+						e.stopPropagation();
+						onToggle();
+					}}
+					sx={{ color: 'inherit' }}
+					data-testid={`drawer-expand-chevron-${link.text}`}
+				>
+					{expanded ? <ExpandLess /> : <ExpandMore />}
+				</IconButton>
 			</ListItemButton>
 			<Collapse in={expanded} timeout='auto' unmountOnExit>
 				<Box component='nav' aria-label={link.text}>
-					{link.path ? (
-						<ListItemButton
-							sx={{ pl: 4, py: 1 }}
-							onClick={() =>
-								link.path && onLinkClick?.(link.path)
-							}
-							selected={Boolean(
-								activePath && activePath === link.path
-							)}
-							data-testid={`drawer-parent-path-${link.text}`}
-						>
-							<ListItemText primary={link.text} />
-						</ListItemButton>
-					) : null}
-					{link.subitems!.map(sub => (
-						<ListItemButton
-							key={sub.path}
-							sx={{ pl: 4, py: 1 }}
-							onClick={() => onLinkClick?.(sub.path)}
-							selected={isSubLinkActive(sub, activePath)}
-						>
-							{sub.icon ? (
-								<ListItemIcon sx={{ minWidth: 36 }}>
-									{sub.icon}
-								</ListItemIcon>
-							) : null}
-							<ListItemText primary={sub.text} />
-						</ListItemButton>
-					))}
+					{link.subitems!.map(sub => {
+						const subActive = isSubLinkActive(sub, activePath);
+						return (
+							<ListItemButton
+								key={sub.path}
+								onClick={() => onLinkClick?.(sub.path)}
+								sx={{
+									pl: 4,
+									py: 1,
+									color: subActive ? activeFg : inactiveColor,
+									bgcolor: subActive
+										? activeBg
+										: 'transparent',
+									'& .MuiListItemIcon-root': {
+										color: 'inherit'
+									},
+									'&:hover': {
+										bgcolor: subActive
+											? activeBg
+											: 'action.hover'
+									}
+								}}
+							>
+								{sub.icon ? (
+									<ListItemIcon sx={{ minWidth: 36 }}>
+										{sub.icon}
+									</ListItemIcon>
+								) : null}
+								<ListItemText primary={sub.text} />
+							</ListItemButton>
+						);
+					})}
 				</Box>
 			</Collapse>
-		</>
+		</Box>
 	);
 };
 
@@ -661,6 +715,10 @@ type DrawerLeafProps = {
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
+	/** Light tint used on hover. */
+	groupTint: string;
+	/** Foreground on the active (solid) row. */
+	activeFg: string;
 	isSecondary: boolean;
 };
 
@@ -669,10 +727,20 @@ const DrawerLeafRow: React.FC<DrawerLeafProps> = ({
 	activePath,
 	onLinkClick,
 	accentColor,
+	groupTint,
+	activeFg,
 	isSecondary
 }) => {
 	const active = Boolean(link.path && activePath === link.path);
-	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
+	// Inactive items follow the accent in light mode; in dark mode the accent is too
+	// dim on the dark surface, so fall back to the primary text color (matches the
+	// desktop collapsible sidebar and the navbar brand).
+	const isDark = useTheme().palette.mode === 'dark';
+	const inactiveColor = isSecondary
+		? 'text.secondary'
+		: isDark
+			? 'text.primary'
+			: accentColor;
 	const activeBg = isSecondary ? '#01584F' : accentColor;
 
 	return (
@@ -682,10 +750,10 @@ const DrawerLeafRow: React.FC<DrawerLeafProps> = ({
 			sx={{
 				py: 1.5,
 				px: 2,
-				color: active ? '#ffffff' : inactiveColor,
+				color: active ? activeFg : inactiveColor,
 				bgcolor: active ? activeBg : 'transparent',
 				'&:hover': {
-					bgcolor: active ? activeBg : 'action.hover'
+					bgcolor: active ? activeBg : groupTint
 				}
 			}}
 		>
@@ -716,12 +784,18 @@ const MenuContent: React.FC<MenuContentProps> = ({
 	activePath,
 	onLinkClick,
 	accentColor = '#01584f',
+	groupAccentColor,
 	surfaceBackgroundColor: surfaceBackgroundColorProp,
 	railShowTitles = false
 }) => {
 	const theme = useTheme();
 	const railSubmenuSurface =
 		surfaceBackgroundColorProp ?? theme.palette.background.paper;
+	// Foreground on the solid active fill, and the light group/hover tint —
+	// derived from the accent so they track a custom `accentColor` (matches the
+	// desktop collapsible sidebar). `groupAccentColor` overrides the tint.
+	const activeFg = getContrastText(accentColor);
+	const groupTint = groupAccentColor ?? deriveGroupTint(accentColor);
 
 	const handleLinkClick = (path: string) => {
 		if (onLinkClick) {
@@ -796,6 +870,8 @@ const MenuContent: React.FC<MenuContentProps> = ({
 					activePath={activePath}
 					onLinkClick={handleLinkClick}
 					accentColor={accentColor}
+					groupTint={groupTint}
+					activeFg={activeFg}
 					isSecondary={isSecondary}
 				/>
 			);
@@ -806,6 +882,8 @@ const MenuContent: React.FC<MenuContentProps> = ({
 				activePath={activePath}
 				onLinkClick={handleLinkClick}
 				accentColor={accentColor}
+				groupTint={groupTint}
+				activeFg={activeFg}
 				isSecondary={isSecondary}
 			/>
 		);

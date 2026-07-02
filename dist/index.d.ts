@@ -145,9 +145,12 @@ export declare interface LumoraWrapperProps {
      * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
      */
     sidebarVariant?: 'rail' | 'collapsible';
-    /** Branding shown in the collapsible sidebar header; defaults to the Lumora logo. */
+    /** Brand logo shown in the navbar; defaults to the Lumora logo. */
     logo?: default_2.ReactNode;
-    /** Section header above the main links in the collapsible sidebar (e.g. "Environment"). */
+    /**
+     * @deprecated No longer rendered. The sidebar header (brand + section label)
+     * was moved to the navbar; this prop is accepted but ignored.
+     */
     sidebarSectionTitle?: string;
     /** Surface background of the collapsible sidebar (default '#ffffff'). */
     sidebarBackgroundColor?: string;

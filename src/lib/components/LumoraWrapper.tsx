@@ -63,9 +63,12 @@ export interface LumoraWrapperProps {
 	 * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
 	 */
 	sidebarVariant?: 'rail' | 'collapsible';
-	/** Branding shown in the collapsible sidebar header; defaults to the Lumora logo. */
+	/** Brand logo shown in the navbar; defaults to the Lumora logo. */
 	logo?: React.ReactNode;
-	/** Section header above the main links in the collapsible sidebar (e.g. "Environment"). */
+	/**
+	 * @deprecated No longer rendered. The sidebar header (brand + section label)
+	 * was moved to the navbar; this prop is accepted but ignored.
+	 */
 	sidebarSectionTitle?: string;
 	/** Surface background of the collapsible sidebar (default '#ffffff'). */
 	sidebarBackgroundColor?: string;
@@ -165,7 +168,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
 	logo,
-	sidebarSectionTitle,
 	sidebarBackgroundColor,
 	groupAccentColor,
 	activeSidebarForegroundColor,
@@ -443,23 +445,30 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					<AppNavbar
 						appName={appName}
 						pageName={pageName}
+						isMobile={isMobile}
 						onMenuClick={
-							isMobile && showSidebar
-								? handleMobileSidebarToggle
+							isMobile
+								? showSidebar
+									? handleMobileSidebarToggle
+									: undefined
+								: useCollapsibleSidebar && showSidebar
+									? () =>
+											handleSidebarCollapsedChange(
+												!sidebarCollapsed
+											)
+									: undefined
+						}
+						showMenuButton={
+							showSidebar && (isMobile || useCollapsibleSidebar)
+						}
+						sidebarCollapsed={
+							!isMobile && useCollapsibleSidebar
+								? sidebarCollapsed
 								: undefined
 						}
-						showMenuButton={isMobile && showSidebar}
-						showBrand={!(useCollapsibleSidebar && !isMobile)}
-						headerStyles={
-							useCollapsibleSidebar && !isMobile && showSidebar
-								? ({
-										left: `${desktopSidebarWidthPx}px`,
-										width: `calc(100% - ${desktopSidebarWidthPx}px)`,
-										transition: SIDEBAR_TRANSITION,
-										...(headerStyles as object)
-									} as SxProps<Theme>)
-								: headerStyles
-						}
+						showBrand={true}
+						logo={resolvedLogo}
+						headerStyles={headerStyles}
 						userName={userName}
 						userEmail={userEmail}
 						userAvatar={userAvatar}
@@ -502,11 +511,13 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							width: desktopSidebarWidthPx,
 							minWidth: desktopSidebarWidthPx,
 							flexShrink: 0,
-							zIndex: 2, // Higher z-index than app bar
+							zIndex: 2,
 							position: 'sticky',
-							top: 0,
+							// Sit below the fixed 60px navbar (which now spans full width).
+							top: showHeader ? '60px' : 0,
+							mt: showHeader ? '60px' : 0,
 							alignSelf: 'flex-start',
-							height: '100vh',
+							height: showHeader ? 'calc(100vh - 60px)' : '100vh',
 							transition: SIDEBAR_TRANSITION,
 							...sidebarStyles
 						}}
@@ -516,9 +527,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							secondaryLinks={secondarySidebarLinks}
 							activePath={activePath}
 							onLinkClick={onLinkClick}
-							logo={resolvedLogo}
-							title={appName}
-							sectionTitle={sidebarSectionTitle}
 							activeAccentColor={resolvedAccentColor}
 							groupAccentColor={groupAccentColor}
 							activeForegroundColor={activeSidebarForegroundColor}
@@ -594,20 +602,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						userName={userName}
 						userEmail={userEmail}
 						userAvatar={userAvatar}
+						userRole={userRole}
 						onLogout={handleLogout}
 						onProfileClick={onProfileClick}
-						showNotifications={showNotifications}
-						notificationCount={notificationCount}
-						onNotificationBellClick={
-							showNotifications && NotificationSidebarContent
-								? () => {
-										setMobileSidebarOpen(false);
-										setNotificationDrawerOpen(true);
-									}
-								: undefined
-						}
+						theme={themeMode}
+						showThemeToggler={showThemeToggler}
+						onThemeToggle={onThemeToggle}
 						alertProps={alertProps}
 						accentColor={resolvedAccentColor}
+						groupAccentColor={groupAccentColor}
 					/>
 				)}
 

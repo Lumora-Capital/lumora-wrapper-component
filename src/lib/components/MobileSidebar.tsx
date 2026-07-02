@@ -1,12 +1,14 @@
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import Avatar from '@mui/material/Avatar';
-import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import CardAlert from './CardAlert';
@@ -23,11 +25,13 @@ interface MobileSidebarProps {
 	userName?: string;
 	userEmail?: string;
 	userAvatar?: string;
+	userRole?: string;
 	onLogout?: () => void;
 	onProfileClick?: () => void;
-	showNotifications?: boolean;
-	notificationCount?: number;
-	onNotificationBellClick?: () => void;
+	/** Theme mode; used to label and icon the theme toggle in the header. */
+	theme?: 'dark' | 'light';
+	showThemeToggler?: boolean;
+	onThemeToggle?: () => void;
 	alertProps?: {
 		title?: string;
 		message?: string;
@@ -36,6 +40,8 @@ interface MobileSidebarProps {
 		show?: boolean;
 	};
 	accentColor?: string;
+	/** Light accent tint for the active parent group and hover in the menu. */
+	groupAccentColor?: string;
 }
 
 const MobileSidebar: React.FC<MobileSidebarProps> = ({
@@ -47,13 +53,26 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 	onLinkClick,
 	userName = 'User Name',
 	userAvatar,
+	userRole,
 	onLogout,
-	showNotifications = false,
-	notificationCount = 0,
-	onNotificationBellClick,
+	theme = 'light',
+	showThemeToggler = false,
+	onThemeToggle,
 	alertProps,
-	accentColor = '#01584f'
+	accentColor = '#01584f',
+	groupAccentColor
 }) => {
+	const isDarkTheme = theme === 'dark';
+	const themeToggleLabel = isDarkTheme
+		? 'Switch to light mode'
+		: 'Switch to dark mode';
+
+	// Match the navbar profile: "USER" -> "User", default to "User" when unset.
+	const formatRole = (role?: string) => {
+		if (!role) return 'User';
+		return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+	};
+
 	const handleLinkClick = (path: string) => {
 		onLinkClick?.(path);
 		onClose(); // Close mobile sidebar when link is clicked
@@ -61,7 +80,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
 	return (
 		<Drawer
-			anchor='right'
+			anchor='left'
 			open={open}
 			onClose={onClose}
 			sx={{
@@ -78,36 +97,77 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 					height: '100%'
 				}}
 			>
-				<Stack direction='row' sx={{ p: 2, pb: 0, gap: 1 }}>
+				<Stack
+					direction='row'
+					sx={{ p: 2, gap: 1, alignItems: 'center' }}
+				>
 					<Stack
 						direction='row'
-						sx={{ gap: 1, alignItems: 'center', flexGrow: 1, p: 1 }}
+						sx={{
+							gap: 1,
+							alignItems: 'center',
+							flexGrow: 1,
+							p: 1,
+							minWidth: 0
+						}}
 					>
 						<Avatar
 							sizes='small'
 							alt={userName}
 							src={userAvatar}
-							sx={{ width: 24, height: 24 }}
+							sx={{ width: 40, height: 40, flexShrink: 0 }}
 						/>
-						<Typography component='p' variant='h6'>
-							{userName}
-						</Typography>
-					</Stack>
-					{showNotifications && (
-						<Badge
-							color='error'
-							badgeContent={notificationCount}
-							invisible={notificationCount === 0}
-							sx={{ '& .MuiBadge-badge': { right: 2, top: 2 } }}
+						<Box
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								minWidth: 0
+							}}
 						>
-							<IconButton
-								size='small'
-								onClick={onNotificationBellClick}
-								aria-label='Notifications'
+							<Typography
+								component='p'
+								variant='subtitle1'
+								sx={{
+									fontWeight: 600,
+									lineHeight: 1.2,
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}
 							>
-								<NotificationsRoundedIcon />
-							</IconButton>
-						</Badge>
+								{userName}
+							</Typography>
+							<Typography
+								variant='caption'
+								sx={{
+									color: 'text.secondary',
+									lineHeight: 1.2,
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}
+							>
+								{formatRole(userRole)}
+							</Typography>
+						</Box>
+					</Stack>
+					{showThemeToggler && (
+						<Tooltip title={themeToggleLabel} placement='bottom'>
+							<span>
+								<IconButton
+									size='small'
+									onClick={onThemeToggle}
+									disabled={!onThemeToggle}
+									aria-label={themeToggleLabel}
+								>
+									{isDarkTheme ? (
+										<LightModeIcon fontSize='small' />
+									) : (
+										<DarkModeIcon fontSize='small' />
+									)}
+								</IconButton>
+							</span>
+						</Tooltip>
 					)}
 				</Stack>
 				<Divider />
@@ -119,6 +179,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 						activePath={activePath}
 						onLinkClick={handleLinkClick}
 						accentColor={accentColor}
+						groupAccentColor={groupAccentColor}
 					/>
 					<Divider />
 				</Stack>

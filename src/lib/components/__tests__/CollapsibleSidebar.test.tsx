@@ -32,9 +32,6 @@ const renderSidebar = (
 		<CollapsibleSidebar
 			mainLinks={mainLinks}
 			secondaryLinks={secondaryLinks}
-			logo={<span data-testid='logo-mark'>logo</span>}
-			title='CENTRA'
-			sectionTitle='Environment'
 			activePath='/crm'
 			{...props}
 		/>
@@ -45,49 +42,27 @@ beforeEach(() => {
 });
 
 describe('CollapsibleSidebar', () => {
-	describe('collapse state persistence', () => {
-		it('persists the collapsed state to localStorage and restores it on remount', () => {
+	describe('collapse state', () => {
+		// The collapse toggle now lives in the navbar (see LumoraWrapper); this
+		// component only reads the collapsed state.
+		it('restores the persisted collapsed state from localStorage on mount', () => {
 			const persistKey = 'test:sidebar-collapsed';
-			const { unmount } = renderSidebar({ persistKey });
-
-			// Starts expanded, then collapse via the toggle
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'false'
-			);
-			fireEvent.click(screen.getByTestId('sidebar-toggle'));
-
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'true'
-			);
-			expect(window.localStorage.getItem(persistKey)).toBe('true');
-
-			// A fresh mount (simulating a page refresh) restores collapsed
-			unmount();
+			window.localStorage.setItem(persistKey, 'true');
 			renderSidebar({ persistKey });
 			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
 				'data-collapsed',
 				'true'
 			);
 		});
-	});
 
-	describe('logo and title', () => {
-		it('shows both logo and title when expanded', () => {
-			renderSidebar({ collapsed: false });
-			expect(screen.getByTestId('sidebar-logo')).toBeInTheDocument();
-			expect(screen.getByTestId('sidebar-title')).toHaveTextContent(
-				'CENTRA'
+		it('reflects the controlled collapsed prop over stored state', () => {
+			const persistKey = 'test:sidebar-collapsed';
+			window.localStorage.setItem(persistKey, 'true');
+			renderSidebar({ persistKey, collapsed: false });
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'false'
 			);
-		});
-
-		it('hides the title but keeps the logo when collapsed', () => {
-			renderSidebar({ collapsed: true });
-			expect(screen.getByTestId('sidebar-logo')).toBeInTheDocument();
-			expect(
-				screen.queryByTestId('sidebar-title')
-			).not.toBeInTheDocument();
 		});
 	});
 
