@@ -24,6 +24,14 @@ import { readStoredCollapsed, writeStoredCollapsed } from './sidebarUtils';
 /** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
 const DESKTOP_RAIL_WIDTH_PX = 100;
 
+/** Fixed width of the non-collapsible `rail-labeled` variant. Narrow rail with
+ * labels stacked under the icons (captions/icons are sized down to fit 80px). */
+const RAIL_LABELED_WIDTH_PX = 80;
+
+/** Fixed navbar height; the full-height rail-labeled sidebar insets its content
+ * by this much so items start below the bar. */
+const NAVBAR_HEIGHT_PX = 60;
+
 /** Collapsible sidebar variant widths and persistence key. */
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 264;
 const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
@@ -60,9 +68,11 @@ export interface LumoraWrapperProps {
 	/**
 	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
 	 * is a full-height panel that toggles between expanded (logo + title + labels) and a
-	 * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
+	 * collapsed icon rail, persisting its state to localStorage; `'rail-labeled'` is a
+	 * fixed narrow rail with the label stacked under each icon that never collapses
+	 * (no toggle). Mobile is unaffected.
 	 */
-	sidebarVariant?: 'rail' | 'collapsible';
+	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
 	/** Brand logo shown in the navbar; defaults to the Lumora logo. */
 	logo?: React.ReactNode;
 	/**
@@ -74,7 +84,8 @@ export interface LumoraWrapperProps {
 	sidebarBackgroundColor?: string;
 	/** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
 	groupAccentColor?: string;
-	/** Foreground for active items; defaults to auto-contrast from `accentColor`. */
+	/** Foreground of the highlighted sidebar item (active or hovered); defaults
+	 * to auto-contrast from the sidebar accent. */
 	activeSidebarForegroundColor?: string;
 	enableRefreshToken?: boolean;
 	activePath?: string;
@@ -121,8 +132,24 @@ export interface LumoraWrapperProps {
 	headerStyles?: SxProps<Theme>;
 	sidebarStyles?: SxProps<Theme>;
 	contentStyles?: SxProps<Theme>;
-	// Accent color prop
+	/**
+	 * Brand accent used by the navbar (app name / logo / menu button) and as the
+	 * default for the sidebar accent. Defaults to '#01584f'.
+	 */
 	accentColor?: string;
+	/**
+	 * Accent for the sidebar — the solid fill of the highlighted item, shared by
+	 * the active item and any item on hover. Independent of the navbar brand
+	 * accent; defaults to `accentColor`.
+	 */
+	sidebarAccentColor?: string;
+	/**
+	 * Idle (inactive) text/icon color for sidebar items, independent of the
+	 * active fill. Lets idle labels be tinted (e.g. a light teal) while the
+	 * active item uses a darker solid fill. Defaults to the sidebar accent in
+	 * light mode / the theme text color on a dark surface.
+	 */
+	sidebarForegroundColor?: string;
 	contentBackgroundColor?: string;
 	// Navbar styling props
 	navbarBackground?: string;
@@ -198,6 +225,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	sidebarStyles,
 	contentStyles,
 	accentColor,
+	sidebarAccentColor,
+	sidebarForegroundColor,
 	contentBackgroundColor,
 	navbarBackground,
 	navbarAccentColor,
@@ -220,6 +249,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	);
 	const isDark = themeMode === 'dark';
 	const resolvedAccentColor = accentColor ?? '#01584f';
+	// Sidebar accent is independent of the navbar brand accent, falling back to it.
+	const resolvedSidebarAccent = sidebarAccentColor ?? resolvedAccentColor;
 	const resolvedContentBg =
 		contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
 	const resolvedNavbarBg =
@@ -227,6 +258,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const resolvedNavbarAccent =
 		navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
 	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
+	// Non-collapsible narrow rail with labels — rendered by CollapsibleSidebar
+	// pinned in its shrunk state with captions on.
+	const useRailLabeledSidebar = sidebarVariant === 'rail-labeled';
+	const rendersCollapsibleComponent =
+		useCollapsibleSidebar || useRailLabeledSidebar;
+	// The rail-labeled sidebar runs the full viewport height (top:0), so the
+	// navbar starts at its right edge instead of spanning the whole width.
+	const railLabeledFullHeight =
+		useRailLabeledSidebar && showSidebar && !isMobile;
 	// Default logo tinted to the sidebar accent via a CSS mask, so it stays in
 	// sync when the accent color is overridden. Consumers can pass their own.
 	const resolvedLogo = logo ?? (
@@ -262,7 +302,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Keep sidebar, drawer paper width and main `calc(100% - …)` in sync.
 	let desktopSidebarWidthPx = 0;
 	if (showSidebar && !isMobile) {
-		if (useCollapsibleSidebar) {
+		if (useRailLabeledSidebar) {
+			desktopSidebarWidthPx = RAIL_LABELED_WIDTH_PX;
+		} else if (useCollapsibleSidebar) {
 			desktopSidebarWidthPx = sidebarCollapsed
 				? COLLAPSIBLE_COLLAPSED_WIDTH_PX
 				: COLLAPSIBLE_EXPANDED_WIDTH_PX;
@@ -467,6 +509,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								: undefined
 						}
 						showBrand={true}
+						leftOffsetPx={
+							railLabeledFullHeight ? RAIL_LABELED_WIDTH_PX : 0
+						}
 						logo={resolvedLogo}
 						headerStyles={headerStyles}
 						userName={userName}
@@ -503,8 +548,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					/>
 				)}
 
-				{/* Desktop Sidebar — collapsible variant */}
-				{showSidebar && !isMobile && useCollapsibleSidebar && (
+				{/* Desktop Sidebar — collapsible / rail-labeled variants (both
+				    rendered by CollapsibleSidebar) */}
+				{showSidebar && !isMobile && rendersCollapsibleComponent && (
 					<Box
 						component='aside'
 						sx={{
@@ -513,11 +559,25 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							flexShrink: 0,
 							zIndex: 2,
 							position: 'sticky',
-							// Sit below the fixed 60px navbar (which now spans full width).
-							top: showHeader ? '60px' : 0,
-							mt: showHeader ? '60px' : 0,
+							// rail-labeled spans the full viewport height with the
+							// navbar inset to its right; the collapsible panel sits
+							// below the fixed 60px navbar.
+							top: railLabeledFullHeight
+								? 0
+								: showHeader
+									? '60px'
+									: 0,
+							mt: railLabeledFullHeight
+								? 0
+								: showHeader
+									? '60px'
+									: 0,
 							alignSelf: 'flex-start',
-							height: showHeader ? 'calc(100vh - 60px)' : '100vh',
+							height: railLabeledFullHeight
+								? '100vh'
+								: showHeader
+									? 'calc(100vh - 60px)'
+									: '100vh',
 							transition: SIDEBAR_TRANSITION,
 							...sidebarStyles
 						}}
@@ -527,23 +587,45 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							secondaryLinks={secondarySidebarLinks}
 							activePath={activePath}
 							onLinkClick={onLinkClick}
-							activeAccentColor={resolvedAccentColor}
+							activeAccentColor={resolvedSidebarAccent}
 							groupAccentColor={groupAccentColor}
 							activeForegroundColor={activeSidebarForegroundColor}
+							foregroundColor={sidebarForegroundColor}
 							surfaceBackgroundColor={sidebarBackgroundColor}
-							collapsed={sidebarCollapsed}
-							onCollapsedChange={handleSidebarCollapsedChange}
+							// rail-labeled is pinned shrunk with captions and no toggle.
+							collapsed={
+								useRailLabeledSidebar ? true : sidebarCollapsed
+							}
+							onCollapsedChange={
+								useRailLabeledSidebar
+									? undefined
+									: handleSidebarCollapsedChange
+							}
+							showLabels={useRailLabeledSidebar}
+							// Full-height rail-labeled: inset content below the
+							// navbar so the first item clears the bar.
+							topInsetPx={
+								railLabeledFullHeight && showHeader
+									? NAVBAR_HEIGHT_PX
+									: 0
+							}
 							expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
-							collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
+							collapsedWidth={
+								useRailLabeledSidebar
+									? RAIL_LABELED_WIDTH_PX
+									: COLLAPSIBLE_COLLAPSED_WIDTH_PX
+							}
 						/>
-						{alertProps?.show && !sidebarCollapsed && (
-							<CardAlert {...alertProps} />
-						)}
+						{/* Full alert card only in the wide (expanded) collapsible
+						    panel — never in the narrow labeled rail. */}
+						{useCollapsibleSidebar &&
+							alertProps?.show &&
+							!sidebarCollapsed && <CardAlert {...alertProps} />}
 					</Box>
 				)}
 
 				{/* Desktop Sidebar — fixed rail variant */}
-				{showSidebar && !isMobile && !useCollapsibleSidebar && (
+				{showSidebar && !isMobile && !rendersCollapsibleComponent && (
 					<Drawer
 						variant='permanent'
 						sx={{
@@ -581,7 +663,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								secondaryLinks={secondarySidebarLinks}
 								activePath={activePath}
 								onLinkClick={onLinkClick}
-								accentColor={resolvedAccentColor}
+								accentColor={resolvedSidebarAccent}
 								surfaceBackgroundColor={resolvedContentBg}
 								railShowTitles={showSidebarRailTitles}
 							/>
@@ -609,7 +691,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						showThemeToggler={showThemeToggler}
 						onThemeToggle={onThemeToggle}
 						alertProps={alertProps}
-						accentColor={resolvedAccentColor}
+						accentColor={resolvedSidebarAccent}
 						groupAccentColor={groupAccentColor}
 					/>
 				)}

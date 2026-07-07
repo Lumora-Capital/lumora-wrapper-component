@@ -54,6 +54,12 @@ interface AppNavbarProps {
 	/** Show the logo + app name block. */
 	showBrand?: boolean;
 	/**
+	 * Left inset (px) so the fixed navbar starts at the right edge of a
+	 * full-height sidebar instead of spanning the whole width. Its width becomes
+	 * `calc(100% - leftOffsetPx)`. Defaults to 0 (full-width bar on top).
+	 */
+	leftOffsetPx?: number;
+	/**
 	 * Brand logo node. When provided it is rendered in the brand block (already
 	 * sized/tinted by the caller). Falls back to the bundled logo asset otherwise.
 	 */
@@ -113,6 +119,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	sidebarCollapsed,
 	showBrand = true,
 	logo,
+	leftOffsetPx = 0,
 	headerStyles,
 	userName = 'User Name',
 	userEmail,
@@ -202,8 +209,10 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 				boxShadow: 0,
 				background: navbarBackground,
 				top: 'var(--template-frame-height, 0px)',
-				left: 0,
-				width: '100%',
+				// Inset from the left so the bar starts at the edge of a
+				// full-height sidebar; full width otherwise.
+				left: leftOffsetPx,
+				width: leftOffsetPx ? `calc(100% - ${leftOffsetPx}px)` : '100%',
 				zIndex: 1,
 				height: '60px',
 				...headerStyles

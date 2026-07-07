@@ -114,20 +114,12 @@ const collapsibleMainLinks: SidebarLink[] = [
 	{
 		text: 'Deals',
 		path: '/deals',
-		icon: <AnalyticsIcon />,
-		subitems: [
-			{ text: 'People', path: '/crm/people', icon: <PeopleIcon /> },
-			{ text: 'Company', path: '/crm/company', icon: <AnalyticsIcon /> }
-		]
+		icon: <AnalyticsIcon />
 	},
 	{
 		text: 'CRM',
 		path: '/crm',
-		icon: <AdbIcon />,
-		subitems: [
-			{ text: 'People', path: '/crm/people', icon: <PeopleIcon /> },
-			{ text: 'Company', path: '/crm/company', icon: <AnalyticsIcon /> }
-		]
+		icon: <AdbIcon />
 	},
 	{
 		text: 'Funding Partners',
@@ -329,13 +321,22 @@ const DemoApp = () => {
 				showThemeToggler={true}
 				onThemeToggle={toggleTheme}
 				theme={mode}
-				// Collapsible desktop sidebar variant (persists collapsed state)
-				sidebarVariant='collapsible'
+				// Desktop sidebar layout: 'rail' | 'collapsible' | 'rail-labeled'.
+				// 'rail-labeled' is a fixed narrow rail with labels under the
+				// icons that never collapses (no toggle).
+				sidebarVariant='rail-labeled'
+				sidebarBackgroundColor='#072d29'
 				sidebarSectionTitle='Environment'
+				// Navbar brand accent (logo/name) — dark green on the bar.
 				accentColor='#01584f'
+				// Active item fill — dark green pill with white text/icon.
+				sidebarAccentColor='#01584f'
+				activeSidebarForegroundColor='#ffffff'
+				// Idle (inactive) labels/icons — light teal on the dark rail.
+				sidebarForegroundColor='#7ec8bf'
 				// Light mode uses the mockup tint; dark mode falls back to the
 				// component's adaptive (translucent) default.
-				groupAccentColor={mode === 'light' ? '#d5e9e4' : undefined}
+				// groupAccentColor={mode === 'light' ? '#01584f' : undefined}
 				// Uncomment the lines below to test conditional rendering:
 				// showHeader={false}  // Hide the header completely
 				// showSidebar={false} // Hide the sidebar completely

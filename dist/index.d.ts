@@ -68,12 +68,19 @@ export declare interface CollapsibleSidebarProps {
     title?: string;
     /** Section header above the main links (e.g. "Environment"); expanded only. */
     sectionTitle?: string;
-    /** Solid background of the active item (default '#01584f'). */
+    /** Solid background of the highlighted item — shared by the active item and
+     * any item on hover (default '#01584f'). */
     activeAccentColor?: string;
-    /** Light tint for a parent's child group and hover (default derived). */
+    /** Light tint for a parent's child group (default derived). */
     groupAccentColor?: string;
-    /** Foreground on the active item; default auto-contrast from the accent. */
+    /** Foreground of the highlighted item (active or hovered); default
+     * auto-contrast from the accent. */
     activeForegroundColor?: string;
+    /** Idle (inactive) text/icon color on the surface. Defaults to the accent in
+     * light mode and the theme text color on a dark surface. Set this to tint
+     * idle labels independently of the active highlight (e.g. a light teal on a
+     * dark rail whose active item is a darker solid green). */
+    foregroundColor?: string;
     /** Sidebar surface background (default '#ffffff'). */
     surfaceBackgroundColor?: string;
     /** Controlled collapsed state. When provided, the owner also persists it. */
@@ -85,6 +92,17 @@ export declare interface CollapsibleSidebarProps {
     persistKey?: string;
     expandedWidth?: number;
     collapsedWidth?: number;
+    /**
+     * When collapsed, show `link.text` as a caption beneath each icon instead of
+     * icon-only + tooltip. Used by the non-collapsible `rail-labeled` layout.
+     */
+    showLabels?: boolean;
+    /**
+     * Top padding (px) reserved inside the sidebar surface. The full-height
+     * `rail-labeled` layout uses this to clear the navbar height so the first
+     * item starts below the bar (rather than flush against the top).
+     */
+    topInsetPx?: number;
 }
 
 /**
@@ -142,9 +160,11 @@ export declare interface LumoraWrapperProps {
     /**
      * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
      * is a full-height panel that toggles between expanded (logo + title + labels) and a
-     * collapsed icon rail, persisting its state to localStorage. Mobile is unaffected.
+     * collapsed icon rail, persisting its state to localStorage; `'rail-labeled'` is a
+     * fixed narrow rail with the label stacked under each icon that never collapses
+     * (no toggle). Mobile is unaffected.
      */
-    sidebarVariant?: 'rail' | 'collapsible';
+    sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
     /** Brand logo shown in the navbar; defaults to the Lumora logo. */
     logo?: default_2.ReactNode;
     /**
@@ -156,7 +176,8 @@ export declare interface LumoraWrapperProps {
     sidebarBackgroundColor?: string;
     /** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
     groupAccentColor?: string;
-    /** Foreground for active items; defaults to auto-contrast from `accentColor`. */
+    /** Foreground of the highlighted sidebar item (active or hovered); defaults
+     * to auto-contrast from the sidebar accent. */
     activeSidebarForegroundColor?: string;
     enableRefreshToken?: boolean;
     activePath?: string;
@@ -198,7 +219,24 @@ export declare interface LumoraWrapperProps {
     headerStyles?: SxProps<Theme>;
     sidebarStyles?: SxProps<Theme>;
     contentStyles?: SxProps<Theme>;
+    /**
+     * Brand accent used by the navbar (app name / logo / menu button) and as the
+     * default for the sidebar accent. Defaults to '#01584f'.
+     */
     accentColor?: string;
+    /**
+     * Accent for the sidebar — the solid fill of the highlighted item, shared by
+     * the active item and any item on hover. Independent of the navbar brand
+     * accent; defaults to `accentColor`.
+     */
+    sidebarAccentColor?: string;
+    /**
+     * Idle (inactive) text/icon color for sidebar items, independent of the
+     * active fill. Lets idle labels be tinted (e.g. a light teal) while the
+     * active item uses a darker solid fill. Defaults to the sidebar accent in
+     * light mode / the theme text color on a dark surface.
+     */
+    sidebarForegroundColor?: string;
     contentBackgroundColor?: string;
     navbarBackground?: string;
     navbarAccentColor?: string;

@@ -222,6 +222,149 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
+	describe('labeled rail (showLabels)', () => {
+		it('renders labels as visible captions under the icons when collapsed', () => {
+			renderSidebar({ collapsed: true, showLabels: true });
+			// Unlike the icon-only collapsed rail, labels are visible text here.
+			expect(screen.getByText('Deals')).toBeInTheDocument();
+			expect(screen.getByText('Dashboard')).toBeInTheDocument();
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-labeled',
+				'true'
+			);
+		});
+
+		it('gives each labeled item 8px padding on all sides', () => {
+			renderSidebar({ collapsed: true, showLabels: true });
+			// p: 1 => 8px on every side of the item container.
+			expect(screen.getByTestId('sidebar-item-Deals')).toHaveStyle({
+				padding: '8px'
+			});
+		});
+
+		it('tints idle items with foregroundColor while the active item uses the accent fill', () => {
+			renderSidebar({
+				collapsed: true,
+				showLabels: true,
+				activePath: '/deals',
+				activeAccentColor: '#01584f', // active pill fill
+				activeForegroundColor: '#ffffff', // active text/icon
+				foregroundColor: '#7ec8bf' // idle labels/icons
+			});
+			// Idle item: tinted with foregroundColor, no fill — proving the idle
+			// tint is decoupled from the active accent.
+			expect(screen.getByTestId('sidebar-item-Dashboard')).toHaveStyle({
+				color: 'rgb(126, 200, 191)'
+			});
+			// Active item: solid accent fill with the active foreground.
+			expect(screen.getByTestId('sidebar-item-Deals')).toHaveStyle({
+				backgroundColor: 'rgb(1, 88, 79)',
+				color: 'rgb(255, 255, 255)'
+			});
+		});
+
+		it('hovering any item applies the same accent fill + foreground as the active item', () => {
+			renderSidebar({
+				collapsed: true,
+				showLabels: true,
+				activePath: '/deals',
+				activeAccentColor: '#123abc', // accent fill (active AND hover)
+				activeForegroundColor: '#abcdef', // foreground (active AND hover)
+				foregroundColor: '#7ec8bf' // idle tint (distinct, so hover != idle)
+			});
+			// jsdom cannot resolve :hover state, so read the injected CSSOM rules
+			// directly. Idle items are teal (#7ec8bf), so the accent (#123abc) /
+			// active-fg (#abcdef) colors only appear in the active + hover rules;
+			// their presence confirms hover reuses the active look. Accept hex or
+			// the rgb() form some CSSOM implementations normalize to.
+			const cssRules = Array.from(document.styleSheets)
+				.flatMap(sheet => {
+					try {
+						return Array.from(sheet.cssRules).map(r => r.cssText);
+					} catch {
+						return [];
+					}
+				})
+				.map(r => r.toLowerCase());
+			// A :hover rule exists carrying both the accent fill and the fg.
+			const hoverRule = cssRules.find(
+				r =>
+					r.includes(':hover') &&
+					/#123abc|rgb\(18,\s*58,\s*188\)/.test(r)
+			);
+			expect(hoverRule).toBeDefined();
+			expect(hoverRule).toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
+			const cssText = cssRules.join(' ');
+			expect(cssText).toMatch(/#123abc|rgb\(18,\s*58,\s*188\)/);
+			expect(cssText).toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
+		});
+
+		it('keeps a parent group chevron and expands children inline on click', () => {
+			const onLinkClick = jest.fn();
+			renderSidebar({
+				collapsed: true,
+				showLabels: true,
+				activePath: '/dashboard',
+				onLinkClick
+			});
+
+			// Inactive group: children not on the rail until the parent is clicked.
+			expect(
+				screen.queryByTestId('sidebar-subitem-People')
+			).not.toBeInTheDocument();
+
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+
+			const group = screen.getByTestId('sidebar-group-CRM');
+			expect(
+				within(group).getByTestId('sidebar-subitem-People')
+			).toBeInTheDocument();
+			// Child labels are visible captions too.
+			expect(within(group).getByText('People')).toBeInTheDocument();
+
+			fireEvent.click(
+				within(group).getByTestId('sidebar-subitem-People')
+			);
+			expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
+		});
+	});
+
+	// Guards that the rail-labeled "active == hover" look did NOT leak into the
+	// collapsible variant, which must keep its original subtle idle-hover tint.
+	describe('collapsible variant hover (regression: unaffected by rail-labeled)', () => {
+		const readCssRules = () =>
+			Array.from(document.styleSheets)
+				.flatMap(sheet => {
+					try {
+						return Array.from(sheet.cssRules).map(r => r.cssText);
+					} catch {
+						return [];
+					}
+				})
+				.map(r => r.toLowerCase());
+
+		it('tints idle items subtly on hover (groupTint), never the solid accent + fg', () => {
+			renderSidebar({
+				collapsed: false, // expanded collapsible rows
+				showLabels: false, // collapsible, NOT rail-labeled
+				activePath: '/nothing', // nothing active → only idle-hover rules
+				activeAccentColor: '#123abc', // solid accent (rgb 18,58,188)
+				activeForegroundColor: '#abcdef' // active fg (rgb 171,205,239)
+			});
+			const rules = readCssRules();
+			// The idle-hover rule uses the derived translucent tint
+			// rgba(18, 58, 188, 0.14), i.e. the accent at 14% — NOT the solid fill.
+			const idleHover = rules.find(
+				r =>
+					r.includes(':hover') &&
+					/rgba\(18,\s*58,\s*188,\s*0?\.14\)/.test(r)
+			);
+			expect(idleHover).toBeDefined();
+			// ...and it must not flip the foreground to the active fg on hover.
+			expect(idleHover).not.toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
+		});
+	});
+
 	describe('truncated label tooltips', () => {
 		// jsdom has no layout, so simulate an overflowing label.
 		beforeEach(() => {

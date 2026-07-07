@@ -29,12 +29,23 @@ const WIDTH_TRANSITION = 'width 200ms ease';
 const CHEVRON_FONT_SIZE_PX = 16;
 /** Subtler chevron beneath the icon on the narrow collapsed rail. */
 const CHEVRON_FONT_SIZE_RAIL_PX = 14;
+/** Caption + icon sizing for the narrow (80px) labeled rail, tuned so labels
+ * like "Analytics" / "Knowledge" stay legible without overflowing. */
+const RAIL_LABEL_FONT_SIZE = '0.7rem';
+const RAIL_LABEL_ICON_SIZE_PX = 22;
 
 /**
- * Expanded-row label that ellipsizes when it overflows and reveals the full text
+ * Row/caption label that ellipsizes when it overflows and reveals the full text
  * as a tooltip only while truncated (same pattern as MenuContent's rail caption).
+ * `variant='caption'` + `center` render the stacked caption used beneath icons on
+ * the narrow labeled rail.
  */
-const TruncatingLabel: React.FC<{ text: string }> = ({ text }) => {
+const TruncatingLabel: React.FC<{
+	text: string;
+	variant?: 'body1' | 'caption';
+	center?: boolean;
+	fontSize?: string | number;
+}> = ({ text, variant = 'body1', center = false, fontSize }) => {
 	const ref = React.useRef<HTMLSpanElement>(null);
 	const [truncated, setTruncated] = React.useState(false);
 
@@ -73,13 +84,16 @@ const TruncatingLabel: React.FC<{ text: string }> = ({ text }) => {
 			<Typography
 				ref={ref}
 				component='span'
-				variant='body1'
+				variant={variant}
 				sx={{
 					display: 'block',
+					width: center ? '100%' : undefined,
 					overflow: 'hidden',
 					textOverflow: 'ellipsis',
 					whiteSpace: 'nowrap',
-					color: 'inherit'
+					color: 'inherit',
+					...(fontSize ? { fontSize } : {}),
+					...(center ? { textAlign: 'center', lineHeight: 1.1 } : {})
 				}}
 			>
 				{text}
@@ -113,12 +127,19 @@ export interface CollapsibleSidebarProps {
 	/** Section header above the main links (e.g. "Environment"); expanded only. */
 	sectionTitle?: string;
 	// Prop-driven accents
-	/** Solid background of the active item (default '#01584f'). */
+	/** Solid background of the highlighted item — shared by the active item and
+	 * any item on hover (default '#01584f'). */
 	activeAccentColor?: string;
-	/** Light tint for a parent's child group and hover (default derived). */
+	/** Light tint for a parent's child group (default derived). */
 	groupAccentColor?: string;
-	/** Foreground on the active item; default auto-contrast from the accent. */
+	/** Foreground of the highlighted item (active or hovered); default
+	 * auto-contrast from the accent. */
 	activeForegroundColor?: string;
+	/** Idle (inactive) text/icon color on the surface. Defaults to the accent in
+	 * light mode and the theme text color on a dark surface. Set this to tint
+	 * idle labels independently of the active highlight (e.g. a light teal on a
+	 * dark rail whose active item is a darker solid green). */
+	foregroundColor?: string;
 	/** Sidebar surface background (default '#ffffff'). */
 	surfaceBackgroundColor?: string;
 	// Collapse / expand
@@ -131,6 +152,17 @@ export interface CollapsibleSidebarProps {
 	persistKey?: string;
 	expandedWidth?: number;
 	collapsedWidth?: number;
+	/**
+	 * When collapsed, show `link.text` as a caption beneath each icon instead of
+	 * icon-only + tooltip. Used by the non-collapsible `rail-labeled` layout.
+	 */
+	showLabels?: boolean;
+	/**
+	 * Top padding (px) reserved inside the sidebar surface. The full-height
+	 * `rail-labeled` layout uses this to clear the navbar height so the first
+	 * item starts below the bar (rather than flush against the top).
+	 */
+	topInsetPx?: number;
 }
 
 const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
@@ -141,12 +173,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	activeAccentColor = '#01584f',
 	groupAccentColor,
 	activeForegroundColor,
+	foregroundColor,
 	surfaceBackgroundColor,
 	collapsed: collapsedProp,
 	defaultCollapsed = false,
 	persistKey = DEFAULT_PERSIST_KEY,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
-	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX
+	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
+	showLabels = false,
+	topInsetPx = 0
 }) => {
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
@@ -167,6 +202,23 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const activeAccent = activeAccentColor;
 	const activeFg = activeForegroundColor ?? getContrastText(activeAccent);
+	// The highlighted look: accent fill + active foreground. Applied to the
+	// active item in every variant, and — in the rail-labeled layout only
+	// (`showLabels`) — to any hovered item, so active and hover match there.
+	// The collapsible variant keeps its original subtle idle-hover tint instead.
+	// `highlightSx` targets expanded rows, which set an explicit icon color.
+	const highlightSx = {
+		bgcolor: activeAccent,
+		color: activeFg,
+		'& .MuiListItemIcon-root': { color: activeFg }
+	};
+	// The same look for the collapsed labeled icon buttons (the icon uses
+	// currentColor and the caption inherits), plus the highlight's rounded corner.
+	const iconHighlightSx = {
+		bgcolor: activeAccent,
+		color: activeFg,
+		borderRadius: '8px'
+	};
 	const groupTint = groupAccentColor ?? deriveGroupTint(activeAccent);
 	// Surface defaults to white in light mode and the theme's paper (dark chrome)
 	// in dark mode; overridable via surfaceBackgroundColor.
@@ -176,7 +228,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// Accent-colored chrome (brand title, toggle, logo, inactive icons) uses the
 	// brand accent in light mode (per the mockup); in dark mode the accent is too
 	// dim on the dark surface, so fall back to the theme's primary text color.
-	const accentOnSurface = isDark ? 'text.primary' : activeAccent;
+	// `foregroundColor` overrides this so idle labels can be tinted independently
+	// of the active highlight (e.g. teal idle labels over a dark-green active pill).
+	const accentOnSurface =
+		foregroundColor ?? (isDark ? 'text.primary' : activeAccent);
 
 	const handleClick = (path: string) => {
 		onLinkClick?.(path);
@@ -213,12 +268,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						color: active ? activeFg : accentOnSurface,
 						minWidth: 36
 					},
-					'&:hover': {
-						bgcolor: active ? activeAccent : groupTint
-					},
-					'&.Mui-selected, &.Mui-selected:hover': {
+					// rail-labeled: active AND hover share the highlight. collapsible:
+					// keep the original subtle idle-hover tint (accent only if active).
+					'&:hover':
+						active || showLabels
+							? highlightSx
+							: { bgcolor: groupTint },
+					'&.Mui-selected': {
 						bgcolor: activeAccent
-					}
+					},
+					'&.Mui-selected:hover': highlightSx
 				}}
 			>
 				<ListItemIcon>{link.icon}</ListItemIcon>
@@ -263,9 +322,12 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							color: parentActive ? activeFg : accentOnSurface,
 							minWidth: 36
 						},
-						'&:hover': {
-							bgcolor: parentActive ? activeAccent : groupTint
-						}
+						// rail-labeled highlights on hover; collapsible keeps the
+						// subtle idle tint (accent only when the parent is active).
+						'&:hover':
+							parentActive || showLabels
+								? highlightSx
+								: { bgcolor: groupTint }
 					}}
 				>
 					<ListItemIcon>{link.icon}</ListItemIcon>
@@ -307,12 +369,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						color: active ? activeFg : accentOnSurface,
 						minWidth: 32
 					},
-					'&:hover': {
-						bgcolor: active ? activeAccent : 'action.hover'
-					},
-					'&.Mui-selected, &.Mui-selected:hover': {
+					// rail-labeled: active AND hover share the highlight. collapsible:
+					// keep the original subtle idle-hover tint (accent only if active).
+					'&:hover':
+						active || showLabels
+							? highlightSx
+							: { bgcolor: 'action.hover' },
+					'&.Mui-selected': {
 						bgcolor: activeAccent
-					}
+					},
+					'&.Mui-selected:hover': highlightSx
 				}}
 			>
 				{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
@@ -341,25 +407,65 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				onClick={onClick}
 				data-testid={options?.testId ?? `sidebar-item-${label}`}
 				data-active={active ? 'true' : 'false'}
-				sx={{
-					width: 44,
-					height: 44,
-					color: active ? activeFg : accentOnSurface,
-					bgcolor: active ? activeAccent : 'transparent',
-					borderRadius: active ? '8px' : '50%',
-					'&:hover': {
-						bgcolor: active
-							? activeAccent
-							: options?.insideGroup
-								? 'action.hover'
-								: groupTint,
-						borderRadius: '8px'
-					}
-				}}
+				sx={
+					showLabels
+						? {
+								display: 'flex',
+								flexDirection: 'column',
+								gap: 0.25,
+								width: '100%',
+								maxWidth: '100%',
+								height: 'auto',
+								// 8px padding on all sides of the item container.
+								p: 1,
+								borderRadius: '8px',
+								color: active ? activeFg : accentOnSurface,
+								bgcolor: active ? activeAccent : 'transparent',
+								'& .MuiSvgIcon-root': {
+									fontSize: RAIL_LABEL_ICON_SIZE_PX
+								},
+								'&:hover': iconHighlightSx
+							}
+						: {
+								// Icon-only collapsed rail (collapsible variant):
+								// original hover — accent when active, else a subtle
+								// tint; no foreground change.
+								width: 44,
+								height: 44,
+								color: active ? activeFg : accentOnSurface,
+								bgcolor: active ? activeAccent : 'transparent',
+								borderRadius: active ? '8px' : '50%',
+								'&:hover': {
+									bgcolor: active
+										? activeAccent
+										: options?.insideGroup
+											? 'action.hover'
+											: groupTint,
+									borderRadius: '8px'
+								}
+							}
+				}
 			>
 				{icon}
+				{showLabels ? (
+					<TruncatingLabel
+						text={label}
+						variant='caption'
+						center
+						fontSize={RAIL_LABEL_FONT_SIZE}
+					/>
+				) : null}
 			</IconButton>
 		);
+		// With visible captions the tooltip is redundant (the caption keeps its
+		// own truncation-only tooltip); disabled buttons still need the span wrapper.
+		if (showLabels) {
+			return disabled ? (
+				<span key={key}>{button}</span>
+			) : (
+				<React.Fragment key={key}>{button}</React.Fragment>
+			);
+		}
 		return (
 			<Tooltip key={key} title={label} placement='right' arrow>
 				{disabled ? <span>{button}</span> : button}
@@ -375,36 +481,71 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
 
-		const parentButton = (
-			<Tooltip title={link.text} placement='right' arrow>
-				<IconButton
-					aria-label={link.text}
-					aria-expanded={open}
-					onClick={() => toggleGroup(link.text, open)}
-					data-testid={`sidebar-item-${link.text}`}
-					data-active={parentActive ? 'true' : 'false'}
-					sx={{
-						display: 'flex',
-						flexDirection: 'column',
-						gap: 0,
-						width: 44,
-						py: 0.75,
-						borderRadius: '10px',
-						color: parentActive ? activeFg : accentOnSurface,
-						bgcolor: parentActive ? activeAccent : 'transparent',
-						// The outer pill supplies the hover tint; keep only the
-						// solid active fill on the button itself.
-						'&:hover': {
-							bgcolor: parentActive ? activeAccent : 'transparent'
-						}
-					}}
-				>
-					{link.icon}
-					<GroupChevron
-						open={open}
-						size={CHEVRON_FONT_SIZE_RAIL_PX}
+		const parentIconButton = (
+			<IconButton
+				aria-label={link.text}
+				aria-expanded={open}
+				onClick={() => toggleGroup(link.text, open)}
+				data-testid={`sidebar-item-${link.text}`}
+				data-active={parentActive ? 'true' : 'false'}
+				sx={{
+					display: 'flex',
+					flexDirection: 'column',
+					gap: showLabels ? 0.25 : 0,
+					width: showLabels ? '100%' : 44,
+					maxWidth: '100%',
+					// 8px padding on all sides of the labeled item container.
+					...(showLabels ? { p: 1 } : { py: 0.75 }),
+					borderRadius: '10px',
+					color: parentActive ? activeFg : accentOnSurface,
+					bgcolor: parentActive ? activeAccent : 'transparent',
+					// rail-labeled: active AND hover share the highlight. collapsible:
+					// original behavior — accent only when active; the outer pill
+					// supplies the idle-hover tint, so the button stays transparent.
+					'&:hover': showLabels
+						? { bgcolor: activeAccent, color: activeFg }
+						: {
+								bgcolor: parentActive
+									? activeAccent
+									: 'transparent'
+							}
+				}}
+			>
+				{/* Size only the item's own icon; the chevron below stays smaller. */}
+				{showLabels ? (
+					<Box
+						sx={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							'& .MuiSvgIcon-root': {
+								fontSize: RAIL_LABEL_ICON_SIZE_PX
+							}
+						}}
+					>
+						{link.icon}
+					</Box>
+				) : (
+					link.icon
+				)}
+				{showLabels ? (
+					<TruncatingLabel
+						text={link.text}
+						variant='caption'
+						center
+						fontSize={RAIL_LABEL_FONT_SIZE}
 					/>
-				</IconButton>
+				) : null}
+				<GroupChevron open={open} size={CHEVRON_FONT_SIZE_RAIL_PX} />
+			</IconButton>
+		);
+
+		// With a visible caption the tooltip is redundant.
+		const parentButton = showLabels ? (
+			parentIconButton
+		) : (
+			<Tooltip title={link.text} placement='right' arrow>
+				{parentIconButton}
 			</Tooltip>
 		);
 
@@ -419,9 +560,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					flexDirection: 'column',
 					alignItems: 'center',
 					gap: 0.5,
-					// The active group's pill stays tinted; any group tints on hover.
+					// The active group's container stays tinted. collapsible tints
+					// the whole group on hover (original); rail-labeled leaves hover
+					// highlighting to the individual items.
 					bgcolor: groupActive ? groupTint : 'transparent',
-					'&:hover': { bgcolor: groupTint }
+					...(showLabels ? {} : { '&:hover': { bgcolor: groupTint } })
 				}}
 			>
 				{parentButton}
@@ -499,6 +642,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			aria-label='Main sidebar'
 			data-testid='collapsible-sidebar'
 			data-collapsed={collapsed ? 'true' : 'false'}
+			data-labeled={showLabels ? 'true' : 'false'}
 			sx={{
 				width,
 				minWidth: width,
@@ -510,8 +654,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				overflowX: 'hidden',
 				overflowY: 'auto',
 				transition: WIDTH_TRANSITION,
-				px: collapsed ? 1 : 2,
-				pt: 1,
+				px: showLabels ? 0.5 : collapsed ? 1 : 2,
+				pt: topInsetPx ? `${topInsetPx}px` : 1,
 				pb: 2
 			}}
 		>
