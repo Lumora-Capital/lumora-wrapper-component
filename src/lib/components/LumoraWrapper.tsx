@@ -163,6 +163,15 @@ export interface LumoraWrapperProps {
 	// Chat sidebar props
 	GlobalChatSidebar?: React.ComponentType;
 	useChatSidebar?: () => { isOpen: boolean };
+	// Assistant (chat) launcher in the navbar
+	/** Show the Nexa assistant icon (animated border) in the navbar. */
+	showAssistant?: boolean;
+	/** Click handler for the assistant icon; typically toggles the chat sidebar. */
+	onAssistantClick?: () => void;
+	/** Highlight the assistant icon while the chat is open. */
+	assistantActive?: boolean;
+	/** Animate the assistant icon's ring/beam — only while a chat is ongoing. */
+	assistantBusy?: boolean;
 	rightExtraContent?: Array<{
 		key: string;
 		name: string;
@@ -235,6 +244,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onThemeToggle,
 	GlobalChatSidebar,
 	useChatSidebar,
+	showAssistant = false,
+	onAssistantClick,
+	assistantActive = false,
+	assistantBusy = false,
 	rightExtraContent,
 	customNavbar: CustomNavbar,
 	customNavbarProps,
@@ -545,6 +558,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						rightExtraContent={rightExtraContent}
 						customNavbar={CustomNavbar}
 						customNavbarProps={customNavbarProps}
+						showAssistant={showAssistant}
+						onAssistantClick={onAssistantClick}
+						assistantActive={assistantActive}
+						assistantBusy={assistantBusy}
 					/>
 				)}
 

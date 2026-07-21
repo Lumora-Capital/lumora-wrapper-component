@@ -288,6 +288,13 @@ const DemoContent = () => (
 // LumoraWrapper `theme` prop (which builds its own themed subtree internally).
 const DemoApp = () => {
 	const [mode, setMode] = useState<'light' | 'dark'>('light');
+	const [chatOpen, setChatOpen] = useState(false);
+	// `assistantBusy` demo state; query-initializable (?busy=1) for screenshots.
+	const [chatBusy, setChatBusy] = useState(
+		() =>
+			typeof window !== 'undefined' &&
+			new URLSearchParams(window.location.search).get('busy') === '1'
+	);
 	const theme = useMemo(
 		() =>
 			createTheme(getDesignTokens(mode), { components: themeComponents }),
@@ -299,6 +306,19 @@ const DemoApp = () => {
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
+			<button
+				type='button'
+				onClick={() => setChatBusy(prev => !prev)}
+				style={{
+					position: 'fixed',
+					bottom: 16,
+					right: 16,
+					zIndex: 2000,
+					padding: '8px 12px'
+				}}
+			>
+				{chatBusy ? 'Stop' : 'Start'} chat (busy)
+			</button>
 			<LumoraWrapper
 				sidebarLinks={collapsibleMainLinks}
 				secondarySidebarLinks={collapsibleSecondaryLinks}
@@ -321,6 +341,10 @@ const DemoApp = () => {
 				showThemeToggler={true}
 				onThemeToggle={toggleTheme}
 				theme={mode}
+				showAssistant={true}
+				assistantActive={chatOpen}
+				assistantBusy={chatBusy}
+				onAssistantClick={() => setChatOpen(prev => !prev)}
 				// Desktop sidebar layout: 'rail' | 'collapsible' | 'rail-labeled'.
 				// 'rail-labeled' is a fixed narrow rail with labels under the
 				// icons that never collapses (no toggle).
