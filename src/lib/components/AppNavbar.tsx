@@ -23,6 +23,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import * as React from 'react';
+import AssistantButton from './AssistantButton';
 
 const Toolbar = styled(MuiToolbar)({
 	width: '100%',
@@ -98,6 +99,16 @@ interface AppNavbarProps {
 	// Custom navbar component
 	customNavbar?: React.ComponentType<any>;
 	customNavbarProps?: Record<string, any>;
+	// Assistant (chat) launcher button props
+	/** Show the Nexa assistant icon button (animated border) in the navbar. */
+	showAssistant?: boolean;
+	/** Click handler for the assistant icon; typically toggles the chat sidebar. */
+	onAssistantClick?: () => void;
+	/** Highlight the assistant icon while the chat is open. */
+	assistantActive?: boolean;
+	/** Animate the ring/beam border — only while a chat is ongoing. When false,
+	 * the icon shows just the Nexa logo (no ring). */
+	assistantBusy?: boolean;
 	rightExtraContent?: Array<{
 		key: string;
 		name: string;
@@ -147,7 +158,11 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	navbarAccentColor = '#000000',
 	rightExtraContent = [],
 	customNavbar: CustomNavbar,
-	customNavbarProps
+	customNavbarProps,
+	showAssistant = false,
+	onAssistantClick,
+	assistantActive = false,
+	assistantBusy = false
 }) => {
 	const isUpMd = useMediaQuery(theme => theme.breakpoints.up('md'));
 	const [profileMenuAnchor, setProfileMenuAnchor] =
@@ -404,6 +419,27 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 								<NotificationsOutlinedIcon />
 							</IconButton>
 						</Badge>
+					)}
+					{/* Assistant (chat) launcher — Nexa mark; the beam ring
+					    animates only while a chat is ongoing (assistantBusy). */}
+					{showAssistant && !isMobile && (
+						<>
+							<Divider
+								orientation='vertical'
+								flexItem
+								sx={{
+									borderColor: 'rgba(0, 0, 0, 0.12)',
+									height: '24px',
+									alignSelf: 'center'
+								}}
+							/>
+							<AssistantButton
+								onClick={onAssistantClick}
+								active={assistantActive}
+								busy={assistantBusy}
+								navbarBackground={navbarBackground}
+							/>
+						</>
 					)}
 					{/* Divider */}
 					{showNotifications && showProfile && !isMobile && (

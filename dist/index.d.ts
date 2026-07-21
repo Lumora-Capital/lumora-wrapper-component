@@ -248,6 +248,14 @@ export declare interface LumoraWrapperProps {
     useChatSidebar?: () => {
         isOpen: boolean;
     };
+    /** Show the Nexa assistant icon (animated border) in the navbar. */
+    showAssistant?: boolean;
+    /** Click handler for the assistant icon; typically toggles the chat sidebar. */
+    onAssistantClick?: () => void;
+    /** Highlight the assistant icon while the chat is open. */
+    assistantActive?: boolean;
+    /** Animate the assistant icon's ring/beam — only while a chat is ongoing. */
+    assistantBusy?: boolean;
     rightExtraContent?: Array<{
         key: string;
         name: string;
