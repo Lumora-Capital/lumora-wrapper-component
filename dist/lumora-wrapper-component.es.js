@@ -591,11 +591,11 @@ const F = {
   active: o = !1,
   busy: r = !1,
   navbarBackground: a = "#ffffff"
-}) => /* @__PURE__ */ t(ae, { title: "Assistant", placement: "bottom", children: /* @__PURE__ */ t(
+}) => /* @__PURE__ */ t(ae, { title: "Nexa", placement: "bottom", children: /* @__PURE__ */ t(
   re,
   {
     onClick: e,
-    "aria-label": "Toggle assistant",
+    "aria-label": "Toggle Nexa assistant",
     "aria-pressed": o,
     disableFocusRipple: !0,
     sx: {
