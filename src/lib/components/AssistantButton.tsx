@@ -27,10 +27,10 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 	busy = false,
 	navbarBackground = '#ffffff'
 }) => (
-	<Tooltip title='Assistant' placement='bottom'>
+	<Tooltip title='Nexa' placement='bottom'>
 		<IconButton
 			onClick={onClick}
-			aria-label='Toggle assistant'
+			aria-label='Toggle Nexa assistant'
 			aria-pressed={active}
 			disableFocusRipple
 			sx={{
