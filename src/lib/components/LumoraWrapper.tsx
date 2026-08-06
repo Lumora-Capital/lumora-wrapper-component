@@ -19,7 +19,11 @@ import CardAlert from './CardAlert';
 import CollapsibleSidebar from './CollapsibleSidebar';
 import MenuContent from './MenuContent';
 import MobileSidebar from './MobileSidebar';
-import { readStoredCollapsed, writeStoredCollapsed } from './sidebarUtils';
+import {
+	getContrastText,
+	readStoredCollapsed,
+	writeStoredCollapsed
+} from './sidebarUtils';
 
 /** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
 const DESKTOP_RAIL_WIDTH_PX = 100;
@@ -67,8 +71,10 @@ export interface LumoraWrapperProps {
 	showSidebarRailTitles?: boolean;
 	/**
 	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
-	 * is a full-height panel that toggles between expanded (logo + title + labels) and a
-	 * collapsed icon rail, persisting its state to localStorage; `'rail-labeled'` is a
+	 * is a full-height panel with its own 60px header (hamburger toggle + brand) that
+	 * switches between expanded (icon + label rows) and a collapsed icon rail,
+	 * persisting its state to localStorage — the brand lives in the sidebar header
+	 * while expanded and moves to the navbar while collapsed; `'rail-labeled'` is a
 	 * fixed narrow rail with the label stacked under each icon that never collapses
 	 * (no toggle). Mobile is unaffected.
 	 */
@@ -82,6 +88,11 @@ export interface LumoraWrapperProps {
 	sidebarSectionTitle?: string;
 	/** Surface background of the collapsible sidebar (default '#ffffff'). */
 	sidebarBackgroundColor?: string;
+	/**
+	 * Background of the collapsible sidebar's 60px header block (hamburger +
+	 * brand). Defaults to the sidebar surface color.
+	 */
+	sidebarHeaderBackgroundColor?: string;
 	/** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
 	groupAccentColor?: string;
 	/** Foreground of the highlighted sidebar item (active or hovered); defaults
@@ -205,6 +216,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	sidebarVariant = 'rail',
 	logo,
 	sidebarBackgroundColor,
+	sidebarHeaderBackgroundColor,
 	groupAccentColor,
 	activeSidebarForegroundColor,
 	enableRefreshToken = false,
@@ -280,9 +292,23 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// navbar starts at its right edge instead of spanning the whole width.
 	const railLabeledFullHeight =
 		useRailLabeledSidebar && showSidebar && !isMobile;
-	// Default logo tinted to the sidebar accent via a CSS mask, so it stays in
-	// sync when the accent color is overridden. Consumers can pass their own.
-	const resolvedLogo = logo ?? (
+	// The collapsible sidebar is also full-height: its own 60px header block
+	// (hamburger + brand) occupies the top-left corner and the navbar starts at
+	// its right edge, tracking the live width (expanded/collapsed).
+	const collapsibleFullHeight =
+		useCollapsibleSidebar && showSidebar && !isMobile;
+	const fullHeightSidebar = railLabeledFullHeight || collapsibleFullHeight;
+	// Resolved sidebar surface — mirrors CollapsibleSidebar's own default
+	// (theme background.paper in dark mode, white in light) so wrapper-level
+	// chrome (aside strip, header fallback) can't drift from the component.
+	const resolvedSidebarSurface =
+		sidebarBackgroundColor ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const resolvedSidebarHeaderBg =
+		sidebarHeaderBackgroundColor ?? resolvedSidebarSurface;
+	const sidebarHeaderFg = getContrastText(resolvedSidebarHeaderBg);
+	// Default logo via a CSS mask so it can be tinted per surface. Consumers
+	// can pass their own `logo` node instead.
+	const renderMaskLogo = (tint: string) => (
 		<Box
 			role='img'
 			aria-label={`${appName} logo`}
@@ -290,8 +316,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				width: 28,
 				height: 28,
 				flexShrink: 0,
-				// Accent in light mode; a legible light fill in dark mode.
-				bgcolor: isDark ? '#ffffff' : resolvedAccentColor,
+				bgcolor: tint,
 				maskImage: 'url(/lumora-logo.svg)',
 				maskRepeat: 'no-repeat',
 				maskPosition: 'center',
@@ -303,6 +328,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			}}
 		/>
 	);
+	// Navbar brand: accent in light mode; a legible light fill in dark mode.
+	const resolvedLogo =
+		logo ?? renderMaskLogo(isDark ? '#ffffff' : resolvedAccentColor);
+	// Sidebar-header brand: tinted against the header background instead (the
+	// navbar tint would vanish on a dark-green header in light mode).
+	const resolvedSidebarHeaderLogo = logo ?? renderMaskLogo(sidebarHeaderFg);
 	// Collapsible sidebar collapsed state is owned here so the navbar/content
 	// offsets stay in sync with the sidebar width. Restored from localStorage.
 	const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
@@ -501,30 +532,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						appName={appName}
 						pageName={pageName}
 						isMobile={isMobile}
+						// Desktop collapsible: the toggle lives in the sidebar's
+						// own header, so the navbar hamburger is mobile-only.
 						onMenuClick={
-							isMobile
-								? showSidebar
-									? handleMobileSidebarToggle
-									: undefined
-								: useCollapsibleSidebar && showSidebar
-									? () =>
-											handleSidebarCollapsedChange(
-												!sidebarCollapsed
-											)
-									: undefined
-						}
-						showMenuButton={
-							showSidebar && (isMobile || useCollapsibleSidebar)
-						}
-						sidebarCollapsed={
-							!isMobile && useCollapsibleSidebar
-								? sidebarCollapsed
+							isMobile && showSidebar
+								? handleMobileSidebarToggle
 								: undefined
 						}
-						showBrand={true}
-						leftOffsetPx={
-							railLabeledFullHeight ? RAIL_LABELED_WIDTH_PX : 0
-						}
+						showMenuButton={showSidebar && isMobile}
+						// Brand moves into the sidebar header while the desktop
+						// collapsible panel is expanded; the navbar shows it
+						// whenever the panel is collapsed (or on mobile).
+						showBrand={!(collapsibleFullHeight && !sidebarCollapsed)}
+						leftOffsetPx={fullHeightSidebar ? desktopSidebarWidthPx : 0}
 						logo={resolvedLogo}
 						headerStyles={headerStyles}
 						userName={userName}
@@ -566,7 +586,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				)}
 
 				{/* Desktop Sidebar — collapsible / rail-labeled variants (both
-				    rendered by CollapsibleSidebar) */}
+				    rendered by CollapsibleSidebar). Both span the full viewport
+				    height with the navbar inset to their right; the collapsible
+				    panel hosts its own 60px header (hamburger + brand). */}
 				{showSidebar && !isMobile && rendersCollapsibleComponent && (
 					<Box
 						component='aside'
@@ -576,25 +598,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							flexShrink: 0,
 							zIndex: 2,
 							position: 'sticky',
-							// rail-labeled spans the full viewport height with the
-							// navbar inset to its right; the collapsible panel sits
-							// below the fixed 60px navbar.
-							top: railLabeledFullHeight
-								? 0
-								: showHeader
-									? '60px'
-									: 0,
-							mt: railLabeledFullHeight
-								? 0
-								: showHeader
-									? '60px'
-									: 0,
+							top: 0,
+							mt: 0,
 							alignSelf: 'flex-start',
-							height: railLabeledFullHeight
-								? '100vh'
-								: showHeader
-									? 'calc(100vh - 60px)'
-									: '100vh',
+							height: '100vh',
+							// Flex column so the sidebar shrinks to fit siblings
+							// (the alert card) instead of pushing them off-screen.
+							display: 'flex',
+							flexDirection: 'column',
+							// Keep the strip behind any bottom sibling on-brand.
+							bgcolor: useCollapsibleSidebar
+								? resolvedSidebarSurface
+								: undefined,
 							transition: SIDEBAR_TRANSITION,
 							...sidebarStyles
 						}}
@@ -604,11 +619,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							secondaryLinks={secondarySidebarLinks}
 							activePath={activePath}
 							onLinkClick={onLinkClick}
+							showHeaderBar={useCollapsibleSidebar}
+							logo={resolvedSidebarHeaderLogo}
+							title={appName}
+							headerBackgroundColor={
+								useCollapsibleSidebar
+									? resolvedSidebarHeaderBg
+									: undefined
+							}
 							activeAccentColor={resolvedSidebarAccent}
 							groupAccentColor={groupAccentColor}
 							activeForegroundColor={activeSidebarForegroundColor}
 							foregroundColor={sidebarForegroundColor}
-							surfaceBackgroundColor={sidebarBackgroundColor}
+							surfaceBackgroundColor={resolvedSidebarSurface}
 							// rail-labeled is pinned shrunk with captions and no toggle.
 							collapsed={
 								useRailLabeledSidebar ? true : sidebarCollapsed

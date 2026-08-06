@@ -62,12 +62,27 @@ export declare interface CollapsibleSidebarProps {
     secondaryLinks?: SidebarLink[];
     activePath?: string;
     onLinkClick?: (path: string) => void;
-    /** Always visible, in both states. */
+    /** Brand logo, rendered in the header bar while expanded. */
     logo?: React_2.ReactNode;
-    /** App title; shown only when expanded. */
+    /** App title wordmark (uppercased); shown in the header bar while expanded. */
     title?: string;
-    /** Section header above the main links (e.g. "Environment"); expanded only. */
+    /** @deprecated Never rendered — the section header row was dropped. */
     sectionTitle?: string;
+    /**
+     * Render the 60px in-sidebar header bar (collapse hamburger + brand). Used
+     * by the full-height collapsible layout; off by default so the labeled rail
+     * and existing consumers are unaffected. When on, `topInsetPx` is ignored —
+     * the header itself occupies the top of the surface.
+     */
+    showHeaderBar?: boolean;
+    /** Header bar background; defaults to the sidebar surface color. */
+    headerBackgroundColor?: string;
+    /**
+     * Header bar foreground (hamburger + wordmark); defaults to auto-contrast
+     * from the header background. Auto-contrast only parses hex colors — set
+     * this explicitly when the header background is a non-hex value.
+     */
+    headerForegroundColor?: string;
     /** Solid background of the highlighted item — shared by the active item and
      * any item on hover (default '#01584f'). */
     activeAccentColor?: string;
@@ -159,8 +174,10 @@ export declare interface LumoraWrapperProps {
     showSidebarRailTitles?: boolean;
     /**
      * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
-     * is a full-height panel that toggles between expanded (logo + title + labels) and a
-     * collapsed icon rail, persisting its state to localStorage; `'rail-labeled'` is a
+     * is a full-height panel with its own 60px header (hamburger toggle + brand) that
+     * switches between expanded (icon + label rows) and a collapsed icon rail,
+     * persisting its state to localStorage — the brand lives in the sidebar header
+     * while expanded and moves to the navbar while collapsed; `'rail-labeled'` is a
      * fixed narrow rail with the label stacked under each icon that never collapses
      * (no toggle). Mobile is unaffected.
      */
@@ -174,6 +191,11 @@ export declare interface LumoraWrapperProps {
     sidebarSectionTitle?: string;
     /** Surface background of the collapsible sidebar (default '#ffffff'). */
     sidebarBackgroundColor?: string;
+    /**
+     * Background of the collapsible sidebar's 60px header block (hamburger +
+     * brand). Defaults to the sidebar surface color.
+     */
+    sidebarHeaderBackgroundColor?: string;
     /** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
     groupAccentColor?: string;
     /** Foreground of the highlighted sidebar item (active or hovered); defaults

@@ -22,6 +22,7 @@ import MuiToolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import useScrollTrigger from '@mui/material/useScrollTrigger';
 import * as React from 'react';
 import AssistantButton from './AssistantButton';
 
@@ -165,6 +166,12 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	assistantBusy = false
 }) => {
 	const isUpMd = useMediaQuery(theme => theme.breakpoints.up('md'));
+	// True once the window is scrolled at all — used to lift the bar off the
+	// page with a shadow so content sliding underneath reads as a layer below.
+	const isScrolled = useScrollTrigger({
+		disableHysteresis: true,
+		threshold: 0
+	});
 	const [profileMenuAnchor, setProfileMenuAnchor] =
 		React.useState<null | HTMLElement>(null);
 	const profileMenuOpen = Boolean(profileMenuAnchor);
@@ -221,7 +228,13 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 		<AppBar
 			position='fixed'
 			sx={{
-				boxShadow: 0,
+				boxShadow: isScrolled
+					? '0 2px 8px rgba(0, 0, 0, 0.12)'
+					: 'none',
+				// left/width animate in step with the collapsible sidebar's
+				// 200ms width transition so the bar tracks the panel edge.
+				transition:
+					'box-shadow 0.2s ease-in-out, left 200ms ease, width 200ms ease',
 				background: navbarBackground,
 				top: 'var(--template-frame-height, 0px)',
 				// Inset from the left so the bar starts at the edge of a

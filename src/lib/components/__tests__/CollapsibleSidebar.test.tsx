@@ -43,8 +43,8 @@ beforeEach(() => {
 
 describe('CollapsibleSidebar', () => {
 	describe('collapse state', () => {
-		// The collapse toggle now lives in the navbar (see LumoraWrapper); this
-		// component only reads the collapsed state.
+		// The collapse toggle lives in the in-sidebar header bar (showHeaderBar);
+		// without it, this component only reads the collapsed state.
 		it('restores the persisted collapsed state from localStorage on mount', () => {
 			const persistKey = 'test:sidebar-collapsed';
 			window.localStorage.setItem(persistKey, 'true');
@@ -434,6 +434,108 @@ describe('CollapsibleSidebar', () => {
 			renderSidebar({ collapsed: false, onLinkClick });
 			fireEvent.click(screen.getByTestId('sidebar-item-Deals'));
 			expect(onLinkClick).toHaveBeenCalledWith('/deals');
+		});
+	});
+
+	describe('sidebar header (showHeaderBar)', () => {
+		it('renders no header bar by default (guards the labeled rail)', () => {
+			renderSidebar({ collapsed: true, showLabels: true });
+			expect(screen.queryByTestId('sidebar-header')).not.toBeInTheDocument();
+			expect(
+				screen.queryByTestId('sidebar-collapse-toggle')
+			).not.toBeInTheDocument();
+		});
+
+		it('controlled: the toggle reports the next state without flipping itself', () => {
+			const onCollapsedChange = jest.fn();
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				onCollapsedChange
+			});
+			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
+			expect(onCollapsedChange).toHaveBeenCalledWith(true);
+			// Controlled: the owner decides; the component itself must not flip.
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'false'
+			);
+		});
+
+		it('uncontrolled: the toggle flips the state and persists it', () => {
+			const persistKey = 'test:sidebar-collapsed';
+			const onCollapsedChange = jest.fn();
+			renderSidebar({
+				showHeaderBar: true,
+				persistKey,
+				onCollapsedChange
+			});
+			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'true'
+			);
+			expect(window.localStorage.getItem(persistKey)).toBe('true');
+			expect(onCollapsedChange).toHaveBeenCalledWith(true);
+		});
+
+		it('shows the brand (logo + uppercase title) only while expanded', () => {
+			const { rerender } = render(
+				<CollapsibleSidebar
+					mainLinks={mainLinks}
+					showHeaderBar
+					collapsed={false}
+					logo={<svg data-testid='brand-logo' />}
+					title='Polymer'
+				/>
+			);
+			const brand = screen.getByTestId('sidebar-header-brand');
+			expect(within(brand).getByTestId('brand-logo')).toBeInTheDocument();
+			expect(within(brand).getByText('Polymer')).toHaveStyle({
+				textTransform: 'uppercase'
+			});
+			const toggle = screen.getByTestId('sidebar-collapse-toggle');
+			expect(toggle).toHaveAccessibleName('Collapse sidebar');
+			expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+			rerender(
+				<CollapsibleSidebar
+					mainLinks={mainLinks}
+					showHeaderBar
+					collapsed={true}
+					logo={<svg data-testid='brand-logo' />}
+					title='Polymer'
+				/>
+			);
+			// Collapsed: only the hamburger fits — the brand is gone.
+			expect(
+				screen.queryByTestId('sidebar-header-brand')
+			).not.toBeInTheDocument();
+			const collapsedToggle = screen.getByTestId('sidebar-collapse-toggle');
+			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
+			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
+		});
+
+		it('applies headerBackgroundColor and falls back to the surface color', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				headerBackgroundColor: '#0a3b35'
+			});
+			expect(screen.getByTestId('sidebar-header')).toHaveStyle({
+				backgroundColor: 'rgb(10, 59, 53)'
+			});
+		});
+
+		it('defaults the header background to the sidebar surface', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				surfaceBackgroundColor: '#123456'
+			});
+			expect(screen.getByTestId('sidebar-header')).toHaveStyle({
+				backgroundColor: 'rgb(18, 52, 86)'
+			});
 		});
 	});
 });

@@ -1,5 +1,6 @@
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
+import MenuRounded from '@mui/icons-material/MenuRounded';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
@@ -18,13 +19,23 @@ import {
 	getContrastText,
 	isSidebarLinkActive,
 	isSubLinkActive,
-	readStoredCollapsed
+	readStoredCollapsed,
+	writeStoredCollapsed
 } from './sidebarUtils';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
+/** In-sidebar header height; must match NAVBAR_HEIGHT_PX in LumoraWrapper so
+ * the header block lines up with the navbar to its right. */
+const HEADER_HEIGHT_PX = 60;
+/** Host apps (and the demo's base CSS) often outline every `button:focus`,
+ * which lingers after a mouse click — neutralize it on all sidebar icon
+ * buttons (same treatment as the navbar hamburger). */
+const FOCUS_OUTLINE_FIX = {
+	'&:focus, &:focus-visible': { outline: 'none' }
+} as const;
 /** Chevron indicator size; kept clearly smaller than the item's own icon. */
 const CHEVRON_FONT_SIZE_PX = 16;
 /** Subtler chevron beneath the icon on the narrow collapsed rail. */
@@ -119,13 +130,28 @@ export interface CollapsibleSidebarProps {
 	secondaryLinks?: SidebarLink[];
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
-	// Branding (lives inside the sidebar header)
-	/** Always visible, in both states. */
+	// Branding (lives inside the sidebar header bar; see `showHeaderBar`)
+	/** Brand logo, rendered in the header bar while expanded. */
 	logo?: React.ReactNode;
-	/** App title; shown only when expanded. */
+	/** App title wordmark (uppercased); shown in the header bar while expanded. */
 	title?: string;
-	/** Section header above the main links (e.g. "Environment"); expanded only. */
+	/** @deprecated Never rendered — the section header row was dropped. */
 	sectionTitle?: string;
+	/**
+	 * Render the 60px in-sidebar header bar (collapse hamburger + brand). Used
+	 * by the full-height collapsible layout; off by default so the labeled rail
+	 * and existing consumers are unaffected. When on, `topInsetPx` is ignored —
+	 * the header itself occupies the top of the surface.
+	 */
+	showHeaderBar?: boolean;
+	/** Header bar background; defaults to the sidebar surface color. */
+	headerBackgroundColor?: string;
+	/**
+	 * Header bar foreground (hamburger + wordmark); defaults to auto-contrast
+	 * from the header background. Auto-contrast only parses hex colors — set
+	 * this explicitly when the header background is a non-hex value.
+	 */
+	headerForegroundColor?: string;
 	// Prop-driven accents
 	/** Solid background of the highlighted item — shared by the active item and
 	 * any item on hover (default '#01584f'). */
@@ -170,6 +196,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	secondaryLinks = [],
 	activePath,
 	onLinkClick,
+	logo,
+	title,
+	showHeaderBar = false,
+	headerBackgroundColor,
+	headerForegroundColor,
 	activeAccentColor = '#01584f',
 	groupAccentColor,
 	activeForegroundColor,
@@ -177,6 +208,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	surfaceBackgroundColor,
 	collapsed: collapsedProp,
 	defaultCollapsed = false,
+	onCollapsedChange,
 	persistKey = DEFAULT_PERSIST_KEY,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
@@ -188,9 +220,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const isControlled = collapsedProp !== undefined;
 
 	// Uncontrolled: restore the initial value from localStorage on first render
-	// (SSR-safe). The collapse toggle now lives in the navbar, so this component
-	// only reads the state — it no longer mutates it.
-	const [internalCollapsed] = React.useState<boolean>(
+	// (SSR-safe). The collapse toggle lives in the header bar (`showHeaderBar`);
+	// controlled owners keep the state and persist it themselves.
+	const [internalCollapsed, setInternalCollapsed] = React.useState<boolean>(
 		() => readStoredCollapsed(persistKey) ?? defaultCollapsed
 	);
 	const collapsed = isControlled ? Boolean(collapsedProp) : internalCollapsed;
@@ -232,9 +264,27 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// of the active highlight (e.g. teal idle labels over a dark-green active pill).
 	const accentOnSurface =
 		foregroundColor ?? (isDark ? 'text.primary' : activeAccent);
+	// Header bar chrome; auto-contrast falls back to white for non-hex values
+	// (see the headerForegroundColor prop doc).
+	const headerBg = headerBackgroundColor ?? surface;
+	const headerFg = headerForegroundColor ?? getContrastText(headerBg);
+	// Hairline separating the header from the nav list — the foreground at low
+	// alpha so it stays legible on any header color.
+	const headerDivider = deriveGroupTint(headerFg);
 
 	const handleClick = (path: string) => {
 		onLinkClick?.(path);
+	};
+
+	// Header-bar hamburger. Controlled owners persist the state themselves, so
+	// only the uncontrolled path writes storage (avoids double-writes).
+	const handleToggleCollapsed = () => {
+		const next = !collapsed;
+		if (!isControlled) {
+			setInternalCollapsed(next);
+			writeStoredCollapsed(persistKey, next);
+		}
+		onCollapsedChange?.(next);
 	};
 
 	// Explicit toggle: pass the group's current open state so an auto-opened
@@ -259,7 +309,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				data-testid={`sidebar-item-${link.text}`}
 				data-active={active ? 'true' : 'false'}
 				sx={{
-					borderRadius: '6px',
+					borderRadius: '8px',
 					py: 1,
 					px: 1.5,
 					color: active ? activeFg : accentOnSurface,
@@ -303,7 +353,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
 				sx={{
-					borderRadius: '6px',
+					borderRadius: '8px',
 					bgcolor: groupActive ? groupTint : 'transparent'
 				}}
 			>
@@ -313,7 +363,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					data-active={parentActive ? 'true' : 'false'}
 					aria-expanded={open}
 					sx={{
-						borderRadius: '6px',
+						borderRadius: '8px',
 						py: 1,
 						px: 1.5,
 						color: parentActive ? activeFg : accentOnSurface,
@@ -359,7 +409,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				data-testid={`sidebar-subitem-${sub.text}`}
 				data-active={active ? 'true' : 'false'}
 				sx={{
-					borderRadius: '6px',
+					borderRadius: '8px',
 					mx: 0.5,
 					py: 0.75,
 					pl: 4,
@@ -424,7 +474,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								'& .MuiSvgIcon-root': {
 									fontSize: RAIL_LABEL_ICON_SIZE_PX
 								},
-								'&:hover': iconHighlightSx
+								'&:hover': iconHighlightSx,
+								...FOCUS_OUTLINE_FIX
 							}
 						: {
 								// Icon-only collapsed rail (collapsible variant):
@@ -442,7 +493,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 											? 'action.hover'
 											: groupTint,
 									borderRadius: '8px'
-								}
+								},
+								...FOCUS_OUTLINE_FIX
 							}
 				}
 			>
@@ -508,7 +560,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								bgcolor: parentActive
 									? activeAccent
 									: 'transparent'
-							}
+							},
+					...FOCUS_OUTLINE_FIX
 				}}
 			>
 				{/* Size only the item's own icon; the chevron below stays smaller. */}
@@ -636,29 +689,82 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
-	return (
+	// 60px branded header: the collapse hamburger, plus logo + wordmark while
+	// expanded (the brand moves to the navbar when there's no room for it here).
+	const headerBar = showHeaderBar ? (
 		<Box
-			component='nav'
-			aria-label='Main sidebar'
-			data-testid='collapsible-sidebar'
-			data-collapsed={collapsed ? 'true' : 'false'}
-			data-labeled={showLabels ? 'true' : 'false'}
+			data-testid='sidebar-header'
 			sx={{
-				width,
-				minWidth: width,
-				height: '100%',
-				boxSizing: 'border-box',
-				bgcolor: surface,
+				height: HEADER_HEIGHT_PX,
+				minHeight: HEADER_HEIGHT_PX,
+				flexShrink: 0,
 				display: 'flex',
-				flexDirection: 'column',
-				overflowX: 'hidden',
-				overflowY: 'auto',
-				transition: WIDTH_TRANSITION,
-				px: showLabels ? 0.5 : collapsed ? 1 : 2,
-				pt: topInsetPx ? `${topInsetPx}px` : 1,
-				pb: 2
+				alignItems: 'center',
+				gap: 1.5,
+				bgcolor: headerBg,
+				borderBottom: `1px solid ${headerDivider}`,
+				justifyContent: collapsed ? 'center' : 'flex-start',
+				// Expanded: 20px inset centers the hamburger glyph on the item
+				// icon column (16px list padding + 12px row padding + half of
+				// the 24px icon = 40px, minus the button's 8px + 12px to its
+				// own center). Collapsed: centered like the rail icons.
+				px: collapsed ? 0 : 2.5
 			}}
 		>
+			<Tooltip
+				title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+				placement='right'
+				arrow
+			>
+				<IconButton
+					aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+					aria-expanded={!collapsed}
+					onClick={handleToggleCollapsed}
+					data-testid='sidebar-collapse-toggle'
+					disableFocusRipple
+					sx={{ color: headerFg, ...FOCUS_OUTLINE_FIX }}
+				>
+					<MenuRounded />
+				</IconButton>
+			</Tooltip>
+			{!collapsed && (logo || title) ? (
+				<Stack
+					direction='row'
+					data-testid='sidebar-header-brand'
+					sx={{
+						alignItems: 'center',
+						gap: 1,
+						minWidth: 0,
+						color: headerFg,
+						// Consumer SVG logos pick up the header foreground.
+						'& svg': { color: 'inherit', fill: 'currentColor' }
+					}}
+				>
+					{/* Wordmark first, logo mark after — same order as the
+					    navbar brand. */}
+					{title ? (
+						<Typography
+							variant='h6'
+							noWrap
+							sx={{
+								color: headerFg,
+								fontWeight: 600,
+								fontSize: '18px',
+								lineHeight: 1,
+								textTransform: 'uppercase'
+							}}
+						>
+							{title}
+						</Typography>
+					) : null}
+					{logo}
+				</Stack>
+			) : null}
+		</Box>
+	) : null;
+
+	const navContent = (
+		<>
 			{/* Main links */}
 			<Stack
 				spacing={0.5}
@@ -685,6 +791,64 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Stack>
 				</Box>
 			) : null}
+		</>
+	);
+
+	return (
+		<Box
+			component='nav'
+			aria-label='Main sidebar'
+			data-testid='collapsible-sidebar'
+			data-collapsed={collapsed ? 'true' : 'false'}
+			data-labeled={showLabels ? 'true' : 'false'}
+			sx={{
+				width,
+				minWidth: width,
+				height: '100%',
+				boxSizing: 'border-box',
+				bgcolor: surface,
+				display: 'flex',
+				flexDirection: 'column',
+				// Lets the sidebar shrink inside a flex-column host so siblings
+				// (e.g. an alert card below it) stay within the viewport.
+				flex: '1 1 auto',
+				minHeight: 0,
+				transition: WIDTH_TRANSITION,
+				...(showHeaderBar
+					? { overflow: 'hidden', p: 0 }
+					: {
+							overflowX: 'hidden',
+							overflowY: 'auto',
+							px: showLabels ? 0.5 : collapsed ? 1 : 2,
+							pt: topInsetPx ? `${topInsetPx}px` : 1,
+							pb: 2
+						})
+			}}
+		>
+			{showHeaderBar ? (
+				<>
+					{headerBar}
+					{/* Scroll container; flex column keeps the bottom group's
+					    mt:auto pinning intact. */}
+					<Box
+						sx={{
+							flex: '1 1 auto',
+							minHeight: 0,
+							display: 'flex',
+							flexDirection: 'column',
+							overflowY: 'auto',
+							overflowX: 'hidden',
+							px: collapsed ? 1 : 2,
+							pt: 1,
+							pb: 2
+						}}
+					>
+						{navContent}
+					</Box>
+				</>
+			) : (
+				navContent
+			)}
 		</Box>
 	);
 };

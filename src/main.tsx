@@ -346,11 +346,13 @@ const DemoApp = () => {
 				assistantBusy={chatBusy}
 				onAssistantClick={() => setChatOpen(prev => !prev)}
 				// Desktop sidebar layout: 'rail' | 'collapsible' | 'rail-labeled'.
-				// 'rail-labeled' is a fixed narrow rail with labels under the
-				// icons that never collapses (no toggle).
-				sidebarVariant='rail-labeled'
+				// 'collapsible' is a full-height panel with its own header
+				// (hamburger toggle + brand) that switches between an expanded
+				// icon+label list and a collapsed icon rail.
+				sidebarVariant='collapsible'
+				// The header block defaults to this same surface color, with a
+				// hairline divider separating it from the nav list.
 				sidebarBackgroundColor='#072d29'
-				sidebarSectionTitle='Environment'
 				// Navbar brand accent (logo/name) — dark green on the bar.
 				accentColor='#01584f'
 				// Active item fill — dark green pill with white text/icon.
