@@ -66,6 +66,8 @@ export declare interface CollapsibleSidebarProps {
     logo?: React_2.ReactNode;
     /** App title wordmark (uppercased); shown in the header bar while expanded. */
     title?: string;
+    /** Makes the header-bar brand (title + logo) a button. */
+    onBrandClick?: () => void;
     /** @deprecated Never rendered — the section header row was dropped. */
     sectionTitle?: string;
     /**
@@ -184,6 +186,12 @@ export declare interface LumoraWrapperProps {
     sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
     /** Brand logo shown in the navbar; defaults to the Lumora logo. */
     logo?: default_2.ReactNode;
+    /**
+     * Called when the brand block (app name + logo) is clicked — in the navbar,
+     * or in the collapsible sidebar's header while it is expanded. When omitted
+     * the brand is static. Typical use: navigate to the app's landing page.
+     */
+    onBrandClick?: () => void;
     /**
      * @deprecated No longer rendered. The sidebar header (brand + section label)
      * was moved to the navbar; this prop is accepted but ignored.

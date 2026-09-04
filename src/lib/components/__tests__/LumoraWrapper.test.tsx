@@ -1,4 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within
+} from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Home, Settings, Person } from '@mui/icons-material';
 import LumoraWrapper, {
@@ -81,6 +87,28 @@ describe('LumoraWrapper', () => {
 	});
 
 	describe('Header Functionality', () => {
+		it('makes the navbar brand (app name + logo) a button when onBrandClick is given', () => {
+			const onBrandClick = jest.fn();
+			renderWithTheme({
+				appName: 'Centra',
+				logo: mockAppLogo,
+				onBrandClick
+			});
+			const brand = screen.getByTestId('navbar-brand');
+			expect(brand.tagName).toBe('BUTTON');
+			expect(brand).toHaveAccessibleName('Centra home');
+			expect(within(brand).getByTestId('app-logo')).toBeInTheDocument();
+			fireEvent.click(within(brand).getByText('Centra'));
+			expect(onBrandClick).toHaveBeenCalledTimes(1);
+		});
+
+		it('keeps the navbar brand static without onBrandClick', () => {
+			renderWithTheme({ appName: 'Centra' });
+			expect(screen.getByTestId('navbar-brand').tagName).not.toBe(
+				'BUTTON'
+			);
+		});
+
 		it('renders header when showHeader is true', () => {
 			renderWithTheme({ showHeader: true, appName: 'Test App' });
 			expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -179,7 +207,9 @@ describe('LumoraWrapper', () => {
 				sidebarLinks: []
 			});
 
-			expect(document.querySelector('.MuiDrawer-root')).toBeInTheDocument();
+			expect(
+				document.querySelector('.MuiDrawer-root')
+			).toBeInTheDocument();
 			expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		});
 

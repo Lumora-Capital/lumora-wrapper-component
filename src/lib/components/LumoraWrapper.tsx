@@ -82,6 +82,12 @@ export interface LumoraWrapperProps {
 	/** Brand logo shown in the navbar; defaults to the Lumora logo. */
 	logo?: React.ReactNode;
 	/**
+	 * Called when the brand block (app name + logo) is clicked — in the navbar,
+	 * or in the collapsible sidebar's header while it is expanded. When omitted
+	 * the brand is static. Typical use: navigate to the app's landing page.
+	 */
+	onBrandClick?: () => void;
+	/**
 	 * @deprecated No longer rendered. The sidebar header (brand + section label)
 	 * was moved to the navbar; this prop is accepted but ignored.
 	 */
@@ -215,6 +221,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
 	logo,
+	onBrandClick,
 	sidebarBackgroundColor,
 	sidebarHeaderBackgroundColor,
 	groupAccentColor,
@@ -543,9 +550,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						// Brand moves into the sidebar header while the desktop
 						// collapsible panel is expanded; the navbar shows it
 						// whenever the panel is collapsed (or on mobile).
-						showBrand={!(collapsibleFullHeight && !sidebarCollapsed)}
-						leftOffsetPx={fullHeightSidebar ? desktopSidebarWidthPx : 0}
+						showBrand={
+							!(collapsibleFullHeight && !sidebarCollapsed)
+						}
+						leftOffsetPx={
+							fullHeightSidebar ? desktopSidebarWidthPx : 0
+						}
 						logo={resolvedLogo}
+						onBrandClick={onBrandClick}
 						headerStyles={headerStyles}
 						userName={userName}
 						userEmail={userEmail}
@@ -622,6 +634,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							showHeaderBar={useCollapsibleSidebar}
 							logo={resolvedSidebarHeaderLogo}
 							title={appName}
+							onBrandClick={onBrandClick}
 							headerBackgroundColor={
 								useCollapsibleSidebar
 									? resolvedSidebarHeaderBg

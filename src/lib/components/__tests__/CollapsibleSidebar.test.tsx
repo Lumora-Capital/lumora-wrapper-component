@@ -440,7 +440,9 @@ describe('CollapsibleSidebar', () => {
 	describe('sidebar header (showHeaderBar)', () => {
 		it('renders no header bar by default (guards the labeled rail)', () => {
 			renderSidebar({ collapsed: true, showLabels: true });
-			expect(screen.queryByTestId('sidebar-header')).not.toBeInTheDocument();
+			expect(
+				screen.queryByTestId('sidebar-header')
+			).not.toBeInTheDocument();
 			expect(
 				screen.queryByTestId('sidebar-collapse-toggle')
 			).not.toBeInTheDocument();
@@ -479,6 +481,35 @@ describe('CollapsibleSidebar', () => {
 			expect(onCollapsedChange).toHaveBeenCalledWith(true);
 		});
 
+		it('makes the header brand a button when onBrandClick is given', () => {
+			const onBrandClick = jest.fn();
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				logo: <svg data-testid='brand-logo' />,
+				title: 'Centra',
+				onBrandClick
+			});
+			const brand = screen.getByTestId('sidebar-header-brand');
+			expect(brand.tagName).toBe('BUTTON');
+			expect(brand).toHaveAccessibleName('Centra home');
+			expect(within(brand).getByText('Centra')).toBeInTheDocument();
+			expect(within(brand).getByTestId('brand-logo')).toBeInTheDocument();
+			fireEvent.click(within(brand).getByText('Centra'));
+			expect(onBrandClick).toHaveBeenCalledTimes(1);
+		});
+
+		it('keeps the header brand static without onBrandClick', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				title: 'Centra'
+			});
+			expect(screen.getByTestId('sidebar-header-brand').tagName).not.toBe(
+				'BUTTON'
+			);
+		});
+
 		it('shows the brand (logo + uppercase title) only while expanded', () => {
 			const { rerender } = render(
 				<CollapsibleSidebar
@@ -511,7 +542,9 @@ describe('CollapsibleSidebar', () => {
 			expect(
 				screen.queryByTestId('sidebar-header-brand')
 			).not.toBeInTheDocument();
-			const collapsedToggle = screen.getByTestId('sidebar-collapse-toggle');
+			const collapsedToggle = screen.getByTestId(
+				'sidebar-collapse-toggle'
+			);
 			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
 			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
 		});

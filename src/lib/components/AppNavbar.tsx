@@ -10,6 +10,7 @@ import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
+import ButtonBase from '@mui/material/ButtonBase';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -66,6 +67,11 @@ interface AppNavbarProps {
 	 * sized/tinted by the caller). Falls back to the bundled logo asset otherwise.
 	 */
 	logo?: React.ReactNode;
+	/**
+	 * Makes the whole brand block (app name + logo) a button. Typically used to
+	 * send the user to the app's landing page.
+	 */
+	onBrandClick?: () => void;
 	headerStyles?: SxProps<Theme>;
 	// Right side content
 	userName?: string;
@@ -131,6 +137,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	sidebarCollapsed,
 	showBrand = true,
 	logo,
+	onBrandClick,
 	leftOffsetPx = 0,
 	headerStyles,
 	userName = 'User Name',
@@ -180,6 +187,46 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 	// mode; in dark mode the accent is too dim on the dark bar, so fall back to the
 	// theme's primary text color — matching the sidebar items and the tinted logo.
 	const brandColor = isDarkTheme ? 'text.primary' : accentColor;
+	const brandContent = (
+		<>
+			<Typography
+				variant='h6'
+				sx={{
+					color: brandColor,
+					fontWeight: 600,
+					fontSize: '20px',
+					lineHeight: 1,
+					textTransform: 'uppercase'
+				}}
+			>
+				{appName}
+			</Typography>
+			{logo ? (
+				<Box
+					sx={{
+						display: 'flex',
+						alignItems: 'center',
+						flexShrink: 0,
+						color: brandColor,
+						'& svg': {
+							color: 'inherit',
+							fill: 'currentColor'
+						}
+					}}
+				>
+					{logo}
+				</Box>
+			) : (
+				<img
+					src='/lumora-logo.svg'
+					alt={`${appName} logo`}
+					width={24}
+					height={24}
+					style={{ flexShrink: 0 }}
+				/>
+			)}
+		</>
+	);
 	const themeToggleLabel = isDarkTheme
 		? 'Switch to light mode'
 		: 'Switch to dark mode';
@@ -280,54 +327,45 @@ const AppNavbar: React.FC<AppNavbarProps> = ({
 							</IconButton>
 						</Tooltip>
 					)}
-					{/* Logo */}
-					{showBrand && (
-						<Stack
-							direction='row'
-							sx={{
-								alignItems: 'center',
-								gap: 1,
-								flexShrink: 0
-							}}
-						>
-							<Typography
-								variant='h6'
+					{/* Brand (app name + logo) */}
+					{showBrand &&
+						(onBrandClick ? (
+							<ButtonBase
+								onClick={onBrandClick}
+								aria-label={`${appName} home`}
+								data-testid='navbar-brand'
+								focusRipple
 								sx={{
-									color: brandColor,
-									fontWeight: 600,
-									fontSize: '20px',
-									lineHeight: 1,
-									textTransform: 'uppercase'
+									gap: 1,
+									flexShrink: 0,
+									borderRadius: 1,
+									px: 0.5,
+									mx: -0.5,
+									'&:hover': {
+										backgroundColor: 'action.hover'
+									},
+									'&.Mui-focusVisible': {
+										outline: '2px solid',
+										outlineColor: brandColor,
+										outlineOffset: 2
+									}
 								}}
 							>
-								{appName}
-							</Typography>
-							{logo ? (
-								<Box
-									sx={{
-										display: 'flex',
-										alignItems: 'center',
-										flexShrink: 0,
-										color: brandColor,
-										'& svg': {
-											color: 'inherit',
-											fill: 'currentColor'
-										}
-									}}
-								>
-									{logo}
-								</Box>
-							) : (
-								<img
-									src='/lumora-logo.svg'
-									alt={`${appName} logo`}
-									width={24}
-									height={24}
-									style={{ flexShrink: 0 }}
-								/>
-							)}
-						</Stack>
-					)}
+								{brandContent}
+							</ButtonBase>
+						) : (
+							<Stack
+								direction='row'
+								data-testid='navbar-brand'
+								sx={{
+									alignItems: 'center',
+									gap: 1,
+									flexShrink: 0
+								}}
+							>
+								{brandContent}
+							</Stack>
+						))}
 					{/* Custom Navbar or Search Bar */}
 					{CustomNavbar ? (
 						<CustomNavbar {...(customNavbarProps || {})} />

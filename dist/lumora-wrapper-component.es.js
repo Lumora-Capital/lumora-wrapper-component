@@ -1,49 +1,50 @@
-import { jsxs as d, jsx as t, Fragment as ke } from "react/jsx-runtime";
-import { useTheme as Er, useMediaQuery as yr, Box as be, CircularProgress as vr, CssBaseline as Rr, Drawer as Ot, Grid as at } from "@mui/material";
-import { createTheme as Gt, alpha as Q, styled as Cr, useTheme as Ge, ThemeProvider as _t } from "@mui/material/styles";
-import * as w from "react";
-import { useMemo as At, useState as _e, useRef as Dt, useEffect as it } from "react";
-import Nt from "axios";
-import kt from "@mui/icons-material/AccountCircleRounded";
-import jt from "@mui/icons-material/DarkMode";
-import Xt from "@mui/icons-material/LightMode";
-import Vt from "@mui/icons-material/LogoutRounded";
-import Yt from "@mui/icons-material/MenuRounded";
-import Ir from "@mui/icons-material/NotificationsOutlined";
-import Tr from "@mui/icons-material/SearchRounded";
-import Or from "@mui/material/AppBar";
-import ct from "@mui/material/Avatar";
-import _r from "@mui/material/Badge";
+import { jsxs as d, jsx as t, Fragment as be } from "react/jsx-runtime";
+import { useTheme as Rr, useMediaQuery as Ir, Box as Ie, CircularProgress as Tr, CssBaseline as Or, Drawer as At, Grid as lt } from "@mui/material";
+import { createTheme as Xt, alpha as te, styled as _r, useTheme as Xe, ThemeProvider as Dt } from "@mui/material/styles";
+import * as y from "react";
+import { useMemo as Nt, useState as ze, useRef as Wt, useEffect as ct } from "react";
+import Ft from "axios";
+import zt from "@mui/icons-material/AccountCircleRounded";
+import Vt from "@mui/icons-material/DarkMode";
+import Yt from "@mui/icons-material/LightMode";
+import Jt from "@mui/icons-material/LogoutRounded";
+import Zt from "@mui/icons-material/MenuRounded";
+import Cr from "@mui/icons-material/NotificationsOutlined";
+import Ar from "@mui/icons-material/SearchRounded";
+import Dr from "@mui/material/AppBar";
+import ut from "@mui/material/Avatar";
+import Nr from "@mui/material/Badge";
 import C from "@mui/material/Box";
-import ne from "@mui/material/Divider";
-import J from "@mui/material/IconButton";
-import Ar from "@mui/material/InputAdornment";
-import Dr from "@mui/material/Menu";
-import dt from "@mui/material/MenuItem";
-import D from "@mui/material/Stack";
-import Nr from "@mui/material/TextField";
-import kr from "@mui/material/Toolbar";
-import ee from "@mui/material/Tooltip";
-import Y from "@mui/material/Typography";
-import Lr from "@mui/material/useMediaQuery";
-import Wr from "@mui/material/useScrollTrigger";
-import Fr from "@mui/material/Card";
-import zr from "@mui/material/CardContent";
-import Jt from "@mui/material/Button";
-import Mr from "@mui/icons-material/AutoAwesomeRounded";
-import Br from "@mui/icons-material/KeyboardArrowDownRounded";
-import Hr from "@mui/icons-material/KeyboardArrowUpRounded";
-import qt from "@mui/material/Collapse";
-import Ne from "@mui/material/ListItemButton";
-import we from "@mui/material/ListItemIcon";
-import Ee from "@mui/material/ListItemText";
-import Ur from "@mui/icons-material/ExpandLess";
-import Kr from "@mui/icons-material/ExpandMore";
-import $r from "@mui/material/MenuList";
-import Pr from "@mui/material/Paper";
-import Gr from "@mui/material/Popper";
-import jr from "@mui/material/Drawer";
-const I = Gt(), Lt = [...I.shadows], P = {
+import qt from "@mui/material/ButtonBase";
+import he from "@mui/material/Divider";
+import ee from "@mui/material/IconButton";
+import Wr from "@mui/material/InputAdornment";
+import Fr from "@mui/material/Menu";
+import pt from "@mui/material/MenuItem";
+import H from "@mui/material/Stack";
+import zr from "@mui/material/TextField";
+import Mr from "@mui/material/Toolbar";
+import ne from "@mui/material/Tooltip";
+import Q from "@mui/material/Typography";
+import Br from "@mui/material/useMediaQuery";
+import Hr from "@mui/material/useScrollTrigger";
+import Ur from "@mui/material/Card";
+import Kr from "@mui/material/CardContent";
+import Qt from "@mui/material/Button";
+import Lr from "@mui/icons-material/AutoAwesomeRounded";
+import $r from "@mui/icons-material/KeyboardArrowDownRounded";
+import Gr from "@mui/icons-material/KeyboardArrowUpRounded";
+import er from "@mui/material/Collapse";
+import Me from "@mui/material/ListItemButton";
+import Te from "@mui/material/ListItemIcon";
+import Oe from "@mui/material/ListItemText";
+import kr from "@mui/icons-material/ExpandLess";
+import Pr from "@mui/icons-material/ExpandMore";
+import jr from "@mui/material/MenuList";
+import Xr from "@mui/material/Paper";
+import Vr from "@mui/material/Popper";
+import Yr from "@mui/material/Drawer";
+const A = Xt(), Mt = [...A.shadows], v = {
   50: "hsl(210, 100%, 95%)",
   100: "hsl(210, 100%, 92%)",
   200: "hsl(210, 100%, 80%)",
@@ -52,8 +53,9 @@ const I = Gt(), Lt = [...I.shadows], P = {
   500: "hsl(210, 98%, 42%)",
   600: "hsl(210, 98%, 55%)",
   700: "hsl(210, 100%, 35%)",
+  800: "hsl(210, 100%, 16%)",
   900: "hsl(210, 100%, 21%)"
-}, F = {
+}, _ = {
   50: "hsl(220, 35%, 97%)",
   100: "hsl(220, 30%, 94%)",
   200: "hsl(220, 20%, 88%)",
@@ -64,268 +66,284 @@ const I = Gt(), Lt = [...I.shadows], P = {
   700: "hsl(220, 20%, 25%)",
   800: "hsl(220, 30%, 6%)",
   900: "hsl(220, 35%, 3%)"
-}, Ae = {
+}, re = {
+  50: "hsl(120, 80%, 98%)",
+  100: "hsl(120, 75%, 94%)",
+  200: "hsl(120, 75%, 87%)",
   300: "hsl(120, 61%, 77%)",
   400: "hsl(120, 44%, 53%)",
   500: "hsl(120, 59%, 30%)",
+  600: "hsl(120, 70%, 25%)",
   700: "hsl(120, 75%, 16%)",
-  800: "hsl(120, 84%, 10%)"
-}, Se = {
+  800: "hsl(120, 84%, 10%)",
+  900: "hsl(120, 87%, 6%)"
+}, Y = {
+  50: "hsl(45, 100%, 97%)",
+  100: "hsl(45, 92%, 90%)",
+  200: "hsl(45, 94%, 80%)",
   300: "hsl(45, 90%, 65%)",
   400: "hsl(45, 90%, 40%)",
   500: "hsl(45, 90%, 35%)",
+  600: "hsl(45, 91%, 25%)",
   700: "hsl(45, 94%, 20%)",
-  800: "hsl(45, 95%, 16%)"
-}, De = {
+  800: "hsl(45, 95%, 16%)",
+  900: "hsl(45, 93%, 12%)"
+}, oe = {
+  50: "hsl(0, 100%, 97%)",
+  100: "hsl(0, 92%, 90%)",
+  200: "hsl(0, 94%, 80%)",
   300: "hsl(0, 90%, 65%)",
   400: "hsl(0, 90%, 40%)",
   500: "hsl(0, 90%, 30%)",
+  600: "hsl(0, 91%, 25%)",
   700: "hsl(0, 94%, 18%)",
-  800: "hsl(0, 95%, 12%)"
-}, Xr = (e) => (Lt[1] = e === "dark" ? "hsla(220, 30%, 5%, 0.7) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.8) 0px 8px 16px -5px" : "hsla(220, 30%, 5%, 0.07) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.07) 0px 8px 16px -5px", {
+  800: "hsl(0, 95%, 12%)",
+  900: "hsl(0, 93%, 6%)"
+}, Jr = (e) => (Mt[1] = e === "dark" ? "hsla(220, 30%, 5%, 0.7) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.8) 0px 8px 16px -5px" : "hsla(220, 30%, 5%, 0.07) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.07) 0px 8px 16px -5px", {
   palette: {
     mode: e,
     primary: {
-      light: P[200],
-      main: P[400],
-      dark: P[700],
-      contrastText: P[50],
+      light: v[200],
+      main: v[400],
+      dark: v[700],
+      contrastText: v[50],
       ...e === "dark" && {
-        contrastText: P[50],
-        light: P[300],
-        main: P[400],
-        dark: P[700]
+        contrastText: v[50],
+        light: v[300],
+        main: v[400],
+        dark: v[700]
       }
     },
     info: {
-      light: P[100],
-      main: P[300],
-      dark: P[600],
-      contrastText: F[50],
+      light: v[100],
+      main: v[300],
+      dark: v[600],
+      contrastText: _[50],
       ...e === "dark" && {
-        contrastText: P[300],
-        light: P[500],
-        main: P[700],
-        dark: P[900]
+        contrastText: v[300],
+        light: v[500],
+        main: v[700],
+        dark: v[900]
       }
     },
     warning: {
-      light: Se[300],
-      main: Se[400],
-      dark: Se[800],
+      light: Y[300],
+      main: Y[400],
+      dark: Y[800],
       ...e === "dark" && {
-        light: Se[400],
-        main: Se[500],
-        dark: Se[700]
+        light: Y[400],
+        main: Y[500],
+        dark: Y[700]
       }
     },
     error: {
-      light: De[300],
-      main: De[400],
-      dark: De[800],
+      light: oe[300],
+      main: oe[400],
+      dark: oe[800],
       ...e === "dark" && {
-        light: De[400],
-        main: De[500],
-        dark: De[700]
+        light: oe[400],
+        main: oe[500],
+        dark: oe[700]
       }
     },
     success: {
-      light: Ae[300],
-      main: Ae[400],
-      dark: Ae[800],
+      light: re[300],
+      main: re[400],
+      dark: re[800],
       ...e === "dark" && {
-        light: Ae[400],
-        main: Ae[500],
-        dark: Ae[700]
+        light: re[400],
+        main: re[500],
+        dark: re[700]
       }
     },
     grey: {
-      ...F
+      ..._
     },
-    divider: e === "dark" ? Q(F[700], 0.6) : Q(F[300], 0.4),
+    divider: e === "dark" ? te(_[700], 0.6) : te(_[300], 0.4),
     background: {
       default: "hsl(0, 0%, 99%)",
       paper: "hsl(220, 35%, 97%)",
       ...e === "dark" && {
-        default: F[900],
+        default: _[900],
         paper: "hsl(220, 30%, 7%)"
       }
     },
     text: {
-      primary: F[800],
-      secondary: F[600],
-      warning: Se[400],
+      primary: _[800],
+      secondary: _[600],
+      warning: Y[400],
       ...e === "dark" && {
         primary: "hsl(0, 0%, 100%)",
-        secondary: F[400]
+        secondary: _[400]
       }
     },
     action: {
-      hover: Q(F[200], 0.2),
-      selected: `${Q(F[200], 0.3)}`,
+      hover: te(_[200], 0.2),
+      selected: `${te(_[200], 0.3)}`,
       ...e === "dark" && {
-        hover: Q(F[600], 0.2),
-        selected: Q(F[600], 0.3)
+        hover: te(_[600], 0.2),
+        selected: te(_[600], 0.3)
       }
     }
   },
   typography: {
     fontFamily: "Inter, sans-serif",
     h1: {
-      fontSize: I.typography.pxToRem(48),
+      fontSize: A.typography.pxToRem(48),
       fontWeight: 600,
       lineHeight: 1.2,
       letterSpacing: -0.5
     },
     h2: {
-      fontSize: I.typography.pxToRem(36),
+      fontSize: A.typography.pxToRem(36),
       fontWeight: 600,
       lineHeight: 1.2
     },
     h3: {
-      fontSize: I.typography.pxToRem(30),
+      fontSize: A.typography.pxToRem(30),
       lineHeight: 1.2
     },
     h4: {
-      fontSize: I.typography.pxToRem(24),
+      fontSize: A.typography.pxToRem(24),
       fontWeight: 600,
       lineHeight: 1.5
     },
     h5: {
-      fontSize: I.typography.pxToRem(20),
+      fontSize: A.typography.pxToRem(20),
       fontWeight: 600
     },
     h6: {
-      fontSize: I.typography.pxToRem(18),
+      fontSize: A.typography.pxToRem(18),
       fontWeight: 600
     },
     subtitle1: {
-      fontSize: I.typography.pxToRem(18)
+      fontSize: A.typography.pxToRem(18)
     },
     subtitle2: {
-      fontSize: I.typography.pxToRem(14),
+      fontSize: A.typography.pxToRem(14),
       fontWeight: 500
     },
     body1: {
-      fontSize: I.typography.pxToRem(14)
+      fontSize: A.typography.pxToRem(14)
     },
     body2: {
-      fontSize: I.typography.pxToRem(14),
+      fontSize: A.typography.pxToRem(14),
       fontWeight: 400
     },
     caption: {
-      fontSize: I.typography.pxToRem(12),
+      fontSize: A.typography.pxToRem(12),
       fontWeight: 400
     }
   },
   shape: {
     borderRadius: 8
   },
-  shadows: Lt
+  shadows: Mt
 });
-Q(F[300], 0.4), Q(F[200], 0.2), `${Q(F[200], 0.3)}`, Q(F[700], 0.6), Q(F[600], 0.2), Q(F[600], 0.3);
-I.typography.pxToRem(48), I.typography.pxToRem(36), I.typography.pxToRem(30), I.typography.pxToRem(24), I.typography.pxToRem(20), I.typography.pxToRem(18), I.typography.pxToRem(18), I.typography.pxToRem(14), I.typography.pxToRem(14), I.typography.pxToRem(14), I.typography.pxToRem(12);
+v[200], v[400], v[700], v[50], v[100], v[300], v[600], _[50], Y[300], Y[400], Y[800], oe[300], oe[400], oe[800], re[300], re[400], re[800], {
+  ..._
+}, te(_[300], 0.4), _[800], _[600], Y[400], te(_[200], 0.2), `${te(_[200], 0.3)}`, v[50], v[300], v[400], v[700], v[300], v[500], v[700], v[900], Y[400], Y[500], Y[700], oe[400], oe[500], oe[700], re[400], re[500], re[700], {
+  ..._
+}, te(_[700], 0.6), _[900], _[400], te(_[600], 0.2), te(_[600], 0.3);
+A.typography.pxToRem(48), A.typography.pxToRem(36), A.typography.pxToRem(30), A.typography.pxToRem(24), A.typography.pxToRem(20), A.typography.pxToRem(18), A.typography.pxToRem(18), A.typography.pxToRem(14), A.typography.pxToRem(14), A.typography.pxToRem(14), A.typography.pxToRem(12);
 [
-  ...I.shadows.slice(2)
+  ...A.shadows.slice(2)
 ];
-class T extends Error {
-  code;
-  originalError;
-  timestamp;
-  constructor(r, o, a = null) {
-    super(r), this.name = "AuthError", this.code = o, this.originalError = a, this.timestamp = (/* @__PURE__ */ new Date()).toISOString();
+class D extends Error {
+  constructor(o, r, a = null) {
+    super(o), this.name = "AuthError", this.code = r, this.originalError = a, this.timestamp = (/* @__PURE__ */ new Date()).toISOString();
   }
 }
-const A = {
+const z = {
   STORAGE_ACCESS_DENIED: "STORAGE_ACCESS_DENIED",
   TOKEN_NOT_FOUND: "TOKEN_NOT_FOUND",
   TOKEN_INVALID: "TOKEN_INVALID",
   TOKEN_EXPIRED: "TOKEN_EXPIRED",
   LOGOUT_FAILED: "LOGOUT_FAILED",
   UNKNOWN_ERROR: "UNKNOWN_ERROR"
-}, K = {
+}, k = {
   ACCESS_TOKEN: "lumoraAccessToken",
   REFRESH_TOKEN: "lumoraRefreshToken",
   USER: "lumoraUser"
-}, ce = {
+}, ge = {
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
   USER: "user"
-}, Vr = () => {
+}, Zr = () => {
   if (!(typeof window > "u" || !window.localStorage))
     try {
-      const e = localStorage.getItem(ce.ACCESS_TOKEN), r = localStorage.getItem(ce.REFRESH_TOKEN), o = localStorage.getItem(ce.USER);
-      e && !localStorage.getItem(K.ACCESS_TOKEN) && localStorage.setItem(K.ACCESS_TOKEN, e), r && !localStorage.getItem(K.REFRESH_TOKEN) && localStorage.setItem(K.REFRESH_TOKEN, r), o && !localStorage.getItem(K.USER) && localStorage.setItem(K.USER, o), (e || r || o) && (localStorage.removeItem(ce.ACCESS_TOKEN), localStorage.removeItem(ce.REFRESH_TOKEN), localStorage.removeItem(ce.USER));
+      const e = localStorage.getItem(ge.ACCESS_TOKEN), o = localStorage.getItem(ge.REFRESH_TOKEN), r = localStorage.getItem(ge.USER);
+      e && !localStorage.getItem(k.ACCESS_TOKEN) && localStorage.setItem(k.ACCESS_TOKEN, e), o && !localStorage.getItem(k.REFRESH_TOKEN) && localStorage.setItem(k.REFRESH_TOKEN, o), r && !localStorage.getItem(k.USER) && localStorage.setItem(k.USER, r), (e || o || r) && (localStorage.removeItem(ge.ACCESS_TOKEN), localStorage.removeItem(ge.REFRESH_TOKEN), localStorage.removeItem(ge.USER));
     } catch (e) {
       console.warn("Failed to migrate legacy localStorage keys:", e);
     }
-}, st = (e) => {
+}, dt = (e) => {
   try {
     if (typeof window > "u")
       return console.warn("localStorage access attempted on server side"), null;
     if (!window.localStorage)
-      throw new T("localStorage is not available", A.STORAGE_ACCESS_DENIED);
+      throw new D("localStorage is not available", z.STORAGE_ACCESS_DENIED);
     return window.localStorage.getItem(e);
-  } catch (r) {
-    throw r.name === "QuotaExceededError" ? (console.error("Storage quota exceeded"), new T(
+  } catch (o) {
+    throw o.name === "QuotaExceededError" ? (console.error("Storage quota exceeded"), new D(
       "Storage quota exceeded. Please clear browser data.",
-      A.STORAGE_ACCESS_DENIED,
-      r
-    )) : r.name === "SecurityError" ? (console.error("localStorage access denied (private browsing or security settings)"), new T(
+      z.STORAGE_ACCESS_DENIED,
+      o
+    )) : o.name === "SecurityError" ? (console.error("localStorage access denied (private browsing or security settings)"), new D(
       "Access to localStorage is denied. Please check browser settings.",
-      A.STORAGE_ACCESS_DENIED,
-      r
-    )) : (console.error("Unexpected error accessing localStorage:", r.name), new T("Failed to access storage", A.STORAGE_ACCESS_DENIED, r));
+      z.STORAGE_ACCESS_DENIED,
+      o
+    )) : (console.error("Unexpected error accessing localStorage:", o.name), new D("Failed to access storage", z.STORAGE_ACCESS_DENIED, o));
   }
-}, lt = (e, r) => {
+}, ht = (e, o) => {
   try {
     if (typeof window > "u")
       return console.warn("localStorage write attempted on server side"), !1;
     if (!window.localStorage)
-      throw new T("localStorage is not available", A.STORAGE_ACCESS_DENIED);
-    return window.localStorage.setItem(e, r), !0;
-  } catch (o) {
-    throw o.name === "QuotaExceededError" ? (console.error("Storage quota exceeded"), new T(
+      throw new D("localStorage is not available", z.STORAGE_ACCESS_DENIED);
+    return window.localStorage.setItem(e, o), !0;
+  } catch (r) {
+    throw r.name === "QuotaExceededError" ? (console.error("Storage quota exceeded"), new D(
       "Storage quota exceeded. Please clear browser data.",
-      A.STORAGE_ACCESS_DENIED,
-      o
-    )) : o.name === "SecurityError" ? (console.error("localStorage write denied (private browsing or security settings)"), new T(
+      z.STORAGE_ACCESS_DENIED,
+      r
+    )) : r.name === "SecurityError" ? (console.error("localStorage write denied (private browsing or security settings)"), new D(
       "Access to localStorage is denied. Please check browser settings.",
-      A.STORAGE_ACCESS_DENIED,
-      o
-    )) : (console.error("Unexpected error writing to localStorage:", o.name), new T("Failed to write to storage", A.STORAGE_ACCESS_DENIED, o));
+      z.STORAGE_ACCESS_DENIED,
+      r
+    )) : (console.error("Unexpected error writing to localStorage:", r.name), new D("Failed to write to storage", z.STORAGE_ACCESS_DENIED, r));
   }
-}, Zt = (e) => {
+}, tr = (e) => {
   try {
     return typeof window > "u" ? (console.warn("localStorage removal attempted on server side"), !1) : window.localStorage ? (window.localStorage.removeItem(e), !0) : (console.warn("localStorage is not available"), !1);
-  } catch (r) {
-    return r.name !== "SecurityError" && console.warn(`Could not remove localStorage key "${e}"`), !1;
+  } catch (o) {
+    return o.name !== "SecurityError" && console.warn(`Could not remove localStorage key "${e}"`), !1;
   }
-}, $e = () => {
+}, Pe = () => {
   try {
-    Vr();
-    const e = st(K.ACCESS_TOKEN), r = st(K.REFRESH_TOKEN), o = st(K.USER);
+    Zr();
+    const e = dt(k.ACCESS_TOKEN), o = dt(k.REFRESH_TOKEN), r = dt(k.USER);
     let a = null;
-    if (o)
+    if (r)
       try {
-        a = JSON.parse(o);
+        a = JSON.parse(r);
       } catch {
-        o && o !== "null" && o !== "undefined" && console.warn("Invalid user data in localStorage, clearing:", o.substring(0, 50)), Zt(K.USER);
+        r && r !== "null" && r !== "undefined" && console.warn("Invalid user data in localStorage, clearing:", r.substring(0, 50)), tr(k.USER);
       }
     return {
       accessToken: e,
-      refreshToken: r,
+      refreshToken: o,
       user: a
     };
   } catch (e) {
-    throw e instanceof T ? e : new T("Failed to retrieve authentication tokens", A.UNKNOWN_ERROR, e);
+    throw e instanceof D ? e : new D("Failed to retrieve authentication tokens", z.UNKNOWN_ERROR, e);
   }
-}, Yr = () => {
+}, qr = () => {
   try {
-    const { accessToken: e, refreshToken: r } = $e();
-    return !(e || r) ? {
+    const { accessToken: e, refreshToken: o } = Pe();
+    return !(e || o) ? {
       isAuthenticated: !1,
-      error: new T("No authentication tokens found", A.TOKEN_NOT_FOUND)
+      error: new D("No authentication tokens found", z.TOKEN_NOT_FOUND)
     } : {
       isAuthenticated: !0,
       error: null
@@ -333,46 +351,46 @@ const A = {
   } catch (e) {
     return console.error("Authentication check failed:", e), {
       isAuthenticated: !1,
-      error: e instanceof T ? e : new T("Authentication check failed", A.UNKNOWN_ERROR, e)
+      error: e instanceof D ? e : new D("Authentication check failed", z.UNKNOWN_ERROR, e)
     };
   }
-}, Qt = (e, r, o = null) => {
+}, rr = (e, o, r = null) => {
   try {
-    if (!e && !r)
-      throw new T("At least one token must be provided", A.TOKEN_INVALID);
-    return e && lt(K.ACCESS_TOKEN, e), r && lt(K.REFRESH_TOKEN, r), o && lt(K.USER, JSON.stringify(o)), {
+    if (!e && !o)
+      throw new D("At least one token must be provided", z.TOKEN_INVALID);
+    return e && ht(k.ACCESS_TOKEN, e), o && ht(k.REFRESH_TOKEN, o), r && ht(k.USER, JSON.stringify(r)), {
       success: !0,
       error: null
     };
   } catch (a) {
     return console.error("Failed to store authentication tokens:", a), {
       success: !1,
-      error: a instanceof T ? a : new T("Failed to store tokens", A.UNKNOWN_ERROR, a)
+      error: a instanceof D ? a : new D("Failed to store tokens", z.UNKNOWN_ERROR, a)
     };
   }
-}, Pe = () => {
+}, je = () => {
   try {
     return [
-      K.ACCESS_TOKEN,
-      K.REFRESH_TOKEN,
-      K.USER,
+      k.ACCESS_TOKEN,
+      k.REFRESH_TOKEN,
+      k.USER,
       // Also clear legacy keys for complete cleanup
-      ce.ACCESS_TOKEN,
-      ce.REFRESH_TOKEN,
-      ce.USER
-    ].map((a) => Zt(a)).every((a) => a) || console.warn("Some tokens could not be removed from localStorage"), {
+      ge.ACCESS_TOKEN,
+      ge.REFRESH_TOKEN,
+      ge.USER
+    ].map((a) => tr(a)).every((a) => a) || console.warn("Some tokens could not be removed from localStorage"), {
       success: !0,
       error: null
     };
   } catch (e) {
     return console.error("Failed to clear authentication tokens:", e), {
       success: !1,
-      error: e instanceof T ? e : new T("Failed to clear tokens", A.LOGOUT_FAILED, e)
+      error: e instanceof D ? e : new D("Failed to clear tokens", z.LOGOUT_FAILED, e)
     };
   }
-}, Jr = () => {
+}, Qr = () => {
   try {
-    const { user: e } = $e();
+    const { user: e } = Pe();
     return {
       user: e,
       error: null
@@ -380,152 +398,155 @@ const A = {
   } catch (e) {
     return console.error("Failed to get current user:", e), {
       user: null,
-      error: e instanceof T ? e : new T("Failed to retrieve user data", A.UNKNOWN_ERROR, e)
+      error: e instanceof D ? e : new D("Failed to retrieve user data", z.UNKNOWN_ERROR, e)
     };
   }
-}, pn = (e) => {
-  if (!(e instanceof T))
+}, gn = (e) => {
+  if (!(e instanceof D))
     return "An unexpected error occurred. Please try again.";
   switch (e.code) {
-    case A.STORAGE_ACCESS_DENIED:
+    case z.STORAGE_ACCESS_DENIED:
       return "Unable to access browser storage. Please check your browser settings and disable private browsing if enabled.";
-    case A.TOKEN_NOT_FOUND:
+    case z.TOKEN_NOT_FOUND:
       return "You are not logged in. Please sign in to continue.";
-    case A.TOKEN_INVALID:
+    case z.TOKEN_INVALID:
       return "Your session is invalid. Please sign in again.";
-    case A.TOKEN_EXPIRED:
+    case z.TOKEN_EXPIRED:
       return "Your session has expired. Please sign in again.";
-    case A.LOGOUT_FAILED:
+    case z.LOGOUT_FAILED:
       return "Failed to log out properly. Please clear your browser cache and try again.";
-    case A.UNKNOWN_ERROR:
+    case z.UNKNOWN_ERROR:
     default:
       return "An unexpected error occurred. Please try again or contact support if the problem persists.";
   }
-}, ht = (e, r = "Unknown") => {
-  const o = {
-    context: r,
+}, ft = (e, o = "Unknown") => {
+  const r = {
+    context: o,
     message: e.message,
-    code: e instanceof T ? e.code : "UNKNOWN",
-    timestamp: e instanceof T ? e.timestamp : (/* @__PURE__ */ new Date()).toISOString(),
+    code: e instanceof D ? e.code : "UNKNOWN",
+    timestamp: e instanceof D ? e.timestamp : (/* @__PURE__ */ new Date()).toISOString(),
     stack: e.stack
   };
-  e instanceof T && e.originalError && (o.originalError = {
+  e instanceof D && e.originalError && (r.originalError = {
     name: e.originalError.name,
     message: e.originalError.message
-  }), console.warn("[Auth Error]", o);
-}, qr = (e) => {
+  }), console.warn("[Auth Error]", r);
+}, eo = (e) => {
   if (!e)
     throw new Error("API base URL is required to create axios client");
-  const r = Nt.create({
+  const o = Ft.create({
     baseURL: e,
     headers: {
       "Content-Type": "application/json"
     }
   });
-  let o = !1, a = null, l = [];
+  let r = !1, a = null, c = [];
   const h = (s, i) => {
-    l.forEach(({ resolve: g, reject: E }) => {
-      s ? E(s) : i && g(i);
-    }), l = [];
+    c.forEach(({ resolve: g, reject: b }) => {
+      s ? b(s) : i && g(i);
+    }), c = [];
   };
-  return r.interceptors.request.use(
+  return o.interceptors.request.use(
     (s) => {
-      const { accessToken: i } = $e();
+      const { accessToken: i } = Pe();
       return i && s.headers && (s.headers.Authorization = `Bearer ${i}`), s;
     },
     (s) => Promise.reject(s)
-  ), r.interceptors.response.use(
+  ), o.interceptors.response.use(
     (s) => s,
     async (s) => {
-      const i = s.config, g = s.response?.status, E = i?.url || "", y = E.includes("/auth/refresh");
-      if (g !== 401 || i._retry || y)
+      var I;
+      const i = s.config, g = (I = s.response) == null ? void 0 : I.status, b = (i == null ? void 0 : i.url) || "", w = b.includes("/auth/refresh");
+      if (g !== 401 || i._retry || w)
         return Promise.reject(s);
       i._retry = !0;
-      const { refreshToken: O } = $e();
-      if (!O) {
+      const { refreshToken: N } = Pe();
+      if (!N) {
         const u = new Error(
           "No refresh token available for token refresh"
         );
-        return ht(u, "AxiosClient - Token Refresh"), Pe(), typeof window < "u" && (window.location.href = "/login"), Promise.reject(s);
+        return ft(u, "AxiosClient - Token Refresh"), je(), typeof window < "u" && (window.location.href = "/login"), Promise.reject(s);
       }
-      if (o && a)
-        return new Promise((u, v) => {
-          l.push({ resolve: u, reject: v });
+      if (r && a)
+        return new Promise((u, R) => {
+          c.push({ resolve: u, reject: R });
         }).then((u) => {
           const {
-            accessToken: v,
-            refreshToken: x
+            accessToken: R,
+            refreshToken: E
           } = u;
-          if (i.headers && (i.headers.Authorization = `Bearer ${v}`), E.includes("/auth/logout"))
+          if (i.headers && (i.headers.Authorization = `Bearer ${R}`), b.includes("/auth/logout"))
             try {
               if (typeof i.data == "string") {
-                const R = JSON.parse(
+                const O = JSON.parse(
                   i.data || "{}"
                 );
-                R.refresh_token = x, i.data = JSON.stringify(R);
-              } else i.data && typeof i.data == "object" ? i.data.refresh_token = x : i.data = JSON.stringify({
-                refresh_token: x
-              });
+                O.refresh_token = E, i.data = JSON.stringify(O);
+              } else
+                i.data && typeof i.data == "object" ? i.data.refresh_token = E : i.data = JSON.stringify({
+                  refresh_token: E
+                });
             } catch {
               i.data = JSON.stringify({
-                refresh_token: x
+                refresh_token: E
               });
             }
-          return r(i);
+          return o(i);
         }).catch((u) => Promise.reject(u));
-      o = !0, a = Nt.post(
+      r = !0, a = Ft.post(
         `${e}/auth/refresh`,
         {
-          refresh_token: O
+          refresh_token: N
         }
       );
       try {
-        const u = await a, { accessToken: v, refreshToken: x } = u.data;
-        if (Qt(v, x, null), h(null, {
-          accessToken: v,
-          refreshToken: x
-        }), i.headers && (i.headers.Authorization = `Bearer ${v}`), E.includes("/auth/logout"))
+        const u = await a, { accessToken: R, refreshToken: E } = u.data;
+        if (rr(R, E, null), h(null, {
+          accessToken: R,
+          refreshToken: E
+        }), i.headers && (i.headers.Authorization = `Bearer ${R}`), b.includes("/auth/logout"))
           try {
             if (typeof i.data == "string") {
-              const R = JSON.parse(
+              const O = JSON.parse(
                 i.data || "{}"
               );
-              R.refresh_token = x, i.data = JSON.stringify(R);
-            } else i.data && typeof i.data == "object" ? i.data.refresh_token = x : i.data = JSON.stringify({
-              refresh_token: x
-            });
+              O.refresh_token = E, i.data = JSON.stringify(O);
+            } else
+              i.data && typeof i.data == "object" ? i.data.refresh_token = E : i.data = JSON.stringify({
+                refresh_token: E
+              });
           } catch {
             i.data = JSON.stringify({
-              refresh_token: x
+              refresh_token: E
             });
           }
-        return r(i);
+        return o(i);
       } catch (u) {
-        return ht(
+        return ft(
           u,
           "AxiosClient - Token Refresh Failed"
-        ), h(u), Pe(), typeof window < "u" && (window.location.href = "/login"), Promise.reject(u);
+        ), h(u), je(), typeof window < "u" && (window.location.href = "/login"), Promise.reject(u);
       } finally {
-        o = !1, a = null;
+        r = !1, a = null;
       }
     }
-  ), r;
-}, Zr = async (e, r) => {
-  const { accessToken: o, refreshToken: a } = $e();
-  if (o)
+  ), o;
+}, to = async (e, o) => {
+  const { accessToken: r, refreshToken: a } = Pe();
+  if (r)
     return !0;
   if (a)
     try {
-      const l = await e.post("/auth/refresh", {
+      const c = await e.post("/auth/refresh", {
         refresh_token: a
       });
-      if (l.data.success && l.data.accessToken)
-        return Qt(l.data.accessToken, l.data.refreshToken || null, null), !0;
-    } catch (l) {
-      ht(l, "TokenValidator - Refresh Failed");
+      if (c.data.success && c.data.accessToken)
+        return rr(c.data.accessToken, c.data.refreshToken || null, null), !0;
+    } catch (c) {
+      ft(c, "TokenValidator - Refresh Failed");
     }
-  return Pe(), r ? r() : window.location.href = "/login", !1;
-}, Qr = ({ size: e = 20, style: r }) => /* @__PURE__ */ d(
+  return je(), o ? o() : window.location.href = "/login", !1;
+}, ro = ({ size: e = 20, style: o }) => /* @__PURE__ */ d(
   "svg",
   {
     width: e,
@@ -535,7 +556,7 @@ const A = {
     xmlns: "http://www.w3.org/2000/svg",
     "aria-hidden": "true",
     focusable: "false",
-    style: r,
+    style: o,
     children: [
       /* @__PURE__ */ t(
         "path",
@@ -567,17 +588,17 @@ const A = {
       )
     ]
   }
-), eo = ({
+), oo = ({
   onClick: e,
-  active: r = !1,
-  busy: o = !1,
+  active: o = !1,
+  busy: r = !1,
   navbarBackground: a = "#ffffff"
-}) => /* @__PURE__ */ t(ee, { title: "Nexa", placement: "bottom", children: /* @__PURE__ */ t(
-  J,
+}) => /* @__PURE__ */ t(ne, { title: "Nexa", placement: "bottom", children: /* @__PURE__ */ t(
+  ee,
   {
     onClick: e,
     "aria-label": "Toggle Nexa assistant",
-    "aria-pressed": r,
+    "aria-pressed": o,
     disableFocusRipple: !0,
     sx: {
       position: "relative",
@@ -593,7 +614,7 @@ const A = {
       "&:hover": { backgroundColor: "action.hover" },
       "&:focus, &:focus-visible": { outline: "none" },
       // Animated "beam" border — rendered ONLY while a chat is ongoing.
-      ...o && {
+      ...r && {
         "&::before": {
           content: '""',
           position: "absolute",
@@ -629,11 +650,11 @@ const A = {
           display: "flex",
           alignItems: "center"
         },
-        children: /* @__PURE__ */ t(Qr, { size: 20 })
+        children: /* @__PURE__ */ t(ro, { size: 20 })
       }
     )
   }
-) }), to = Cr(kr)({
+) }), no = _r(Mr)({
   width: "100%",
   padding: "8px 16px",
   display: "flex",
@@ -642,85 +663,126 @@ const A = {
   justifyContent: "space-between",
   gap: "16px",
   flexShrink: 0
-}), ro = ({
+}), ao = ({
   appName: e = "Dashboard",
-  pageName: r = "Home",
-  onMenuClick: o,
+  pageName: o = "Home",
+  onMenuClick: r,
   showMenuButton: a = !0,
-  isMobile: l = !1,
+  isMobile: c = !1,
   sidebarCollapsed: h,
   showBrand: s = !0,
   logo: i,
-  leftOffsetPx: g = 0,
-  headerStyles: E,
-  userName: y = "User Name",
-  userEmail: O,
+  onBrandClick: g,
+  leftOffsetPx: b = 0,
+  headerStyles: w,
+  userName: N = "User Name",
+  userEmail: I,
   userAvatar: u,
-  onProfileClick: v,
-  onAccountClick: x,
-  onSettingsClick: R,
-  showSettings: z = !0,
-  onLogout: H,
-  showNotifications: $ = !1,
-  notificationCount: L = 0,
-  onNotificationBellClick: m,
-  theme: N = "light",
-  showThemeToggler: b = !1,
-  onThemeToggle: f,
-  showSearchbar: W = !0,
-  searchValue: j,
-  onSearchChange: ae,
-  onSearchSubmit: c,
-  showProfile: M = !0,
-  userRole: Le,
-  accentColor: _ = "#01584f",
-  contentBackgroundColor: B = "#f2f9fc",
-  navbarBackground: oe = "#ff0000",
-  navbarAccentColor: G = "#000000",
-  rightExtraContent: X = [],
-  customNavbar: te,
-  customNavbarProps: V,
-  showAssistant: ye = !1,
-  onAssistantClick: ie,
-  assistantActive: We = !1,
-  assistantBusy: de = !1
+  onProfileClick: R,
+  onAccountClick: E,
+  onSettingsClick: O,
+  showSettings: K = !0,
+  onLogout: P,
+  showNotifications: G = !1,
+  notificationCount: T = 0,
+  onNotificationBellClick: S,
+  theme: m = "light",
+  showThemeToggler: f = !1,
+  onThemeToggle: W,
+  showSearchbar: ae = !0,
+  searchValue: X,
+  onSearchChange: p,
+  onSearchSubmit: x,
+  showProfile: L = !0,
+  userRole: Be,
+  accentColor: F = "#01584f",
+  contentBackgroundColor: $ = "#f2f9fc",
+  navbarBackground: se = "#ff0000",
+  navbarAccentColor: V = "#000000",
+  rightExtraContent: J = [],
+  customNavbar: j,
+  customNavbarProps: Z,
+  showAssistant: _e = !1,
+  onAssistantClick: le,
+  assistantActive: He = !1,
+  assistantBusy: me = !1
 }) => {
-  const Fe = Lr((p) => p.breakpoints.up("md")), ve = Wr({
+  const Ue = Br((l) => l.breakpoints.up("md")), Ce = Hr({
     disableHysteresis: !0,
     threshold: 0
-  }), [pe, Re] = w.useState(null), ze = !!pe, re = N === "dark", se = re ? "text.primary" : _, ue = re ? "Switch to light mode" : "Switch to dark mode", he = h === void 0 ? "Open navigation menu" : h ? "Expand sidebar" : "Collapse sidebar", Ce = (p) => {
-    ae?.(p.target.value);
-  }, Ie = (p) => {
-    p.key === "Enter" && c && j && c(j);
-  }, Me = (p) => p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : "User", Te = (p) => {
-    Re(p.currentTarget);
-  }, n = () => {
-    Re(null);
-  }, S = (p) => {
-    p?.(), n();
+  }), [Se, Ae] = y.useState(null), Ke = !!Se, ie = m === "dark", ce = ie ? "text.primary" : F, we = /* @__PURE__ */ d(be, { children: [
+    /* @__PURE__ */ t(
+      Q,
+      {
+        variant: "h6",
+        sx: {
+          color: ce,
+          fontWeight: 600,
+          fontSize: "20px",
+          lineHeight: 1,
+          textTransform: "uppercase"
+        },
+        children: e
+      }
+    ),
+    i ? /* @__PURE__ */ t(
+      C,
+      {
+        sx: {
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          color: ce,
+          "& svg": {
+            color: "inherit",
+            fill: "currentColor"
+          }
+        },
+        children: i
+      }
+    ) : /* @__PURE__ */ t(
+      "img",
+      {
+        src: "/lumora-logo.svg",
+        alt: `${e} logo`,
+        width: 24,
+        height: 24,
+        style: { flexShrink: 0 }
+      }
+    )
+  ] }), xe = ie ? "Switch to light mode" : "Switch to dark mode", ue = h === void 0 ? "Open navigation menu" : h ? "Expand sidebar" : "Collapse sidebar", De = (l) => {
+    p == null || p(l.target.value);
+  }, Ne = (l) => {
+    l.key === "Enter" && x && X && x(X);
+  }, We = (l) => l ? l.charAt(0).toUpperCase() + l.slice(1).toLowerCase() : "User", Le = (l) => {
+    Ae(l.currentTarget);
+  }, Ee = () => {
+    Ae(null);
+  }, n = (l) => {
+    l == null || l(), Ee();
   };
   return /* @__PURE__ */ t(
-    Or,
+    Dr,
     {
       position: "fixed",
       sx: {
-        boxShadow: ve ? "0 2px 8px rgba(0, 0, 0, 0.12)" : "none",
+        boxShadow: Ce ? "0 2px 8px rgba(0, 0, 0, 0.12)" : "none",
         // left/width animate in step with the collapsible sidebar's
         // 200ms width transition so the bar tracks the panel edge.
         transition: "box-shadow 0.2s ease-in-out, left 200ms ease, width 200ms ease",
-        background: oe,
+        background: se,
         top: "var(--template-frame-height, 0px)",
         // Inset from the left so the bar starts at the edge of a
         // full-height sidebar; full width otherwise.
-        left: g,
-        width: g ? `calc(100% - ${g}px)` : "100%",
+        left: b,
+        width: b ? `calc(100% - ${b}px)` : "100%",
         zIndex: 1,
         height: "60px",
-        ...E
+        ...w
       },
-      children: /* @__PURE__ */ d(to, { variant: "dense", sx: { height: "100%" }, children: [
+      children: /* @__PURE__ */ d(no, { variant: "dense", sx: { height: "100%" }, children: [
         /* @__PURE__ */ d(
-          D,
+          H,
           {
             direction: "row",
             sx: {
@@ -730,17 +792,17 @@ const A = {
               flexGrow: 1
             },
             children: [
-              a && /* @__PURE__ */ t(ee, { title: he, placement: "bottom", children: /* @__PURE__ */ t(
-                J,
+              a && /* @__PURE__ */ t(ne, { title: ue, placement: "bottom", children: /* @__PURE__ */ t(
+                ee,
                 {
-                  "aria-label": he,
-                  onClick: o,
+                  "aria-label": ue,
+                  onClick: r,
                   disableFocusRipple: !0,
                   sx: {
                     // Nudge left so the icon centers on the sidebar
                     // icon rail (72px wide → 36px center) below it.
                     ml: -1,
-                    color: se,
+                    color: ce,
                     "&:hover": {
                       backgroundColor: "action.hover"
                     },
@@ -748,73 +810,58 @@ const A = {
                       outline: "none"
                     }
                   },
-                  children: /* @__PURE__ */ t(Yt, {})
+                  children: /* @__PURE__ */ t(Zt, {})
                 }
               ) }),
-              s && /* @__PURE__ */ d(
-                D,
+              s && (g ? /* @__PURE__ */ t(
+                qt,
+                {
+                  onClick: g,
+                  "aria-label": `${e} home`,
+                  "data-testid": "navbar-brand",
+                  focusRipple: !0,
+                  sx: {
+                    gap: 1,
+                    flexShrink: 0,
+                    borderRadius: 1,
+                    px: 0.5,
+                    mx: -0.5,
+                    "&:hover": {
+                      backgroundColor: "action.hover"
+                    },
+                    "&.Mui-focusVisible": {
+                      outline: "2px solid",
+                      outlineColor: ce,
+                      outlineOffset: 2
+                    }
+                  },
+                  children: we
+                }
+              ) : /* @__PURE__ */ t(
+                H,
                 {
                   direction: "row",
+                  "data-testid": "navbar-brand",
                   sx: {
                     alignItems: "center",
                     gap: 1,
                     flexShrink: 0
                   },
-                  children: [
-                    /* @__PURE__ */ t(
-                      Y,
-                      {
-                        variant: "h6",
-                        sx: {
-                          color: se,
-                          fontWeight: 600,
-                          fontSize: "20px",
-                          lineHeight: 1,
-                          textTransform: "uppercase"
-                        },
-                        children: e
-                      }
-                    ),
-                    i ? /* @__PURE__ */ t(
-                      C,
-                      {
-                        sx: {
-                          display: "flex",
-                          alignItems: "center",
-                          flexShrink: 0,
-                          color: se,
-                          "& svg": {
-                            color: "inherit",
-                            fill: "currentColor"
-                          }
-                        },
-                        children: i
-                      }
-                    ) : /* @__PURE__ */ t(
-                      "img",
-                      {
-                        src: "/lumora-logo.svg",
-                        alt: `${e} logo`,
-                        width: 24,
-                        height: 24,
-                        style: { flexShrink: 0 }
-                      }
-                    )
-                  ]
+                  children: we
                 }
-              ),
-              te ? /* @__PURE__ */ t(te, { ...V || {} }) : W && Fe && /* @__PURE__ */ t(
-                Nr,
+              )),
+              j ? /* @__PURE__ */ t(j, { ...Z || {} }) : ae && Ue && /* @__PURE__ */ t(
+                zr,
                 {
                   placeholder: "Search for deals or documents...",
-                  value: j || "",
-                  onChange: Ce,
-                  onKeyDown: Ie,
+                  value: X || "",
+                  onChange: De,
+                  onKeyDown: Ne,
                   size: "small",
                   sx: {
                     width: "400px",
                     "& .MuiOutlinedInput-root": {
-                      backgroundColor: B,
+                      backgroundColor: $,
                       borderRadius: "8px",
                       "& fieldset": {
                         borderColor: "transparent"
@@ -823,16 +870,16 @@ const A = {
                         borderColor: "transparent"
                       },
                       "&.Mui-focused fieldset": {
-                        borderColor: _
+                        borderColor: F
                       }
                     }
                   },
                   InputProps: {
-                    startAdornment: /* @__PURE__ */ t(Ar, { position: "start", children: /* @__PURE__ */ t(
-                      Tr,
+                    startAdornment: /* @__PURE__ */ t(Wr, { position: "start", children: /* @__PURE__ */ t(
+                      Ar,
                       {
                         sx: {
-                          color: G
+                          color: V
                         }
                       }
                     ) })
@@ -843,7 +890,7 @@ const A = {
           }
         ),
         /* @__PURE__ */ d(
-          D,
+          H,
           {
             direction: "row",
             sx: {
@@ -852,28 +899,28 @@ const A = {
               flexShrink: 0
             },
             children: [
-              b && !l && /* @__PURE__ */ t(ee, { title: ue, placement: "bottom", children: /* @__PURE__ */ t("span", { children: /* @__PURE__ */ t(
-                J,
+              f && !c && /* @__PURE__ */ t(ne, { title: xe, placement: "bottom", children: /* @__PURE__ */ t("span", { children: /* @__PURE__ */ t(
+                ee,
                 {
                   size: "small",
-                  onClick: f,
-                  disabled: !f,
-                  "aria-label": ue,
+                  onClick: W,
+                  disabled: !W,
+                  "aria-label": xe,
                   sx: {
-                    color: G,
+                    color: V,
                     "&:hover": {
                       backgroundColor: "action.hover"
                     }
                   },
-                  children: re ? /* @__PURE__ */ t(Xt, { fontSize: "small" }) : /* @__PURE__ */ t(jt, { fontSize: "small" })
+                  children: ie ? /* @__PURE__ */ t(Yt, { fontSize: "small" }) : /* @__PURE__ */ t(Vt, { fontSize: "small" })
                 }
               ) }) }),
-              $ && /* @__PURE__ */ t(
-                _r,
+              G && /* @__PURE__ */ t(
+                Nr,
                 {
                   color: "error",
-                  badgeContent: L,
-                  invisible: L === 0,
+                  badgeContent: T,
+                  invisible: T === 0,
                   sx: {
                     "& .MuiBadge-badge": {
                       right: 2,
@@ -881,20 +928,20 @@ const A = {
                     }
                   },
                   children: /* @__PURE__ */ t(
-                    J,
+                    ee,
                     {
                       size: "small",
-                      onClick: m,
-                      "aria-label": L ? `Notifications, ${L} unread` : "Notifications",
-                      sx: { color: G },
-                      children: /* @__PURE__ */ t(Ir, {})
+                      onClick: S,
+                      "aria-label": T ? `Notifications, ${T} unread` : "Notifications",
+                      sx: { color: V },
+                      children: /* @__PURE__ */ t(Cr, {})
                     }
                   )
                 }
               ),
-              ye && !l && /* @__PURE__ */ d(ke, { children: [
+              _e && !c && /* @__PURE__ */ d(be, { children: [
                 /* @__PURE__ */ t(
-                  ne,
+                  he,
                   {
                     orientation: "vertical",
                     flexItem: !0,
@@ -906,17 +953,17 @@ const A = {
                   }
                 ),
                 /* @__PURE__ */ t(
-                  eo,
+                  oo,
                   {
-                    onClick: ie,
-                    active: We,
-                    busy: de,
-                    navbarBackground: oe
+                    onClick: le,
+                    active: He,
+                    busy: me,
+                    navbarBackground: se
                   }
                 )
               ] }),
-              $ && M && !l && /* @__PURE__ */ t(
-                ne,
+              G && L && !c && /* @__PURE__ */ t(
+                he,
                 {
                   orientation: "vertical",
                   flexItem: !0,
@@ -927,12 +974,12 @@ const A = {
                   }
                 }
               ),
-              M && !l && /* @__PURE__ */ d(ke, { children: [
+              L && !c && /* @__PURE__ */ d(be, { children: [
                 /* @__PURE__ */ d(
-                  D,
+                  H,
                   {
                     direction: "row",
-                    onClick: Te,
+                    onClick: Le,
                     sx: {
                       alignItems: "center",
                       gap: 1,
@@ -945,18 +992,18 @@ const A = {
                     },
                     children: [
                       u ? /* @__PURE__ */ t(
-                        ct,
+                        ut,
                         {
                           src: u,
                           sx: { width: 32, height: 32 }
                         }
                       ) : /* @__PURE__ */ t(
-                        kt,
+                        zt,
                         {
                           sx: {
                             width: 32,
                             height: 32,
-                            color: G
+                            color: V
                           }
                         }
                       ),
@@ -971,11 +1018,11 @@ const A = {
                           },
                           children: [
                             /* @__PURE__ */ t(
-                              Y,
+                              Q,
                               {
                                 variant: "body2",
                                 sx: {
-                                  color: G,
+                                  color: V,
                                   fontWeight: 500,
                                   lineHeight: 1.2,
                                   overflow: "hidden",
@@ -983,22 +1030,22 @@ const A = {
                                   whiteSpace: "nowrap",
                                   maxWidth: "150px"
                                 },
-                                children: y
+                                children: N
                               }
                             ),
                             /* @__PURE__ */ t(
-                              Y,
+                              Q,
                               {
                                 variant: "caption",
                                 sx: {
-                                  color: G,
+                                  color: V,
                                   lineHeight: 1.2,
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
                                   whiteSpace: "nowrap",
                                   maxWidth: "150px"
                                 },
-                                children: Me(Le)
+                                children: We(Be)
                               }
                             )
                           ]
@@ -1008,11 +1055,11 @@ const A = {
                   }
                 ),
                 /* @__PURE__ */ d(
-                  Dr,
+                  Fr,
                   {
-                    anchorEl: pe,
-                    open: ze,
-                    onClose: n,
+                    anchorEl: Se,
+                    open: Ke,
+                    onClose: Ee,
                     transformOrigin: {
                       horizontal: "right",
                       vertical: "top"
@@ -1033,21 +1080,21 @@ const A = {
                       }
                     },
                     children: [
-                      z && [
+                      K && [
                         /* @__PURE__ */ t(
-                          dt,
+                          pt,
                           {
-                            onClick: () => S(R),
+                            onClick: () => n(O),
                             children: "Settings"
                           },
                           "settings"
                         ),
-                        /* @__PURE__ */ t(ne, {}, "settings-divider")
+                        /* @__PURE__ */ t(he, {}, "settings-divider")
                       ],
                       /* @__PURE__ */ d(
-                        dt,
+                        pt,
                         {
-                          onClick: () => S(H),
+                          onClick: () => n(P),
                           sx: {
                             color: "error.main",
                             "&:hover": {
@@ -1055,8 +1102,8 @@ const A = {
                             }
                           },
                           children: [
-                            /* @__PURE__ */ t(Y, { sx: { flexGrow: 1 }, children: "Logout" }),
-                            /* @__PURE__ */ t(Vt, { fontSize: "small" })
+                            /* @__PURE__ */ t(Q, { sx: { flexGrow: 1 }, children: "Logout" }),
+                            /* @__PURE__ */ t(Jt, { fontSize: "small" })
                           ]
                         }
                       )
@@ -1064,8 +1111,8 @@ const A = {
                   }
                 )
               ] }),
-              X.length !== 0 && X.map((p) => p.type === "divider" ? /* @__PURE__ */ t(
-                ne,
+              J.length !== 0 && J.map((l) => l.type === "divider" ? /* @__PURE__ */ t(
+                he,
                 {
                   orientation: "vertical",
                   flexItem: !0,
@@ -1075,49 +1122,49 @@ const A = {
                     alignSelf: "center"
                   }
                 },
-                p.key
-              ) : p.type === "profile" ? /* @__PURE__ */ t(
-                ee,
+                l.key
+              ) : l.type === "profile" ? /* @__PURE__ */ t(
+                ne,
                 {
-                  title: p.tooltip || "",
-                  disableHoverListener: !p.tooltip,
+                  title: l.tooltip || "",
+                  disableHoverListener: !l.tooltip,
                   arrow: !0,
                   children: /* @__PURE__ */ d(
-                    D,
+                    H,
                     {
                       direction: "row",
-                      onClick: p.disabled ? void 0 : p.onClick,
+                      onClick: l.disabled ? void 0 : l.onClick,
                       sx: {
                         alignItems: "center",
                         gap: 1,
-                        cursor: p.disabled ? "not-allowed" : "pointer",
+                        cursor: l.disabled ? "not-allowed" : "pointer",
                         borderRadius: "8px",
                         padding: "4px 8px",
-                        opacity: p.disabled ? 0.5 : 1,
+                        opacity: l.disabled ? 0.5 : 1,
                         transition: "opacity 0.2s",
-                        ...!p.disabled && {
+                        ...!l.disabled && {
                           "&:hover": {
                             backgroundColor: "action.hover"
                           }
                         }
                       },
                       children: [
-                        p.avatar ? /* @__PURE__ */ t(
-                          ct,
+                        l.avatar ? /* @__PURE__ */ t(
+                          ut,
                           {
-                            src: p.avatar,
+                            src: l.avatar,
                             sx: {
                               width: 32,
                               height: 32
                             }
                           }
                         ) : /* @__PURE__ */ t(
-                          kt,
+                          zt,
                           {
                             sx: {
                               width: 32,
                               height: 32,
-                              color: G
+                              color: V
                             }
                           }
                         ),
@@ -1132,11 +1179,11 @@ const A = {
                             },
                             children: [
                               /* @__PURE__ */ t(
-                                Y,
+                                Q,
                                 {
                                   variant: "body2",
                                   sx: {
-                                    color: G,
+                                    color: V,
                                     fontWeight: 500,
                                     lineHeight: 1.2,
                                     overflow: "hidden",
@@ -1144,22 +1191,22 @@ const A = {
                                     whiteSpace: "nowrap",
                                     maxWidth: "150px"
                                   },
-                                  children: p.name
+                                  children: l.name
                                 }
                               ),
                               /* @__PURE__ */ t(
-                                Y,
+                                Q,
                                 {
                                   variant: "caption",
                                   sx: {
-                                    color: G,
+                                    color: V,
                                     lineHeight: 1.2,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
                                     maxWidth: "150px"
                                   },
-                                  children: p.role
+                                  children: l.role
                                 }
                               )
                             ]
@@ -1169,7 +1216,7 @@ const A = {
                     }
                   )
                 },
-                p.key
+                l.key
               ) : null)
             ]
           }
@@ -1177,87 +1224,90 @@ const A = {
       ] })
     }
   );
-}, pt = ({
+}, gt = ({
   title: e = "",
-  message: r = "",
-  buttonText: o = "",
+  message: o = "",
+  buttonText: r = "",
   onButtonClick: a,
-  show: l = !0
-}) => l ? /* @__PURE__ */ t(Fr, { variant: "outlined", sx: { m: 1.5, flexShrink: 0 }, children: /* @__PURE__ */ d(zr, { children: [
-  /* @__PURE__ */ t(Mr, { fontSize: "small" }),
-  /* @__PURE__ */ t(Y, { gutterBottom: !0, sx: { fontWeight: 600 }, children: e }),
+  show: c = !0
+}) => c ? /* @__PURE__ */ t(Ur, { variant: "outlined", sx: { m: 1.5, flexShrink: 0 }, children: /* @__PURE__ */ d(Kr, { children: [
+  /* @__PURE__ */ t(Lr, { fontSize: "small" }),
+  /* @__PURE__ */ t(Q, { gutterBottom: !0, sx: { fontWeight: 600 }, children: e }),
   /* @__PURE__ */ t(
-    Y,
+    Q,
     {
       variant: "body2",
       sx: { mb: 2, color: "text.secondary" },
-      children: r
+      children: o
     }
   ),
   /* @__PURE__ */ t(
-    Jt,
+    Qt,
     {
       variant: "contained",
       size: "small",
       fullWidth: !0,
       onClick: a,
-      children: o
+      children: r
     }
   )
-] }) }) : null, Ke = (e, r) => r ? e.path && r === e.path ? !0 : e.subitems?.some((o) => o.path === r) ?? !1 : !1, Ze = (e, r) => !!(r && e.path === r), Qe = (e) => {
-  const r = er(e);
-  if (!r)
+] }) }) : null, ke = (e, o) => {
+  var r;
+  return o ? e.path && o === e.path ? !0 : ((r = e.subitems) == null ? void 0 : r.some((a) => a.path === o)) ?? !1 : !1;
+}, et = (e, o) => !!(o && e.path === o), tt = (e) => {
+  const o = or(e);
+  if (!o)
     return "#ffffff";
-  const [o, a, l] = r.map((s) => {
+  const [r, a, c] = o.map((s) => {
     const i = s / 255;
     return i <= 0.03928 ? i / 12.92 : ((i + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * o + 0.7152 * a + 0.0722 * l > 0.5 ? "#0b1f1c" : "#ffffff";
-}, ut = (e) => {
-  const r = er(e);
-  if (!r)
+  return 0.2126 * r + 0.7152 * a + 0.0722 * c > 0.5 ? "#0b1f1c" : "#ffffff";
+}, mt = (e) => {
+  const o = or(e);
+  if (!o)
     return "rgba(1, 88, 79, 0.12)";
-  const [o, a, l] = r;
-  return `rgba(${o}, ${a}, ${l}, 0.14)`;
-}, er = (e) => {
-  let r = e.trim().replace(/^#/, "");
-  if (r.length === 3 && (r = r.split("").map((a) => a + a).join("")), r.length !== 6 || /[^0-9a-fA-F]/.test(r))
+  const [r, a, c] = o;
+  return `rgba(${r}, ${a}, ${c}, 0.14)`;
+}, or = (e) => {
+  let o = e.trim().replace(/^#/, "");
+  if (o.length === 3 && (o = o.split("").map((a) => a + a).join("")), o.length !== 6 || /[^0-9a-fA-F]/.test(o))
     return null;
-  const o = parseInt(r, 16);
-  return [o >> 16 & 255, o >> 8 & 255, o & 255];
-}, tr = () => typeof window < "u" && !!window.localStorage, rr = (e) => {
-  if (!tr())
+  const r = parseInt(o, 16);
+  return [r >> 16 & 255, r >> 8 & 255, r & 255];
+}, nr = () => typeof window < "u" && !!window.localStorage, ar = (e) => {
+  if (!nr())
     return null;
   try {
-    const r = window.localStorage.getItem(e);
-    return r === null ? null : r === "true";
-  } catch (r) {
-    return console.warn("Failed to read sidebar collapsed state:", r), null;
+    const o = window.localStorage.getItem(e);
+    return o === null ? null : o === "true";
+  } catch (o) {
+    return console.warn("Failed to read sidebar collapsed state:", o), null;
   }
-}, or = (e, r) => {
-  if (tr())
+}, ir = (e, o) => {
+  if (nr())
     try {
-      window.localStorage.setItem(e, r ? "true" : "false");
-    } catch (o) {
-      console.warn("Failed to persist sidebar collapsed state:", o);
+      window.localStorage.setItem(e, o ? "true" : "false");
+    } catch (r) {
+      console.warn("Failed to persist sidebar collapsed state:", r);
     }
-}, oo = 264, no = 72, ao = "lumora:sidebar-collapsed", io = "width 200ms ease", Wt = 60, Je = {
+}, io = 264, so = 72, lo = "lumora:sidebar-collapsed", co = "width 200ms ease", Bt = 60, qe = {
   "&:focus, &:focus-visible": { outline: "none" }
-}, so = 16, lo = 14, Ft = "0.7rem", zt = 22, Ue = ({ text: e, variant: r = "body1", center: o = !1, fontSize: a }) => {
-  const l = w.useRef(null), [h, s] = w.useState(!1), i = w.useCallback(() => {
-    const g = l.current;
+}, ho = 16, uo = 14, Ht = "0.7rem", Ut = 22, Ge = ({ text: e, variant: o = "body1", center: r = !1, fontSize: a }) => {
+  const c = y.useRef(null), [h, s] = y.useState(!1), i = y.useCallback(() => {
+    const g = c.current;
     g && s(g.scrollWidth > g.clientWidth + 0.5);
   }, []);
-  return w.useLayoutEffect(() => {
+  return y.useLayoutEffect(() => {
     i();
-  }, [i, e]), w.useEffect(() => {
-    const g = l.current;
+  }, [i, e]), y.useEffect(() => {
+    const g = c.current;
     if (!g)
       return;
-    const E = new ResizeObserver(() => i());
-    return E.observe(g), () => E.disconnect();
+    const b = new ResizeObserver(() => i());
+    return b.observe(g), () => b.disconnect();
   }, [i]), /* @__PURE__ */ t(
-    ee,
+    ne,
     {
       title: e,
       placement: "right",
@@ -1267,221 +1317,222 @@ const A = {
       disableFocusListener: !h,
       disableTouchListener: !h,
       children: /* @__PURE__ */ t(
-        Y,
+        Q,
         {
-          ref: l,
+          ref: c,
           component: "span",
-          variant: r,
+          variant: o,
           sx: {
             display: "block",
-            width: o ? "100%" : void 0,
+            width: r ? "100%" : void 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             color: "inherit",
             ...a ? { fontSize: a } : {},
-            ...o ? { textAlign: "center", lineHeight: 1.1 } : {}
+            ...r ? { textAlign: "center", lineHeight: 1.1 } : {}
           },
           children: e
         }
       )
     }
   );
-}, Mt = ({
+}, Kt = ({
   open: e,
-  size: r = so
-}) => e ? /* @__PURE__ */ t(Hr, { sx: { fontSize: r, opacity: 0.75 } }) : /* @__PURE__ */ t(Br, { sx: { fontSize: r, opacity: 0.75 } }), co = ({
+  size: o = ho
+}) => e ? /* @__PURE__ */ t(Gr, { sx: { fontSize: o, opacity: 0.75 } }) : /* @__PURE__ */ t($r, { sx: { fontSize: o, opacity: 0.75 } }), po = ({
   mainLinks: e,
-  secondaryLinks: r = [],
-  activePath: o,
+  secondaryLinks: o = [],
+  activePath: r,
   onLinkClick: a,
-  logo: l,
+  logo: c,
   title: h,
-  showHeaderBar: s = !1,
-  headerBackgroundColor: i,
-  headerForegroundColor: g,
-  activeAccentColor: E = "#01584f",
-  groupAccentColor: y,
-  activeForegroundColor: O,
+  onBrandClick: s,
+  showHeaderBar: i = !1,
+  headerBackgroundColor: g,
+  headerForegroundColor: b,
+  activeAccentColor: w = "#01584f",
+  groupAccentColor: N,
+  activeForegroundColor: I,
   foregroundColor: u,
-  surfaceBackgroundColor: v,
-  collapsed: x,
-  defaultCollapsed: R = !1,
-  onCollapsedChange: z,
-  persistKey: H = ao,
-  expandedWidth: $ = oo,
-  collapsedWidth: L = no,
-  showLabels: m = !1,
-  topInsetPx: N = 0
+  surfaceBackgroundColor: R,
+  collapsed: E,
+  defaultCollapsed: O = !1,
+  onCollapsedChange: K,
+  persistKey: P = lo,
+  expandedWidth: G = io,
+  collapsedWidth: T = so,
+  showLabels: S = !1,
+  topInsetPx: m = 0
 }) => {
-  const b = Ge(), f = b.palette.mode === "dark", W = x !== void 0, [j, ae] = w.useState(
-    () => rr(H) ?? R
-  ), c = W ? !!x : j, [M, Le] = w.useState(
+  const f = Xe(), W = f.palette.mode === "dark", ae = E !== void 0, [X, p] = y.useState(
+    () => ar(P) ?? O
+  ), x = ae ? !!E : X, [L, Be] = y.useState(
     {}
-  ), _ = E, B = O ?? Qe(_), oe = {
-    bgcolor: _,
-    color: B,
-    "& .MuiListItemIcon-root": { color: B }
-  }, G = {
-    bgcolor: _,
-    color: B,
+  ), F = w, $ = I ?? tt(F), se = {
+    bgcolor: F,
+    color: $,
+    "& .MuiListItemIcon-root": { color: $ }
+  }, V = {
+    bgcolor: F,
+    color: $,
     borderRadius: "8px"
-  }, X = y ?? ut(_), te = v ?? (f ? b.palette.background.paper : "#ffffff"), V = u ?? (f ? "text.primary" : _), ye = i ?? te, ie = g ?? Qe(ye), We = ut(ie), de = (n) => {
-    a?.(n);
-  }, Fe = () => {
-    const n = !c;
-    W || (ae(n), or(H, n)), z?.(n);
-  }, ve = (n, S) => {
-    Le((p) => ({ ...p, [n]: !S }));
-  }, pe = (n) => M[n.text] ?? Ke(n, o), Re = (n) => {
-    const S = !!(n.path && o === n.path);
+  }, J = N ?? mt(F), j = R ?? (W ? f.palette.background.paper : "#ffffff"), Z = u ?? (W ? "text.primary" : F), _e = g ?? j, le = b ?? tt(_e), He = mt(le), me = (n) => {
+    a == null || a(n);
+  }, Ue = () => {
+    const n = !x;
+    ae || (p(n), ir(P, n)), K == null || K(n);
+  }, Ce = (n, l) => {
+    Be((U) => ({ ...U, [n]: !l }));
+  }, Se = (n) => L[n.text] ?? ke(n, r), Ae = (n) => {
+    const l = !!(n.path && r === n.path);
     return /* @__PURE__ */ d(
-      Ne,
+      Me,
       {
         disabled: !n.path,
-        selected: S,
-        onClick: () => n.path && de(n.path),
+        selected: l,
+        onClick: () => n.path && me(n.path),
         "data-testid": `sidebar-item-${n.text}`,
-        "data-active": S ? "true" : "false",
+        "data-active": l ? "true" : "false",
         sx: {
           borderRadius: "8px",
           py: 1,
           px: 1.5,
-          color: S ? B : V,
-          bgcolor: S ? _ : "transparent",
+          color: l ? $ : Z,
+          bgcolor: l ? F : "transparent",
           "& .MuiListItemIcon-root": {
-            color: S ? B : V,
+            color: l ? $ : Z,
             minWidth: 36
           },
           // rail-labeled: active AND hover share the highlight. collapsible:
           // keep the original subtle idle-hover tint (accent only if active).
-          "&:hover": S || m ? oe : { bgcolor: X },
+          "&:hover": l || S ? se : { bgcolor: J },
           "&.Mui-selected": {
-            bgcolor: _
+            bgcolor: F
           },
-          "&.Mui-selected:hover": oe
+          "&.Mui-selected:hover": se
         },
         children: [
-          /* @__PURE__ */ t(we, { children: n.icon }),
+          /* @__PURE__ */ t(Te, { children: n.icon }),
           /* @__PURE__ */ t(
-            Ee,
+            Oe,
             {
               disableTypography: !0,
-              primary: /* @__PURE__ */ t(Ue, { text: n.text })
+              primary: /* @__PURE__ */ t(Ge, { text: n.text })
             }
           )
         ]
       },
       n.text
     );
-  }, ze = (n) => {
-    const S = Ke(n, o), p = !!(n.path && o === n.path), k = pe(n);
+  }, Ke = (n) => {
+    const l = ke(n, r), U = !!(n.path && r === n.path), M = Se(n);
     return /* @__PURE__ */ d(
       C,
       {
         "data-testid": `sidebar-group-${n.text}`,
         sx: {
           borderRadius: "8px",
-          bgcolor: S ? X : "transparent"
+          bgcolor: l ? J : "transparent"
         },
         children: [
           /* @__PURE__ */ d(
-            Ne,
+            Me,
             {
-              onClick: () => ve(n.text, k),
+              onClick: () => Ce(n.text, M),
               "data-testid": `sidebar-item-${n.text}`,
-              "data-active": p ? "true" : "false",
-              "aria-expanded": k,
+              "data-active": U ? "true" : "false",
+              "aria-expanded": M,
               sx: {
                 borderRadius: "8px",
                 py: 1,
                 px: 1.5,
-                color: p ? B : V,
-                bgcolor: p ? _ : "transparent",
+                color: U ? $ : Z,
+                bgcolor: U ? F : "transparent",
                 "& .MuiListItemIcon-root": {
-                  color: p ? B : V,
+                  color: U ? $ : Z,
                   minWidth: 36
                 },
                 // rail-labeled highlights on hover; collapsible keeps the
                 // subtle idle tint (accent only when the parent is active).
-                "&:hover": p || m ? oe : { bgcolor: X }
+                "&:hover": U || S ? se : { bgcolor: J }
               },
               children: [
-                /* @__PURE__ */ t(we, { children: n.icon }),
+                /* @__PURE__ */ t(Te, { children: n.icon }),
                 /* @__PURE__ */ t(
-                  Ee,
+                  Oe,
                   {
                     disableTypography: !0,
-                    primary: /* @__PURE__ */ t(Ue, { text: n.text })
+                    primary: /* @__PURE__ */ t(Ge, { text: n.text })
                   }
                 ),
-                /* @__PURE__ */ t(Mt, { open: k })
+                /* @__PURE__ */ t(Kt, { open: M })
               ]
             }
           ),
-          /* @__PURE__ */ t(qt, { in: k, timeout: "auto", unmountOnExit: !0, children: /* @__PURE__ */ t(
+          /* @__PURE__ */ t(er, { in: M, timeout: "auto", unmountOnExit: !0, children: /* @__PURE__ */ t(
             C,
             {
               "data-testid": `sidebar-children-${n.text}`,
               sx: { pb: 0.5 },
-              children: n.subitems.map((q) => re(q))
+              children: n.subitems.map((pe) => ie(pe))
             }
           ) })
         ]
       },
       n.text
     );
-  }, re = (n) => {
-    const S = Ze(n, o);
+  }, ie = (n) => {
+    const l = et(n, r);
     return /* @__PURE__ */ d(
-      Ne,
+      Me,
       {
-        selected: S,
-        onClick: () => de(n.path),
+        selected: l,
+        onClick: () => me(n.path),
         "data-testid": `sidebar-subitem-${n.text}`,
-        "data-active": S ? "true" : "false",
+        "data-active": l ? "true" : "false",
         sx: {
           borderRadius: "8px",
           mx: 0.5,
           py: 0.75,
           pl: 4,
-          color: S ? B : V,
-          bgcolor: S ? _ : "transparent",
+          color: l ? $ : Z,
+          bgcolor: l ? F : "transparent",
           "& .MuiListItemIcon-root": {
-            color: S ? B : V,
+            color: l ? $ : Z,
             minWidth: 32
           },
           // rail-labeled: active AND hover share the highlight. collapsible:
           // keep the original subtle idle-hover tint (accent only if active).
-          "&:hover": S || m ? oe : { bgcolor: "action.hover" },
+          "&:hover": l || S ? se : { bgcolor: "action.hover" },
           "&.Mui-selected": {
-            bgcolor: _
+            bgcolor: F
           },
-          "&.Mui-selected:hover": oe
+          "&.Mui-selected:hover": se
         },
         children: [
-          n.icon ? /* @__PURE__ */ t(we, { children: n.icon }) : null,
+          n.icon ? /* @__PURE__ */ t(Te, { children: n.icon }) : null,
           /* @__PURE__ */ t(
-            Ee,
+            Oe,
             {
               disableTypography: !0,
-              primary: /* @__PURE__ */ t(Ue, { text: n.text })
+              primary: /* @__PURE__ */ t(Ge, { text: n.text })
             }
           )
         ]
       },
       n.path
     );
-  }, se = (n, S, p, k, q, fe) => {
-    const Z = !q, U = /* @__PURE__ */ d(
-      J,
+  }, ce = (n, l, U, M, pe, B) => {
+    const q = !pe, de = /* @__PURE__ */ d(
+      ee,
       {
-        "aria-label": S,
-        disabled: Z,
-        onClick: q,
-        "data-testid": fe?.testId ?? `sidebar-item-${S}`,
-        "data-active": k ? "true" : "false",
-        sx: m ? {
+        "aria-label": l,
+        disabled: q,
+        onClick: pe,
+        "data-testid": (B == null ? void 0 : B.testId) ?? `sidebar-item-${l}`,
+        "data-active": M ? "true" : "false",
+        sx: S ? {
           display: "flex",
           flexDirection: "column",
           gap: 0.25,
@@ -1491,73 +1542,73 @@ const A = {
           // 8px padding on all sides of the item container.
           p: 1,
           borderRadius: "8px",
-          color: k ? B : V,
-          bgcolor: k ? _ : "transparent",
+          color: M ? $ : Z,
+          bgcolor: M ? F : "transparent",
           "& .MuiSvgIcon-root": {
-            fontSize: zt
+            fontSize: Ut
           },
-          "&:hover": G,
-          ...Je
+          "&:hover": V,
+          ...qe
         } : {
           // Icon-only collapsed rail (collapsible variant):
           // original hover — accent when active, else a subtle
           // tint; no foreground change.
           width: 44,
           height: 44,
-          color: k ? B : V,
-          bgcolor: k ? _ : "transparent",
-          borderRadius: k ? "8px" : "50%",
+          color: M ? $ : Z,
+          bgcolor: M ? F : "transparent",
+          borderRadius: M ? "8px" : "50%",
           "&:hover": {
-            bgcolor: k ? _ : fe?.insideGroup ? "action.hover" : X,
+            bgcolor: M ? F : B != null && B.insideGroup ? "action.hover" : J,
             borderRadius: "8px"
           },
-          ...Je
+          ...qe
         },
         children: [
-          p,
-          m ? /* @__PURE__ */ t(
-            Ue,
+          U,
+          S ? /* @__PURE__ */ t(
+            Ge,
             {
-              text: S,
+              text: l,
               variant: "caption",
               center: !0,
-              fontSize: Ft
+              fontSize: Ht
             }
           ) : null
         ]
       }
     );
-    return m ? Z ? /* @__PURE__ */ t("span", { children: U }, n) : /* @__PURE__ */ t(w.Fragment, { children: U }, n) : /* @__PURE__ */ t(ee, { title: S, placement: "right", arrow: !0, children: Z ? /* @__PURE__ */ t("span", { children: U }) : U }, n);
-  }, ue = (n, S) => {
-    const p = Ke(n, o), k = !!(n.path && o === n.path), q = /* @__PURE__ */ d(
-      J,
+    return S ? q ? /* @__PURE__ */ t("span", { children: de }, n) : /* @__PURE__ */ t(y.Fragment, { children: de }, n) : /* @__PURE__ */ t(ne, { title: l, placement: "right", arrow: !0, children: q ? /* @__PURE__ */ t("span", { children: de }) : de }, n);
+  }, we = (n, l) => {
+    const U = ke(n, r), M = !!(n.path && r === n.path), pe = /* @__PURE__ */ d(
+      ee,
       {
         "aria-label": n.text,
-        "aria-expanded": S,
-        onClick: () => ve(n.text, S),
+        "aria-expanded": l,
+        onClick: () => Ce(n.text, l),
         "data-testid": `sidebar-item-${n.text}`,
-        "data-active": k ? "true" : "false",
+        "data-active": M ? "true" : "false",
         sx: {
           display: "flex",
           flexDirection: "column",
-          gap: m ? 0.25 : 0,
-          width: m ? "100%" : 44,
+          gap: S ? 0.25 : 0,
+          width: S ? "100%" : 44,
           maxWidth: "100%",
           // 8px padding on all sides of the labeled item container.
-          ...m ? { p: 1 } : { py: 0.75 },
+          ...S ? { p: 1 } : { py: 0.75 },
           borderRadius: "10px",
-          color: k ? B : V,
-          bgcolor: k ? _ : "transparent",
+          color: M ? $ : Z,
+          bgcolor: M ? F : "transparent",
           // rail-labeled: active AND hover share the highlight. collapsible:
           // original behavior — accent only when active; the outer pill
           // supplies the idle-hover tint, so the button stays transparent.
-          "&:hover": m ? { bgcolor: _, color: B } : {
-            bgcolor: k ? _ : "transparent"
+          "&:hover": S ? { bgcolor: F, color: $ } : {
+            bgcolor: M ? F : "transparent"
           },
-          ...Je
+          ...qe
         },
         children: [
-          m ? /* @__PURE__ */ t(
+          S ? /* @__PURE__ */ t(
             C,
             {
               sx: {
@@ -1565,25 +1616,25 @@ const A = {
                 alignItems: "center",
                 justifyContent: "center",
                 "& .MuiSvgIcon-root": {
-                  fontSize: zt
+                  fontSize: Ut
                 }
               },
               children: n.icon
             }
           ) : n.icon,
-          m ? /* @__PURE__ */ t(
-            Ue,
+          S ? /* @__PURE__ */ t(
+            Ge,
             {
               text: n.text,
               variant: "caption",
               center: !0,
-              fontSize: Ft
+              fontSize: Ht
             }
           ) : null,
-          /* @__PURE__ */ t(Mt, { open: S, size: lo })
+          /* @__PURE__ */ t(Kt, { open: l, size: uo })
         ]
       }
-    ), fe = m ? q : /* @__PURE__ */ t(ee, { title: n.text, placement: "right", arrow: !0, children: q });
+    ), B = S ? pe : /* @__PURE__ */ t(ne, { title: n.text, placement: "right", arrow: !0, children: pe });
     return /* @__PURE__ */ d(
       C,
       {
@@ -1599,143 +1650,169 @@ const A = {
           // The active group's container stays tinted. collapsible tints
           // the whole group on hover (original); rail-labeled leaves hover
           // highlighting to the individual items.
-          bgcolor: p ? X : "transparent",
-          ...m ? {} : { "&:hover": { bgcolor: X } }
+          bgcolor: U ? J : "transparent",
+          ...S ? {} : { "&:hover": { bgcolor: J } }
         },
         children: [
-          fe,
-          S ? n.subitems.map(
-            (Z) => se(
-              Z.path,
-              Z.text,
-              Z.icon ?? n.icon,
-              Ze(Z, o),
-              () => de(Z.path),
+          B,
+          l ? n.subitems.map(
+            (q) => ce(
+              q.path,
+              q.text,
+              q.icon ?? n.icon,
+              et(q, r),
+              () => me(q.path),
               {
                 insideGroup: !0,
-                testId: `sidebar-subitem-${Z.text}`
+                testId: `sidebar-subitem-${q.text}`
               }
             )
           ) : null
         ]
       }
     );
-  }, he = (n) => n.subitems?.length ? /* @__PURE__ */ t(w.Fragment, { children: ue(n, pe(n)) }, n.text) : /* @__PURE__ */ t(
-    C,
-    {
-      sx: {
-        width: "100%",
-        display: "flex",
-        justifyContent: "center"
+  }, xe = (n) => {
+    var U;
+    return (U = n.subitems) != null && U.length ? /* @__PURE__ */ t(y.Fragment, { children: we(n, Se(n)) }, n.text) : /* @__PURE__ */ t(
+      C,
+      {
+        sx: {
+          width: "100%",
+          display: "flex",
+          justifyContent: "center"
+        },
+        children: ce(
+          n.text,
+          n.text,
+          n.icon,
+          !!(n.path && r === n.path),
+          n.path ? () => me(n.path) : void 0
+        )
       },
-      children: se(
-        n.text,
-        n.text,
-        n.icon,
-        !!(n.path && o === n.path),
-        n.path ? () => de(n.path) : void 0
-      )
-    },
-    n.text
-  ), Ce = (n) => c ? he(n) : n.subitems?.length ? ze(n) : Re(n), Ie = c ? L : $, Me = s ? /* @__PURE__ */ d(
+      n.text
+    );
+  }, ue = (n) => {
+    var l;
+    return x ? xe(n) : (l = n.subitems) != null && l.length ? Ke(n) : Ae(n);
+  }, De = x ? T : G, Ne = {
+    gap: 1,
+    minWidth: 0,
+    color: le,
+    // Consumer SVG logos pick up the header foreground.
+    "& svg": { color: "inherit", fill: "currentColor" }
+  }, We = /* @__PURE__ */ d(be, { children: [
+    h ? /* @__PURE__ */ t(
+      Q,
+      {
+        variant: "h6",
+        noWrap: !0,
+        sx: {
+          color: le,
+          fontWeight: 600,
+          fontSize: "18px",
+          lineHeight: 1,
+          textTransform: "uppercase"
+        },
+        children: h
+      }
+    ) : null,
+    c
+  ] }), Le = i ? /* @__PURE__ */ d(
     C,
     {
       "data-testid": "sidebar-header",
       sx: {
-        height: Wt,
-        minHeight: Wt,
+        height: Bt,
+        minHeight: Bt,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
         gap: 1.5,
-        bgcolor: ye,
-        borderBottom: `1px solid ${We}`,
-        justifyContent: c ? "center" : "flex-start",
+        bgcolor: _e,
+        borderBottom: `1px solid ${He}`,
+        justifyContent: x ? "center" : "flex-start",
         // Expanded: 20px inset centers the hamburger glyph on the item
         // icon column (16px list padding + 12px row padding + half of
         // the 24px icon = 40px, minus the button's 8px + 12px to its
         // own center). Collapsed: centered like the rail icons.
-        px: c ? 0 : 2.5
+        px: x ? 0 : 2.5
       },
       children: [
         /* @__PURE__ */ t(
-          ee,
+          ne,
           {
-            title: c ? "Expand sidebar" : "Collapse sidebar",
+            title: x ? "Expand sidebar" : "Collapse sidebar",
             placement: "right",
             arrow: !0,
             children: /* @__PURE__ */ t(
-              J,
+              ee,
               {
-                "aria-label": c ? "Expand sidebar" : "Collapse sidebar",
-                "aria-expanded": !c,
-                onClick: Fe,
+                "aria-label": x ? "Expand sidebar" : "Collapse sidebar",
+                "aria-expanded": !x,
+                onClick: Ue,
                 "data-testid": "sidebar-collapse-toggle",
                 disableFocusRipple: !0,
-                sx: { color: ie, ...Je },
-                children: /* @__PURE__ */ t(Yt, {})
+                sx: { color: le, ...qe },
+                children: /* @__PURE__ */ t(Zt, {})
               }
             )
           }
         ),
-        !c && (l || h) ? /* @__PURE__ */ d(
-          D,
+        !x && (c || h) ? s ? /* @__PURE__ */ t(
+          qt,
+          {
+            onClick: s,
+            "aria-label": `${h || "App"} home`,
+            "data-testid": "sidebar-header-brand",
+            focusRipple: !0,
+            sx: {
+              ...Ne,
+              borderRadius: 1,
+              px: 0.5,
+              mx: -0.5,
+              "&:hover": { backgroundColor: "action.hover" },
+              "&.Mui-focusVisible": {
+                outline: "2px solid",
+                outlineColor: le,
+                outlineOffset: 2
+              }
+            },
+            children: We
+          }
+        ) : /* @__PURE__ */ t(
+          H,
           {
             direction: "row",
             "data-testid": "sidebar-header-brand",
-            sx: {
-              alignItems: "center",
-              gap: 1,
-              minWidth: 0,
-              color: ie,
-              // Consumer SVG logos pick up the header foreground.
-              "& svg": { color: "inherit", fill: "currentColor" }
-            },
-            children: [
-              h ? /* @__PURE__ */ t(
-                Y,
-                {
-                  variant: "h6",
-                  noWrap: !0,
-                  sx: {
-                    color: ie,
-                    fontWeight: 600,
-                    fontSize: "18px",
-                    lineHeight: 1,
-                    textTransform: "uppercase"
-                  },
-                  children: h
-                }
-              ) : null,
-              l
-            ]
+            sx: { alignItems: "center", ...Ne },
+            children: We
           }
         ) : null
       ]
     }
-  ) : null, Te = /* @__PURE__ */ d(ke, { children: [
+  ) : null, Ee = /* @__PURE__ */ d(be, { children: [
     /* @__PURE__ */ t(
-      D,
+      H,
       {
         spacing: 0.5,
         sx: {
           width: "100%",
-          alignItems: c ? "center" : "stretch"
+          alignItems: x ? "center" : "stretch"
         },
-        children: e.map((n) => Ce(n))
+        children: e.map((n) => ue(n))
       }
     ),
-    r.length > 0 ? /* @__PURE__ */ d(C, { sx: { mt: "auto", pt: 2 }, children: [
-      /* @__PURE__ */ t(ne, { sx: { mb: 1, borderColor: "divider" } }),
+    o.length > 0 ? /* @__PURE__ */ d(C, { sx: { mt: "auto", pt: 2 }, children: [
+      /* @__PURE__ */ t(he, { sx: { mb: 1, borderColor: "divider" } }),
       /* @__PURE__ */ t(
-        D,
+        H,
         {
           spacing: 0.5,
           sx: {
             width: "100%",
-            alignItems: c ? "center" : "stretch"
+            alignItems: x ? "center" : "stretch"
           },
-          children: r.map((n) => Ce(n))
+          children: o.map((n) => ue(n))
         }
       )
     ] }) : null
@@ -1746,31 +1823,31 @@ const A = {
       component: "nav",
       "aria-label": "Main sidebar",
       "data-testid": "collapsible-sidebar",
-      "data-collapsed": c ? "true" : "false",
-      "data-labeled": m ? "true" : "false",
+      "data-collapsed": x ? "true" : "false",
+      "data-labeled": S ? "true" : "false",
       sx: {
-        width: Ie,
-        minWidth: Ie,
+        width: De,
+        minWidth: De,
         height: "100%",
         boxSizing: "border-box",
-        bgcolor: te,
+        bgcolor: j,
         display: "flex",
         flexDirection: "column",
         // Lets the sidebar shrink inside a flex-column host so siblings
         // (e.g. an alert card below it) stay within the viewport.
         flex: "1 1 auto",
         minHeight: 0,
-        transition: io,
-        ...s ? { overflow: "hidden", p: 0 } : {
+        transition: co,
+        ...i ? { overflow: "hidden", p: 0 } : {
           overflowX: "hidden",
           overflowY: "auto",
-          px: m ? 0.5 : c ? 1 : 2,
-          pt: N ? `${N}px` : 1,
+          px: S ? 0.5 : x ? 1 : 2,
+          pt: m ? `${m}px` : 1,
           pb: 2
         }
       },
-      children: s ? /* @__PURE__ */ d(ke, { children: [
-        Me,
+      children: i ? /* @__PURE__ */ d(be, { children: [
+        Le,
         /* @__PURE__ */ t(
           C,
           {
@@ -1781,34 +1858,34 @@ const A = {
               flexDirection: "column",
               overflowY: "auto",
               overflowX: "hidden",
-              px: c ? 1 : 2,
+              px: x ? 1 : 2,
               pt: 1,
               pb: 2
             },
-            children: Te
+            children: Ee
           }
         )
-      ] }) : Te
+      ] }) : Ee
     }
   );
-}, ho = 180, Bt = 250, nr = ({
+}, fo = 180, Lt = 250, sr = ({
   text: e,
-  testId: r
+  testId: o
 }) => {
-  const o = w.useRef(null), [a, l] = w.useState(!1), h = w.useCallback(() => {
-    const s = o.current;
-    s && l(s.scrollWidth > s.clientWidth + 0.5);
+  const r = y.useRef(null), [a, c] = y.useState(!1), h = y.useCallback(() => {
+    const s = r.current;
+    s && c(s.scrollWidth > s.clientWidth + 0.5);
   }, []);
-  return w.useLayoutEffect(() => {
+  return y.useLayoutEffect(() => {
     h();
-  }, [h, e]), w.useEffect(() => {
-    const s = o.current;
+  }, [h, e]), y.useEffect(() => {
+    const s = r.current;
     if (!s)
       return;
     const i = new ResizeObserver(() => h());
     return i.observe(s), () => i.disconnect();
   }, [h]), /* @__PURE__ */ t(
-    ee,
+    ne,
     {
       title: e,
       placement: "right",
@@ -1818,13 +1895,13 @@ const A = {
       disableFocusListener: !a,
       disableTouchListener: !a,
       children: /* @__PURE__ */ t(
-        Y,
+        Q,
         {
-          ref: o,
+          ref: r,
           variant: "caption",
           component: "span",
           "aria-hidden": !0,
-          "data-testid": r,
+          "data-testid": o,
           sx: {
             display: "block",
             width: "100%",
@@ -1840,87 +1917,91 @@ const A = {
       )
     }
   );
-}, po = ({
+}, go = ({
   link: e,
-  activePath: r,
-  onLinkClick: o,
+  activePath: o,
+  onLinkClick: r,
   accentColor: a,
-  isSecondary: l,
+  isSecondary: c,
   surfaceBackgroundColor: h,
   railShowTitles: s = !1
 }) => {
-  const i = Ge(), [g, E] = w.useState(null), [y, O] = w.useState(!1), u = w.useRef(
+  const i = Xe(), [g, b] = y.useState(null), [w, N] = y.useState(!1), I = y.useRef(
     null
-  ), v = w.useRef(null), x = w.useRef(null), R = w.useRef(!1), z = w.useRef(!1), H = w.useId(), $ = () => {
-    u.current && (clearTimeout(u.current), u.current = null);
-  }, L = () => {
-    $(), u.current = setTimeout(() => {
-      O(!1), u.current = null;
-    }, ho);
-  }, m = () => {
-    $(), O(!0);
+  ), u = y.useRef(null), R = y.useRef(null), E = y.useRef(!1), O = y.useRef(!1), K = y.useId(), P = () => {
+    I.current && (clearTimeout(I.current), I.current = null);
+  }, G = () => {
+    P(), I.current = setTimeout(() => {
+      N(!1), I.current = null;
+    }, fo);
+  }, T = () => {
+    P(), N(!0);
   };
-  w.useEffect(() => {
-    if (!y)
+  y.useEffect(() => {
+    if (!w)
       return;
-    const c = (M) => {
-      M.key === "Escape" && (O(!1), x.current?.focus());
+    const p = (x) => {
+      var L;
+      x.key === "Escape" && (N(!1), (L = R.current) == null || L.focus());
     };
-    return document.addEventListener("keydown", c), () => document.removeEventListener("keydown", c);
-  }, [y]), w.useEffect(() => {
-    if (!y || !z.current)
+    return document.addEventListener("keydown", p), () => document.removeEventListener("keydown", p);
+  }, [w]), y.useEffect(() => {
+    if (!w || !O.current)
       return;
-    const c = globalThis.requestAnimationFrame(() => {
-      v.current?.querySelector(
+    const p = globalThis.requestAnimationFrame(() => {
+      var L;
+      const x = (L = u.current) == null ? void 0 : L.querySelector(
         '[role="menuitem"]'
-      )?.focus(), z.current = !1;
+      );
+      x == null || x.focus(), O.current = !1;
     });
-    return () => cancelAnimationFrame(c);
-  }, [y]);
-  const N = Ke(e, r), b = l ? 48 : 44, f = l ? "text.secondary" : a, W = l ? "#01584F" : a, j = {
+    return () => cancelAnimationFrame(p);
+  }, [w]);
+  const S = ke(e, o), m = c ? 48 : 44, f = c ? "text.secondary" : a, W = c ? "#01584F" : a, ae = {
     width: "100%",
     maxWidth: "100%",
-    minWidth: b,
+    minWidth: m,
     height: "auto",
-    minHeight: b,
+    minHeight: m,
     flexDirection: "column",
     py: 0.5,
     // Horizontal padding so labels (esp. active fill) do not touch the box edges
     px: 1,
     borderRadius: "4px",
-    color: N ? "#ffffff" : f,
-    backgroundColor: N ? W : "transparent",
+    color: S ? "#ffffff" : f,
+    backgroundColor: S ? W : "transparent",
     "&:hover": {
-      backgroundColor: N ? W : "action.hover",
+      backgroundColor: S ? W : "action.hover",
       borderRadius: "4px",
-      color: N ? "#ffffff" : f
+      color: S ? "#ffffff" : f
     }
-  }, ae = s ? /* @__PURE__ */ t(
-    J,
+  }, X = s ? /* @__PURE__ */ t(
+    ee,
     {
-      ref: x,
+      ref: R,
       component: e.path ? "a" : "button",
       href: e.path || void 0,
       "aria-label": e.text,
       onFocus: () => {
-        R.current || m();
+        E.current || T();
       },
-      onBlur: (c) => {
-        const M = c.relatedTarget;
-        M && v.current?.contains(M) || L();
+      onBlur: (p) => {
+        var L;
+        const x = p.relatedTarget;
+        x && ((L = u.current) != null && L.contains(x)) || G();
       },
-      onKeyDown: (c) => {
-        c.key === "ArrowDown" && (c.preventDefault(), z.current = !0, m());
+      onKeyDown: (p) => {
+        p.key === "ArrowDown" && (p.preventDefault(), O.current = !0, T());
       },
-      onClick: (c) => {
-        c.preventDefault(), c.stopPropagation(), e.path && o?.(e.path);
+      onClick: (p) => {
+        p.preventDefault(), p.stopPropagation(), e.path && (r == null || r(e.path));
       },
       "aria-haspopup": "menu",
-      "aria-expanded": y,
-      "aria-controls": y ? H : void 0,
+      "aria-expanded": w,
+      "aria-controls": w ? K : void 0,
       "data-testid": `rail-submenu-trigger-${e.text}`,
-      sx: j,
-      children: /* @__PURE__ */ d(D, { alignItems: "center", spacing: 1, sx: { width: "100%" }, children: [
+      sx: ae,
+      children: /* @__PURE__ */ d(H, { alignItems: "center", spacing: 1, sx: { width: "100%" }, children: [
         /* @__PURE__ */ t(
           C,
           {
@@ -1935,7 +2016,7 @@ const A = {
           }
         ),
         /* @__PURE__ */ t(
-          nr,
+          sr,
           {
             text: e.text,
             testId: `rail-item-caption-${e.text}`
@@ -1944,37 +2025,38 @@ const A = {
       ] })
     }
   ) : /* @__PURE__ */ t(
-    J,
+    ee,
     {
-      ref: x,
+      ref: R,
       component: e.path ? "a" : "button",
       href: e.path || void 0,
       "aria-label": e.text,
       onFocus: () => {
-        R.current || m();
+        E.current || T();
       },
-      onBlur: (c) => {
-        const M = c.relatedTarget;
-        M && v.current?.contains(M) || L();
+      onBlur: (p) => {
+        var L;
+        const x = p.relatedTarget;
+        x && ((L = u.current) != null && L.contains(x)) || G();
       },
-      onKeyDown: (c) => {
-        c.key === "ArrowDown" && (c.preventDefault(), z.current = !0, m());
+      onKeyDown: (p) => {
+        p.key === "ArrowDown" && (p.preventDefault(), O.current = !0, T());
       },
-      onClick: (c) => {
-        c.preventDefault(), c.stopPropagation(), e.path && o?.(e.path);
+      onClick: (p) => {
+        p.preventDefault(), p.stopPropagation(), e.path && (r == null || r(e.path));
       },
       "aria-haspopup": "menu",
-      "aria-expanded": y,
-      "aria-controls": y ? H : void 0,
+      "aria-expanded": w,
+      "aria-controls": w ? K : void 0,
       "data-testid": `rail-submenu-trigger-${e.text}`,
       sx: {
-        width: b,
-        height: b,
-        color: N ? "#ffffff" : f,
-        backgroundColor: N ? W : "transparent",
-        borderRadius: N ? "4px" : "50%",
+        width: m,
+        height: m,
+        color: S ? "#ffffff" : f,
+        backgroundColor: S ? W : "transparent",
+        borderRadius: S ? "4px" : "50%",
         "&:hover": {
-          backgroundColor: N ? W : "action.hover",
+          backgroundColor: S ? W : "action.hover",
           borderRadius: "4px"
         }
       },
@@ -1993,35 +2075,35 @@ const A = {
         /* @__PURE__ */ t(
           C,
           {
-            ref: E,
+            ref: b,
             "data-testid": `rail-submenu-anchor-${e.text}`,
             sx: { display: "inline-flex", maxWidth: "100%" },
             onMouseEnter: () => {
-              R.current = !0, m();
+              E.current = !0, T();
             },
             onMouseLeave: () => {
-              R.current = !1, L();
+              E.current = !1, G();
             },
-            children: s ? ae : /* @__PURE__ */ t(ee, { title: e.text, placement: "right", arrow: !0, children: ae })
+            children: s ? X : /* @__PURE__ */ t(ne, { title: e.text, placement: "right", arrow: !0, children: X })
           }
         ),
         /* @__PURE__ */ t(
-          Gr,
+          Vr,
           {
-            open: y && !!g,
+            open: w && !!g,
             anchorEl: g,
             placement: "right-start",
             modifiers: [{ name: "offset", options: { offset: [8, 0] } }],
-            sx: { zIndex: (c) => c.zIndex.modal },
+            sx: { zIndex: (p) => p.zIndex.modal },
             children: /* @__PURE__ */ t(
-              Pr,
+              Xr,
               {
-                ref: v,
+                ref: u,
                 elevation: 0,
                 onMouseEnter: () => {
-                  $();
+                  P();
                 },
-                onMouseLeave: L,
+                onMouseLeave: G,
                 "data-testid": `rail-submenu-panel-${e.text}`,
                 sx: {
                   bgcolor: h,
@@ -2030,31 +2112,31 @@ const A = {
                   border: "1px solid",
                   borderColor: "divider",
                   boxShadow: i.shadows[8],
-                  maxWidth: Bt,
+                  maxWidth: Lt,
                   minWidth: 0,
                   py: 0.5,
                   boxSizing: "border-box"
                 },
                 children: /* @__PURE__ */ t(
-                  $r,
+                  jr,
                   {
-                    id: H,
+                    id: K,
                     dense: !0,
                     autoFocus: !1,
                     role: "menu",
                     sx: {
                       bgcolor: "transparent",
                       py: 0,
-                      maxWidth: Bt
+                      maxWidth: Lt
                     },
-                    children: e.subitems.map((c) => /* @__PURE__ */ d(
-                      dt,
+                    children: e.subitems.map((p) => /* @__PURE__ */ d(
+                      pt,
                       {
                         role: "menuitem",
-                        title: c.text,
-                        selected: Ze(c, r),
-                        onClick: (M) => {
-                          M.preventDefault(), o?.(c.path), O(!1);
+                        title: p.text,
+                        selected: et(p, o),
+                        onClick: (x) => {
+                          x.preventDefault(), r == null || r(p.path), N(!1);
                         },
                         sx: {
                           borderRadius: "4px",
@@ -2062,7 +2144,7 @@ const A = {
                           my: 0.125,
                           maxWidth: "100%",
                           overflow: "hidden",
-                          color: l ? "text.secondary" : a,
+                          color: c ? "text.secondary" : a,
                           "& .MuiListItemIcon-root": {
                             color: "inherit",
                             minWidth: 36,
@@ -2098,11 +2180,11 @@ const A = {
                           }
                         },
                         children: [
-                          c.icon ? /* @__PURE__ */ t(we, { children: c.icon }) : null,
+                          p.icon ? /* @__PURE__ */ t(Te, { children: p.icon }) : null,
                           /* @__PURE__ */ t(
-                            Ee,
+                            Oe,
                             {
-                              primary: c.text,
+                              primary: p.text,
                               primaryTypographyProps: {
                                 noWrap: !0
                               }
@@ -2110,7 +2192,7 @@ const A = {
                           )
                         ]
                       },
-                      c.path
+                      p.path
                     ))
                   }
                 )
@@ -2121,15 +2203,15 @@ const A = {
       ]
     }
   );
-}, uo = ({
+}, mo = ({
   link: e,
-  activePath: r,
-  onLinkClick: o,
+  activePath: o,
+  onLinkClick: r,
   accentColor: a,
-  isSecondary: l,
+  isSecondary: c,
   railShowTitles: h = !1
 }) => {
-  const s = !!(e.path && r === e.path), i = l ? 48 : 44, g = l ? "text.secondary" : a, E = l ? "#01584F" : a, y = {
+  const s = !!(e.path && o === e.path), i = c ? 48 : 44, g = c ? "text.secondary" : a, b = c ? "#01584F" : a, w = {
     width: "100%",
     maxWidth: "100%",
     minWidth: i,
@@ -2140,24 +2222,24 @@ const A = {
     px: 1,
     borderRadius: "4px",
     color: s ? "#ffffff" : g,
-    backgroundColor: s ? E : "transparent",
+    backgroundColor: s ? b : "transparent",
     "&:hover": {
-      backgroundColor: s ? E : "action.hover",
+      backgroundColor: s ? b : "action.hover",
       borderRadius: "4px",
       color: s ? "#ffffff" : g
     }
-  }, O = h ? /* @__PURE__ */ t(
-    J,
+  }, N = h ? /* @__PURE__ */ t(
+    ee,
     {
       component: e.path ? "a" : "button",
       href: e.path || void 0,
       "aria-label": e.text,
-      onClick: (u) => {
-        u.preventDefault(), u.stopPropagation(), e.path && o?.(e.path);
+      onClick: (I) => {
+        I.preventDefault(), I.stopPropagation(), e.path && (r == null || r(e.path));
       },
       disabled: !e.path,
-      sx: y,
-      children: /* @__PURE__ */ d(D, { alignItems: "center", spacing: 1, sx: { width: "100%" }, children: [
+      sx: w,
+      children: /* @__PURE__ */ d(H, { alignItems: "center", spacing: 1, sx: { width: "100%" }, children: [
         /* @__PURE__ */ t(
           C,
           {
@@ -2172,7 +2254,7 @@ const A = {
           }
         ),
         /* @__PURE__ */ t(
-          nr,
+          sr,
           {
             text: e.text,
             testId: `rail-item-caption-${e.text}`
@@ -2181,144 +2263,144 @@ const A = {
       ] })
     }
   ) : /* @__PURE__ */ t(
-    J,
+    ee,
     {
       component: e.path ? "a" : "button",
       href: e.path || void 0,
       "aria-label": e.text,
-      onClick: (u) => {
-        u.preventDefault(), u.stopPropagation(), e.path && o?.(e.path);
+      onClick: (I) => {
+        I.preventDefault(), I.stopPropagation(), e.path && (r == null || r(e.path));
       },
       disabled: !e.path,
       sx: {
         width: i,
         height: i,
         color: s ? "#ffffff" : g,
-        backgroundColor: s ? E : "transparent",
+        backgroundColor: s ? b : "transparent",
         borderRadius: s ? "4px" : "50%",
         "&:hover": {
-          backgroundColor: s ? E : "action.hover",
+          backgroundColor: s ? b : "action.hover",
           borderRadius: "4px"
         }
       },
       children: e.icon
     }
   );
-  return h ? O : /* @__PURE__ */ t(ee, { title: e.text, placement: "right", arrow: !0, children: O });
-}, fo = ({
+  return h ? N : /* @__PURE__ */ t(ne, { title: e.text, placement: "right", arrow: !0, children: N });
+}, xo = ({
   link: e,
-  expanded: r,
-  onToggle: o,
+  expanded: o,
+  onToggle: r,
   activePath: a,
-  onLinkClick: l,
+  onLinkClick: c,
   accentColor: h,
   groupTint: s,
   activeFg: i,
   isSecondary: g
 }) => {
-  const E = Ke(e, a), y = !!(e.path && a === e.path), O = Ge().palette.mode === "dark", u = g ? "text.secondary" : O ? "text.primary" : h, v = g ? "#01584F" : h;
+  const b = ke(e, a), w = !!(e.path && a === e.path), N = Xe().palette.mode === "dark", I = g ? "text.secondary" : N ? "text.primary" : h, u = g ? "#01584F" : h;
   return /* @__PURE__ */ d(
     C,
     {
       sx: {
         borderRadius: "6px",
-        bgcolor: E ? s : "transparent"
+        bgcolor: b ? s : "transparent"
       },
       children: [
         /* @__PURE__ */ d(
-          Ne,
+          Me,
           {
-            onClick: () => e.path ? l?.(e.path) : o(),
+            onClick: () => e.path ? c == null ? void 0 : c(e.path) : r(),
             sx: {
               py: 1.5,
               px: 2,
-              color: y ? i : u,
-              bgcolor: y ? v : "transparent",
+              color: w ? i : I,
+              bgcolor: w ? u : "transparent",
               "&:hover": {
-                bgcolor: y ? v : s
+                bgcolor: w ? u : s
               }
             },
             "data-testid": `drawer-expand-trigger-${e.text}`,
             children: [
-              /* @__PURE__ */ t(we, { sx: { color: "inherit", minWidth: 40 }, children: e.icon }),
-              /* @__PURE__ */ t(Ee, { primary: e.text }),
+              /* @__PURE__ */ t(Te, { sx: { color: "inherit", minWidth: 40 }, children: e.icon }),
+              /* @__PURE__ */ t(Oe, { primary: e.text }),
               /* @__PURE__ */ t(
-                J,
+                ee,
                 {
                   size: "small",
                   edge: "end",
-                  "aria-label": r ? `Collapse ${e.text}` : `Expand ${e.text}`,
-                  onClick: (x) => {
-                    x.stopPropagation(), o();
+                  "aria-label": o ? `Collapse ${e.text}` : `Expand ${e.text}`,
+                  onClick: (R) => {
+                    R.stopPropagation(), r();
                   },
                   sx: { color: "inherit" },
                   "data-testid": `drawer-expand-chevron-${e.text}`,
-                  children: r ? /* @__PURE__ */ t(Ur, {}) : /* @__PURE__ */ t(Kr, {})
+                  children: o ? /* @__PURE__ */ t(kr, {}) : /* @__PURE__ */ t(Pr, {})
                 }
               )
             ]
           }
         ),
-        /* @__PURE__ */ t(qt, { in: r, timeout: "auto", unmountOnExit: !0, children: /* @__PURE__ */ t(C, { component: "nav", "aria-label": e.text, children: e.subitems.map((x) => {
-          const R = Ze(x, a);
+        /* @__PURE__ */ t(er, { in: o, timeout: "auto", unmountOnExit: !0, children: /* @__PURE__ */ t(C, { component: "nav", "aria-label": e.text, children: e.subitems.map((R) => {
+          const E = et(R, a);
           return /* @__PURE__ */ d(
-            Ne,
+            Me,
             {
-              onClick: () => l?.(x.path),
+              onClick: () => c == null ? void 0 : c(R.path),
               sx: {
                 pl: 4,
                 py: 1,
-                color: R ? i : u,
-                bgcolor: R ? v : "transparent",
+                color: E ? i : I,
+                bgcolor: E ? u : "transparent",
                 "& .MuiListItemIcon-root": {
                   color: "inherit"
                 },
                 "&:hover": {
-                  bgcolor: R ? v : "action.hover"
+                  bgcolor: E ? u : "action.hover"
                 }
               },
               children: [
-                x.icon ? /* @__PURE__ */ t(we, { sx: { minWidth: 36 }, children: x.icon }) : null,
-                /* @__PURE__ */ t(Ee, { primary: x.text })
+                R.icon ? /* @__PURE__ */ t(Te, { sx: { minWidth: 36 }, children: R.icon }) : null,
+                /* @__PURE__ */ t(Oe, { primary: R.text })
               ]
             },
-            x.path
+            R.path
           );
         }) }) })
       ]
     }
   );
-}, go = ({
+}, bo = ({
   link: e,
-  activePath: r,
-  onLinkClick: o,
+  activePath: o,
+  onLinkClick: r,
   accentColor: a,
-  groupTint: l,
+  groupTint: c,
   activeFg: h,
   isSecondary: s
 }) => {
-  const i = !!(e.path && r === e.path), g = Ge().palette.mode === "dark", E = s ? "text.secondary" : g ? "text.primary" : a, y = s ? "#01584F" : a;
+  const i = !!(e.path && o === e.path), g = Xe().palette.mode === "dark", b = s ? "text.secondary" : g ? "text.primary" : a, w = s ? "#01584F" : a;
   return /* @__PURE__ */ d(
-    Ne,
+    Me,
     {
       disabled: !e.path,
-      onClick: () => e.path && o?.(e.path),
+      onClick: () => e.path && (r == null ? void 0 : r(e.path)),
       sx: {
         py: 1.5,
         px: 2,
-        color: i ? h : E,
-        bgcolor: i ? y : "transparent",
+        color: i ? h : b,
+        bgcolor: i ? w : "transparent",
         "&:hover": {
-          bgcolor: i ? y : l
+          bgcolor: i ? w : c
         }
       },
       children: [
-        /* @__PURE__ */ t(we, { sx: { color: "inherit", minWidth: 40 }, children: e.icon }),
-        /* @__PURE__ */ t(Ee, { primary: e.text })
+        /* @__PURE__ */ t(Te, { sx: { color: "inherit", minWidth: 40 }, children: e.icon }),
+        /* @__PURE__ */ t(Oe, { primary: e.text })
       ]
     }
   );
-}, qe = () => /* @__PURE__ */ t(
+}, Qe = () => /* @__PURE__ */ t(
   C,
   {
     sx: {
@@ -2326,85 +2408,89 @@ const A = {
       display: "flex",
       justifyContent: "center"
     },
-    children: /* @__PURE__ */ t(ne, { sx: { width: "60%", borderColor: "divider" } })
+    children: /* @__PURE__ */ t(he, { sx: { width: "60%", borderColor: "divider" } })
   }
-), ar = ({
+), lr = ({
   variant: e,
-  mainLinks: r,
-  secondaryLinks: o = [],
+  mainLinks: o,
+  secondaryLinks: r = [],
   activePath: a,
-  onLinkClick: l,
+  onLinkClick: c,
   accentColor: h = "#01584f",
   groupAccentColor: s,
   surfaceBackgroundColor: i,
   railShowTitles: g = !1
 }) => {
-  const E = Ge(), y = i ?? E.palette.background.paper, O = Qe(h), u = s ?? ut(h), v = (b) => {
-    l && l(b);
-  }, [x, R] = w.useState({}), [z, H] = w.useState({}), $ = (b) => {
-    R((f) => ({
+  const b = Xe(), w = i ?? b.palette.background.paper, N = tt(h), I = s ?? mt(h), u = (m) => {
+    c && c(m);
+  }, [R, E] = y.useState({}), [O, K] = y.useState({}), P = (m) => {
+    E((f) => ({
       ...f,
-      [b]: !f[b]
+      [m]: !f[m]
     }));
-  }, L = (b) => {
-    H((f) => ({
+  }, G = (m) => {
+    K((f) => ({
       ...f,
-      [b]: !f[b]
+      [m]: !f[m]
     }));
-  }, m = (b, f) => b.subitems?.length ? /* @__PURE__ */ t(
-    po,
-    {
-      link: b,
-      activePath: a,
-      onLinkClick: v,
-      accentColor: h,
-      isSecondary: f,
-      surfaceBackgroundColor: y,
-      railShowTitles: g
-    }
-  ) : /* @__PURE__ */ t(
-    uo,
-    {
-      link: b,
-      activePath: a,
-      onLinkClick: v,
-      accentColor: h,
-      isSecondary: f,
-      railShowTitles: g
-    }
-  ), N = (b, f, W) => {
-    if (b.subitems?.length) {
-      const j = W ? !!z[f] : !!x[f];
+  }, T = (m, f) => {
+    var W;
+    return (W = m.subitems) != null && W.length ? /* @__PURE__ */ t(
+      go,
+      {
+        link: m,
+        activePath: a,
+        onLinkClick: u,
+        accentColor: h,
+        isSecondary: f,
+        surfaceBackgroundColor: w,
+        railShowTitles: g
+      }
+    ) : /* @__PURE__ */ t(
+      mo,
+      {
+        link: m,
+        activePath: a,
+        onLinkClick: u,
+        accentColor: h,
+        isSecondary: f,
+        railShowTitles: g
+      }
+    );
+  }, S = (m, f, W) => {
+    var ae;
+    if ((ae = m.subitems) != null && ae.length) {
+      const X = W ? !!O[f] : !!R[f];
       return /* @__PURE__ */ t(
-        fo,
+        xo,
         {
-          link: b,
-          expanded: j,
-          onToggle: () => W ? L(f) : $(f),
+          link: m,
+          expanded: X,
+          onToggle: () => W ? G(f) : P(f),
           activePath: a,
-          onLinkClick: v,
+          onLinkClick: u,
           accentColor: h,
-          groupTint: u,
-          activeFg: O,
+          groupTint: I,
+          activeFg: N,
           isSecondary: W
         }
       );
     }
     return /* @__PURE__ */ t(
-      go,
+      bo,
       {
-        link: b,
+        link: m,
         activePath: a,
-        onLinkClick: v,
+        onLinkClick: u,
         accentColor: h,
-        groupTint: u,
-        activeFg: O,
+        groupTint: I,
+        activeFg: N,
         isSecondary: W
       }
     );
   };
   return e === "drawer" ? /* @__PURE__ */ d(
-    D,
+    H,
     {
       sx: {
         flexGrow: 1,
@@ -2414,11 +2500,11 @@ const A = {
         gap: 0
       },
       children: [
-        /* @__PURE__ */ t(D, { sx: { width: "100%" }, children: r.map((b, f) => /* @__PURE__ */ d(w.Fragment, { children: [
-          N(b, f, !1),
-          f < r.length - 1 ? /* @__PURE__ */ t(qe, {}) : null
+        /* @__PURE__ */ t(H, { sx: { width: "100%" }, children: o.map((m, f) => /* @__PURE__ */ d(y.Fragment, { children: [
+          S(m, f, !1),
+          f < o.length - 1 ? /* @__PURE__ */ t(Qe, {}) : null
         ] }, f)) }),
-        o.length > 0 ? /* @__PURE__ */ d(ke, { children: [
+        r.length > 0 ? /* @__PURE__ */ d(be, { children: [
           /* @__PURE__ */ t(
             C,
             {
@@ -2429,22 +2515,22 @@ const A = {
                 justifyContent: "center"
               },
               children: /* @__PURE__ */ t(
-                ne,
+                he,
                 {
                   sx: { width: "60%", borderColor: "divider" }
                 }
               )
             }
           ),
-          /* @__PURE__ */ t(C, { sx: { mt: "auto", pb: 2 }, children: /* @__PURE__ */ t(D, { sx: { width: "100%" }, children: o.map((b, f) => /* @__PURE__ */ d(w.Fragment, { children: [
-            N(b, f, !0),
-            f < o.length - 1 ? /* @__PURE__ */ t(qe, {}) : null
+          /* @__PURE__ */ t(C, { sx: { mt: "auto", pb: 2 }, children: /* @__PURE__ */ t(H, { sx: { width: "100%" }, children: r.map((m, f) => /* @__PURE__ */ d(y.Fragment, { children: [
+            S(m, f, !0),
+            f < r.length - 1 ? /* @__PURE__ */ t(Qe, {}) : null
           ] }, f)) }) })
         ] }) : null
       ]
     }
   ) : /* @__PURE__ */ d(
-    D,
+    H,
     {
       sx: {
         flexGrow: 1,
@@ -2456,11 +2542,11 @@ const A = {
         gap: g ? 1.25 : 1
       },
       children: [
-        r.map((b, f) => /* @__PURE__ */ d(w.Fragment, { children: [
-          m(b, !1),
-          f < r.length - 1 ? /* @__PURE__ */ t(qe, {}) : null
+        o.map((m, f) => /* @__PURE__ */ d(y.Fragment, { children: [
+          T(m, !1),
+          f < o.length - 1 ? /* @__PURE__ */ t(Qe, {}) : null
         ] }, f)),
-        o.length > 0 ? /* @__PURE__ */ d(ke, { children: [
+        r.length > 0 ? /* @__PURE__ */ d(be, { children: [
           /* @__PURE__ */ t(
             C,
             {
@@ -2471,7 +2557,7 @@ const A = {
                 justifyContent: "center"
               },
               children: /* @__PURE__ */ t(
-                ne,
+                he,
                 {
                   sx: { width: "60%", borderColor: "divider" }
                 }
@@ -2479,13 +2565,13 @@ const A = {
             }
           ),
           /* @__PURE__ */ t(C, { sx: { mt: "auto", pb: 2 }, children: /* @__PURE__ */ t(
-            D,
+            H,
             {
               gap: g ? 1.25 : 1,
               alignItems: "center",
-              children: o.map((b, f) => /* @__PURE__ */ d(w.Fragment, { children: [
-                m(b, !0),
-                f < o.length - 1 ? /* @__PURE__ */ t(qe, {}) : null
+              children: r.map((m, f) => /* @__PURE__ */ d(y.Fragment, { children: [
+                T(m, !0),
+                f < r.length - 1 ? /* @__PURE__ */ t(Qe, {}) : null
               ] }, f))
             }
           ) })
@@ -2493,42 +2579,42 @@ const A = {
       ]
     }
   );
-}, mo = ({
+}, So = ({
   open: e,
-  onClose: r,
-  mainLinks: o,
+  onClose: o,
+  mainLinks: r,
   secondaryLinks: a = [],
-  activePath: l,
+  activePath: c,
   onLinkClick: h,
   userName: s = "User Name",
   userAvatar: i,
   userRole: g,
-  onLogout: E,
-  theme: y = "light",
-  showThemeToggler: O = !1,
-  onThemeToggle: u,
-  alertProps: v,
-  accentColor: x = "#01584f",
-  groupAccentColor: R
+  onLogout: b,
+  theme: w = "light",
+  showThemeToggler: N = !1,
+  onThemeToggle: I,
+  alertProps: u,
+  accentColor: R = "#01584f",
+  groupAccentColor: E
 }) => {
-  const z = y === "dark", H = z ? "Switch to light mode" : "Switch to dark mode", $ = (m) => m ? m.charAt(0).toUpperCase() + m.slice(1).toLowerCase() : "User", L = (m) => {
-    h?.(m), r();
+  const O = w === "dark", K = O ? "Switch to light mode" : "Switch to dark mode", P = (T) => T ? T.charAt(0).toUpperCase() + T.slice(1).toLowerCase() : "User", G = (T) => {
+    h == null || h(T), o();
   };
   return /* @__PURE__ */ t(
-    jr,
+    Yr,
     {
       anchor: "left",
       open: e,
-      onClose: r,
+      onClose: o,
       sx: {
-        zIndex: (m) => m.zIndex.drawer + 1,
+        zIndex: (T) => T.zIndex.drawer + 1,
         "& .MuiDrawer-paper": {
           backgroundImage: "none",
           backgroundColor: "background.paper"
         }
       },
       children: /* @__PURE__ */ d(
-        D,
+        H,
         {
           sx: {
             maxWidth: "70dvw",
@@ -2536,13 +2622,13 @@ const A = {
           },
           children: [
             /* @__PURE__ */ d(
-              D,
+              H,
               {
                 direction: "row",
                 sx: { p: 2, gap: 1, alignItems: "center" },
                 children: [
                   /* @__PURE__ */ d(
-                    D,
+                    H,
                     {
                       direction: "row",
                       sx: {
@@ -2554,7 +2640,7 @@ const A = {
                       },
                       children: [
                         /* @__PURE__ */ t(
-                          ct,
+                          ut,
                           {
                             sizes: "small",
                             alt: s,
@@ -2572,7 +2658,7 @@ const A = {
                             },
                             children: [
                               /* @__PURE__ */ t(
-                                Y,
+                                Q,
                                 {
                                   component: "p",
                                   variant: "subtitle1",
@@ -2587,7 +2673,7 @@ const A = {
                                 }
                               ),
                               /* @__PURE__ */ t(
-                                Y,
+                                Q,
                                 {
                                   variant: "caption",
                                   sx: {
@@ -2597,7 +2683,7 @@ const A = {
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap"
                                   },
-                                  children: $(g)
+                                  children: P(g)
                                 }
                               )
                             ]
@@ -2606,43 +2692,43 @@ const A = {
                       ]
                     }
                   ),
-                  O && /* @__PURE__ */ t(ee, { title: H, placement: "bottom", children: /* @__PURE__ */ t("span", { children: /* @__PURE__ */ t(
-                    J,
+                  N && /* @__PURE__ */ t(ne, { title: K, placement: "bottom", children: /* @__PURE__ */ t("span", { children: /* @__PURE__ */ t(
+                    ee,
                     {
                       size: "small",
-                      onClick: u,
-                      disabled: !u,
-                      "aria-label": H,
-                      children: z ? /* @__PURE__ */ t(Xt, { fontSize: "small" }) : /* @__PURE__ */ t(jt, { fontSize: "small" })
+                      onClick: I,
+                      disabled: !I,
+                      "aria-label": K,
+                      children: O ? /* @__PURE__ */ t(Yt, { fontSize: "small" }) : /* @__PURE__ */ t(Vt, { fontSize: "small" })
                     }
                   ) }) })
                 ]
               }
             ),
-            /* @__PURE__ */ t(ne, {}),
-            /* @__PURE__ */ d(D, { sx: { flexGrow: 1 }, children: [
+            /* @__PURE__ */ t(he, {}),
+            /* @__PURE__ */ d(H, { sx: { flexGrow: 1 }, children: [
               /* @__PURE__ */ t(
-                ar,
+                lr,
                 {
                   variant: "drawer",
-                  mainLinks: o,
+                  mainLinks: r,
                   secondaryLinks: a,
-                  activePath: l,
-                  onLinkClick: L,
-                  accentColor: x,
-                  groupAccentColor: R
+                  activePath: c,
+                  onLinkClick: G,
+                  accentColor: R,
+                  groupAccentColor: E
                 }
               ),
-              /* @__PURE__ */ t(ne, {})
+              /* @__PURE__ */ t(he, {})
             ] }),
-            v?.show && /* @__PURE__ */ t(pt, { ...v }),
-            /* @__PURE__ */ t(D, { sx: { p: 2 }, children: /* @__PURE__ */ t(
-              Jt,
+            (u == null ? void 0 : u.show) && /* @__PURE__ */ t(gt, { ...u }),
+            /* @__PURE__ */ t(H, { sx: { p: 2 }, children: /* @__PURE__ */ t(
+              Qt,
               {
                 variant: "outlined",
                 fullWidth: !0,
-                startIcon: /* @__PURE__ */ t(Vt, {}),
-                onClick: E,
+                startIcon: /* @__PURE__ */ t(Jt, {}),
+                onClick: b,
                 children: "Logout"
               }
             ) })
@@ -2651,73 +2737,74 @@ const A = {
       )
     }
   );
-}, xo = 100, Ht = 80, bo = 60, Ut = 264, Kt = 72, $t = "lumora:sidebar-collapsed", Pt = "width 200ms ease, left 200ms ease", un = ({
+}, wo = 100, $t = 80, Eo = 60, Gt = 264, kt = 72, Pt = "lumora:sidebar-collapsed", jt = "width 200ms ease, left 200ms ease", mn = ({
   children: e,
-  sidebarLinks: r = [],
-  secondarySidebarLinks: o = [],
+  sidebarLinks: o = [],
+  secondarySidebarLinks: r = [],
   appName: a = "Dashboard",
-  pageName: l = "Home",
+  pageName: c = "Home",
   showHeader: h = !0,
   showSidebar: s = !0,
   showSidebarRailTitles: i = !1,
   sidebarVariant: g = "rail",
-  logo: E,
-  sidebarBackgroundColor: y,
-  sidebarHeaderBackgroundColor: O,
+  logo: b,
+  onBrandClick: w,
+  sidebarBackgroundColor: N,
+  sidebarHeaderBackgroundColor: I,
   groupAccentColor: u,
-  activeSidebarForegroundColor: v,
-  enableRefreshToken: x = !1,
-  activePath: R,
-  onLinkClick: z,
-  userName: H,
-  userEmail: $,
-  userAvatar: L,
-  onLogout: m,
-  onProfileClick: N,
-  onAccountClick: b,
-  onSettingsClick: f,
-  showSettings: W = !0,
-  showNotifications: j = !0,
-  notificationCount: ae = 0,
-  NotificationSidebarContent: c,
-  showSearchbar: M = !0,
-  searchValue: Le,
-  onSearchChange: _,
-  onSearchSubmit: B,
-  showProfile: oe = !0,
-  userRole: G,
-  onVerify: X,
-  alertProps: te,
-  style: V,
-  headerStyles: ye,
-  sidebarStyles: ie,
-  contentStyles: We,
-  accentColor: de,
-  sidebarAccentColor: Fe,
-  sidebarForegroundColor: ve,
-  contentBackgroundColor: pe,
-  navbarBackground: Re,
-  navbarAccentColor: ze,
-  theme: re = "light",
-  showThemeToggler: se = !1,
-  onThemeToggle: ue,
-  GlobalChatSidebar: he,
-  useChatSidebar: Ce,
-  showAssistant: Ie = !1,
-  onAssistantClick: Me,
-  assistantActive: Te = !1,
-  assistantBusy: n = !1,
-  rightExtraContent: S,
-  customNavbar: p,
-  customNavbarProps: k,
-  redirectToLogin: q,
-  apiBaseUrl: fe
+  activeSidebarForegroundColor: R,
+  enableRefreshToken: E = !1,
+  activePath: O,
+  onLinkClick: K,
+  userName: P,
+  userEmail: G,
+  userAvatar: T,
+  onLogout: S,
+  onProfileClick: m,
+  onAccountClick: f,
+  onSettingsClick: W,
+  showSettings: ae = !0,
+  showNotifications: X = !0,
+  notificationCount: p = 0,
+  NotificationSidebarContent: x,
+  showSearchbar: L = !0,
+  searchValue: Be,
+  onSearchChange: F,
+  onSearchSubmit: $,
+  showProfile: se = !0,
+  userRole: V,
+  onVerify: J,
+  alertProps: j,
+  style: Z,
+  headerStyles: _e,
+  sidebarStyles: le,
+  contentStyles: He,
+  accentColor: me,
+  sidebarAccentColor: Ue,
+  sidebarForegroundColor: Ce,
+  contentBackgroundColor: Se,
+  navbarBackground: Ae,
+  navbarAccentColor: Ke,
+  theme: ie = "light",
+  showThemeToggler: ce = !1,
+  onThemeToggle: we,
+  GlobalChatSidebar: xe,
+  useChatSidebar: ue,
+  showAssistant: De = !1,
+  onAssistantClick: Ne,
+  assistantActive: We = !1,
+  assistantBusy: Le = !1,
+  rightExtraContent: Ee,
+  customNavbar: n,
+  customNavbarProps: l,
+  redirectToLogin: U,
+  apiBaseUrl: M
 }) => {
-  const Z = Er(), U = yr(Z.breakpoints.down("md")), ft = At(
-    () => Gt(Xr(re)),
-    [re]
-  ), Be = re === "dark", je = de ?? "#01584f", et = Fe ?? je, Xe = pe ?? (Be ? "hsl(220, 35%, 9%)" : "#f2f9fc"), ir = Re ?? (Be ? "hsl(220, 30%, 7%)" : "#ffffff"), sr = ze ?? (Be ? "#ffffff" : "#000000"), ge = g === "collapsible", me = g === "rail-labeled", gt = ge || me, mt = me && s && !U, xt = ge && s && !U, lr = mt || xt, tt = y ?? (Be ? "hsl(220, 30%, 7%)" : "#ffffff"), bt = O ?? tt, cr = Qe(bt), St = (xe) => /* @__PURE__ */ t(
-    be,
+  const pe = Rr(), B = Ir(pe.breakpoints.down("md")), q = Nt(
+    () => Xt(Jr(ie)),
+    [ie]
+  ), de = ie === "dark", Ve = me ?? "#01584f", rt = Ue ?? Ve, Ye = Se ?? (de ? "hsl(220, 35%, 9%)" : "#f2f9fc"), cr = Ae ?? (de ? "hsl(220, 30%, 7%)" : "#ffffff"), dr = Ke ?? (de ? "#ffffff" : "#000000"), ye = g === "collapsible", ve = g === "rail-labeled", xt = ye || ve, bt = ve && s && !B, St = ye && s && !B, hr = bt || St, ot = N ?? (de ? "hsl(220, 30%, 7%)" : "#ffffff"), wt = I ?? ot, ur = tt(wt), Et = (Re) => /* @__PURE__ */ t(
+    Ie,
     {
       role: "img",
       "aria-label": `${a} logo`,
@@ -2725,7 +2812,7 @@ const A = {
         width: 28,
         height: 28,
         flexShrink: 0,
-        bgcolor: xe,
+        bgcolor: Re,
         maskImage: "url(/lumora-logo.svg)",
         maskRepeat: "no-repeat",
         maskPosition: "center",
@@ -2736,63 +2823,64 @@ const A = {
         WebkitMaskSize: "contain"
       }
     }
-  ), dr = E ?? St(Be ? "#ffffff" : je), hr = E ?? St(cr), [Ve, pr] = _e(
-    () => rr($t) ?? !1
-  ), ur = (xe) => {
-    pr(xe), or($t, xe);
+  ), pr = b ?? Et(de ? "#ffffff" : Ve), fr = b ?? Et(ur), [Je, gr] = ze(
+    () => ar(Pt) ?? !1
+  ), mr = (Re) => {
+    gr(Re), ir(Pt, Re);
   };
-  let le = 0;
-  s && !U && (me ? le = Ht : ge ? le = Ve ? Kt : Ut : le = xo);
-  const [wt, Et] = _e(!1), [fr, rt] = _e(!1), [gr, mr] = _e(!0), [xr, br] = _e(!1), [So, Ye] = _e(null), yt = Ce?.()?.isOpen ?? !1, ot = Dt(X), vt = Dt(!1), Rt = At(
-    () => qr(fe),
-    [fe]
+  let fe = 0;
+  s && !B && (ve ? fe = $t : ye ? fe = Je ? kt : Gt : fe = wo);
+  const [yt, vt] = ze(!1), [xr, nt] = ze(!1), [br, Sr] = ze(!0), [wr, Er] = ze(!1), [yo, Ze] = ze(null), at = ue == null ? void 0 : ue(), Rt = (at == null ? void 0 : at.isOpen) ?? !1, it = Wt(J), It = Wt(!1), Tt = Nt(
+    () => eo(M),
+    [M]
   );
-  it(() => {
-    ot.current = X;
-  }, [X]);
-  const Sr = () => {
-    Et(!wt);
-  }, wr = () => {
-    Et(!1);
-  }, Ct = (xe) => {
-    const Oe = m(xe);
-    Oe instanceof Promise ? Oe.then(() => {
-      Ye(null);
-    }).catch((It) => {
-      console.error("Error in logout handler:", It), Ye(null);
-    }) : Ye(null);
+  ct(() => {
+    it.current = J;
+  }, [J]);
+  const yr = () => {
+    vt(!yt);
+  }, vr = () => {
+    vt(!1);
+  }, Ot = (Re) => {
+    const Fe = S(Re);
+    Fe instanceof Promise ? Fe.then(() => {
+      Ze(null);
+    }).catch((_t) => {
+      console.error("Error in logout handler:", _t), Ze(null);
+    }) : Ze(null);
   };
-  return it(() => {
+  return ct(() => {
     (() => {
       try {
-        const { isAuthenticated: Oe, error: It } = Yr();
-        if (!Oe) {
-          console.log("No session found, redirecting to login"), Pe(), q();
+        const { isAuthenticated: Fe, error: _t } = qr();
+        if (!Fe) {
+          console.log("No session found, redirecting to login"), je(), U();
           return;
         }
-        if (!vt.current) {
-          const { user: He, error: nt } = Jr();
-          if (He && !nt) {
-            const Tt = {
-              name: He.name || "",
-              email: He.email || "",
-              profilePicture: He.profilePicture || "",
-              role: He.role || ""
+        if (!It.current) {
+          const { user: $e, error: st } = Qr();
+          if ($e && !st) {
+            const Ct = {
+              name: $e.name || "",
+              email: $e.email || "",
+              profilePicture: $e.profilePicture || "",
+              role: $e.role || ""
             };
-            Ye(Tt), vt.current = !0, ot.current && ot.current(Tt);
-          } else nt && console.error("Error getting user data:", nt);
+            Ze(Ct), It.current = !0, it.current && it.current(Ct);
+          } else
+            st && console.error("Error getting user data:", st);
         }
-        br(!0);
-      } catch (Oe) {
-        console.error("Error checking session:", Oe), Pe(), q();
+        Er(!0);
+      } catch (Fe) {
+        console.error("Error checking session:", Fe), je(), U();
       } finally {
-        mr(!1);
+        Sr(!1);
       }
     })();
-  }, [q]), it(() => {
-    x && Zr(Rt, q);
-  }, [x, Rt]), gr ? /* @__PURE__ */ t(_t, { theme: ft, children: /* @__PURE__ */ d(
-    be,
+  }, [U]), ct(() => {
+    E && to(Tt, U);
+  }, [E, Tt]), br ? /* @__PURE__ */ t(Dt, { theme: q, children: /* @__PURE__ */ d(
+    Ie,
     {
       sx: {
         display: "flex",
@@ -2804,78 +2892,79 @@ const A = {
       },
       children: [
         /* @__PURE__ */ t(
-          vr,
+          Tr,
           {
             size: 60,
             thickness: 4,
-            sx: { color: je }
+            sx: { color: Ve }
           }
         ),
-        /* @__PURE__ */ t(be, { sx: { mt: 2, color: "text.secondary" }, children: "Checking session..." })
+        /* @__PURE__ */ t(Ie, { sx: { mt: 2, color: "text.secondary" }, children: "Checking session..." })
       ]
     }
-  ) }) : xr ? /* @__PURE__ */ t(_t, { theme: ft, children: /* @__PURE__ */ d(
-    be,
+  ) }) : wr ? /* @__PURE__ */ t(Dt, { theme: q, children: /* @__PURE__ */ d(
+    Ie,
     {
       sx: {
         display: "flex",
         minHeight: "100vh",
-        ...V
+        ...Z
       },
       children: [
-        /* @__PURE__ */ t(Rr, {}),
+        /* @__PURE__ */ t(Or, {}),
         h && /* @__PURE__ */ t(
-          ro,
+          ao,
           {
             appName: a,
-            pageName: l,
-            isMobile: U,
-            onMenuClick: U && s ? Sr : void 0,
-            showMenuButton: s && U,
-            showBrand: !(xt && !Ve),
-            leftOffsetPx: lr ? le : 0,
-            logo: dr,
-            headerStyles: ye,
-            userName: H,
-            userEmail: $,
-            userAvatar: L,
-            onProfileClick: N,
-            onAccountClick: b,
-            onSettingsClick: f,
-            showSettings: W,
-            onLogout: Ct,
-            showNotifications: j,
-            notificationCount: ae,
-            onNotificationBellClick: j && c ? () => rt(!0) : void 0,
-            showSearchbar: M && !p,
-            searchValue: Le,
-            onSearchChange: _,
-            onSearchSubmit: B,
-            showProfile: oe,
-            userRole: G,
-            accentColor: je,
-            contentBackgroundColor: Xe,
-            navbarBackground: ir,
-            navbarAccentColor: sr,
-            theme: re,
-            showThemeToggler: se,
-            onThemeToggle: ue,
-            rightExtraContent: S,
-            customNavbar: p,
-            customNavbarProps: k,
-            showAssistant: Ie,
-            onAssistantClick: Me,
-            assistantActive: Te,
-            assistantBusy: n
+            pageName: c,
+            isMobile: B,
+            onMenuClick: B && s ? yr : void 0,
+            showMenuButton: s && B,
+            showBrand: !(St && !Je),
+            leftOffsetPx: hr ? fe : 0,
+            logo: pr,
+            onBrandClick: w,
+            headerStyles: _e,
+            userName: P,
+            userEmail: G,
+            userAvatar: T,
+            onProfileClick: m,
+            onAccountClick: f,
+            onSettingsClick: W,
+            showSettings: ae,
+            onLogout: Ot,
+            showNotifications: X,
+            notificationCount: p,
+            onNotificationBellClick: X && x ? () => nt(!0) : void 0,
+            showSearchbar: L && !n,
+            searchValue: Be,
+            onSearchChange: F,
+            onSearchSubmit: $,
+            showProfile: se,
+            userRole: V,
+            accentColor: Ve,
+            contentBackgroundColor: Ye,
+            navbarBackground: cr,
+            navbarAccentColor: dr,
+            theme: ie,
+            showThemeToggler: ce,
+            onThemeToggle: we,
+            rightExtraContent: Ee,
+            customNavbar: n,
+            customNavbarProps: l,
+            showAssistant: De,
+            onAssistantClick: Ne,
+            assistantActive: We,
+            assistantBusy: Le
           }
         ),
-        s && !U && gt && /* @__PURE__ */ d(
-          be,
+        s && !B && xt && /* @__PURE__ */ d(
+          Ie,
           {
             component: "aside",
             sx: {
-              width: le,
-              minWidth: le,
+              width: fe,
+              minWidth: fe,
               flexShrink: 0,
               zIndex: 2,
               position: "sticky",
@@ -2888,61 +2977,62 @@ const A = {
               display: "flex",
               flexDirection: "column",
               // Keep the strip behind any bottom sibling on-brand.
-              bgcolor: ge ? tt : void 0,
-              transition: Pt,
-              ...ie
+              bgcolor: ye ? ot : void 0,
+              transition: jt,
+              ...le
             },
             children: [
               /* @__PURE__ */ t(
-                co,
+                po,
                 {
-                  mainLinks: r,
-                  secondaryLinks: o,
-                  activePath: R,
-                  onLinkClick: z,
-                  showHeaderBar: ge,
-                  logo: hr,
+                  mainLinks: o,
+                  secondaryLinks: r,
+                  activePath: O,
+                  onLinkClick: K,
+                  showHeaderBar: ye,
+                  logo: fr,
                   title: a,
-                  headerBackgroundColor: ge ? bt : void 0,
-                  activeAccentColor: et,
+                  onBrandClick: w,
+                  headerBackgroundColor: ye ? wt : void 0,
+                  activeAccentColor: rt,
                   groupAccentColor: u,
-                  activeForegroundColor: v,
-                  foregroundColor: ve,
-                  surfaceBackgroundColor: tt,
-                  collapsed: me ? !0 : Ve,
-                  onCollapsedChange: me ? void 0 : ur,
-                  showLabels: me,
-                  topInsetPx: mt && h ? bo : 0,
-                  expandedWidth: Ut,
-                  collapsedWidth: me ? Ht : Kt
+                  activeForegroundColor: R,
+                  foregroundColor: Ce,
+                  surfaceBackgroundColor: ot,
+                  collapsed: ve ? !0 : Je,
+                  onCollapsedChange: ve ? void 0 : mr,
+                  showLabels: ve,
+                  topInsetPx: bt && h ? Eo : 0,
+                  expandedWidth: Gt,
+                  collapsedWidth: ve ? $t : kt
                 }
               ),
-              ge && te?.show && !Ve && /* @__PURE__ */ t(pt, { ...te })
+              ye && (j == null ? void 0 : j.show) && !Je && /* @__PURE__ */ t(gt, { ...j })
             ]
           }
         ),
-        s && !U && !gt && /* @__PURE__ */ t(
-          Ot,
+        s && !B && !xt && /* @__PURE__ */ t(
+          At,
           {
             variant: "permanent",
             sx: {
-              width: le,
+              width: fe,
               flexShrink: 0,
               zIndex: 2,
               // Higher z-index than app bar
               "& .MuiDrawer-paper": {
-                width: le,
+                width: fe,
                 boxSizing: "border-box",
-                bgcolor: Xe,
+                bgcolor: Ye,
                 borderRight: "none",
                 top: h ? "60px" : 0,
                 // Position below header
                 height: h ? "calc(100vh - 60px)" : "100vh"
               },
-              ...ie
+              ...le
             },
             children: /* @__PURE__ */ d(
-              be,
+              Ie,
               {
                 sx: {
                   overflow: "auto",
@@ -2956,72 +3046,72 @@ const A = {
                 },
                 children: [
                   /* @__PURE__ */ t(
-                    ar,
+                    lr,
                     {
                       variant: "rail",
-                      mainLinks: r,
-                      secondaryLinks: o,
-                      activePath: R,
-                      onLinkClick: z,
-                      accentColor: et,
-                      surfaceBackgroundColor: Xe,
+                      mainLinks: o,
+                      secondaryLinks: r,
+                      activePath: O,
+                      onLinkClick: K,
+                      accentColor: rt,
+                      surfaceBackgroundColor: Ye,
                       railShowTitles: i
                     }
                   ),
-                  te?.show && /* @__PURE__ */ t(pt, { ...te })
+                  (j == null ? void 0 : j.show) && /* @__PURE__ */ t(gt, { ...j })
                 ]
               }
             )
           }
         ),
-        s && U && /* @__PURE__ */ t(
-          mo,
+        s && B && /* @__PURE__ */ t(
+          So,
           {
-            open: wt,
-            onClose: wr,
-            mainLinks: r,
-            secondaryLinks: o,
-            activePath: R,
-            onLinkClick: z,
-            userName: H,
-            userEmail: $,
-            userAvatar: L,
-            userRole: G,
-            onLogout: Ct,
-            onProfileClick: N,
-            theme: re,
-            showThemeToggler: se,
-            onThemeToggle: ue,
-            alertProps: te,
-            accentColor: et,
+            open: yt,
+            onClose: vr,
+            mainLinks: o,
+            secondaryLinks: r,
+            activePath: O,
+            onLinkClick: K,
+            userName: P,
+            userEmail: G,
+            userAvatar: T,
+            userRole: V,
+            onLogout: Ot,
+            onProfileClick: m,
+            theme: ie,
+            showThemeToggler: ce,
+            onThemeToggle: we,
+            alertProps: j,
+            accentColor: rt,
             groupAccentColor: u
           }
         ),
         /* @__PURE__ */ t(
-          be,
+          Ie,
           {
             component: "main",
             sx: {
               flexGrow: 1,
               p: 3,
-              width: U ? "100%" : s ? `calc(100% - ${le}px)` : "100%",
-              transition: Pt,
+              width: B ? "100%" : s ? `calc(100% - ${fe}px)` : "100%",
+              transition: jt,
               mt: h ? "60px" : 0,
               // Account for AppNavbar height (60px)
               ml: 0,
               // Offset for sidebar on desktop
-              backgroundColor: Xe,
+              backgroundColor: Ye,
               mb: 0,
               mr: 0,
-              ...We
+              ...He
             },
-            children: /* @__PURE__ */ d(at, { container: !0, spacing: 3, children: [
+            children: /* @__PURE__ */ d(lt, { container: !0, spacing: 3, children: [
               /* @__PURE__ */ t(
-                at,
+                lt,
                 {
                   size: {
                     xs: 12,
-                    md: yt && he ? 8.5 : 12
+                    md: Rt && xe ? 8.5 : 12
                   },
                   sx: {
                     display: "flex",
@@ -3030,8 +3120,8 @@ const A = {
                   children: e
                 }
               ),
-              yt && he && /* @__PURE__ */ t(
-                at,
+              Rt && xe && /* @__PURE__ */ t(
+                lt,
                 {
                   size: { xs: 12, md: 3.5 },
                   sx: {
@@ -3055,25 +3145,25 @@ const A = {
                     }
                     // Viewport - navbar - top padding - top margin
                   },
-                  children: /* @__PURE__ */ t(he, {})
+                  children: /* @__PURE__ */ t(xe, {})
                 }
               )
             ] })
           }
         ),
-        j && c && /* @__PURE__ */ t(
-          Ot,
+        X && x && /* @__PURE__ */ t(
+          At,
           {
             anchor: "right",
-            open: fr,
-            onClose: () => rt(!1),
+            open: xr,
+            onClose: () => nt(!1),
             slotProps: {
               paper: { sx: { width: 380, maxWidth: "100vw" } }
             },
             children: /* @__PURE__ */ t(
-              c,
+              x,
               {
-                onClose: () => rt(!1)
+                onClose: () => nt(!1)
               }
             )
           }
@@ -3083,16 +3173,16 @@ const A = {
   ) }) : null;
 };
 export {
-  A as AUTH_ERROR_CODES,
-  T as AuthError,
-  co as CollapsibleSidebar,
-  un as LumoraWrapper,
-  Pe as clearAuthTokens,
-  un as default,
-  pn as getAuthErrorMessage,
-  $e as getAuthTokens,
-  Jr as getCurrentUser,
-  Yr as isAuthenticated,
-  ht as logAuthError,
-  Qt as storeAuthTokens
+  z as AUTH_ERROR_CODES,
+  D as AuthError,
+  po as CollapsibleSidebar,
+  mn as LumoraWrapper,
+  je as clearAuthTokens,
+  mn as default,
+  gn as getAuthErrorMessage,
+  Pe as getAuthTokens,
+  Qr as getCurrentUser,
+  qr as isAuthenticated,
+  ft as logAuthError,
+  rr as storeAuthTokens
 };

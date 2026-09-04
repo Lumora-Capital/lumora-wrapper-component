@@ -2,6 +2,7 @@ import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRound
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import Box from '@mui/material/Box';
+import ButtonBase from '@mui/material/ButtonBase';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -135,6 +136,8 @@ export interface CollapsibleSidebarProps {
 	logo?: React.ReactNode;
 	/** App title wordmark (uppercased); shown in the header bar while expanded. */
 	title?: string;
+	/** Makes the header-bar brand (title + logo) a button. */
+	onBrandClick?: () => void;
 	/** @deprecated Never rendered — the section header row was dropped. */
 	sectionTitle?: string;
 	/**
@@ -198,6 +201,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	onLinkClick,
 	logo,
 	title,
+	onBrandClick,
 	showHeaderBar = false,
 	headerBackgroundColor,
 	headerForegroundColor,
@@ -691,6 +695,34 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	// 60px branded header: the collapse hamburger, plus logo + wordmark while
 	// expanded (the brand moves to the navbar when there's no room for it here).
+	const headerBrandSx = {
+		gap: 1,
+		minWidth: 0,
+		color: headerFg,
+		// Consumer SVG logos pick up the header foreground.
+		'& svg': { color: 'inherit', fill: 'currentColor' }
+	} as const;
+	const headerBrandContent = (
+		<>
+			{/* Wordmark first, logo mark after — same order as the navbar brand. */}
+			{title ? (
+				<Typography
+					variant='h6'
+					noWrap
+					sx={{
+						color: headerFg,
+						fontWeight: 600,
+						fontSize: '18px',
+						lineHeight: 1,
+						textTransform: 'uppercase'
+					}}
+				>
+					{title}
+				</Typography>
+			) : null}
+			{logo}
+		</>
+	);
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
@@ -717,7 +749,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				arrow
 			>
 				<IconButton
-					aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+					aria-label={
+						collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+					}
 					aria-expanded={!collapsed}
 					onClick={handleToggleCollapsed}
 					data-testid='sidebar-collapse-toggle'
@@ -728,37 +762,36 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				</IconButton>
 			</Tooltip>
 			{!collapsed && (logo || title) ? (
-				<Stack
-					direction='row'
-					data-testid='sidebar-header-brand'
-					sx={{
-						alignItems: 'center',
-						gap: 1,
-						minWidth: 0,
-						color: headerFg,
-						// Consumer SVG logos pick up the header foreground.
-						'& svg': { color: 'inherit', fill: 'currentColor' }
-					}}
-				>
-					{/* Wordmark first, logo mark after — same order as the
-					    navbar brand. */}
-					{title ? (
-						<Typography
-							variant='h6'
-							noWrap
-							sx={{
-								color: headerFg,
-								fontWeight: 600,
-								fontSize: '18px',
-								lineHeight: 1,
-								textTransform: 'uppercase'
-							}}
-						>
-							{title}
-						</Typography>
-					) : null}
-					{logo}
-				</Stack>
+				onBrandClick ? (
+					<ButtonBase
+						onClick={onBrandClick}
+						aria-label={`${title || 'App'} home`}
+						data-testid='sidebar-header-brand'
+						focusRipple
+						sx={{
+							...headerBrandSx,
+							borderRadius: 1,
+							px: 0.5,
+							mx: -0.5,
+							'&:hover': { backgroundColor: 'action.hover' },
+							'&.Mui-focusVisible': {
+								outline: '2px solid',
+								outlineColor: headerFg,
+								outlineOffset: 2
+							}
+						}}
+					>
+						{headerBrandContent}
+					</ButtonBase>
+				) : (
+					<Stack
+						direction='row'
+						data-testid='sidebar-header-brand'
+						sx={{ alignItems: 'center', ...headerBrandSx }}
+					>
+						{headerBrandContent}
+					</Stack>
+				)
 			) : null}
 		</Box>
 	) : null;
