@@ -96,7 +96,9 @@ export interface LumoraWrapperProps {
 	sidebarBackgroundColor?: string;
 	/**
 	 * Background of the collapsible sidebar's 60px header block (hamburger +
-	 * brand). Defaults to the sidebar surface color.
+	 * brand). Defaults to the sidebar surface color, in which case the brand
+	 * keeps the sidebar accent tint; setting a custom background switches the
+	 * brand to auto-contrast against it.
 	 */
 	sidebarHeaderBackgroundColor?: string;
 	/** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
@@ -312,7 +314,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		sidebarBackgroundColor ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const resolvedSidebarHeaderBg =
 		sidebarHeaderBackgroundColor ?? resolvedSidebarSurface;
-	const sidebarHeaderFg = getContrastText(resolvedSidebarHeaderBg);
+	// Sidebar-header brand tint. With no custom header background the header is
+	// part of the sidebar surface, so the brand keeps the sidebar's idle accent
+	// (e.g. teal on white in light mode, white on the dark chrome) — the same
+	// tint the nav chrome and the navbar brand use. A custom header background
+	// (e.g. dark green in light mode) switches to auto-contrast so the brand
+	// stays legible on it.
+	const sidebarHeaderFg = sidebarHeaderBackgroundColor
+		? getContrastText(resolvedSidebarHeaderBg)
+		: (sidebarForegroundColor ??
+			(isDark ? '#ffffff' : resolvedSidebarAccent));
 	// Default logo via a CSS mask so it can be tinted per surface. Consumers
 	// can pass their own `logo` node instead.
 	const renderMaskLogo = (tint: string) => (
@@ -338,8 +349,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Navbar brand: accent in light mode; a legible light fill in dark mode.
 	const resolvedLogo =
 		logo ?? renderMaskLogo(isDark ? '#ffffff' : resolvedAccentColor);
-	// Sidebar-header brand: tinted against the header background instead (the
-	// navbar tint would vanish on a dark-green header in light mode).
+	// Sidebar-header brand: tinted with the header foreground so it matches the
+	// wordmark on either a plain surface or a custom (e.g. dark-green) header.
 	const resolvedSidebarHeaderLogo = logo ?? renderMaskLogo(sidebarHeaderFg);
 	// Collapsible sidebar collapsed state is owned here so the navbar/content
 	// offsets stay in sync with the sidebar width. Restored from localStorage.
@@ -638,6 +649,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							headerBackgroundColor={
 								useCollapsibleSidebar
 									? resolvedSidebarHeaderBg
+									: undefined
+							}
+							headerForegroundColor={
+								useCollapsibleSidebar
+									? sidebarHeaderFg
 									: undefined
 							}
 							activeAccentColor={resolvedSidebarAccent}

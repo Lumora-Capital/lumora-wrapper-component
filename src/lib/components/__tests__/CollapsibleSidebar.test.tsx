@@ -510,6 +510,60 @@ describe('CollapsibleSidebar', () => {
 			);
 		});
 
+		it('tints the header brand with the accent when the header shares the surface', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				title: 'Centra',
+				logo: <svg data-testid='brand-logo' />,
+				activeAccentColor: '#09c1ae',
+				onBrandClick: jest.fn()
+			});
+			// Regression: auto-contrast against the white surface painted the
+			// wordmark and logo black. Both must follow the accent instead.
+			const brand = screen.getByTestId('sidebar-header-brand');
+			expect(within(brand).getByText('Centra')).toHaveStyle({
+				color: 'rgb(9, 193, 174)'
+			});
+			expect(brand).toHaveStyle({ color: 'rgb(9, 193, 174)' });
+			expect(screen.getByTestId('sidebar-collapse-toggle')).toHaveStyle({
+				color: 'rgb(9, 193, 174)'
+			});
+		});
+
+		it('prefers foregroundColor for the header brand on a plain surface', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				title: 'Centra',
+				activeAccentColor: '#01584f',
+				foregroundColor: '#7ec8bf'
+			});
+			expect(
+				within(screen.getByTestId('sidebar-header-brand')).getByText(
+					'Centra'
+				)
+			).toHaveStyle({ color: 'rgb(126, 200, 191)' });
+		});
+
+		it('auto-contrasts the header brand against a custom header background', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				title: 'Centra',
+				activeAccentColor: '#09c1ae',
+				headerBackgroundColor: '#01584f'
+			});
+			expect(screen.getByTestId('sidebar-header')).toHaveStyle({
+				backgroundColor: 'rgb(1, 88, 79)'
+			});
+			expect(
+				within(screen.getByTestId('sidebar-header-brand')).getByText(
+					'Centra'
+				)
+			).toHaveStyle({ color: 'rgb(255, 255, 255)' });
+		});
+
 		it('shows the brand (logo + uppercase title) only while expanded', () => {
 			const { rerender } = render(
 				<CollapsibleSidebar

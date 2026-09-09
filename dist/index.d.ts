@@ -80,9 +80,11 @@ export declare interface CollapsibleSidebarProps {
     /** Header bar background; defaults to the sidebar surface color. */
     headerBackgroundColor?: string;
     /**
-     * Header bar foreground (hamburger + wordmark); defaults to auto-contrast
-     * from the header background. Auto-contrast only parses hex colors — set
-     * this explicitly when the header background is a non-hex value.
+     * Header bar foreground (hamburger + wordmark + logo). Defaults to the idle
+     * accent-on-surface tint (see `foregroundColor`) when the header shares the
+     * sidebar surface, and to auto-contrast from `headerBackgroundColor` when
+     * one is given. Auto-contrast only parses hex colors — set this explicitly
+     * when the header background is a non-hex value.
      */
     headerForegroundColor?: string;
     /** Solid background of the highlighted item — shared by the active item and
@@ -201,7 +203,9 @@ export declare interface LumoraWrapperProps {
     sidebarBackgroundColor?: string;
     /**
      * Background of the collapsible sidebar's 60px header block (hamburger +
-     * brand). Defaults to the sidebar surface color.
+     * brand). Defaults to the sidebar surface color, in which case the brand
+     * keeps the sidebar accent tint; setting a custom background switches the
+     * brand to auto-contrast against it.
      */
     sidebarHeaderBackgroundColor?: string;
     /** Light accent tint for grouped sub-items and hover (collapsible sidebar). */

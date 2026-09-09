@@ -150,9 +150,11 @@ export interface CollapsibleSidebarProps {
 	/** Header bar background; defaults to the sidebar surface color. */
 	headerBackgroundColor?: string;
 	/**
-	 * Header bar foreground (hamburger + wordmark); defaults to auto-contrast
-	 * from the header background. Auto-contrast only parses hex colors — set
-	 * this explicitly when the header background is a non-hex value.
+	 * Header bar foreground (hamburger + wordmark + logo). Defaults to the idle
+	 * accent-on-surface tint (see `foregroundColor`) when the header shares the
+	 * sidebar surface, and to auto-contrast from `headerBackgroundColor` when
+	 * one is given. Auto-contrast only parses hex colors — set this explicitly
+	 * when the header background is a non-hex value.
 	 */
 	headerForegroundColor?: string;
 	// Prop-driven accents
@@ -268,10 +270,21 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// of the active highlight (e.g. teal idle labels over a dark-green active pill).
 	const accentOnSurface =
 		foregroundColor ?? (isDark ? 'text.primary' : activeAccent);
-	// Header bar chrome; auto-contrast falls back to white for non-hex values
-	// (see the headerForegroundColor prop doc).
+	// Header bar chrome. Without a custom header background the header is part
+	// of the sidebar surface, so the brand keeps the same accent-on-surface tint
+	// as the idle nav chrome (auto-contrast would paint a black brand on the
+	// default white surface). A custom header background switches to
+	// auto-contrast, which falls back to white for non-hex values (see the
+	// headerForegroundColor prop doc). The dark-mode fallback is the resolved
+	// theme color rather than the 'text.primary' token so the divider below can
+	// still parse it.
 	const headerBg = headerBackgroundColor ?? surface;
-	const headerFg = headerForegroundColor ?? getContrastText(headerBg);
+	const headerFg =
+		headerForegroundColor ??
+		(headerBackgroundColor
+			? getContrastText(headerBg)
+			: (foregroundColor ??
+				(isDark ? theme.palette.text.primary : activeAccent)));
 	// Hairline separating the header from the nav list — the foreground at low
 	// alpha so it stays legible on any header color.
 	const headerDivider = deriveGroupTint(headerFg);

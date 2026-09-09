@@ -300,12 +300,42 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			// The navbar hides the brand and hosts no hamburger on desktop —
 			// the toggle lives in the sidebar header now.
 			const navbar = screen.getByRole('banner');
-			expect(within(navbar).queryByText('Test App')).not.toBeInTheDocument();
+			expect(
+				within(navbar).queryByText('Test App')
+			).not.toBeInTheDocument();
 			expect(
 				within(navbar).queryByRole('button', {
 					name: /collapse sidebar|expand sidebar|open navigation menu/i
 				})
 			).not.toBeInTheDocument();
+		});
+
+		it('tints the clickable sidebar-header brand with the accent, not auto-contrast', () => {
+			const onBrandClick = jest.fn();
+			renderCollapsible({ accentColor: '#09c1ae', onBrandClick });
+
+			// Regression: on the default white surface the brand went black.
+			const brand = screen.getByTestId('sidebar-header-brand');
+			expect(brand.tagName).toBe('BUTTON');
+			expect(within(brand).getByText('Test App')).toHaveStyle({
+				color: 'rgb(9, 193, 174)'
+			});
+			expect(
+				within(brand).getByRole('img', { name: 'Test App logo' })
+			).toHaveStyle({ backgroundColor: 'rgb(9, 193, 174)' });
+			fireEvent.click(brand);
+			expect(onBrandClick).toHaveBeenCalledTimes(1);
+		});
+
+		it('auto-contrasts the sidebar-header brand on a custom header background', () => {
+			renderCollapsible({
+				accentColor: '#09c1ae',
+				sidebarHeaderBackgroundColor: '#01584f'
+			});
+			const brand = screen.getByTestId('sidebar-header-brand');
+			expect(within(brand).getByText('Test App')).toHaveStyle({
+				color: 'rgb(255, 255, 255)'
+			});
 		});
 
 		it('toggles via the header hamburger: widths, navbar offset and brand all follow', () => {
