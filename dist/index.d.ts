@@ -312,11 +312,18 @@ export declare type SidebarLink = {
     subitems?: SidebarSubLink[];
 };
 
-/** One level of children under a sidebar parent; no further nesting. */
+/**
+ * A child of a sidebar parent. It is a page (`path`), or — with `subitems`
+ * of its own — a section grouping pages, which gives an area a third level
+ * (`CRM › Marketing › Campaigns`). A section without a path only expands and
+ * collapses. Every variant renders the nesting recursively, but the visual
+ * design assumes three levels: deeper trees indent further and nothing more.
+ */
 export declare type SidebarSubLink = {
     text: string;
-    path: string;
+    path?: string;
     icon?: default_2.ReactNode;
+    subitems?: SidebarSubLink[];
 };
 
 /**

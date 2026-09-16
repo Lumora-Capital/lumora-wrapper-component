@@ -17,9 +17,12 @@ import * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	deriveGroupTint,
+	flattenLeaves,
 	getContrastText,
+	hasChildren,
 	isSidebarLinkActive,
 	isSubLinkActive,
+	nodeKey,
 	readStoredCollapsed,
 	writeStoredCollapsed
 } from './sidebarUtils';
@@ -41,6 +44,9 @@ const FOCUS_OUTLINE_FIX = {
 const CHEVRON_FONT_SIZE_PX = 16;
 /** Subtler chevron beneath the icon on the narrow collapsed rail. */
 const CHEVRON_FONT_SIZE_RAIL_PX = 14;
+/** Left inset of an expanded child row, and how much each further level adds. */
+const CHILD_INDENT = 4;
+const CHILD_INDENT_STEP = 2.5;
 /** Caption + icon sizing for the narrow (80px) labeled rail, tuned so labels
  * like "Analytics" / "Knowledge" stay legible without overflowing. */
 const RAIL_LABEL_FONT_SIZE = '0.7rem';
@@ -310,9 +316,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		setOpenGroups(prev => ({ ...prev, [key]: !open }));
 	};
 
-	// Active groups auto-open; once the user toggles, their choice wins.
-	const isGroupOpen = (link: SidebarLink) =>
-		openGroups[link.text] ?? isSidebarLinkActive(link, activePath);
+	// Active groups auto-open; once the user toggles, their choice wins. Keyed
+	// by the node's path of texts so a nested section has a chevron of its own.
+	const isGroupOpen = (link: SidebarLink | SidebarSubLink, key: string) =>
+		openGroups[key] ?? isSidebarLinkActive(link, activePath);
 
 	// --- Expanded rows -----------------------------------------------------
 	const renderExpandedLeaf = (link: SidebarLink) => {
@@ -363,7 +370,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const groupActive = isSidebarLinkActive(link, activePath);
 		const parentActive = Boolean(link.path && activePath === link.path);
 		// Clicking the parent row toggles its child group open/closed.
-		const open = isGroupOpen(link);
+		const key = nodeKey('', link);
+		const open = isGroupOpen(link, key);
 
 		return (
 			<Box
@@ -375,7 +383,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				}}
 			>
 				<ListItemButton
-					onClick={() => toggleGroup(link.text, open)}
+					onClick={() => toggleGroup(key, open)}
 					data-testid={`sidebar-item-${link.text}`}
 					data-active={parentActive ? 'true' : 'false'}
 					aria-expanded={open}
@@ -409,27 +417,91 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						data-testid={`sidebar-children-${link.text}`}
 						sx={{ pb: 0.5 }}
 					>
-						{link.subitems!.map(sub => renderExpandedChild(sub))}
+						{link.subitems!.map(sub =>
+							renderExpandedChild(sub, key, 1)
+						)}
 					</Box>
 				</Collapse>
 			</Box>
 		);
 	};
 
-	const renderExpandedChild = (sub: SidebarSubLink) => {
+	/**
+	 * A child at `depth` levels under a top-level parent (1 = direct child).
+	 * A child with children of its own is a section: a row with a chevron that
+	 * folds its pages, indented one step further. The tint stays on the
+	 * top-level group; a section marks itself only by its chevron.
+	 */
+	const renderExpandedChild = (
+		sub: SidebarSubLink,
+		parentKey: string,
+		depth: number
+	): React.ReactNode => {
+		const key = nodeKey(parentKey, sub);
+		const indent = CHILD_INDENT + (depth - 1) * CHILD_INDENT_STEP;
+
+		if (hasChildren(sub)) {
+			const sectionActive = isSidebarLinkActive(sub, activePath);
+			const rowActive = isSubLinkActive(sub, activePath);
+			const open = isGroupOpen(sub, key);
+			return (
+				<Box key={key} data-testid={`sidebar-group-${sub.text}`}>
+					<ListItemButton
+						onClick={() => toggleGroup(key, open)}
+						data-testid={`sidebar-subitem-${sub.text}`}
+						data-active={sectionActive ? 'true' : 'false'}
+						aria-expanded={open}
+						sx={{
+							borderRadius: '8px',
+							mx: 0.5,
+							py: 0.75,
+							pl: indent,
+							color: rowActive ? activeFg : accentOnSurface,
+							bgcolor: rowActive ? activeAccent : 'transparent',
+							'& .MuiListItemIcon-root': {
+								color: rowActive ? activeFg : accentOnSurface,
+								minWidth: 32
+							},
+							'&:hover':
+								rowActive || showLabels
+									? highlightSx
+									: { bgcolor: 'action.hover' }
+						}}
+					>
+						{sub.icon ? (
+							<ListItemIcon>{sub.icon}</ListItemIcon>
+						) : null}
+						<ListItemText
+							disableTypography
+							primary={<TruncatingLabel text={sub.text} />}
+						/>
+						<GroupChevron open={open} />
+					</ListItemButton>
+					<Collapse in={open} timeout='auto' unmountOnExit>
+						<Box data-testid={`sidebar-children-${sub.text}`}>
+							{sub.subitems!.map(child =>
+								renderExpandedChild(child, key, depth + 1)
+							)}
+						</Box>
+					</Collapse>
+				</Box>
+			);
+		}
+
 		const active = isSubLinkActive(sub, activePath);
 		return (
 			<ListItemButton
-				key={sub.path}
+				key={key}
 				selected={active}
-				onClick={() => handleClick(sub.path)}
+				disabled={!sub.path}
+				onClick={() => sub.path && handleClick(sub.path)}
 				data-testid={`sidebar-subitem-${sub.text}`}
 				data-active={active ? 'true' : 'false'}
 				sx={{
 					borderRadius: '8px',
 					mx: 0.5,
 					py: 0.75,
-					pl: 4,
+					pl: indent,
 					color: active ? activeFg : accentOnSurface,
 					bgcolor: active ? activeAccent : 'transparent',
 					'& .MuiListItemIcon-root': {
@@ -638,19 +710,23 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				}}
 			>
 				{parentButton}
+				{/* Pages at every depth, flat: the rail has no room for a
+				    second chevron, so a section's pages sit beside their
+				    cousins with the section's icon when they have none. */}
 				{open
-					? link.subitems!.map(sub =>
-							renderCollapsedIcon(
-								sub.path,
-								sub.text,
-								sub.icon ?? link.icon,
-								isSubLinkActive(sub, activePath),
-								() => handleClick(sub.path),
-								{
-									insideGroup: true,
-									testId: `sidebar-subitem-${sub.text}`
-								}
-							)
+					? flattenLeaves(link.subitems, link.icon).map(
+							({ sub, icon }) =>
+								renderCollapsedIcon(
+									sub.path!,
+									sub.text,
+									icon,
+									isSubLinkActive(sub, activePath),
+									() => handleClick(sub.path!),
+									{
+										insideGroup: true,
+										testId: `sidebar-subitem-${sub.text}`
+									}
+								)
 						)
 					: null}
 			</Box>
@@ -665,7 +741,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			// active groups start open.
 			return (
 				<React.Fragment key={link.text}>
-					{renderCollapsedGroup(link, isGroupOpen(link))}
+					{renderCollapsedGroup(
+						link,
+						isGroupOpen(link, nodeKey('', link))
+					)}
 				</React.Fragment>
 			);
 		}

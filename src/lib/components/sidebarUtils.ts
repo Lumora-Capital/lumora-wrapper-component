@@ -2,21 +2,64 @@
  * Shared, framework-free helpers for the sidebar components
  * (MenuContent rail/drawer and CollapsibleSidebar).
  */
+import type * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 
-/** Parent is active if its own path or any direct subitem path matches. */
-export const isSidebarLinkActive = (link: SidebarLink, activePath?: string) => {
+/** Any node of the sidebar tree: a top-level link or a child at any depth. */
+export type SidebarNode = SidebarLink | SidebarSubLink;
+
+/** A node with children is a group; the rest are pages (or path-less labels). */
+export const hasChildren = (node: SidebarNode): boolean =>
+	Boolean(node.subitems?.length);
+
+/**
+ * A stable identity for a node, from the texts on its way down from the root
+ * (`CRM/Marketing`). Open/closed state is keyed by it, so two sections that
+ * share a label under different parents do not share a chevron.
+ */
+export const nodeKey = (parentKey: string, node: SidebarNode): string =>
+	parentKey ? `${parentKey}/${node.text}` : node.text;
+
+/**
+ * A node is active when its own path is the current one or any descendant's
+ * is — the tinted container follows the current page up through every level.
+ */
+export const isSidebarLinkActive = (
+	link: SidebarNode,
+	activePath?: string
+): boolean => {
 	if (!activePath) {
 		return false;
 	}
 	if (link.path && activePath === link.path) {
 		return true;
 	}
-	return link.subitems?.some(s => s.path === activePath) ?? false;
+	return (
+		link.subitems?.some(s => isSidebarLinkActive(s, activePath)) ?? false
+	);
 };
 
+/** The row itself is the current page — its own path, not a descendant's. */
 export const isSubLinkActive = (sub: SidebarSubLink, activePath?: string) =>
 	Boolean(activePath && sub.path === activePath);
+
+/**
+ * Every page under a group, in order, at any depth, each with the icon it
+ * shows: its own, else the nearest ancestor's. The collapsed rail draws a
+ * group as a stack of page icons and has no room for a second chevron, so a
+ * section's pages are laid out flat beside their cousins.
+ */
+export const flattenLeaves = (
+	subitems: SidebarSubLink[] | undefined,
+	fallbackIcon: React.ReactNode
+): Array<{ sub: SidebarSubLink; icon: React.ReactNode }> =>
+	(subitems ?? []).flatMap(sub => {
+		const icon = sub.icon ?? fallbackIcon;
+		if (hasChildren(sub)) {
+			return flattenLeaves(sub.subitems, icon);
+		}
+		return sub.path ? [{ sub, icon }] : [];
+	});
 
 /**
  * Pick a readable foreground (white or near-black) for text/icons sitting on

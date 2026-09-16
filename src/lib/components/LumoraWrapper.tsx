@@ -42,11 +42,18 @@ const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
 const SIDEBAR_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const SIDEBAR_TRANSITION = 'width 200ms ease, left 200ms ease';
 
-/** One level of children under a sidebar parent; no further nesting. */
+/**
+ * A child of a sidebar parent. It is a page (`path`), or — with `subitems`
+ * of its own — a section grouping pages, which gives an area a third level
+ * (`CRM › Marketing › Campaigns`). A section without a path only expands and
+ * collapses. Every variant renders the nesting recursively, but the visual
+ * design assumes three levels: deeper trees indent further and nothing more.
+ */
 export type SidebarSubLink = {
 	text: string;
-	path: string;
+	path?: string;
 	icon?: React.ReactNode;
+	subitems?: SidebarSubLink[];
 };
 
 // Type for sidebar navigation links (optional path when used only as a group parent)

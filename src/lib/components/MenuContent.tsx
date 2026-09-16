@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import Paper from '@mui/material/Paper';
@@ -16,12 +17,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
-import type { SidebarLink } from './LumoraWrapper';
+import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	deriveGroupTint,
 	getContrastText,
+	hasChildren,
 	isSidebarLinkActive,
-	isSubLinkActive
+	isSubLinkActive,
+	nodeKey
 } from './sidebarUtils';
 
 const CLOSE_DELAY_MS = 180;
@@ -398,77 +401,118 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 							maxWidth: RAIL_SUBMENU_MAX_WIDTH_PX
 						}}
 					>
-						{link.subitems!.map(sub => (
-							<MenuItem
-								key={sub.path}
-								role='menuitem'
-								title={sub.text}
-								selected={isSubLinkActive(sub, activePath)}
-								onClick={e => {
-									e.preventDefault();
-									onLinkClick?.(sub.path);
-									setOpen(false);
-								}}
-								sx={{
-									borderRadius: '4px',
-									mx: 0.5,
-									my: 0.125,
-									maxWidth: '100%',
-									overflow: 'hidden',
-									color: isSecondary
-										? 'text.secondary'
-										: accentColor,
-									'& .MuiListItemIcon-root': {
-										color: 'inherit',
-										minWidth: 36,
-										flexShrink: 0,
-										'& .MuiSvgIcon-root': {
-											color: 'inherit'
-										}
-									},
-									'& .MuiListItemText-root': {
-										flex: '1 1 auto',
-										minWidth: 0,
-										overflow: 'hidden'
-									},
-									'& .MuiTypography-root': {
-										color: 'inherit',
-										overflow: 'hidden',
-										textOverflow: 'ellipsis',
-										whiteSpace: 'nowrap'
-									},
-									'&:hover': {
-										bgcolor: 'action.hover',
-										borderRadius: '4px'
-									},
-									'&.Mui-selected': {
-										bgcolor: selectedRailFill,
-										color: '#ffffff',
-										'&:hover': {
-											bgcolor: selectedRailFill
-										}
-									},
-									'&.Mui-focusVisible': {
-										bgcolor: 'action.focus'
-									}
-								}}
-							>
-								{sub.icon ? (
-									<ListItemIcon>{sub.icon}</ListItemIcon>
-								) : null}
-								<ListItemText
-									primary={sub.text}
-									primaryTypographyProps={{
-										noWrap: true
-									}}
-								/>
-							</MenuItem>
-						))}
+						{renderRailMenuItems(link.subitems!, link.text, 0)}
 					</MenuList>
 				</Paper>
 			</Popper>
 		</Box>
 	);
+
+	/**
+	 * The popover's rows. A section (a child with children) is a small
+	 * heading followed by its pages, indented a step — a hover menu has no
+	 * room for a second level of chevrons, and reading the section name above
+	 * its pages is what a person needs to find "Campaigns" under "Marketing".
+	 */
+	function renderRailMenuItems(
+		items: SidebarSubLink[],
+		parentKey: string,
+		depth: number
+	): React.ReactNode[] {
+		return items.flatMap(sub => {
+			const key = nodeKey(parentKey, sub);
+			if (hasChildren(sub)) {
+				return [
+					<ListSubheader
+						key={key}
+						disableSticky
+						title={sub.text}
+						sx={{
+							bgcolor: 'transparent',
+							lineHeight: '28px',
+							pl: 2 + depth * 1.5,
+							fontSize: '0.7rem',
+							letterSpacing: '0.06em',
+							textTransform: 'uppercase',
+							color: 'text.secondary',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							whiteSpace: 'nowrap'
+						}}
+					>
+						{sub.text}
+					</ListSubheader>,
+					...renderRailMenuItems(sub.subitems!, key, depth + 1)
+				];
+			}
+			return [
+				<MenuItem
+					key={key}
+					role='menuitem'
+					title={sub.text}
+					disabled={!sub.path}
+					selected={isSubLinkActive(sub, activePath)}
+					onClick={e => {
+						e.preventDefault();
+						if (sub.path) {
+							onLinkClick?.(sub.path);
+						}
+						setOpen(false);
+					}}
+					sx={{
+						borderRadius: '4px',
+						mx: 0.5,
+						my: 0.125,
+						pl: 2 + depth * 1.5,
+						maxWidth: '100%',
+						overflow: 'hidden',
+						color: isSecondary ? 'text.secondary' : accentColor,
+						'& .MuiListItemIcon-root': {
+							color: 'inherit',
+							minWidth: 36,
+							flexShrink: 0,
+							'& .MuiSvgIcon-root': {
+								color: 'inherit'
+							}
+						},
+						'& .MuiListItemText-root': {
+							flex: '1 1 auto',
+							minWidth: 0,
+							overflow: 'hidden'
+						},
+						'& .MuiTypography-root': {
+							color: 'inherit',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							whiteSpace: 'nowrap'
+						},
+						'&:hover': {
+							bgcolor: 'action.hover',
+							borderRadius: '4px'
+						},
+						'&.Mui-selected': {
+							bgcolor: selectedRailFill,
+							color: '#ffffff',
+							'&:hover': {
+								bgcolor: selectedRailFill
+							}
+						},
+						'&.Mui-focusVisible': {
+							bgcolor: 'action.focus'
+						}
+					}}
+				>
+					{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
+					<ListItemText
+						primary={sub.text}
+						primaryTypographyProps={{
+							noWrap: true
+						}}
+					/>
+				</MenuItem>
+			];
+		});
+	}
 };
 
 type RailLeafProps = {
@@ -624,6 +668,91 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 			: accentColor;
 	const activeBg = isSecondary ? '#01584F' : accentColor;
 
+	// Sections under this parent, keyed by their path of texts; an active
+	// section starts open, and a person's toggle wins after that.
+	const [openSections, setOpenSections] = React.useState<
+		Record<string, boolean>
+	>({});
+	const isSectionOpen = (sub: SidebarSubLink, key: string) =>
+		openSections[key] ?? isSidebarLinkActive(sub, activePath);
+	const toggleSection = (key: string, open: boolean) =>
+		setOpenSections(prev => ({ ...prev, [key]: !open }));
+
+	/** A child row at `depth` (1 = direct child); a section folds its pages. */
+	const renderChild = (
+		sub: SidebarSubLink,
+		parentKey: string,
+		depth: number
+	): React.ReactNode => {
+		const key = nodeKey(parentKey, sub);
+		const indent = 4 + (depth - 1) * 2;
+		if (hasChildren(sub)) {
+			const open = isSectionOpen(sub, key);
+			const rowActive = isSubLinkActive(sub, activePath);
+			return (
+				<Box key={key}>
+					<ListItemButton
+						onClick={() => toggleSection(key, open)}
+						aria-expanded={open}
+						data-testid={`drawer-section-trigger-${sub.text}`}
+						sx={{
+							pl: indent,
+							py: 1,
+							color: rowActive ? activeFg : inactiveColor,
+							bgcolor: rowActive ? activeBg : 'transparent',
+							'& .MuiListItemIcon-root': { color: 'inherit' },
+							'&:hover': {
+								bgcolor: rowActive ? activeBg : 'action.hover'
+							}
+						}}
+					>
+						{sub.icon ? (
+							<ListItemIcon sx={{ minWidth: 36 }}>
+								{sub.icon}
+							</ListItemIcon>
+						) : null}
+						<ListItemText primary={sub.text} />
+						{open ? <ExpandLess /> : <ExpandMore />}
+					</ListItemButton>
+					<Collapse in={open} timeout='auto' unmountOnExit>
+						<Box component='nav' aria-label={sub.text}>
+							{sub.subitems!.map(child =>
+								renderChild(child, key, depth + 1)
+							)}
+						</Box>
+					</Collapse>
+				</Box>
+			);
+		}
+		const subActive = isSubLinkActive(sub, activePath);
+		return (
+			<ListItemButton
+				key={key}
+				disabled={!sub.path}
+				onClick={() => sub.path && onLinkClick?.(sub.path)}
+				sx={{
+					pl: indent,
+					py: 1,
+					color: subActive ? activeFg : inactiveColor,
+					bgcolor: subActive ? activeBg : 'transparent',
+					'& .MuiListItemIcon-root': {
+						color: 'inherit'
+					},
+					'&:hover': {
+						bgcolor: subActive ? activeBg : 'action.hover'
+					}
+				}}
+			>
+				{sub.icon ? (
+					<ListItemIcon sx={{ minWidth: 36 }}>
+						{sub.icon}
+					</ListItemIcon>
+				) : null}
+				<ListItemText primary={sub.text} />
+			</ListItemButton>
+		);
+	};
+
 	// A parent with its own path navigates on row click; the chevron toggles the
 	// submenu independently. A parent without a path just toggles on row click.
 	return (
@@ -672,38 +801,9 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 			</ListItemButton>
 			<Collapse in={expanded} timeout='auto' unmountOnExit>
 				<Box component='nav' aria-label={link.text}>
-					{link.subitems!.map(sub => {
-						const subActive = isSubLinkActive(sub, activePath);
-						return (
-							<ListItemButton
-								key={sub.path}
-								onClick={() => onLinkClick?.(sub.path)}
-								sx={{
-									pl: 4,
-									py: 1,
-									color: subActive ? activeFg : inactiveColor,
-									bgcolor: subActive
-										? activeBg
-										: 'transparent',
-									'& .MuiListItemIcon-root': {
-										color: 'inherit'
-									},
-									'&:hover': {
-										bgcolor: subActive
-											? activeBg
-											: 'action.hover'
-									}
-								}}
-							>
-								{sub.icon ? (
-									<ListItemIcon sx={{ minWidth: 36 }}>
-										{sub.icon}
-									</ListItemIcon>
-								) : null}
-								<ListItemText primary={sub.text} />
-							</ListItemButton>
-						);
-					})}
+					{link.subitems!.map(sub =>
+						renderChild(sub, nodeKey('', link), 1)
+					)}
 				</Box>
 			</Collapse>
 		</Box>
