@@ -222,6 +222,127 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
+	describe('nested sections (a third level)', () => {
+		// CRM › Marketing › Campaigns / Audiences: a child with children of its
+		// own is a SECTION — a label with a chevron, no page behind it.
+		const nestedLinks: SidebarLink[] = [
+			{ text: 'Dashboard', path: '/dashboard', icon: <Home /> },
+			{
+				text: 'CRM',
+				path: '/crm',
+				icon: <Business />,
+				subitems: [
+					{ text: 'People', path: '/crm/people', icon: <People /> },
+					{
+						text: 'Marketing',
+						icon: <Business />,
+						subitems: [
+							{ text: 'Campaigns', path: '/crm/campaigns' },
+							{
+								text: 'Audiences',
+								path: '/crm/audiences',
+								icon: <People />
+							}
+						]
+					}
+				]
+			}
+		];
+
+		it('renders the section as a row with a chevron, closed until it is opened', () => {
+			renderSidebar({
+				mainLinks: nestedLinks,
+				collapsed: false,
+				activePath: '/crm/people'
+			});
+			const section = screen.getByTestId('sidebar-subitem-Marketing');
+			expect(section).toHaveAttribute('aria-expanded', 'false');
+			expect(
+				screen.queryByTestId('sidebar-subitem-Campaigns')
+			).not.toBeInTheDocument();
+
+			fireEvent.click(section);
+
+			expect(section).toHaveAttribute('aria-expanded', 'true');
+			const pages = screen.getByTestId('sidebar-children-Marketing');
+			expect(
+				within(pages).getByTestId('sidebar-subitem-Campaigns')
+			).toBeInTheDocument();
+			expect(
+				within(pages).getByTestId('sidebar-subitem-Audiences')
+			).toBeInTheDocument();
+		});
+
+		it('opens every level above the current page, and marks only the page itself as active', () => {
+			renderSidebar({
+				mainLinks: nestedLinks,
+				collapsed: false,
+				activePath: '/crm/campaigns'
+			});
+			// CRM (the group) and Marketing (the section) both auto-open.
+			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
+				'aria-expanded',
+				'true'
+			);
+			expect(
+				screen.getByTestId('sidebar-subitem-Marketing')
+			).toHaveAttribute('aria-expanded', 'true');
+			// The section is on the active path but is not itself the page.
+			expect(
+				screen.getByTestId('sidebar-subitem-Marketing')
+			).toHaveAttribute('data-active', 'true');
+			expect(
+				screen.getByTestId('sidebar-subitem-Campaigns')
+			).toHaveAttribute('data-active', 'true');
+			expect(
+				screen.getByTestId('sidebar-subitem-Audiences')
+			).toHaveAttribute('data-active', 'false');
+			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
+				'data-active',
+				'false'
+			);
+		});
+
+		it('navigates from a third-level page and never from the section itself', () => {
+			const onLinkClick = jest.fn();
+			renderSidebar({
+				mainLinks: nestedLinks,
+				collapsed: false,
+				activePath: '/crm/campaigns',
+				onLinkClick
+			});
+			fireEvent.click(screen.getByTestId('sidebar-subitem-Marketing'));
+			expect(onLinkClick).not.toHaveBeenCalled();
+
+			// Re-open and click a page.
+			fireEvent.click(screen.getByTestId('sidebar-subitem-Marketing'));
+			fireEvent.click(screen.getByTestId('sidebar-subitem-Audiences'));
+			expect(onLinkClick).toHaveBeenCalledWith('/crm/audiences');
+		});
+
+		it('on the collapsed rail the section’s pages are laid flat, with the section icon when they have none', () => {
+			renderSidebar({
+				mainLinks: nestedLinks,
+				collapsed: true,
+				activePath: '/crm/campaigns'
+			});
+			const group = screen.getByTestId('sidebar-group-CRM');
+			// Three page icons: People, Campaigns, Audiences — no Marketing icon of its own.
+			expect(
+				within(group).getByTestId('sidebar-subitem-People')
+			).toBeInTheDocument();
+			expect(
+				within(group).getByTestId('sidebar-subitem-Campaigns')
+			).toHaveAttribute('data-active', 'true');
+			expect(
+				within(group).getByTestId('sidebar-subitem-Audiences')
+			).toBeInTheDocument();
+			expect(
+				within(group).queryByTestId('sidebar-subitem-Marketing')
+			).not.toBeInTheDocument();
+		});
+	});
+
 	describe('labeled rail (showLabels)', () => {
 		it('renders labels as visible captions under the icons when collapsed', () => {
 			renderSidebar({ collapsed: true, showLabels: true });
