@@ -46,7 +46,8 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
-# IDE files
+# IDE and agent files
+.claude/
 .vscode/
 .idea/
 

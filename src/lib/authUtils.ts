@@ -12,7 +12,11 @@ export class AuthError extends Error {
 	originalError: Error | null;
 	timestamp: string;
 
-	constructor(message: string, code: string, originalError: Error | null = null) {
+	constructor(
+		message: string,
+		code: string,
+		originalError: Error | null = null
+	) {
 		super(message);
 		this.name = 'AuthError';
 		this.code = code;
@@ -62,16 +66,29 @@ const migrateLegacyKeys = (): void => {
 
 	try {
 		// Check if legacy keys exist and migrate them
-		const legacyAccessToken = localStorage.getItem(LEGACY_STORAGE_KEYS.ACCESS_TOKEN);
-		const legacyRefreshToken = localStorage.getItem(LEGACY_STORAGE_KEYS.REFRESH_TOKEN);
+		const legacyAccessToken = localStorage.getItem(
+			LEGACY_STORAGE_KEYS.ACCESS_TOKEN
+		);
+		const legacyRefreshToken = localStorage.getItem(
+			LEGACY_STORAGE_KEYS.REFRESH_TOKEN
+		);
 		const legacyUser = localStorage.getItem(LEGACY_STORAGE_KEYS.USER);
 
-		if (legacyAccessToken && !localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) {
+		if (
+			legacyAccessToken &&
+			!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+		) {
 			localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, legacyAccessToken);
 		}
 
-		if (legacyRefreshToken && !localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)) {
-			localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, legacyRefreshToken);
+		if (
+			legacyRefreshToken &&
+			!localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+		) {
+			localStorage.setItem(
+				STORAGE_KEYS.REFRESH_TOKEN,
+				legacyRefreshToken
+			);
 		}
 
 		if (legacyUser && !localStorage.getItem(STORAGE_KEYS.USER)) {
@@ -102,7 +119,10 @@ const safeGetItem = (key: string): string | null => {
 		}
 
 		if (!window.localStorage) {
-			throw new AuthError('localStorage is not available', AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED);
+			throw new AuthError(
+				'localStorage is not available',
+				AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED
+			);
 		}
 
 		return window.localStorage.getItem(key);
@@ -119,7 +139,9 @@ const safeGetItem = (key: string): string | null => {
 
 		// Check if it's a SecurityError (private browsing, etc.)
 		if ((error as Error).name === 'SecurityError') {
-			console.error('localStorage access denied (private browsing or security settings)');
+			console.error(
+				'localStorage access denied (private browsing or security settings)'
+			);
 			throw new AuthError(
 				'Access to localStorage is denied. Please check browser settings.',
 				AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED,
@@ -128,8 +150,15 @@ const safeGetItem = (key: string): string | null => {
 		}
 
 		// Log other unexpected storage errors
-		console.error(`Unexpected error accessing localStorage:`, (error as Error).name);
-		throw new AuthError('Failed to access storage', AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED, error as Error);
+		console.error(
+			`Unexpected error accessing localStorage:`,
+			(error as Error).name
+		);
+		throw new AuthError(
+			'Failed to access storage',
+			AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED,
+			error as Error
+		);
 	}
 };
 
@@ -147,7 +176,10 @@ const safeSetItem = (key: string, value: string): boolean => {
 		}
 
 		if (!window.localStorage) {
-			throw new AuthError('localStorage is not available', AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED);
+			throw new AuthError(
+				'localStorage is not available',
+				AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED
+			);
 		}
 
 		window.localStorage.setItem(key, value);
@@ -163,7 +195,9 @@ const safeSetItem = (key: string, value: string): boolean => {
 		}
 
 		if ((error as Error).name === 'SecurityError') {
-			console.error('localStorage write denied (private browsing or security settings)');
+			console.error(
+				'localStorage write denied (private browsing or security settings)'
+			);
 			throw new AuthError(
 				'Access to localStorage is denied. Please check browser settings.',
 				AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED,
@@ -171,8 +205,15 @@ const safeSetItem = (key: string, value: string): boolean => {
 			);
 		}
 
-		console.error('Unexpected error writing to localStorage:', (error as Error).name);
-		throw new AuthError('Failed to write to storage', AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED, error as Error);
+		console.error(
+			'Unexpected error writing to localStorage:',
+			(error as Error).name
+		);
+		throw new AuthError(
+			'Failed to write to storage',
+			AUTH_ERROR_CODES.STORAGE_ACCESS_DENIED,
+			error as Error
+		);
 	}
 };
 
@@ -271,7 +312,10 @@ export const getAuthTokens = (): AuthTokens => {
 				// Only log if there's actual data that failed to parse
 				// Don't log for empty/null values which is normal on first visit
 				if (userStr && userStr !== 'null' && userStr !== 'undefined') {
-					console.warn('Invalid user data in localStorage, clearing:', userStr.substring(0, 50));
+					console.warn(
+						'Invalid user data in localStorage, clearing:',
+						userStr.substring(0, 50)
+					);
 				}
 				// Clear invalid user data
 				safeRemoveItem(STORAGE_KEYS.USER);
@@ -287,7 +331,11 @@ export const getAuthTokens = (): AuthTokens => {
 		if (error instanceof AuthError) {
 			throw error;
 		}
-		throw new AuthError('Failed to retrieve authentication tokens', AUTH_ERROR_CODES.UNKNOWN_ERROR, error as Error);
+		throw new AuthError(
+			'Failed to retrieve authentication tokens',
+			AUTH_ERROR_CODES.UNKNOWN_ERROR,
+			error as Error
+		);
 	}
 };
 
@@ -305,7 +353,10 @@ export const isAuthenticated = (): AuthResult => {
 		if (!authenticated) {
 			return {
 				isAuthenticated: false,
-				error: new AuthError('No authentication tokens found', AUTH_ERROR_CODES.TOKEN_NOT_FOUND)
+				error: new AuthError(
+					'No authentication tokens found',
+					AUTH_ERROR_CODES.TOKEN_NOT_FOUND
+				)
 			};
 		}
 
@@ -320,7 +371,11 @@ export const isAuthenticated = (): AuthResult => {
 			error:
 				error instanceof AuthError
 					? error
-					: new AuthError('Authentication check failed', AUTH_ERROR_CODES.UNKNOWN_ERROR, error as Error)
+					: new AuthError(
+							'Authentication check failed',
+							AUTH_ERROR_CODES.UNKNOWN_ERROR,
+							error as Error
+						)
 		};
 	}
 };
@@ -339,7 +394,10 @@ export const storeAuthTokens = (
 ): StorageResult => {
 	try {
 		if (!accessToken && !refreshToken) {
-			throw new AuthError('At least one token must be provided', AUTH_ERROR_CODES.TOKEN_INVALID);
+			throw new AuthError(
+				'At least one token must be provided',
+				AUTH_ERROR_CODES.TOKEN_INVALID
+			);
 		}
 
 		if (accessToken) {
@@ -365,7 +423,11 @@ export const storeAuthTokens = (
 			error:
 				error instanceof AuthError
 					? error
-					: new AuthError('Failed to store tokens', AUTH_ERROR_CODES.UNKNOWN_ERROR, error as Error)
+					: new AuthError(
+							'Failed to store tokens',
+							AUTH_ERROR_CODES.UNKNOWN_ERROR,
+							error as Error
+						)
 		};
 	}
 };
@@ -407,7 +469,11 @@ export const clearAuthTokens = (): StorageResult => {
 			error:
 				error instanceof AuthError
 					? error
-					: new AuthError('Failed to clear tokens', AUTH_ERROR_CODES.LOGOUT_FAILED, error as Error)
+					: new AuthError(
+							'Failed to clear tokens',
+							AUTH_ERROR_CODES.LOGOUT_FAILED,
+							error as Error
+						)
 		};
 	}
 };
@@ -430,7 +496,11 @@ export const getCurrentUser = (): UserResult => {
 			error:
 				error instanceof AuthError
 					? error
-					: new AuthError('Failed to retrieve user data', AUTH_ERROR_CODES.UNKNOWN_ERROR, error as Error)
+					: new AuthError(
+							'Failed to retrieve user data',
+							AUTH_ERROR_CODES.UNKNOWN_ERROR,
+							error as Error
+						)
 		};
 	}
 };
@@ -472,7 +542,10 @@ export const getAuthErrorMessage = (error: Error | AuthError): string => {
  * @param error - The error to log
  * @param context - Context where the error occurred
  */
-export const logAuthError = (error: Error | AuthError, context: string = 'Unknown'): void => {
+export const logAuthError = (
+	error: Error | AuthError,
+	context: string = 'Unknown'
+): void => {
 	const errorDetails: {
 		context: string;
 		message: string;
@@ -487,7 +560,10 @@ export const logAuthError = (error: Error | AuthError, context: string = 'Unknow
 		context,
 		message: error.message,
 		code: error instanceof AuthError ? error.code : 'UNKNOWN',
-		timestamp: error instanceof AuthError ? error.timestamp : new Date().toISOString(),
+		timestamp:
+			error instanceof AuthError
+				? error.timestamp
+				: new Date().toISOString(),
 		stack: error.stack
 	};
 

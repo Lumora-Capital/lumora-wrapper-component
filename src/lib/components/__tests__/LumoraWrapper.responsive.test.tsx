@@ -1,10 +1,7 @@
-import React from 'react';
 import { fireEvent, screen, within } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import LumoraWrapper from '../LumoraWrapper';
 import { render, lumoraTestRequiredProps, mockSidebarLinks } from './testUtils';
-import '@testing-library/jest-dom';
 
 // Mock useMediaQuery hook
 jest.mock('@mui/material', () => ({
@@ -166,21 +163,14 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			// The outer <aside> container is 80px too, so nothing sits beside it.
 			const aside = sidebar.closest('aside');
 			expect(aside).toHaveStyle({ width: '80px', minWidth: '80px' });
-			// The rail spans the full viewport height from the top.
+			// The rail spans the full viewport height from the top, with the
+			// logo on top and no header anywhere.
 			expect(aside).toHaveStyle({ height: '100vh', top: '0px' });
-			// ...but its content is inset 60px from the top so the first item
-			// clears the navbar (mimicking the reference layout).
-			expect(sidebar).toHaveStyle({ paddingTop: '60px' });
-
-			// The navbar is inset to start at the sidebar's right edge, so its
-			// width adjusts to the remaining space.
-			const navbar = screen.getByRole('banner');
-			expect(navbar).toHaveStyle({
-				left: '80px',
-				width: 'calc(100% - 80px)'
-			});
-			// Labels are visible captions (scoped to the sidebar to avoid the
-			// navbar's default 'Home' page name).
+			expect(
+				within(sidebar).getByTestId('sidebar-header-brand')
+			).toBeInTheDocument();
+			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+			// Labels are visible captions under the icons.
 			expect(within(sidebar).getByText('Settings')).toBeInTheDocument();
 			expect(within(sidebar).getByText('Profile')).toBeInTheDocument();
 
@@ -190,7 +180,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				.closest('[class*="MuiBox-root"]');
 			expect(contentArea).toHaveStyle('width: calc(100% - 80px)');
 
-			// Non-collapsible: no expand/collapse toggle in the navbar.
+			// Non-collapsible: no expand/collapse toggle.
 			expect(
 				screen.queryByRole('button', {
 					name: /collapse sidebar|expand sidebar|open navigation menu/i
@@ -198,7 +188,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).not.toBeInTheDocument();
 		});
 
-		it('uses sidebarAccentColor for the sidebar, independent of the navbar accentColor', () => {
+		it('uses sidebarAccentColor for the sidebar, independent of accentColor', () => {
 			mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 			render(
@@ -216,7 +206,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 
 			// The active item's fill comes from sidebarAccentColor (#22cc44),
-			// not the navbar accentColor (#111111).
+			// not the brand accentColor (#111111).
 			expect(screen.getByTestId('sidebar-item-Home')).toHaveStyle({
 				backgroundColor: 'rgb(34, 204, 68)'
 			});
@@ -268,46 +258,72 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 		};
 
-		it('renders a full-height 264px panel with its own header; navbar starts at its edge', () => {
+		it('renders a full-height 264px panel with its own header', () => {
 			renderCollapsible();
 
 			const sidebar = screen.getByTestId('collapsible-sidebar');
 			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
 			expect(sidebar).toHaveStyle({ width: '264px', minWidth: '264px' });
 			// The panel spans the full viewport height from the top — its own
-			// 60px header block replaces the old below-the-navbar inset.
+			// 60px header block holds the toggle and brand.
 			const aside = sidebar.closest('aside');
 			expect(aside).toHaveStyle({ height: '100vh', top: '0px' });
 			expect(screen.getByTestId('sidebar-header')).toBeInTheDocument();
-
-			// The navbar is inset to the sidebar's right edge.
-			const navbar = screen.getByRole('banner');
-			expect(navbar).toHaveStyle({
-				left: '264px',
-				width: 'calc(100% - 264px)'
-			});
+			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 			const contentArea = screen
 				.getByTestId('test-content')
 				.closest('[class*="MuiBox-root"]');
 			expect(contentArea).toHaveStyle('width: calc(100% - 264px)');
 		});
 
-		it('shows the brand in the sidebar header while expanded, not in the navbar', () => {
-			renderCollapsible();
+		it('stacks brand, search, links and footer top to bottom', () => {
+			renderCollapsible({
+				searchComponent: <input placeholder='Global search' />,
+				userName: 'Riley Carter'
+			});
 
-			const brand = screen.getByTestId('sidebar-header-brand');
-			expect(within(brand).getByText('Test App')).toBeInTheDocument();
-			// The navbar hides the brand and hosts no hamburger on desktop —
-			// the toggle lives in the sidebar header now.
-			const navbar = screen.getByRole('banner');
+			const sidebar = screen.getByTestId('collapsible-sidebar');
+			const order = [
+				screen.getByTestId('sidebar-header-brand'),
+				screen.getByPlaceholderText('Global search'),
+				screen.getByTestId('sidebar-item-Home'),
+				screen.getByTestId('sidebar-notifications'),
+				screen.getByTestId('sidebar-user')
+			];
+			order.forEach(el => expect(sidebar).toContainElement(el));
+			order
+				.slice(1)
+				.forEach((el, i) =>
+					expect(
+						order[i].compareDocumentPosition(el) &
+							Node.DOCUMENT_POSITION_FOLLOWING
+					).toBeTruthy()
+				);
+			// Expanded: the rows carry their labels
 			expect(
-				within(navbar).queryByText('Test App')
-			).not.toBeInTheDocument();
+				within(sidebar).getByText('Notifications')
+			).toBeInTheDocument();
 			expect(
-				within(navbar).queryByRole('button', {
-					name: /collapse sidebar|expand sidebar|open navigation menu/i
-				})
+				within(sidebar).getByText('Riley Carter')
+			).toBeInTheDocument();
+		});
+
+		it('collapsed: the search icon expands the sidebar and focuses the field', () => {
+			window.localStorage.setItem('lumora:sidebar-collapsed', 'true');
+			renderCollapsible({
+				searchComponent: <input placeholder='Global search' />
+			});
+
+			expect(
+				screen.queryByPlaceholderText('Global search')
 			).not.toBeInTheDocument();
+			fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'false'
+			);
+			expect(screen.getByPlaceholderText('Global search')).toHaveFocus();
 		});
 
 		it('tints the clickable sidebar-header brand with the accent, not auto-contrast', () => {
@@ -338,7 +354,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			});
 		});
 
-		it('toggles via the header hamburger: widths, navbar offset and brand all follow', () => {
+		it('toggles via the header hamburger: widths, brand and footer follow', () => {
 			renderCollapsible();
 
 			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
@@ -346,30 +362,33 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			const sidebar = screen.getByTestId('collapsible-sidebar');
 			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
 			expect(sidebar).toHaveStyle({ width: '72px', minWidth: '72px' });
-			const navbar = screen.getByRole('banner');
-			expect(navbar).toHaveStyle({
-				left: '72px',
-				width: 'calc(100% - 72px)'
-			});
 			expect(
 				screen
 					.getByTestId('test-content')
 					.closest('[class*="MuiBox-root"]')
 			).toHaveStyle('width: calc(100% - 72px)');
-			// Collapsed: the brand returns to the navbar.
-			expect(within(navbar).getByText('Test App')).toBeInTheDocument();
+			// Collapsed: the wordmark and row labels give way to icons; the
+			// logo stays as the expand button.
 			expect(
 				screen.queryByTestId('sidebar-header-brand')
+			).not.toBeInTheDocument();
+			expect(
+				within(screen.getByTestId('sidebar-collapse-toggle')).getByRole(
+					'img',
+					{ name: 'Test App logo' }
+				)
+			).toBeInTheDocument();
+			expect(
+				within(sidebar).queryByText('Notifications')
 			).not.toBeInTheDocument();
 
 			// Round-trip: expanding restores the original layout.
 			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
 			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
 			expect(sidebar).toHaveStyle({ width: '264px' });
-			expect(navbar).toHaveStyle({ left: '264px' });
 			expect(
-				within(navbar).queryByText('Test App')
-			).not.toBeInTheDocument();
+				screen.getByTestId('sidebar-header-brand')
+			).toBeInTheDocument();
 		});
 
 		it('restores the persisted collapsed state on mount', () => {
@@ -380,7 +399,11 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				'data-collapsed',
 				'true'
 			);
-			expect(screen.getByRole('banner')).toHaveStyle({ left: '72px' });
+			expect(
+				screen
+					.getByTestId('test-content')
+					.closest('[class*="MuiBox-root"]')
+			).toHaveStyle('width: calc(100% - 72px)');
 		});
 
 		it('shows the alert card only while expanded', () => {
@@ -400,17 +423,17 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).not.toBeInTheDocument();
 		});
 
-		it('falls back to the navbar hamburger + drawer on mobile', () => {
+		it('uses a slim top bar + drawer on mobile', () => {
 			renderCollapsible({}, true);
 
 			// No desktop panel at all on mobile.
 			expect(
 				screen.queryByTestId('collapsible-sidebar')
 			).not.toBeInTheDocument();
-			// The navbar hamburger returns and opens the mobile drawer.
-			const navbar = screen.getByRole('banner');
-			expect(within(navbar).getByText('Test App')).toBeInTheDocument();
-			const menuButton = within(navbar).getByRole('button', {
+			// The mobile top bar carries the brand and opens the drawer.
+			const topBar = screen.getByRole('banner');
+			expect(within(topBar).getByText('Test App')).toBeInTheDocument();
+			const menuButton = within(topBar).getByRole('button', {
 				name: /open navigation menu/i
 			});
 			fireEvent.click(menuButton);
@@ -454,40 +477,30 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		expect(contentArea).toHaveStyle('width: 100%');
 	});
 
-	// it('adjusts drawer margin for mobile without header', () => {
-	// 	mockUseMediaQuery.mockReturnValue(true); // Mobile
-
-	// 	render(
-	// 		<LumoraWrapper
-	// 			showSidebar={true}
-	// 			showHeader={false}
-	// 			sidebarLinks={mockSidebarLinks}
-	// 		>
-	// 			<div data-testid="test-content">Test Content</div>
-	// 		</LumoraWrapper>
-	// 	);
-
-	// 	// Check that the drawer elements exist
-	// 	const drawerElements = document.querySelectorAll('[class*="MuiDrawer"], [role="presentation"]');
-	// 	expect(drawerElements.length).toBeGreaterThan(0);
-	// });
-
-	it('renders docked drawer with header on desktop', () => {
+	it('renders the docked rail with brand and footer on desktop', () => {
 		mockUseMediaQuery.mockReturnValue(false); // Not mobile
 
 		render(
 			<LumoraWrapper
 				{...lumoraTestRequiredProps}
 				showSidebar={true}
-				showHeader={true}
 				sidebarLinks={mockSidebarLinks}
 			>
 				<div data-testid='test-content'>Test Content</div>
 			</LumoraWrapper>
 		);
 
-		const drawer = document.querySelector('.MuiDrawer-paper');
+		const drawer = document.querySelector(
+			'.MuiDrawer-paper'
+		) as HTMLElement;
 		expect(drawer).toBeInTheDocument();
-		expect(screen.getByRole('banner')).toBeInTheDocument();
+		expect(drawer).toHaveStyle({ top: '0px' });
+		expect(
+			within(drawer).getByTestId('sidebar-header-brand')
+		).toBeInTheDocument();
+		expect(
+			within(drawer).getByTestId('sidebar-footer')
+		).toBeInTheDocument();
+		expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 	});
 });

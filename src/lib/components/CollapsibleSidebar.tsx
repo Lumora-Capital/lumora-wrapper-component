@@ -2,7 +2,6 @@ import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRound
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -14,6 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	deriveGroupTint,
@@ -31,8 +31,7 @@ const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
-/** In-sidebar header height; must match NAVBAR_HEIGHT_PX in LumoraWrapper so
- * the header block lines up with the navbar to its right. */
+/** In-sidebar header height (collapse toggle + brand). */
 const HEADER_HEIGHT_PX = 60;
 /** Host apps (and the demo's base CSS) often outline every `button:focus`,
  * which lingers after a mouse click — neutralize it on all sidebar icon
@@ -195,11 +194,17 @@ export interface CollapsibleSidebarProps {
 	 */
 	showLabels?: boolean;
 	/**
-	 * Top padding (px) reserved inside the sidebar surface. The full-height
-	 * `rail-labeled` layout uses this to clear the navbar height so the first
-	 * item starts below the bar (rather than flush against the top).
+	 * Top padding (px) above the links when there is no header bar, e.g. to
+	 * clear a host app's own fixed top bar.
 	 */
 	topInsetPx?: number;
+	/**
+	 * Rendered between the brand and the links (e.g. a global search). The
+	 * owner decides what to show for the collapsed state.
+	 */
+	search?: React.ReactNode;
+	/** Pinned below the links, outside the scroll area (e.g. notifications + user). */
+	footer?: React.ReactNode;
 }
 
 const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
@@ -213,7 +218,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	showHeaderBar = false,
 	headerBackgroundColor,
 	headerForegroundColor,
-	activeAccentColor = '#01584f',
+	activeAccentColor: activeAccent = '#01584f',
 	groupAccentColor,
 	activeForegroundColor,
 	foregroundColor,
@@ -225,7 +230,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
 	showLabels = false,
-	topInsetPx = 0
+	topInsetPx = 0,
+	search,
+	footer
 }) => {
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
@@ -239,12 +246,12 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	);
 	const collapsed = isControlled ? Boolean(collapsedProp) : internalCollapsed;
 
-	// Path-less group parents can be manually expanded; active groups auto-open.
+	// User-toggled open state per group, keyed by `nodeKey`; groups the user
+	// hasn't touched follow the active path (see `isGroupOpen`).
 	const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
 		{}
 	);
 
-	const activeAccent = activeAccentColor;
 	const activeFg = activeForegroundColor ?? getContrastText(activeAccent);
 	// The highlighted look: accent fill + active foreground. Applied to the
 	// active item in every variant, and — in the rail-labeled layout only
@@ -322,8 +329,32 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		openGroups[key] ?? isSidebarLinkActive(link, activePath);
 
 	// --- Expanded rows -----------------------------------------------------
+	// Colors shared by every expanded row. rail-labeled: active AND hover share
+	// the highlight. collapsible: keep the original subtle idle-hover tint
+	// (`idleHoverBg`), with the accent only when active.
+	const expandedRowSx = (
+		active: boolean,
+		idleHoverBg: string,
+		iconMinWidth: number
+	) => ({
+		color: active ? activeFg : accentOnSurface,
+		bgcolor: active ? activeAccent : 'transparent',
+		'& .MuiListItemIcon-root': {
+			color: active ? activeFg : accentOnSurface,
+			minWidth: iconMinWidth
+		},
+		'&:hover': active || showLabels ? highlightSx : { bgcolor: idleHoverBg }
+	});
+	// Page rows set `selected`; override MUI's default selected styling.
+	const selectedRowSx = {
+		'&.Mui-selected': {
+			bgcolor: activeAccent
+		},
+		'&.Mui-selected:hover': highlightSx
+	};
+
 	const renderExpandedLeaf = (link: SidebarLink) => {
-		const active = Boolean(link.path && activePath === link.path);
+		const active = isSubLinkActive(link, activePath);
 		return (
 			<ListItemButton
 				key={link.text}
@@ -336,22 +367,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					borderRadius: '8px',
 					py: 1,
 					px: 1.5,
-					color: active ? activeFg : accentOnSurface,
-					bgcolor: active ? activeAccent : 'transparent',
-					'& .MuiListItemIcon-root': {
-						color: active ? activeFg : accentOnSurface,
-						minWidth: 36
-					},
-					// rail-labeled: active AND hover share the highlight. collapsible:
-					// keep the original subtle idle-hover tint (accent only if active).
-					'&:hover':
-						active || showLabels
-							? highlightSx
-							: { bgcolor: groupTint },
-					'&.Mui-selected': {
-						bgcolor: activeAccent
-					},
-					'&.Mui-selected:hover': highlightSx
+					...expandedRowSx(active, groupTint, 36),
+					...selectedRowSx
 				}}
 			>
 				<ListItemIcon>{link.icon}</ListItemIcon>
@@ -368,8 +385,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		// URL is the parent or one of its sub-items); a merely toggled-open group
 		// reveals its children without the accent background.
 		const groupActive = isSidebarLinkActive(link, activePath);
-		const parentActive = Boolean(link.path && activePath === link.path);
-		// Clicking the parent row toggles its child group open/closed.
+		const parentActive = isSubLinkActive(link, activePath);
 		const key = nodeKey('', link);
 		const open = isGroupOpen(link, key);
 
@@ -382,6 +398,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					bgcolor: groupActive ? groupTint : 'transparent'
 				}}
 			>
+				{/* Clicking the parent row toggles its child group open/closed. */}
 				<ListItemButton
 					onClick={() => toggleGroup(key, open)}
 					data-testid={`sidebar-item-${link.text}`}
@@ -391,18 +408,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						borderRadius: '8px',
 						py: 1,
 						px: 1.5,
-						color: parentActive ? activeFg : accentOnSurface,
-						bgcolor: parentActive ? activeAccent : 'transparent',
-						'& .MuiListItemIcon-root': {
-							color: parentActive ? activeFg : accentOnSurface,
-							minWidth: 36
-						},
-						// rail-labeled highlights on hover; collapsible keeps the
-						// subtle idle tint (accent only when the parent is active).
-						'&:hover':
-							parentActive || showLabels
-								? highlightSx
-								: { bgcolor: groupTint }
+						...expandedRowSx(parentActive, groupTint, 36)
 					}}
 				>
 					<ListItemIcon>{link.icon}</ListItemIcon>
@@ -456,16 +462,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							mx: 0.5,
 							py: 0.75,
 							pl: indent,
-							color: rowActive ? activeFg : accentOnSurface,
-							bgcolor: rowActive ? activeAccent : 'transparent',
-							'& .MuiListItemIcon-root': {
-								color: rowActive ? activeFg : accentOnSurface,
-								minWidth: 32
-							},
-							'&:hover':
-								rowActive || showLabels
-									? highlightSx
-									: { bgcolor: 'action.hover' }
+							...expandedRowSx(rowActive, 'action.hover', 32)
 						}}
 					>
 						{sub.icon ? (
@@ -502,22 +499,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					mx: 0.5,
 					py: 0.75,
 					pl: indent,
-					color: active ? activeFg : accentOnSurface,
-					bgcolor: active ? activeAccent : 'transparent',
-					'& .MuiListItemIcon-root': {
-						color: active ? activeFg : accentOnSurface,
-						minWidth: 32
-					},
-					// rail-labeled: active AND hover share the highlight. collapsible:
-					// keep the original subtle idle-hover tint (accent only if active).
-					'&:hover':
-						active || showLabels
-							? highlightSx
-							: { bgcolor: 'action.hover' },
-					'&.Mui-selected': {
-						bgcolor: activeAccent
-					},
-					'&.Mui-selected:hover': highlightSx
+					...expandedRowSx(active, 'action.hover', 32),
+					...selectedRowSx
 				}}
 			>
 				{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
@@ -617,16 +600,18 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// A collapsed parent group: the parent icon with a small chevron beneath it
 	// marking that it has children. The icon + chevron share one button so the
 	// active (solid) and hover (tint) background covers the chevron too. Clicking
-	// toggles the inline stack of child icons.
-	const renderCollapsedGroup = (link: SidebarLink, open: boolean) => {
+	// toggles the inline stack of child icons; active groups start open.
+	const renderCollapsedGroup = (link: SidebarLink) => {
 		const groupActive = isSidebarLinkActive(link, activePath);
-		const parentActive = Boolean(link.path && activePath === link.path);
+		const parentActive = isSubLinkActive(link, activePath);
+		const key = nodeKey('', link);
+		const open = isGroupOpen(link, key);
 
 		const parentIconButton = (
 			<IconButton
 				aria-label={link.text}
 				aria-expanded={open}
-				onClick={() => toggleGroup(link.text, open)}
+				onClick={() => toggleGroup(key, open)}
 				data-testid={`sidebar-item-${link.text}`}
 				data-active={parentActive ? 'true' : 'false'}
 				sx={{
@@ -693,6 +678,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 		return (
 			<Box
+				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
 				sx={{
 					width: '100%',
@@ -733,88 +719,67 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		);
 	};
 
-	const renderCollapsedItem = (link: SidebarLink) => {
-		const hasChildren = Boolean(link.subitems?.length);
-
-		if (hasChildren) {
-			// Clicking the parent toggles its inline child stack on the rail;
-			// active groups start open.
-			return (
-				<React.Fragment key={link.text}>
-					{renderCollapsedGroup(
-						link,
-						isGroupOpen(link, nodeKey('', link))
-					)}
-				</React.Fragment>
-			);
-		}
-
-		// Leaf: single icon with a label tooltip. Wrapped in a full-width,
-		// center-justified row so it lines up with the (full-width) group items
-		// regardless of the Stack's alignment or any host-app icon-button styles.
-		return (
-			<Box
-				key={link.text}
-				sx={{
-					width: '100%',
-					display: 'flex',
-					justifyContent: 'center'
-				}}
-			>
-				{renderCollapsedIcon(
-					link.text,
-					link.text,
-					link.icon,
-					Boolean(link.path && activePath === link.path),
-					link.path ? () => handleClick(link.path!) : undefined
-				)}
-			</Box>
-		);
-	};
+	// Collapsed leaf: a single icon (with a tooltip, or a caption when
+	// `showLabels`). Wrapped in a full-width, center-justified row so it lines up
+	// with the (full-width) group items regardless of the Stack's alignment or
+	// any host-app icon-button styles.
+	const renderCollapsedLeaf = (link: SidebarLink) => (
+		<Box
+			key={link.text}
+			sx={{
+				width: '100%',
+				display: 'flex',
+				justifyContent: 'center'
+			}}
+		>
+			{renderCollapsedIcon(
+				link.text,
+				link.text,
+				link.icon,
+				isSubLinkActive(link, activePath),
+				link.path ? () => handleClick(link.path!) : undefined
+			)}
+		</Box>
+	);
 
 	// --- Item dispatch -----------------------------------------------------
 	const renderItem = (link: SidebarLink) => {
-		if (collapsed) {
-			return renderCollapsedItem(link);
+		if (hasChildren(link)) {
+			return collapsed
+				? renderCollapsedGroup(link)
+				: renderExpandedGroup(link);
 		}
-		if (link.subitems?.length) {
-			return renderExpandedGroup(link);
-		}
-		return renderExpandedLeaf(link);
+		return collapsed ? renderCollapsedLeaf(link) : renderExpandedLeaf(link);
 	};
+
+	const renderLinkStack = (links: SidebarLink[]) => (
+		<Stack
+			spacing={0.5}
+			sx={{
+				width: '100%',
+				alignItems: collapsed ? 'center' : 'stretch'
+			}}
+		>
+			{links.map(renderItem)}
+		</Stack>
+	);
 
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
-	// 60px branded header: the collapse hamburger, plus logo + wordmark while
-	// expanded (the brand moves to the navbar when there's no room for it here).
-	const headerBrandSx = {
-		gap: 1,
-		minWidth: 0,
-		color: headerFg,
-		// Consumer SVG logos pick up the header foreground.
-		'& svg': { color: 'inherit', fill: 'currentColor' }
-	} as const;
-	const headerBrandContent = (
-		<>
-			{/* Wordmark first, logo mark after — same order as the navbar brand. */}
-			{title ? (
-				<Typography
-					variant='h6'
-					noWrap
-					sx={{
-						color: headerFg,
-						fontWeight: 600,
-						fontSize: '18px',
-						lineHeight: 1,
-						textTransform: 'uppercase'
-					}}
-				>
-					{title}
-				</Typography>
-			) : null}
-			{logo}
-		</>
-	);
+	const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+	// Collapsed, the 60px header only fits one button: it shows the logo and
+	// swaps to the hamburger on hover/focus, so the brand stays visible.
+	const toggleContent =
+		collapsed && logo ? (
+			<>
+				<Box className='toggle-logo' sx={{ display: 'flex' }}>
+					{logo}
+				</Box>
+				<MenuRounded className='toggle-icon' sx={{ display: 'none' }} />
+			</>
+		) : (
+			<MenuRounded />
+		);
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
@@ -835,89 +800,62 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				px: collapsed ? 0 : 2.5
 			}}
 		>
-			<Tooltip
-				title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-				placement='right'
-				arrow
-			>
+			<Tooltip title={toggleLabel} placement='right' arrow>
 				<IconButton
-					aria-label={
-						collapsed ? 'Expand sidebar' : 'Collapse sidebar'
-					}
+					aria-label={toggleLabel}
 					aria-expanded={!collapsed}
 					onClick={handleToggleCollapsed}
 					data-testid='sidebar-collapse-toggle'
 					disableFocusRipple
-					sx={{ color: headerFg, ...FOCUS_OUTLINE_FIX }}
+					sx={{
+						color: headerFg,
+						'& svg': { color: 'inherit', fill: 'currentColor' },
+						'&:hover, &.Mui-focusVisible': {
+							'& .toggle-logo': { display: 'none' },
+							'& .toggle-icon': { display: 'block' }
+						},
+						...FOCUS_OUTLINE_FIX
+					}}
 				>
-					<MenuRounded />
+					{toggleContent}
 				</IconButton>
 			</Tooltip>
 			{!collapsed && (logo || title) ? (
-				onBrandClick ? (
-					<ButtonBase
-						onClick={onBrandClick}
-						aria-label={`${title || 'App'} home`}
-						data-testid='sidebar-header-brand'
-						focusRipple
-						sx={{
-							...headerBrandSx,
-							borderRadius: 1,
-							px: 0.5,
-							mx: -0.5,
-							'&:hover': { backgroundColor: 'action.hover' },
-							'&.Mui-focusVisible': {
-								outline: '2px solid',
-								outlineColor: headerFg,
-								outlineOffset: 2
-							}
-						}}
-					>
-						{headerBrandContent}
-					</ButtonBase>
-				) : (
-					<Stack
-						direction='row'
-						data-testid='sidebar-header-brand'
-						sx={{ alignItems: 'center', ...headerBrandSx }}
-					>
-						{headerBrandContent}
-					</Stack>
-				)
+				<Brand
+					logo={logo}
+					title={title}
+					appName={title || 'App'}
+					onClick={onBrandClick}
+					color={headerFg}
+					testId='sidebar-header-brand'
+				/>
 			) : null}
 		</Box>
 	) : null;
 
-	const navContent = (
-		<>
-			{/* Main links */}
-			<Stack
-				spacing={0.5}
+	// Without the header bar (the labeled rail), the logo alone sits on top.
+	const railBrand =
+		!showHeaderBar && logo ? (
+			<Box
 				sx={{
-					width: '100%',
-					alignItems: collapsed ? 'center' : 'stretch'
+					display: 'flex',
+					justifyContent: 'center',
+					flexShrink: 0,
+					pt: 2,
+					pb: 1
 				}}
 			>
-				{mainLinks.map(link => renderItem(link))}
-			</Stack>
+				<Brand
+					logo={logo}
+					appName={title || 'App'}
+					onClick={onBrandClick}
+					color={headerFg}
+					testId='sidebar-header-brand'
+				/>
+			</Box>
+		) : null;
 
-			{/* Bottom group */}
-			{secondaryLinks.length > 0 ? (
-				<Box sx={{ mt: 'auto', pt: 2 }}>
-					<Divider sx={{ mb: 1, borderColor: 'divider' }} />
-					<Stack
-						spacing={0.5}
-						sx={{
-							width: '100%',
-							alignItems: collapsed ? 'center' : 'stretch'
-						}}
-					>
-						{secondaryLinks.map(link => renderItem(link))}
-					</Stack>
-				</Box>
-			) : null}
-		</>
-	);
+	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 2;
 
 	return (
 		<Box
@@ -938,42 +876,52 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				// (e.g. an alert card below it) stay within the viewport.
 				flex: '1 1 auto',
 				minHeight: 0,
-				transition: WIDTH_TRANSITION,
-				...(showHeaderBar
-					? { overflow: 'hidden', p: 0 }
-					: {
-							overflowX: 'hidden',
-							overflowY: 'auto',
-							px: showLabels ? 0.5 : collapsed ? 1 : 2,
-							pt: topInsetPx ? `${topInsetPx}px` : 1,
-							pb: 2
-						})
+				overflow: 'hidden',
+				transition: WIDTH_TRANSITION
 			}}
 		>
-			{showHeaderBar ? (
-				<>
-					{headerBar}
-					{/* Scroll container; flex column keeps the bottom group's
-					    mt:auto pinning intact. */}
-					<Box
-						sx={{
-							flex: '1 1 auto',
-							minHeight: 0,
-							display: 'flex',
-							flexDirection: 'column',
-							overflowY: 'auto',
-							overflowX: 'hidden',
-							px: collapsed ? 1 : 2,
-							pt: 1,
-							pb: 2
-						}}
-					>
-						{navContent}
+			{headerBar ?? railBrand}
+			{search ? (
+				<Box sx={{ flexShrink: 0, px: horizontalPadding, pt: 1.5 }}>
+					{search}
+				</Box>
+			) : null}
+			{/* Scroll container; flex column keeps the bottom group's mt:auto
+			    pinning intact. */}
+			<Box
+				sx={{
+					flex: '1 1 auto',
+					minHeight: 0,
+					display: 'flex',
+					flexDirection: 'column',
+					overflowY: 'auto',
+					overflowX: 'hidden',
+					px: horizontalPadding,
+					pt: topInsetPx && !showHeaderBar ? `${topInsetPx}px` : 1,
+					pb: 2
+				}}
+			>
+				{renderLinkStack(mainLinks)}
+				{/* Bottom group, pinned to the bottom by mt:auto. */}
+				{secondaryLinks.length > 0 ? (
+					<Box sx={{ mt: 'auto', pt: 2 }}>
+						<Divider sx={{ mb: 1, borderColor: 'divider' }} />
+						{renderLinkStack(secondaryLinks)}
 					</Box>
-				</>
-			) : (
-				navContent
-			)}
+				) : null}
+			</Box>
+			{footer ? (
+				<Box
+					sx={{
+						flexShrink: 0,
+						px: horizontalPadding,
+						py: 1.5,
+						borderTop: `1px solid ${headerDivider}`
+					}}
+				>
+					{footer}
+				</Box>
+			) : null}
 		</Box>
 	);
 };

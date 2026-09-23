@@ -30,3 +30,4 @@ dist-demo
 
 reference-components/
 .npmrc
+coverage

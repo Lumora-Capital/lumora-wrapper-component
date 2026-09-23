@@ -3,9 +3,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 
-// https://vitejs.dev/config/
+// Library build: `npm run build` bundles src/lib into dist/
 export default defineConfig({
-	mode: 'production',
 	plugins: [
 		react({
 			jsxRuntime: 'automatic',

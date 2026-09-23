@@ -2,7 +2,7 @@ import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Demo-specific Vite config for development and demo builds
+// Playground app (index.html -> src/main.tsx): `npm run dev` / `npm run build:demo`
 export default defineConfig({
 	plugins: [react()],
 	build: {

@@ -6,46 +6,50 @@ import NexaLogo from './NexaLogo';
 
 interface AssistantButtonProps {
 	onClick?: () => void;
-	/** Toggle (chat-open) state — reflected via `aria-pressed` only; no fill. */
+	/** Toggle (chat-open) state — reflected via `aria-pressed`. */
 	active?: boolean;
 	/** Animate the "beam" border — only while a chat is ongoing. When false, the
 	 * button shows just the Nexa logo (no border). */
 	busy?: boolean;
-	/** Navbar background, used as the ring's opaque inner cover so only the thin
-	 * border line shows (the interior matches the bar — never a filled tint). */
-	navbarBackground?: string;
 }
 
+const SIZE_PX = 52;
+const RADIUS_PX = 16;
+
 /**
- * Navbar launcher for the Nexa assistant. Shows the bare Nexa mark; while a chat
- * is ongoing (`busy`) an animated teal "beam" travels around a rounded-square
- * border line. There is no interior fill in any state.
+ * Floating launcher for the Nexa assistant, pinned to the bottom-right corner.
+ * While a chat is ongoing (`busy`) an animated teal "beam" travels around its
+ * rounded-square border.
  */
 const AssistantButton: React.FC<AssistantButtonProps> = ({
 	onClick,
 	active = false,
-	busy = false,
-	navbarBackground = '#ffffff'
+	busy = false
 }) => (
-	<Tooltip title='Nexa' placement='bottom'>
+	<Tooltip title='Nexa' placement='left'>
 		<IconButton
 			onClick={onClick}
 			aria-label='Toggle Nexa assistant'
 			aria-pressed={active}
 			disableFocusRipple
+			data-testid='assistant-button'
 			sx={{
-				position: 'relative',
-				width: 38,
-				height: 38,
+				position: 'fixed',
+				right: 24,
+				bottom: 24,
+				// Above page content, below drawers and menus (1200+)
+				zIndex: 1150,
+				width: SIZE_PX,
+				height: SIZE_PX,
 				p: 0,
-				flexShrink: 0,
-				borderRadius: '11px',
+				borderRadius: `${RADIUS_PX}px`,
 				overflow: 'hidden',
-				// No interior fill in any state — just the logo (plus the animated
-				// border line when busy). Only a standard transient hover.
-				backgroundColor: 'transparent',
-				'&:hover': { backgroundColor: 'action.hover' },
-				'&:focus, &:focus-visible': { outline: 'none' },
+				bgcolor: 'background.paper',
+				boxShadow: 4,
+				outline: active ? '2px solid #09C1AE' : 'none',
+				outlineOffset: 2,
+				'&:hover': { bgcolor: 'background.paper', boxShadow: 6 },
+				'&.Mui-focusVisible': { outline: '2px solid #09C1AE' },
 				// Animated "beam" border — rendered ONLY while a chat is ongoing.
 				...(busy && {
 					'&::before': {
@@ -57,14 +61,13 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 						animation: 'nexa-beam 3s linear infinite',
 						zIndex: 0
 					},
-					// Opaque inner cover so only the ~2px border line is visible;
-					// interior matches the navbar (never a filled tint).
+					// Opaque inner cover so only the ~2px border line is visible
 					'&::after': {
 						content: '""',
 						position: 'absolute',
 						inset: '2px',
-						borderRadius: '9px',
-						backgroundColor: navbarBackground,
+						borderRadius: `${RADIUS_PX - 2}px`,
+						bgcolor: 'background.paper',
 						zIndex: 1
 					},
 					'@keyframes nexa-beam': {
@@ -84,7 +87,7 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 					alignItems: 'center'
 				}}
 			>
-				<NexaLogo size={20} />
+				<NexaLogo size={26} />
 			</Box>
 		</IconButton>
 	</Tooltip>

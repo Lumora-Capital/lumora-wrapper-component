@@ -40,7 +40,7 @@ export const isSidebarLinkActive = (
 };
 
 /** The row itself is the current page — its own path, not a descendant's. */
-export const isSubLinkActive = (sub: SidebarSubLink, activePath?: string) =>
+export const isSubLinkActive = (sub: SidebarNode, activePath?: string) =>
 	Boolean(activePath && sub.path === activePath);
 
 /**

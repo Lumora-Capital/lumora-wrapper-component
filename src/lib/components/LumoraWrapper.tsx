@@ -9,17 +9,28 @@ import {
 	useTheme
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getDesignTokens } from '../../themePrimitives';
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState
+} from 'react';
 import { clearAuthTokens, getCurrentUser, isAuthenticated } from '../authUtils';
 import { createAxiosClient } from '../axiosClient';
+import { getDesignTokens } from '../theme';
 import { validateAndRefreshTokens } from '../tokenValidator';
-import AppNavbar from './AppNavbar';
+import AssistantButton from './AssistantButton';
+import Brand from './Brand';
 import CardAlert from './CardAlert';
 import CollapsibleSidebar from './CollapsibleSidebar';
 import MenuContent from './MenuContent';
 import MobileSidebar from './MobileSidebar';
+import MobileTopBar from './MobileTopBar';
+import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
+import SidebarSearch from './SidebarSearch';
 import {
+	deriveGroupTint,
 	getContrastText,
 	readStoredCollapsed,
 	writeStoredCollapsed
@@ -32,9 +43,8 @@ const DESKTOP_RAIL_WIDTH_PX = 100;
  * labels stacked under the icons (captions/icons are sized down to fit 80px). */
 const RAIL_LABELED_WIDTH_PX = 80;
 
-/** Fixed navbar height; the full-height rail-labeled sidebar insets its content
- * by this much so items start below the bar. */
-const NAVBAR_HEIGHT_PX = 60;
+/** Height of the mobile-only top bar; the content is offset by it on mobile. */
+const MOBILE_BAR_HEIGHT_PX = 56;
 
 /** Collapsible sidebar variant widths and persistence key. */
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 264;
@@ -56,7 +66,7 @@ export type SidebarSubLink = {
 	subitems?: SidebarSubLink[];
 };
 
-// Type for sidebar navigation links (optional path when used only as a group parent)
+/** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export type SidebarLink = {
 	text: string;
 	path?: string;
@@ -64,15 +74,12 @@ export type SidebarLink = {
 	subitems?: SidebarSubLink[];
 };
 
-// Interface for LumoraWrapper props
 export interface LumoraWrapperProps {
 	children: React.ReactNode;
 	sidebarLinks?: SidebarLink[];
 	secondarySidebarLinks?: SidebarLink[];
-	// Header props
+	/** Brand wordmark in the sidebar header (and the mobile top bar). */
 	appName?: string;
-	pageName?: string;
-	showHeader?: boolean;
 	showSidebar?: boolean;
 	/** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
 	showSidebarRailTitles?: boolean;
@@ -80,32 +87,33 @@ export interface LumoraWrapperProps {
 	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
 	 * is a full-height panel with its own 60px header (hamburger toggle + brand) that
 	 * switches between expanded (icon + label rows) and a collapsed icon rail,
-	 * persisting its state to localStorage — the brand lives in the sidebar header
-	 * while expanded and moves to the navbar while collapsed; `'rail-labeled'` is a
-	 * fixed narrow rail with the label stacked under each icon that never collapses
-	 * (no toggle). Mobile is unaffected.
+	 * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
+	 * with the label stacked under each icon that never collapses (no toggle).
+	 * Every variant runs the full height with the brand on top and notifications
+	 * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
 	 */
 	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
-	/** Brand logo shown in the navbar; defaults to the Lumora logo. */
+	/** Brand logo; defaults to the Lumora logo. */
 	logo?: React.ReactNode;
 	/**
-	 * Called when the brand block (app name + logo) is clicked — in the navbar,
-	 * or in the collapsible sidebar's header while it is expanded. When omitted
+	 * Called when the brand block (app name + logo) is clicked. When omitted
 	 * the brand is static. Typical use: navigate to the app's landing page.
 	 */
 	onBrandClick?: () => void;
 	/**
-	 * @deprecated No longer rendered. The sidebar header (brand + section label)
-	 * was moved to the navbar; this prop is accepted but ignored.
+	 * The app's global search, rendered in the sidebar under the brand and
+	 * above the links. When the sidebar is collapsed it becomes a search icon
+	 * that expands the sidebar and focuses the first input inside it; on the
+	 * fixed narrow rails the icon opens it in a popover.
 	 */
-	sidebarSectionTitle?: string;
+	searchComponent?: React.ReactNode;
 	/** Surface background of the collapsible sidebar (default '#ffffff'). */
 	sidebarBackgroundColor?: string;
 	/**
 	 * Background of the collapsible sidebar's 60px header block (hamburger +
-	 * brand). Defaults to the sidebar surface color, in which case the brand
-	 * keeps the sidebar accent tint; setting a custom background switches the
-	 * brand to auto-contrast against it.
+	 * brand) and the mobile top bar. Defaults to the sidebar surface color, in
+	 * which case the brand keeps the sidebar accent tint; setting a custom
+	 * background switches the brand to auto-contrast against it.
 	 */
 	sidebarHeaderBackgroundColor?: string;
 	/** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
@@ -116,28 +124,21 @@ export interface LumoraWrapperProps {
 	enableRefreshToken?: boolean;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
-	// User profile props
+	// User (bottom of the sidebar)
+	/** Show the user row; clicking it opens settings, dark mode and logout. */
+	showProfile?: boolean;
 	userName?: string;
-	userEmail?: string;
+	userRole?: string;
 	userAvatar?: string;
 	onLogout: (error?: Error) => void | Promise<void>;
-	onProfileClick?: () => void;
-	onAccountClick?: () => void;
-	onSettingsClick?: () => void;
+	/** Show the Settings entry in the user menu. */
 	showSettings?: boolean;
-	// Notification props
+	onSettingsClick?: () => void;
+	// Notifications (above the user)
 	showNotifications?: boolean;
 	notificationCount?: number;
-	/** Content component for the notification drawer; receives onClose. When provided, navbar bell opens this drawer. */
+	/** Content component for the notification drawer; receives onClose. When provided, the notifications row opens this drawer. */
 	NotificationSidebarContent?: React.ComponentType<{ onClose: () => void }>;
-	// Search bar props
-	showSearchbar?: boolean;
-	searchValue?: string;
-	onSearchChange?: (value: string) => void;
-	onSearchSubmit?: (value: string) => void;
-	// Profile props
-	showProfile?: boolean;
-	userRole?: string;
 	// User data callback
 	onVerify?: (userData: {
 		name: string;
@@ -155,33 +156,28 @@ export interface LumoraWrapperProps {
 	};
 	// Styling props
 	style?: SxProps<Theme>;
-	headerStyles?: SxProps<Theme>;
 	sidebarStyles?: SxProps<Theme>;
 	contentStyles?: SxProps<Theme>;
 	/**
-	 * Brand accent used by the navbar (app name / logo / menu button) and as the
-	 * default for the sidebar accent. Defaults to '#01584f'.
+	 * Brand accent; the default for the sidebar accent and the logo tint.
+	 * Defaults to '#01584f'.
 	 */
 	accentColor?: string;
 	/**
 	 * Accent for the sidebar — the solid fill of the highlighted item, shared by
-	 * the active item and any item on hover. Independent of the navbar brand
-	 * accent; defaults to `accentColor`.
+	 * the active item and any item on hover. Defaults to `accentColor`.
 	 */
 	sidebarAccentColor?: string;
 	/**
-	 * Idle (inactive) text/icon color for sidebar items, independent of the
-	 * active fill. Lets idle labels be tinted (e.g. a light teal) while the
-	 * active item uses a darker solid fill. Defaults to the sidebar accent in
-	 * light mode / the theme text color on a dark surface.
+	 * Idle (inactive) text/icon color for sidebar items, the search icon, the
+	 * notifications row and the user row. Defaults to the sidebar accent in
+	 * light mode / white on a dark surface.
 	 */
 	sidebarForegroundColor?: string;
 	contentBackgroundColor?: string;
-	// Navbar styling props
-	navbarBackground?: string;
-	navbarAccentColor?: string;
 	// Theme mode
 	theme?: 'dark' | 'light';
+	/** Show the Dark mode switch in the user menu. */
 	showThemeToggler?: boolean;
 	onThemeToggle?: () => void;
 	// API base URL for axios client
@@ -189,15 +185,41 @@ export interface LumoraWrapperProps {
 	// Chat sidebar props
 	GlobalChatSidebar?: React.ComponentType;
 	useChatSidebar?: () => { isOpen: boolean };
-	// Assistant (chat) launcher in the navbar
-	/** Show the Nexa assistant icon (animated border) in the navbar. */
+	// Assistant (chat) launcher
+	/** Show the floating Nexa assistant button (bottom-right). */
 	showAssistant?: boolean;
-	/** Click handler for the assistant icon; typically toggles the chat sidebar. */
+	/** Click handler for the assistant button; typically toggles the chat sidebar. */
 	onAssistantClick?: () => void;
-	/** Highlight the assistant icon while the chat is open. */
+	/** Highlight the assistant button while the chat is open. */
 	assistantActive?: boolean;
-	/** Animate the assistant icon's ring/beam — only while a chat is ongoing. */
+	/** Animate the assistant button's ring/beam — only while a chat is ongoing. */
 	assistantBusy?: boolean;
+	// Redirect to login function
+	redirectToLogin: () => void;
+	/**
+	 * @deprecated Use `searchComponent`. Still rendered in the search slot
+	 * (with `customNavbarProps`) when `searchComponent` is not set.
+	 */
+	customNavbar?: React.ComponentType<any>;
+	/** @deprecated See `customNavbar`. */
+	customNavbarProps?: Record<string, any>;
+	/** @deprecated Accepted but ignored; there is no header on desktop. */
+	showHeader?: boolean;
+	/** @deprecated Accepted but ignored; there is no header on desktop. */
+	headerStyles?: SxProps<Theme>;
+	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+	showSearchbar?: boolean;
+	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+	searchValue?: string;
+	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+	onSearchChange?: (value: string) => void;
+	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+	onSearchSubmit?: (value: string) => void;
+	/** @deprecated Accepted but ignored; there is no navbar. */
+	navbarBackground?: string;
+	/** @deprecated Accepted but ignored; there is no navbar. */
+	navbarAccentColor?: string;
+	/** @deprecated Accepted but ignored; there is no navbar. */
 	rightExtraContent?: Array<{
 		key: string;
 		name: string;
@@ -208,11 +230,16 @@ export interface LumoraWrapperProps {
 		disabled?: boolean;
 		tooltip?: string;
 	}>;
-	// Custom navbar component (replaces search bar)
-	customNavbar?: React.ComponentType<any>;
-	customNavbarProps?: Record<string, any>;
-	// Redirect to login function
-	redirectToLogin: () => void;
+	/** @deprecated Accepted but ignored. */
+	pageName?: string;
+	/** @deprecated Accepted but ignored; the user row shows name and role. */
+	userEmail?: string;
+	/** @deprecated Accepted but ignored; the user menu has no profile entry. */
+	onProfileClick?: () => void;
+	/** @deprecated Accepted but ignored; the user menu has no account entry. */
+	onAccountClick?: () => void;
+	/** @deprecated Accepted but ignored; the sidebar has no section title. */
+	sidebarSectionTitle?: string;
 }
 
 /**
@@ -224,13 +251,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	sidebarLinks = [],
 	secondarySidebarLinks = [],
 	appName = 'Dashboard',
-	pageName = 'Home',
-	showHeader = true,
 	showSidebar = true,
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
 	logo,
 	onBrandClick,
+	searchComponent,
 	sidebarBackgroundColor,
 	sidebarHeaderBackgroundColor,
 	groupAccentColor,
@@ -238,35 +264,25 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	enableRefreshToken = false,
 	activePath,
 	onLinkClick,
+	showProfile = true,
 	userName,
-	userEmail,
+	userRole,
 	userAvatar,
 	onLogout,
-	onProfileClick,
-	onAccountClick,
-	onSettingsClick,
 	showSettings = true,
+	onSettingsClick,
 	showNotifications = true,
 	notificationCount = 0,
 	NotificationSidebarContent,
-	showSearchbar = true,
-	searchValue,
-	onSearchChange,
-	onSearchSubmit,
-	showProfile = true,
-	userRole,
 	onVerify,
 	alertProps,
 	style,
-	headerStyles,
 	sidebarStyles,
 	contentStyles,
 	accentColor,
 	sidebarAccentColor,
 	sidebarForegroundColor,
 	contentBackgroundColor,
-	navbarBackground,
-	navbarAccentColor,
 	theme: themeMode = 'light',
 	showThemeToggler = false,
 	onThemeToggle,
@@ -276,7 +292,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onAssistantClick,
 	assistantActive = false,
 	assistantBusy = false,
-	rightExtraContent,
 	customNavbar: CustomNavbar,
 	customNavbarProps,
 	redirectToLogin,
@@ -290,30 +305,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	);
 	const isDark = themeMode === 'dark';
 	const resolvedAccentColor = accentColor ?? '#01584f';
-	// Sidebar accent is independent of the navbar brand accent, falling back to it.
 	const resolvedSidebarAccent = sidebarAccentColor ?? resolvedAccentColor;
 	const resolvedContentBg =
 		contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
-	const resolvedNavbarBg =
-		navbarBackground ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
-	const resolvedNavbarAccent =
-		navbarAccentColor ?? (isDark ? '#ffffff' : '#000000');
 	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
 	// Non-collapsible narrow rail with labels — rendered by CollapsibleSidebar
 	// pinned in its shrunk state with captions on.
 	const useRailLabeledSidebar = sidebarVariant === 'rail-labeled';
 	const rendersCollapsibleComponent =
 		useCollapsibleSidebar || useRailLabeledSidebar;
-	// The rail-labeled sidebar runs the full viewport height (top:0), so the
-	// navbar starts at its right edge instead of spanning the whole width.
-	const railLabeledFullHeight =
-		useRailLabeledSidebar && showSidebar && !isMobile;
-	// The collapsible sidebar is also full-height: its own 60px header block
-	// (hamburger + brand) occupies the top-left corner and the navbar starts at
-	// its right edge, tracking the live width (expanded/collapsed).
-	const collapsibleFullHeight =
-		useCollapsibleSidebar && showSidebar && !isMobile;
-	const fullHeightSidebar = railLabeledFullHeight || collapsibleFullHeight;
 	// Resolved sidebar surface — mirrors CollapsibleSidebar's own default
 	// (theme background.paper in dark mode, white in light) so wrapper-level
 	// chrome (aside strip, header fallback) can't drift from the component.
@@ -321,16 +321,17 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		sidebarBackgroundColor ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const resolvedSidebarHeaderBg =
 		sidebarHeaderBackgroundColor ?? resolvedSidebarSurface;
-	// Sidebar-header brand tint. With no custom header background the header is
-	// part of the sidebar surface, so the brand keeps the sidebar's idle accent
-	// (e.g. teal on white in light mode, white on the dark chrome) — the same
-	// tint the nav chrome and the navbar brand use. A custom header background
-	// (e.g. dark green in light mode) switches to auto-contrast so the brand
-	// stays legible on it.
+	// Idle chrome on the sidebar surface: search icon, notifications, user.
+	// Always a hex value so the hover tint can be derived from it.
+	const sidebarChromeFg =
+		sidebarForegroundColor ?? (isDark ? '#ffffff' : resolvedSidebarAccent);
+	const sidebarChromeHover = deriveGroupTint(sidebarChromeFg);
+	// Header brand tint. With no custom header background the header is part
+	// of the sidebar surface, so the brand keeps the idle chrome tint. A custom
+	// header background switches to auto-contrast so the brand stays legible.
 	const sidebarHeaderFg = sidebarHeaderBackgroundColor
 		? getContrastText(resolvedSidebarHeaderBg)
-		: (sidebarForegroundColor ??
-			(isDark ? '#ffffff' : resolvedSidebarAccent));
+		: sidebarChromeFg;
 	// Default logo via a CSS mask so it can be tinted per surface. Consumers
 	// can pass their own `logo` node instead.
 	const renderMaskLogo = (tint: string) => (
@@ -353,14 +354,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			}}
 		/>
 	);
-	// Navbar brand: accent in light mode; a legible light fill in dark mode.
-	const resolvedLogo =
-		logo ?? renderMaskLogo(isDark ? '#ffffff' : resolvedAccentColor);
-	// Sidebar-header brand: tinted with the header foreground so it matches the
-	// wordmark on either a plain surface or a custom (e.g. dark-green) header.
-	const resolvedSidebarHeaderLogo = logo ?? renderMaskLogo(sidebarHeaderFg);
-	// Collapsible sidebar collapsed state is owned here so the navbar/content
-	// offsets stay in sync with the sidebar width. Restored from localStorage.
+	const headerLogo = logo ?? renderMaskLogo(sidebarHeaderFg);
+	const railLogo = logo ?? renderMaskLogo(sidebarChromeFg);
+	// Collapsible sidebar collapsed state is owned here so the content offset
+	// stays in sync with the sidebar width. Restored from localStorage.
 	const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
 		() => readStoredCollapsed(SIDEBAR_PERSIST_KEY) ?? false
 	);
@@ -368,6 +365,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		setSidebarCollapsed(next);
 		writeStoredCollapsed(SIDEBAR_PERSIST_KEY, next);
 	};
+	// Set when the collapsed rail's search icon expands the sidebar, so the
+	// search field takes focus once it is rendered at full width.
+	const [focusSearch, setFocusSearch] = useState(false);
+	const clearFocusSearch = useCallback(() => setFocusSearch(false), []);
 	// Keep sidebar, drawer paper width and main `calc(100% - …)` in sync.
 	let desktopSidebarWidthPx = 0;
 	if (showSidebar && !isMobile) {
@@ -385,61 +386,28 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
-	const [userData, setUserData] = useState<{
-		name: string;
-		email: string;
-		profilePicture: string;
-		role: string;
-	} | null>(null);
 	const chatSidebarHook = useChatSidebar?.();
 	const isChatOpen = chatSidebarHook?.isOpen ?? false;
 	const onVerifyRef = useRef(onVerify);
 	const hasLoadedUserDataRef = useRef(false);
 
-	// Create axios client instance with the provided API base URL
 	const axiosClient = useMemo(
 		() => createAxiosClient(apiBaseUrl),
 		[apiBaseUrl]
 	);
 
-	// Update ref when callback changes
 	useEffect(() => {
 		onVerifyRef.current = onVerify;
 	}, [onVerify]);
 
-	// Handle mobile sidebar toggle for responsive design
-	const handleMobileSidebarToggle = () => {
-		setMobileSidebarOpen(!mobileSidebarOpen);
-	};
-
-	// Handle mobile sidebar close
-	const handleMobileSidebarClose = () => {
-		setMobileSidebarOpen(false);
-	};
-
-	// Wrap logout handler to clear user data
-	// IMPORTANT: Call onLogout FIRST so parent can call logout API before tokens are cleared
+	// The host owns logout (API call + clearing tokens); an async handler's
+	// rejection is logged here so it never surfaces as an unhandled rejection.
 	const handleLogout = (error?: Error) => {
-		// Call parent logout handler FIRST (this will call the logout API)
-		// The parent's logout handler will clear tokens via authApi.logout()
-		// Handle both sync and async onLogout handlers
 		const result = onLogout(error);
-
-		// If onLogout returns a promise, handle it
 		if (result instanceof Promise) {
-			result
-				.then(() => {
-					// Clear user data state after logout API is called
-					setUserData(null);
-				})
-				.catch((logoutError: unknown) => {
-					console.error('Error in logout handler:', logoutError);
-					// Still clear user data even if there's an error
-					setUserData(null);
-				});
-		} else {
-			// Synchronous handler, clear user data immediately
-			setUserData(null);
+			result.catch((logoutError: unknown) => {
+				console.error('Error in logout handler:', logoutError);
+			});
 		}
 	};
 
@@ -447,9 +415,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	useEffect(() => {
 		const checkSession = () => {
 			try {
-				// Check authentication status using centralized utility
-				const { isAuthenticated: authenticated, error: authError } =
-					isAuthenticated();
+				const { isAuthenticated: authenticated } = isAuthenticated();
 
 				if (!authenticated) {
 					// No valid tokens found, clear all tokens and redirect to login
@@ -459,7 +425,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					return;
 				}
 
-				// Get user data using centralized utility (only once)
+				// Load the stored user once and hand it to the host
 				if (!hasLoadedUserDataRef.current) {
 					const { user, error: userError } = getCurrentUser();
 
@@ -470,18 +436,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							profilePicture: user.profilePicture || '',
 							role: user.role || ''
 						};
-						setUserData(parsedUserData);
 						hasLoadedUserDataRef.current = true;
-						// Call callback if provided (using ref to avoid dependency issues)
-						if (onVerifyRef.current) {
-							onVerifyRef.current(parsedUserData);
-						}
+						// Read through a ref so a new callback identity does not re-run the check
+						onVerifyRef.current?.(parsedUserData);
 					} else if (userError) {
 						console.error('Error getting user data:', userError);
 					}
 				}
 
-				// Session exists, mark as authenticated
 				setHasSession(true);
 			} catch (error) {
 				console.error('Error checking session:', error);
@@ -496,18 +458,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		checkSession();
 	}, [redirectToLogin]);
 
-	// Initial token validation when component mounts and refresh is enabled
-	// Note: Token refresh is now handled automatically by axiosClient interceptors
+	// Proactive check on mount; refreshes during use are handled by the
+	// axios client's 401 interceptor.
 	useEffect(() => {
 		if (!enableRefreshToken) {
 			return;
 		}
 
-		// Validate tokens on mount only
 		validateAndRefreshTokens(axiosClient, redirectToLogin);
 	}, [enableRefreshToken, axiosClient]);
 
-	// Show loading state while checking session
 	if (isCheckingSession) {
 		return (
 			<ThemeProvider theme={muiTheme}>
@@ -534,11 +494,62 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		);
 	}
 
-	// Don't render children if no session exists
-	// (This state should not be reached as we redirect, but adding as safety)
+	// Unreachable in practice (we redirect), but never render without a session
 	if (!hasSession) {
 		return null;
 	}
+
+	const searchNode =
+		searchComponent ??
+		(CustomNavbar ? <CustomNavbar {...customNavbarProps} /> : null);
+	const openNotifications =
+		NotificationSidebarContent &&
+		(() => {
+			setMobileSidebarOpen(false);
+			setNotificationDrawerOpen(true);
+		});
+	// Notifications + user; `compact` for the collapsed and narrow rails.
+	const footerProps: Omit<
+		SidebarFooterProps,
+		'compact' | 'color' | 'hoverColor'
+	> = {
+		showNotifications,
+		notificationCount,
+		onNotificationsClick: openNotifications,
+		showProfile,
+		userName,
+		userRole,
+		userAvatar,
+		showSettings,
+		onSettingsClick,
+		showThemeToggler,
+		theme: themeMode,
+		onThemeToggle,
+		onLogout: handleLogout
+	};
+	const renderFooter = (compact: boolean) => (
+		<SidebarFooter
+			{...footerProps}
+			compact={compact}
+			color={sidebarChromeFg}
+			hoverColor={sidebarChromeHover}
+		/>
+	);
+	const renderSearch = (mode: 'full' | 'expand' | 'popover') =>
+		searchNode ? (
+			<SidebarSearch
+				search={searchNode}
+				mode={mode}
+				onExpand={() => {
+					handleSidebarCollapsedChange(false);
+					setFocusSearch(true);
+				}}
+				autoFocus={focusSearch}
+				onAutoFocused={clearFocusSearch}
+				color={sidebarChromeFg}
+				hoverColor={sidebarChromeHover}
+			/>
+		) : undefined;
 
 	return (
 		<ThemeProvider theme={muiTheme}>
@@ -551,74 +562,24 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			>
 				<CssBaseline />
 
-				{/* Header */}
-				{showHeader && (
-					<AppNavbar
-						appName={appName}
-						pageName={pageName}
-						isMobile={isMobile}
-						// Desktop collapsible: the toggle lives in the sidebar's
-						// own header, so the navbar hamburger is mobile-only.
+				{isMobile && (
+					<MobileTopBar
+						height={MOBILE_BAR_HEIGHT_PX}
 						onMenuClick={
-							isMobile && showSidebar
-								? handleMobileSidebarToggle
+							showSidebar
+								? () => setMobileSidebarOpen(true)
 								: undefined
 						}
-						showMenuButton={showSidebar && isMobile}
-						// Brand moves into the sidebar header while the desktop
-						// collapsible panel is expanded; the navbar shows it
-						// whenever the panel is collapsed (or on mobile).
-						showBrand={
-							!(collapsibleFullHeight && !sidebarCollapsed)
-						}
-						leftOffsetPx={
-							fullHeightSidebar ? desktopSidebarWidthPx : 0
-						}
-						logo={resolvedLogo}
+						appName={appName}
+						logo={headerLogo}
 						onBrandClick={onBrandClick}
-						headerStyles={headerStyles}
-						userName={userName}
-						userEmail={userEmail}
-						userAvatar={userAvatar}
-						onProfileClick={onProfileClick}
-						onAccountClick={onAccountClick}
-						onSettingsClick={onSettingsClick}
-						showSettings={showSettings}
-						onLogout={handleLogout}
-						showNotifications={showNotifications}
-						notificationCount={notificationCount}
-						onNotificationBellClick={
-							showNotifications && NotificationSidebarContent
-								? () => setNotificationDrawerOpen(true)
-								: undefined
-						}
-						showSearchbar={showSearchbar && !CustomNavbar}
-						searchValue={searchValue}
-						onSearchChange={onSearchChange}
-						onSearchSubmit={onSearchSubmit}
-						showProfile={showProfile}
-						userRole={userRole}
-						accentColor={resolvedAccentColor}
-						contentBackgroundColor={resolvedContentBg}
-						navbarBackground={resolvedNavbarBg}
-						navbarAccentColor={resolvedNavbarAccent}
-						theme={themeMode}
-						showThemeToggler={showThemeToggler}
-						onThemeToggle={onThemeToggle}
-						rightExtraContent={rightExtraContent}
-						customNavbar={CustomNavbar}
-						customNavbarProps={customNavbarProps}
-						showAssistant={showAssistant}
-						onAssistantClick={onAssistantClick}
-						assistantActive={assistantActive}
-						assistantBusy={assistantBusy}
+						background={resolvedSidebarHeaderBg}
+						color={sidebarHeaderFg}
 					/>
 				)}
 
 				{/* Desktop Sidebar — collapsible / rail-labeled variants (both
-				    rendered by CollapsibleSidebar). Both span the full viewport
-				    height with the navbar inset to their right; the collapsible
-				    panel hosts its own 60px header (hamburger + brand). */}
+				    rendered by CollapsibleSidebar), full viewport height. */}
 				{showSidebar && !isMobile && rendersCollapsibleComponent && (
 					<Box
 						component='aside'
@@ -629,7 +590,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							zIndex: 2,
 							position: 'sticky',
 							top: 0,
-							mt: 0,
 							alignSelf: 'flex-start',
 							height: '100vh',
 							// Flex column so the sidebar shrinks to fit siblings
@@ -650,7 +610,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							activePath={activePath}
 							onLinkClick={onLinkClick}
 							showHeaderBar={useCollapsibleSidebar}
-							logo={resolvedSidebarHeaderLogo}
+							logo={headerLogo}
 							title={appName}
 							onBrandClick={onBrandClick}
 							headerBackgroundColor={
@@ -678,19 +638,22 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									: handleSidebarCollapsedChange
 							}
 							showLabels={useRailLabeledSidebar}
-							// Full-height rail-labeled: inset content below the
-							// navbar so the first item clears the bar.
-							topInsetPx={
-								railLabeledFullHeight && showHeader
-									? NAVBAR_HEIGHT_PX
-									: 0
-							}
 							expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
 							collapsedWidth={
 								useRailLabeledSidebar
 									? RAIL_LABELED_WIDTH_PX
 									: COLLAPSIBLE_COLLAPSED_WIDTH_PX
 							}
+							search={renderSearch(
+								useRailLabeledSidebar
+									? 'popover'
+									: sidebarCollapsed
+										? 'expand'
+										: 'full'
+							)}
+							footer={renderFooter(
+								useRailLabeledSidebar || sidebarCollapsed
+							)}
 						/>
 						{/* Full alert card only in the wide (expanded) collapsible
 						    panel — never in the narrow labeled rail. */}
@@ -707,23 +670,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						sx={{
 							width: desktopSidebarWidthPx,
 							flexShrink: 0,
-							zIndex: 2, // Higher z-index than app bar
+							zIndex: 2,
 							'& .MuiDrawer-paper': {
 								width: desktopSidebarWidthPx,
 								boxSizing: 'border-box',
 								bgcolor: resolvedContentBg,
-								borderRight: 'none',
-								top: showHeader ? '60px' : 0, // Position below header
-								height: showHeader
-									? 'calc(100vh - 60px)'
-									: '100vh'
+								borderRight: 'none'
 							},
 							...sidebarStyles
 						}}
 					>
 						<Box
 							sx={{
-								overflow: 'auto',
 								height: '100%',
 								display: 'flex',
 								flexDirection: 'column',
@@ -733,17 +691,47 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								boxSizing: 'border-box'
 							}}
 						>
-							<MenuContent
-								variant='rail'
-								mainLinks={sidebarLinks}
-								secondaryLinks={secondarySidebarLinks}
-								activePath={activePath}
-								onLinkClick={onLinkClick}
-								accentColor={resolvedSidebarAccent}
-								surfaceBackgroundColor={resolvedContentBg}
-								railShowTitles={showSidebarRailTitles}
-							/>
-							{alertProps?.show && <CardAlert {...alertProps} />}
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'center',
+									mb: 1.5
+								}}
+							>
+								<Brand
+									logo={railLogo}
+									appName={appName}
+									onClick={onBrandClick}
+									color={sidebarChromeFg}
+									testId='sidebar-header-brand'
+								/>
+							</Box>
+							{renderSearch('popover')}
+							<Box
+								sx={{
+									flex: '1 1 auto',
+									minHeight: 0,
+									overflowY: 'auto',
+									display: 'flex',
+									flexDirection: 'column',
+									mt: 1
+								}}
+							>
+								<MenuContent
+									variant='rail'
+									mainLinks={sidebarLinks}
+									secondaryLinks={secondarySidebarLinks}
+									activePath={activePath}
+									onLinkClick={onLinkClick}
+									accentColor={resolvedSidebarAccent}
+									surfaceBackgroundColor={resolvedContentBg}
+									railShowTitles={showSidebarRailTitles}
+								/>
+								{alertProps?.show && (
+									<CardAlert {...alertProps} />
+								)}
+							</Box>
+							<Box sx={{ py: 1.5 }}>{renderFooter(true)}</Box>
 						</Box>
 					</Drawer>
 				)}
@@ -752,20 +740,21 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				{showSidebar && isMobile && (
 					<MobileSidebar
 						open={mobileSidebarOpen}
-						onClose={handleMobileSidebarClose}
+						onClose={() => setMobileSidebarOpen(false)}
 						mainLinks={sidebarLinks}
 						secondaryLinks={secondarySidebarLinks}
 						activePath={activePath}
 						onLinkClick={onLinkClick}
-						userName={userName}
-						userEmail={userEmail}
-						userAvatar={userAvatar}
-						userRole={userRole}
-						onLogout={handleLogout}
-						onProfileClick={onProfileClick}
-						theme={themeMode}
-						showThemeToggler={showThemeToggler}
-						onThemeToggle={onThemeToggle}
+						search={searchNode}
+						footer={
+							// The drawer sits on the theme paper, not the sidebar surface
+							<SidebarFooter
+								{...footerProps}
+								compact={false}
+								color='text.primary'
+								hoverColor='action.hover'
+							/>
+						}
 						alertProps={alertProps}
 						accentColor={resolvedSidebarAccent}
 						groupAccentColor={groupAccentColor}
@@ -778,17 +767,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					sx={{
 						flexGrow: 1,
 						p: 3,
-						width: isMobile
-							? '100%'
-							: showSidebar
-								? `calc(100% - ${desktopSidebarWidthPx}px)`
-								: '100%',
+						width: desktopSidebarWidthPx
+							? `calc(100% - ${desktopSidebarWidthPx}px)`
+							: '100%',
 						transition: SIDEBAR_TRANSITION,
-						mt: showHeader ? '60px' : 0, // Account for AppNavbar height (60px)
-						ml: isMobile ? 0 : showSidebar ? 0 : 0, // Offset for sidebar on desktop
+						mt: isMobile ? `${MOBILE_BAR_HEIGHT_PX}px` : 0,
 						backgroundColor: resolvedContentBg,
-						mb: 0,
-						mr: 0,
 						...contentStyles
 					}}
 				>
@@ -811,24 +795,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								sx={{
 									display: 'flex',
 									flexDirection: 'column',
+									// Sticks in view and fills the viewport minus the
+									// main area's 24px padding above and below
 									position: { xs: 'static', md: 'sticky' },
-									top: {
-										xs: 'auto',
-										md: showHeader ? '60px' : '0px'
-									}, // Stick below navbar
+									top: { xs: 'auto', md: '24px' },
 									alignSelf: 'flex-start',
 									height: {
 										xs: 'auto',
-										md: showHeader
-											? 'calc(100vh - 60px - 24px - 8px)'
-											: 'calc(100vh - 24px - 8px)'
-									}, // Viewport - navbar - top padding - top margin
+										md: 'calc(100vh - 48px)'
+									},
 									maxHeight: {
 										xs: 'none',
-										md: showHeader
-											? 'calc(100vh - 60px - 24px - 8px)'
-											: 'calc(100vh - 24px - 8px)'
-									} // Viewport - navbar - top padding - top margin
+										md: 'calc(100vh - 48px)'
+									}
 								}}
 							>
 								<GlobalChatSidebar />
@@ -836,6 +815,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						)}
 					</Grid>
 				</Box>
+
+				{showAssistant && (
+					<AssistantButton
+						onClick={onAssistantClick}
+						active={assistantActive}
+						busy={assistantBusy}
+					/>
+				)}
 
 				{/* Notification sidebar drawer (container + toggle only; content from host) */}
 				{showNotifications && NotificationSidebarContent && (

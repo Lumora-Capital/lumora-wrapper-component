@@ -1,5 +1,10 @@
 import type { AxiosInstance } from 'axios';
-import { clearAuthTokens, getAuthTokens, logAuthError, storeAuthTokens } from './authUtils';
+import {
+	clearAuthTokens,
+	getAuthTokens,
+	logAuthError,
+	storeAuthTokens
+} from './authUtils';
 
 /**
  * Validates tokens on mount and refreshes if needed
@@ -26,9 +31,16 @@ export const validateAndRefreshTokens = async (
 				refresh_token: refreshToken
 			});
 
-			if (refreshResponse.data.success && refreshResponse.data.accessToken) {
+			if (
+				refreshResponse.data.success &&
+				refreshResponse.data.accessToken
+			) {
 				// Store the new tokens using centralized utility
-				storeAuthTokens(refreshResponse.data.accessToken, refreshResponse.data.refreshToken || null, null);
+				storeAuthTokens(
+					refreshResponse.data.accessToken,
+					refreshResponse.data.refreshToken || null,
+					null
+				);
 				return true;
 			}
 		} catch (error) {

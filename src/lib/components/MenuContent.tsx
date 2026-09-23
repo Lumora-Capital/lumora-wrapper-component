@@ -30,6 +30,8 @@ import {
 const CLOSE_DELAY_MS = 180;
 /** Max width for rail subitem popover; longer labels truncate with ellipsis */
 const RAIL_SUBMENU_MAX_WIDTH_PX = 250;
+/** Solid fill behind an active secondary link (secondary links ignore the accent). */
+const SECONDARY_ACTIVE_BG = '#01584F';
 
 export type MenuContentVariant = 'rail' | 'drawer';
 
@@ -43,7 +45,8 @@ interface MenuContentProps {
 	/** Light tint behind an active parent's child group and on hover (drawer variant).
 	 * Defaults to a low-alpha wash derived from `accentColor`. */
 	groupAccentColor?: string;
-	/** Popover panel behind sublinks; matches desktop sidebar strip (e.g. contentBackgroundColor). */
+	/** Popover panel behind sublinks; matches desktop sidebar strip (e.g. contentBackgroundColor).
+	 * Falls back to the Paper default (`background.paper`). */
 	surfaceBackgroundColor?: string;
 	/** Desktop rail only: show `link.text` under each icon */
 	railShowTitles?: boolean;
@@ -117,15 +120,98 @@ const RailTruncatingCaption: React.FC<RailTruncatingCaptionProps> = ({
 	);
 };
 
-// --- Desktop rail: item with hover/keyboard submenu (subitems only in popper; parent uses icon click for path)
+/** Colors and size shared by every rail row (leaf or submenu trigger). */
+const getRailRowStyle = (
+	isSecondary: boolean,
+	accentColor: string,
+	active: boolean,
+	railShowTitles: boolean
+) => {
+	const size = isSecondary ? 48 : 44;
+	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
+	const activeBg = isSecondary ? SECONDARY_ACTIVE_BG : accentColor;
+
+	// With titles, icon + label share one hit target and active background
+	const sx = railShowTitles
+		? {
+				width: '100%',
+				maxWidth: '100%',
+				minWidth: size,
+				height: 'auto',
+				minHeight: size,
+				flexDirection: 'column' as const,
+				py: 0.5,
+				// Horizontal padding so labels (esp. active fill) do not touch the box edges
+				px: 1,
+				borderRadius: '4px',
+				color: active ? '#ffffff' : inactiveColor,
+				backgroundColor: active ? activeBg : 'transparent',
+				'&:hover': {
+					backgroundColor: active ? activeBg : 'action.hover',
+					borderRadius: '4px',
+					color: active ? '#ffffff' : inactiveColor
+				}
+			}
+		: {
+				width: size,
+				height: size,
+				color: active ? '#ffffff' : inactiveColor,
+				backgroundColor: active ? activeBg : 'transparent',
+				borderRadius: active ? '4px' : '50%',
+				'&:hover': {
+					backgroundColor: active ? activeBg : 'action.hover',
+					borderRadius: '4px'
+				}
+			};
+
+	return { activeBg, sx };
+};
+
+/** Titled rail content: the icon with its (truncating) caption beneath. */
+const RailIconWithCaption: React.FC<{ link: SidebarLink }> = ({ link }) => (
+	<Stack alignItems='center' spacing={1} sx={{ width: '100%' }}>
+		<Box
+			sx={{
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				color: 'inherit',
+				'& .MuiSvgIcon-root': { color: 'inherit' }
+			}}
+		>
+			{link.icon}
+		</Box>
+		<RailTruncatingCaption
+			text={link.text}
+			testId={`rail-item-caption-${link.text}`}
+		/>
+	</Stack>
+);
+
+/** Untitled rail icons name themselves in a tooltip; titled ones already show the label. */
+const withRailTooltip = (
+	button: React.ReactElement,
+	text: string,
+	railShowTitles: boolean
+) =>
+	railShowTitles ? (
+		button
+	) : (
+		<Tooltip title={text} placement='right' arrow>
+			{button}
+		</Tooltip>
+	);
+
+// Desktop rail item with a hover/keyboard submenu: subitems live only in the
+// popper; clicking the parent icon navigates to the parent's own path.
 type RailSubmenuProps = {
 	link: SidebarLink;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
 	isSecondary: boolean;
-	surfaceBackgroundColor: string;
-	railShowTitles?: boolean;
+	surfaceBackgroundColor?: string;
+	railShowTitles: boolean;
 };
 
 const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
@@ -135,7 +221,7 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 	accentColor,
 	isSecondary,
 	surfaceBackgroundColor,
-	railShowTitles = false
+	railShowTitles
 }) => {
 	const theme = useTheme();
 	const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
@@ -197,90 +283,16 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 		return () => cancelAnimationFrame(t);
 	}, [open]);
 
-	const active = isSidebarLinkActive(link, activePath);
-	const size = isSecondary ? 48 : 44;
-	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
 	// Filled rail look when this parent or one of its subitems is active (not for the whole popover)
-	const selectedRailFill = isSecondary ? '#01584F' : accentColor;
+	const active = isSidebarLinkActive(link, activePath);
+	const { activeBg: selectedRailFill, sx: triggerSx } = getRailRowStyle(
+		isSecondary,
+		accentColor,
+		active,
+		railShowTitles
+	);
 
-	// Icon + label share one hit target and active background when railShowTitles
-	const titledRailTriggerSx = {
-		width: '100%',
-		maxWidth: '100%',
-		minWidth: size,
-		height: 'auto',
-		minHeight: size,
-		flexDirection: 'column' as const,
-		py: 0.5,
-		// Horizontal padding so labels (esp. active fill) do not touch the box edges
-		px: 1,
-		borderRadius: '4px',
-		color: active ? '#ffffff' : inactiveColor,
-		backgroundColor: active ? selectedRailFill : 'transparent',
-		'&:hover': {
-			backgroundColor: active ? selectedRailFill : 'action.hover',
-			borderRadius: '4px',
-			color: active ? '#ffffff' : inactiveColor
-		}
-	};
-
-	const iconButton = railShowTitles ? (
-		<IconButton
-			ref={triggerRef}
-			component={link.path ? 'a' : 'button'}
-			href={link.path || undefined}
-			aria-label={link.text}
-			onFocus={() => {
-				if (!mouseOnTriggerRef.current) {
-					handleOpen();
-				}
-			}}
-			onBlur={(e: React.FocusEvent) => {
-				const next = e.relatedTarget as Node | null;
-				if (next && popoverRef.current?.contains(next)) {
-					return;
-				}
-				scheduleClose();
-			}}
-			onKeyDown={(e: React.KeyboardEvent) => {
-				if (e.key === 'ArrowDown') {
-					e.preventDefault();
-					focusFirstOnOpenRef.current = true;
-					handleOpen();
-				}
-			}}
-			onClick={(e: React.MouseEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				if (link.path) {
-					onLinkClick?.(link.path);
-				}
-			}}
-			aria-haspopup='menu'
-			aria-expanded={open}
-			aria-controls={open ? menuListId : undefined}
-			data-testid={`rail-submenu-trigger-${link.text}`}
-			sx={titledRailTriggerSx}
-		>
-			<Stack alignItems='center' spacing={1} sx={{ width: '100%' }}>
-				<Box
-					sx={{
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						color: 'inherit',
-						'& .MuiSvgIcon-root': { color: 'inherit' }
-					}}
-				>
-					{link.icon}
-				</Box>
-				<RailTruncatingCaption
-					text={link.text}
-					testId={`rail-item-caption-${link.text}`}
-				/>
-			</Stack>
-		</IconButton>
-	) : (
+	const iconButton = (
 		<IconButton
 			ref={triggerRef}
 			component={link.path ? 'a' : 'button'}
@@ -317,19 +329,9 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 			aria-expanded={open}
 			aria-controls={open ? menuListId : undefined}
 			data-testid={`rail-submenu-trigger-${link.text}`}
-			sx={{
-				width: size,
-				height: size,
-				color: active ? '#ffffff' : inactiveColor,
-				backgroundColor: active ? selectedRailFill : 'transparent',
-				borderRadius: active ? '4px' : '50%',
-				'&:hover': {
-					backgroundColor: active ? selectedRailFill : 'action.hover',
-					borderRadius: '4px'
-				}
-			}}
+			sx={triggerSx}
 		>
-			{link.icon}
+			{railShowTitles ? <RailIconWithCaption link={link} /> : link.icon}
 		</IconButton>
 	);
 
@@ -354,13 +356,7 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 					scheduleClose();
 				}}
 			>
-				{railShowTitles ? (
-					iconButton
-				) : (
-					<Tooltip title={link.text} placement='right' arrow>
-						{iconButton}
-					</Tooltip>
-				)}
+				{withRailTooltip(iconButton, link.text, railShowTitles)}
 			</Box>
 			<Popper
 				open={open && Boolean(anchorEl)}
@@ -372,9 +368,7 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 				<Paper
 					ref={popoverRef}
 					elevation={0}
-					onMouseEnter={() => {
-						cancelClose();
-					}}
+					onMouseEnter={cancelClose}
 					onMouseLeave={scheduleClose}
 					data-testid={`rail-submenu-panel-${link.text}`}
 					sx={{
@@ -521,7 +515,7 @@ type RailLeafProps = {
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
 	isSecondary: boolean;
-	railShowTitles?: boolean;
+	railShowTitles: boolean;
 };
 
 const RailLeafRow: React.FC<RailLeafProps> = ({
@@ -530,107 +524,56 @@ const RailLeafRow: React.FC<RailLeafProps> = ({
 	onLinkClick,
 	accentColor,
 	isSecondary,
-	railShowTitles = false
+	railShowTitles
 }) => {
 	const active = Boolean(link.path && activePath === link.path);
-	const size = isSecondary ? 48 : 44;
-	const inactiveColor = isSecondary ? 'text.secondary' : accentColor;
-	const activeBg = isSecondary ? '#01584F' : accentColor;
-
-	const titledRailLeafSx = {
-		width: '100%',
-		maxWidth: '100%',
-		minWidth: size,
-		height: 'auto',
-		minHeight: size,
-		flexDirection: 'column' as const,
-		py: 0.5,
-		px: 1,
-		borderRadius: '4px',
-		color: active ? '#ffffff' : inactiveColor,
-		backgroundColor: active ? activeBg : 'transparent',
-		'&:hover': {
-			backgroundColor: active ? activeBg : 'action.hover',
-			borderRadius: '4px',
-			color: active ? '#ffffff' : inactiveColor
-		}
-	};
-
-	const iconButton = railShowTitles ? (
-		<IconButton
-			component={link.path ? 'a' : 'button'}
-			href={link.path || undefined}
-			aria-label={link.text}
-			onClick={(e: React.MouseEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				if (link.path) {
-					onLinkClick?.(link.path);
-				}
-			}}
-			disabled={!link.path}
-			sx={titledRailLeafSx}
-		>
-			<Stack alignItems='center' spacing={1} sx={{ width: '100%' }}>
-				<Box
-					sx={{
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						color: 'inherit',
-						'& .MuiSvgIcon-root': { color: 'inherit' }
-					}}
-				>
-					{link.icon}
-				</Box>
-				<RailTruncatingCaption
-					text={link.text}
-					testId={`rail-item-caption-${link.text}`}
-				/>
-			</Stack>
-		</IconButton>
-	) : (
-		<IconButton
-			component={link.path ? 'a' : 'button'}
-			href={link.path || undefined}
-			aria-label={link.text}
-			onClick={(e: React.MouseEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				if (link.path) {
-					onLinkClick?.(link.path);
-				}
-			}}
-			disabled={!link.path}
-			sx={{
-				width: size,
-				height: size,
-				color: active ? '#ffffff' : inactiveColor,
-				backgroundColor: active ? activeBg : 'transparent',
-				borderRadius: active ? '4px' : '50%',
-				'&:hover': {
-					backgroundColor: active ? activeBg : 'action.hover',
-					borderRadius: '4px'
-				}
-			}}
-		>
-			{link.icon}
-		</IconButton>
+	const { sx } = getRailRowStyle(
+		isSecondary,
+		accentColor,
+		active,
+		railShowTitles
 	);
 
-	return railShowTitles ? (
-		iconButton
-	) : (
-		<Tooltip title={link.text} placement='right' arrow>
-			{iconButton}
-		</Tooltip>
+	return withRailTooltip(
+		<IconButton
+			component={link.path ? 'a' : 'button'}
+			href={link.path || undefined}
+			aria-label={link.text}
+			onClick={(e: React.MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+				if (link.path) {
+					onLinkClick?.(link.path);
+				}
+			}}
+			disabled={!link.path}
+			sx={sx}
+		>
+			{railShowTitles ? <RailIconWithCaption link={link} /> : link.icon}
+		</IconButton>,
+		link.text,
+		railShowTitles
 	);
 };
 
-type DrawerGroupProps = {
+/**
+ * Drawer row colors. Inactive items follow the accent in light mode; in dark
+ * mode the accent is too dim on the dark surface, so fall back to the primary
+ * text color (matches the desktop collapsible sidebar and the navbar brand).
+ */
+const useDrawerRowColors = (isSecondary: boolean, accentColor: string) => {
+	const isDark = useTheme().palette.mode === 'dark';
+	const inactiveColor = isSecondary
+		? 'text.secondary'
+		: isDark
+			? 'text.primary'
+			: accentColor;
+	const activeBg = isSecondary ? SECONDARY_ACTIVE_BG : accentColor;
+	return { inactiveColor, activeBg };
+};
+
+type DrawerRowProps = {
 	link: SidebarLink;
-	expanded: boolean;
-	onToggle: () => void;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	accentColor: string;
@@ -639,6 +582,11 @@ type DrawerGroupProps = {
 	/** Foreground on the active (solid) row. */
 	activeFg: string;
 	isSecondary: boolean;
+};
+
+type DrawerGroupProps = DrawerRowProps & {
+	expanded: boolean;
+	onToggle: () => void;
 };
 
 const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
@@ -657,16 +605,10 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 	// path is the active route.
 	const groupActive = isSidebarLinkActive(link, activePath);
 	const parentActive = Boolean(link.path && activePath === link.path);
-	// Inactive items follow the accent in light mode; in dark mode the accent is too
-	// dim on the dark surface, so fall back to the primary text color (matches the
-	// desktop collapsible sidebar and the navbar brand).
-	const isDark = useTheme().palette.mode === 'dark';
-	const inactiveColor = isSecondary
-		? 'text.secondary'
-		: isDark
-			? 'text.primary'
-			: accentColor;
-	const activeBg = isSecondary ? '#01584F' : accentColor;
+	const { inactiveColor, activeBg } = useDrawerRowColors(
+		isSecondary,
+		accentColor
+	);
 
 	// Sections under this parent, keyed by their path of texts; an active
 	// section starts open, and a person's toggle wins after that.
@@ -685,33 +627,39 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 		depth: number
 	): React.ReactNode => {
 		const key = nodeKey(parentKey, sub);
-		const indent = 4 + (depth - 1) * 2;
+		const rowActive = isSubLinkActive(sub, activePath);
+		const rowSx = {
+			pl: 4 + (depth - 1) * 2,
+			py: 1,
+			color: rowActive ? activeFg : inactiveColor,
+			bgcolor: rowActive ? activeBg : 'transparent',
+			'& .MuiListItemIcon-root': { color: 'inherit' },
+			'&:hover': {
+				bgcolor: rowActive ? activeBg : 'action.hover'
+			}
+		};
+		const rowContent = (
+			<>
+				{sub.icon ? (
+					<ListItemIcon sx={{ minWidth: 36 }}>
+						{sub.icon}
+					</ListItemIcon>
+				) : null}
+				<ListItemText primary={sub.text} />
+			</>
+		);
+
 		if (hasChildren(sub)) {
 			const open = isSectionOpen(sub, key);
-			const rowActive = isSubLinkActive(sub, activePath);
 			return (
 				<Box key={key}>
 					<ListItemButton
 						onClick={() => toggleSection(key, open)}
 						aria-expanded={open}
 						data-testid={`drawer-section-trigger-${sub.text}`}
-						sx={{
-							pl: indent,
-							py: 1,
-							color: rowActive ? activeFg : inactiveColor,
-							bgcolor: rowActive ? activeBg : 'transparent',
-							'& .MuiListItemIcon-root': { color: 'inherit' },
-							'&:hover': {
-								bgcolor: rowActive ? activeBg : 'action.hover'
-							}
-						}}
+						sx={rowSx}
 					>
-						{sub.icon ? (
-							<ListItemIcon sx={{ minWidth: 36 }}>
-								{sub.icon}
-							</ListItemIcon>
-						) : null}
-						<ListItemText primary={sub.text} />
+						{rowContent}
 						{open ? <ExpandLess /> : <ExpandMore />}
 					</ListItemButton>
 					<Collapse in={open} timeout='auto' unmountOnExit>
@@ -724,31 +672,14 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 				</Box>
 			);
 		}
-		const subActive = isSubLinkActive(sub, activePath);
 		return (
 			<ListItemButton
 				key={key}
 				disabled={!sub.path}
 				onClick={() => sub.path && onLinkClick?.(sub.path)}
-				sx={{
-					pl: indent,
-					py: 1,
-					color: subActive ? activeFg : inactiveColor,
-					bgcolor: subActive ? activeBg : 'transparent',
-					'& .MuiListItemIcon-root': {
-						color: 'inherit'
-					},
-					'&:hover': {
-						bgcolor: subActive ? activeBg : 'action.hover'
-					}
-				}}
+				sx={rowSx}
 			>
-				{sub.icon ? (
-					<ListItemIcon sx={{ minWidth: 36 }}>
-						{sub.icon}
-					</ListItemIcon>
-				) : null}
-				<ListItemText primary={sub.text} />
+				{rowContent}
 			</ListItemButton>
 		);
 	};
@@ -810,19 +741,7 @@ const DrawerExpandableRow: React.FC<DrawerGroupProps> = ({
 	);
 };
 
-type DrawerLeafProps = {
-	link: SidebarLink;
-	activePath?: string;
-	onLinkClick?: (path: string) => void;
-	accentColor: string;
-	/** Light tint used on hover. */
-	groupTint: string;
-	/** Foreground on the active (solid) row. */
-	activeFg: string;
-	isSecondary: boolean;
-};
-
-const DrawerLeafRow: React.FC<DrawerLeafProps> = ({
+const DrawerLeafRow: React.FC<DrawerRowProps> = ({
 	link,
 	activePath,
 	onLinkClick,
@@ -832,16 +751,10 @@ const DrawerLeafRow: React.FC<DrawerLeafProps> = ({
 	isSecondary
 }) => {
 	const active = Boolean(link.path && activePath === link.path);
-	// Inactive items follow the accent in light mode; in dark mode the accent is too
-	// dim on the dark surface, so fall back to the primary text color (matches the
-	// desktop collapsible sidebar and the navbar brand).
-	const isDark = useTheme().palette.mode === 'dark';
-	const inactiveColor = isSecondary
-		? 'text.secondary'
-		: isDark
-			? 'text.primary'
-			: accentColor;
-	const activeBg = isSecondary ? '#01584F' : accentColor;
+	const { inactiveColor, activeBg } = useDrawerRowColors(
+		isSecondary,
+		accentColor
+	);
 
 	return (
 		<ListItemButton
@@ -877,6 +790,32 @@ const RailDivider = () => (
 	</Box>
 );
 
+/** The wider-spaced divider between the main and secondary link groups. */
+const SectionDivider = () => (
+	<Box
+		sx={{
+			width: '100%',
+			my: 2,
+			display: 'flex',
+			justifyContent: 'center'
+		}}
+	>
+		<Divider sx={{ width: '60%', borderColor: 'divider' }} />
+	</Box>
+);
+
+/** Renders each link with a `RailDivider` between consecutive items. */
+const renderWithDividers = (
+	links: SidebarLink[],
+	renderLink: (link: SidebarLink, index: number) => React.ReactNode
+) =>
+	links.map((link, index) => (
+		<React.Fragment key={index}>
+			{renderLink(link, index)}
+			{index < links.length - 1 ? <RailDivider /> : null}
+		</React.Fragment>
+	));
+
 const MenuContent: React.FC<MenuContentProps> = ({
 	variant,
 	mainLinks,
@@ -885,54 +824,30 @@ const MenuContent: React.FC<MenuContentProps> = ({
 	onLinkClick,
 	accentColor = '#01584f',
 	groupAccentColor,
-	surfaceBackgroundColor: surfaceBackgroundColorProp,
+	surfaceBackgroundColor,
 	railShowTitles = false
 }) => {
-	const theme = useTheme();
-	const railSubmenuSurface =
-		surfaceBackgroundColorProp ?? theme.palette.background.paper;
 	// Foreground on the solid active fill, and the light group/hover tint —
 	// derived from the accent so they track a custom `accentColor` (matches the
 	// desktop collapsible sidebar). `groupAccentColor` overrides the tint.
 	const activeFg = getContrastText(accentColor);
 	const groupTint = groupAccentColor ?? deriveGroupTint(accentColor);
 
-	const handleLinkClick = (path: string) => {
-		if (onLinkClick) {
-			onLinkClick(path);
-		}
-	};
-
-	const [drawerExpandedMain, setDrawerExpandedMain] = React.useState<
-		Record<number, boolean>
+	// Drawer groups' open state, keyed by list ('main' / 'secondary') and index.
+	const [drawerExpanded, setDrawerExpanded] = React.useState<
+		Record<string, boolean>
 	>({});
-	const [drawerExpandedSecondary, setDrawerExpandedSecondary] =
-		React.useState<Record<number, boolean>>({});
-
-	const toggleDrawerMain = (index: number) => {
-		setDrawerExpandedMain(prev => ({
-			...prev,
-			[index]: !prev[index]
-		}));
-	};
-
-	const toggleDrawerSecondary = (index: number) => {
-		setDrawerExpandedSecondary(prev => ({
-			...prev,
-			[index]: !prev[index]
-		}));
-	};
 
 	const renderRailLink = (link: SidebarLink, isSecondary: boolean) => {
-		if (link.subitems?.length) {
+		if (hasChildren(link)) {
 			return (
 				<RailSubmenuRow
 					link={link}
 					activePath={activePath}
-					onLinkClick={handleLinkClick}
+					onLinkClick={onLinkClick}
 					accentColor={accentColor}
 					isSecondary={isSecondary}
-					surfaceBackgroundColor={railSubmenuSurface}
+					surfaceBackgroundColor={surfaceBackgroundColor}
 					railShowTitles={railShowTitles}
 				/>
 			);
@@ -941,7 +856,7 @@ const MenuContent: React.FC<MenuContentProps> = ({
 			<RailLeafRow
 				link={link}
 				activePath={activePath}
-				onLinkClick={handleLinkClick}
+				onLinkClick={onLinkClick}
 				accentColor={accentColor}
 				isSecondary={isSecondary}
 				railShowTitles={railShowTitles}
@@ -954,39 +869,31 @@ const MenuContent: React.FC<MenuContentProps> = ({
 		index: number,
 		isSecondary: boolean
 	) => {
-		if (link.subitems?.length) {
-			const expanded = isSecondary
-				? Boolean(drawerExpandedSecondary[index])
-				: Boolean(drawerExpandedMain[index]);
-			const onToggle = () =>
-				isSecondary
-					? toggleDrawerSecondary(index)
-					: toggleDrawerMain(index);
+		const rowProps = {
+			link,
+			activePath,
+			onLinkClick,
+			accentColor,
+			groupTint,
+			activeFg,
+			isSecondary
+		};
+		if (hasChildren(link)) {
+			const key = `${isSecondary ? 'secondary' : 'main'}-${index}`;
 			return (
 				<DrawerExpandableRow
-					link={link}
-					expanded={expanded}
-					onToggle={onToggle}
-					activePath={activePath}
-					onLinkClick={handleLinkClick}
-					accentColor={accentColor}
-					groupTint={groupTint}
-					activeFg={activeFg}
-					isSecondary={isSecondary}
+					{...rowProps}
+					expanded={Boolean(drawerExpanded[key])}
+					onToggle={() =>
+						setDrawerExpanded(prev => ({
+							...prev,
+							[key]: !prev[key]
+						}))
+					}
 				/>
 			);
 		}
-		return (
-			<DrawerLeafRow
-				link={link}
-				activePath={activePath}
-				onLinkClick={handleLinkClick}
-				accentColor={accentColor}
-				groupTint={groupTint}
-				activeFg={activeFg}
-				isSecondary={isSecondary}
-			/>
-		);
+		return <DrawerLeafRow {...rowProps} />;
 	};
 
 	if (variant === 'drawer') {
@@ -1001,39 +908,20 @@ const MenuContent: React.FC<MenuContentProps> = ({
 				}}
 			>
 				<Stack sx={{ width: '100%' }}>
-					{mainLinks.map((link, index) => (
-						<React.Fragment key={index}>
-							{renderDrawerLink(link, index, false)}
-							{index < mainLinks.length - 1 ? (
-								<RailDivider />
-							) : null}
-						</React.Fragment>
-					))}
+					{renderWithDividers(mainLinks, (link, index) =>
+						renderDrawerLink(link, index, false)
+					)}
 				</Stack>
 				{secondaryLinks.length > 0 ? (
 					<>
-						<Box
-							sx={{
-								width: '100%',
-								my: 2,
-								display: 'flex',
-								justifyContent: 'center'
-							}}
-						>
-							<Divider
-								sx={{ width: '60%', borderColor: 'divider' }}
-							/>
-						</Box>
+						<SectionDivider />
 						<Box sx={{ mt: 'auto', pb: 2 }}>
 							<Stack sx={{ width: '100%' }}>
-								{secondaryLinks.map((link, index) => (
-									<React.Fragment key={index}>
-										{renderDrawerLink(link, index, true)}
-										{index < secondaryLinks.length - 1 ? (
-											<RailDivider />
-										) : null}
-									</React.Fragment>
-								))}
+								{renderWithDividers(
+									secondaryLinks,
+									(link, index) =>
+										renderDrawerLink(link, index, true)
+								)}
 							</Stack>
 						</Box>
 					</>
@@ -1042,7 +930,7 @@ const MenuContent: React.FC<MenuContentProps> = ({
 		);
 	}
 
-	// variant === 'rail'
+	const railGap = railShowTitles ? 1.25 : 1;
 	return (
 		<Stack
 			sx={{
@@ -1052,42 +940,18 @@ const MenuContent: React.FC<MenuContentProps> = ({
 				justifyContent: 'flex-start',
 				alignItems: 'center',
 				pt: 2,
-				gap: railShowTitles ? 1.25 : 1
+				gap: railGap
 			}}
 		>
-			{mainLinks.map((link, index) => (
-				<React.Fragment key={index}>
-					{renderRailLink(link, false)}
-					{index < mainLinks.length - 1 ? <RailDivider /> : null}
-				</React.Fragment>
-			))}
+			{renderWithDividers(mainLinks, link => renderRailLink(link, false))}
 			{secondaryLinks.length > 0 ? (
 				<>
-					<Box
-						sx={{
-							width: '100%',
-							my: 2,
-							display: 'flex',
-							justifyContent: 'center'
-						}}
-					>
-						<Divider
-							sx={{ width: '60%', borderColor: 'divider' }}
-						/>
-					</Box>
+					<SectionDivider />
 					<Box sx={{ mt: 'auto', pb: 2 }}>
-						<Stack
-							gap={railShowTitles ? 1.25 : 1}
-							alignItems='center'
-						>
-							{secondaryLinks.map((link, index) => (
-								<React.Fragment key={index}>
-									{renderRailLink(link, true)}
-									{index < secondaryLinks.length - 1 ? (
-										<RailDivider />
-									) : null}
-								</React.Fragment>
-							))}
+						<Stack gap={railGap} alignItems='center'>
+							{renderWithDividers(secondaryLinks, link =>
+								renderRailLink(link, true)
+							)}
 						</Stack>
 					</Box>
 				</>
