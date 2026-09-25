@@ -29,10 +29,14 @@ const SWITCH_GROUPS: Array<{
 		title: 'Layout',
 		items: [
 			{ key: 'showSidebar', label: 'Sidebar' },
+			{ key: 'mobileDrawer', label: 'Mobile: drawer, no bottom bar' },
+			{ key: 'pinDealsOnMobile', label: 'Mobile: pin Deals in the bar' },
 			{ key: 'nestedLinks', label: 'Nested links (3 levels)' },
 			{ key: 'showSidebarRailTitles', label: 'Rail titles (rail only)' },
 			{ key: 'showAlert', label: 'Alert card' },
-			{ key: 'brandColors', label: 'Centra brand colors' }
+			{ key: 'brandColors', label: 'Centra colors (light mode)' },
+			{ key: 'detailPage', label: 'Detail page (full-width header)' },
+			{ key: 'noContentPadding', label: 'No content padding' }
 		]
 	},
 	{
@@ -50,8 +54,10 @@ const SWITCH_GROUPS: Array<{
 		title: 'Content & session',
 		items: [
 			{ key: 'showAssistant', label: 'Nexa button' },
+			{ key: 'floatingAssistant', label: 'Floating Nexa' },
 			{ key: 'assistantBusy', label: 'Nexa busy' },
 			{ key: 'chatSidebar', label: 'Chat panel (via Nexa)' },
+			{ key: 'inlineChat', label: 'Chat as inline column' },
 			{ key: 'enableRefreshToken', label: 'Token check on mount' }
 		]
 	}
@@ -82,10 +88,13 @@ const PlaygroundPanel = ({
 					onClick={() => setOpen(true)}
 					size='small'
 					sx={{
-						// Top right: the Nexa button owns the bottom-right corner
+						// Desktop: top right (the floating Nexa option uses the
+						// bottom-right corner). Phones: above the bottom bar, clear
+						// of the notifications bell in the top bar.
 						position: 'fixed',
 						right: 16,
-						top: 16,
+						top: { xs: 'auto', md: 16 },
+						bottom: { xs: 88, md: 'auto' },
 						// Above the page, below drawers/menus (1200+)
 						zIndex: 1150
 					}}

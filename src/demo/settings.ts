@@ -5,8 +5,13 @@ export type DemoSettings = {
 	sidebarVariant: SidebarVariant;
 	mode: 'light' | 'dark';
 	brandColors: boolean;
+	detailPage: boolean;
+	noContentPadding: boolean;
+	floatingAssistant: boolean;
 	nestedLinks: boolean;
 	showSidebar: boolean;
+	mobileDrawer: boolean;
+	pinDealsOnMobile: boolean;
 	showSidebarRailTitles: boolean;
 	showSearch: boolean;
 	showProfile: boolean;
@@ -16,6 +21,7 @@ export type DemoSettings = {
 	showAssistant: boolean;
 	assistantBusy: boolean;
 	chatSidebar: boolean;
+	inlineChat: boolean;
 	showAlert: boolean;
 	clickableBrand: boolean;
 	enableRefreshToken: boolean;
@@ -25,8 +31,13 @@ export const defaultSettings: DemoSettings = {
 	sidebarVariant: 'collapsible',
 	mode: 'light',
 	brandColors: true,
+	detailPage: false,
+	noContentPadding: false,
+	floatingAssistant: false,
 	nestedLinks: true,
 	showSidebar: true,
+	mobileDrawer: false,
+	pinDealsOnMobile: true,
 	showSidebarRailTitles: false,
 	showSearch: true,
 	showProfile: true,
@@ -36,6 +47,7 @@ export const defaultSettings: DemoSettings = {
 	showAssistant: true,
 	assistantBusy: false,
 	chatSidebar: true,
+	inlineChat: false,
 	showAlert: false,
 	clickableBrand: true,
 	enableRefreshToken: false

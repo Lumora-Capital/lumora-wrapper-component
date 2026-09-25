@@ -1,5 +1,6 @@
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Toolbar from '@mui/material/Toolbar';
 import * as React from 'react';
@@ -13,7 +14,12 @@ interface MobileTopBarProps {
 	logo: React.ReactNode;
 	onBrandClick?: () => void;
 	background: string;
+	/** Menu button color. */
 	color: string;
+	/** Wordmark + logo tint; defaults to `color`. */
+	brandColor?: string;
+	/** Right-hand side, e.g. the notifications bell. */
+	endContent?: React.ReactNode;
 }
 
 /** Mobile only: the one place for the menu button once the sidebar is a drawer. */
@@ -24,7 +30,9 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 	logo,
 	onBrandClick,
 	background,
-	color
+	color,
+	brandColor = color,
+	endContent
 }) => (
 	<AppBar
 		position='fixed'
@@ -52,9 +60,14 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 				appName={appName}
 				logo={logo}
 				onClick={onBrandClick}
-				color={color}
+				color={brandColor}
 				testId='mobile-brand'
 			/>
+			{endContent ? (
+				<Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+					{endContent}
+				</Box>
+			) : null}
 		</Toolbar>
 	</AppBar>
 );

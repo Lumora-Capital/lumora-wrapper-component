@@ -1,6 +1,7 @@
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
-import MenuRounded from '@mui/icons-material/MenuRounded';
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
@@ -32,7 +33,7 @@ const DEFAULT_COLLAPSED_WIDTH_PX = 72;
 const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
 /** In-sidebar header height (collapse toggle + brand). */
-const HEADER_HEIGHT_PX = 60;
+const HEADER_HEIGHT_PX = 64;
 /** Host apps (and the demo's base CSS) often outline every `button:focus`,
  * which lingers after a mouse click — neutralize it on all sidebar icon
  * buttons (same treatment as the navbar hamburger). */
@@ -62,7 +63,8 @@ const TruncatingLabel: React.FC<{
 	variant?: 'body1' | 'caption';
 	center?: boolean;
 	fontSize?: string | number;
-}> = ({ text, variant = 'body1', center = false, fontSize }) => {
+	fontWeight?: number;
+}> = ({ text, variant = 'body1', center = false, fontSize, fontWeight }) => {
 	const ref = React.useRef<HTMLSpanElement>(null);
 	const [truncated, setTruncated] = React.useState(false);
 
@@ -110,6 +112,7 @@ const TruncatingLabel: React.FC<{
 					whiteSpace: 'nowrap',
 					color: 'inherit',
 					...(fontSize ? { fontSize } : {}),
+					...(fontWeight ? { fontWeight } : {}),
 					...(center ? { textAlign: 'center', lineHeight: 1.1 } : {})
 				}}
 			>
@@ -119,7 +122,7 @@ const TruncatingLabel: React.FC<{
 	);
 };
 
-/** Small up/down chevron marking a parent that has a collapsible child group. */
+/** Small up/down chevron marking a parent on the narrow rails. */
 const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 	open,
 	size = CHEVRON_FONT_SIZE_PX
@@ -130,12 +133,40 @@ const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 		<KeyboardArrowDownRounded sx={{ fontSize: size, opacity: 0.75 }} />
 	);
 
+/** Expanded rows: a right chevron that turns down while the group is open. */
+const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
+	<ChevronRightRounded
+		sx={{
+			fontSize: 20,
+			opacity: 0.75,
+			transition: 'transform 150ms ease',
+			transform: open ? 'rotate(90deg)' : 'none'
+		}}
+	/>
+);
+
+/** "Toggle sidebar" glyph: a panel with its sidebar on the left. */
+const PanelIcon: React.FC<{ className?: string; hidden?: boolean }> = ({
+	className,
+	hidden = false
+}) => (
+	<ViewSidebarOutlined
+		className={className}
+		sx={{ transform: 'scaleX(-1)', display: hidden ? 'none' : undefined }}
+	/>
+);
+
+/** Page-link label weight in the expanded panel. */
+const ROW_LABEL_WEIGHT = 600;
+
 export interface CollapsibleSidebarProps {
 	mainLinks: SidebarLink[];
 	/** Bottom group; rendered after a divider and pinned to the bottom. */
 	secondaryLinks?: SidebarLink[];
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
+	/** Called after a row's `action` runs, e.g. to close the mobile menu. */
+	onLinkAction?: () => void;
 	// Branding (lives inside the sidebar header bar; see `showHeaderBar`)
 	/** Brand logo, rendered in the header bar while expanded. */
 	logo?: React.ReactNode;
@@ -162,6 +193,8 @@ export interface CollapsibleSidebarProps {
 	 * when the header background is a non-hex value.
 	 */
 	headerForegroundColor?: string;
+	/** Wordmark + logo tint in the header; defaults to `headerForegroundColor`. */
+	brandColor?: string;
 	// Prop-driven accents
 	/** Solid background of the highlighted item — shared by the active item and
 	 * any item on hover (default '#01584f'). */
@@ -186,7 +219,8 @@ export interface CollapsibleSidebarProps {
 	onCollapsedChange?: (collapsed: boolean) => void;
 	/** localStorage key for the uncontrolled/persisted state. */
 	persistKey?: string;
-	expandedWidth?: number;
+	/** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
+	expandedWidth?: number | string;
 	collapsedWidth?: number;
 	/**
 	 * When collapsed, show `link.text` as a caption beneath each icon instead of
@@ -199,10 +233,10 @@ export interface CollapsibleSidebarProps {
 	 */
 	topInsetPx?: number;
 	/**
-	 * Rendered between the brand and the links (e.g. a global search). The
-	 * owner decides what to show for the collapsed state.
+	 * Rendered between the brand and the links (e.g. an assistant launcher and
+	 * a global search). The owner decides what to show for the collapsed state.
 	 */
-	search?: React.ReactNode;
+	topContent?: React.ReactNode;
 	/** Pinned below the links, outside the scroll area (e.g. notifications + user). */
 	footer?: React.ReactNode;
 }
@@ -212,12 +246,14 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	secondaryLinks = [],
 	activePath,
 	onLinkClick,
+	onLinkAction,
 	logo,
 	title,
 	onBrandClick,
 	showHeaderBar = false,
 	headerBackgroundColor,
 	headerForegroundColor,
+	brandColor,
 	activeAccentColor: activeAccent = '#01584f',
 	groupAccentColor,
 	activeForegroundColor,
@@ -231,7 +267,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
 	showLabels = false,
 	topInsetPx = 0,
-	search,
+	topContent,
 	footer
 }) => {
 	const theme = useTheme();
@@ -355,7 +391,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const renderExpandedLeaf = (link: SidebarLink) => {
 		const active = isSubLinkActive(link, activePath);
-		return (
+		const row = (
 			<ListItemButton
 				key={link.text}
 				disabled={!link.path}
@@ -365,8 +401,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				data-active={active ? 'true' : 'false'}
 				sx={{
 					borderRadius: '8px',
-					py: 1,
+					py: 1.25,
 					px: 1.5,
+					// Room for the action button laid over the row's end
+					...(link.action && { pr: 6 }),
 					...expandedRowSx(active, groupTint, 36),
 					...selectedRowSx
 				}}
@@ -374,9 +412,68 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				<ListItemIcon>{link.icon}</ListItemIcon>
 				<ListItemText
 					disableTypography
-					primary={<TruncatingLabel text={link.text} />}
+					primary={
+						<TruncatingLabel
+							text={link.text}
+							fontWeight={ROW_LABEL_WEIGHT}
+						/>
+					}
 				/>
 			</ListItemButton>
+		);
+		if (!link.action) {
+			return row;
+		}
+		const { action } = link;
+		// A sibling of the row button, not nested in it: two separate controls
+		return (
+			<Box key={link.text} sx={{ position: 'relative' }}>
+				{row}
+				<Tooltip title={action.label} placement='right' arrow>
+					<IconButton
+						aria-label={action.label}
+						data-testid={`sidebar-action-${link.text}`}
+						onClick={() => {
+							action.onClick();
+							onLinkAction?.();
+						}}
+						size='small'
+						sx={{
+							position: 'absolute',
+							right: 8,
+							top: '50%',
+							transform: 'translateY(-50%)',
+							width: 30,
+							height: 30,
+							borderRadius: '6px',
+							border: '1px solid',
+							borderColor: active
+								? 'rgba(255, 255, 255, 0.35)'
+								: groupTint,
+							color: active ? activeFg : accentOnSurface,
+							'&:hover': {
+								bgcolor: active
+									? 'rgba(255, 255, 255, 0.15)'
+									: groupTint
+							},
+							'& .MuiSvgIcon-root': { fontSize: 18 },
+							// No lingering outline after a click; a clear ring for keyboard focus
+							'&:focus:not(.Mui-focusVisible)': {
+								outline: 'none'
+							},
+							'&.Mui-focusVisible': {
+								outline: '2px solid',
+								outlineColor: active
+									? activeFg
+									: accentOnSurface,
+								outlineOffset: 1
+							}
+						}}
+					>
+						{action.icon}
+					</IconButton>
+				</Tooltip>
+			</Box>
 		);
 	};
 
@@ -406,7 +503,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					aria-expanded={open}
 					sx={{
 						borderRadius: '8px',
-						py: 1,
+						py: 1.25,
 						px: 1.5,
 						...expandedRowSx(parentActive, groupTint, 36)
 					}}
@@ -414,9 +511,14 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					<ListItemIcon>{link.icon}</ListItemIcon>
 					<ListItemText
 						disableTypography
-						primary={<TruncatingLabel text={link.text} />}
+						primary={
+							<TruncatingLabel
+								text={link.text}
+								fontWeight={ROW_LABEL_WEIGHT}
+							/>
+						}
 					/>
-					<GroupChevron open={open} />
+					<RowChevron open={open} />
 				</ListItemButton>
 				<Collapse in={open} timeout='auto' unmountOnExit>
 					<Box
@@ -470,9 +572,14 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						) : null}
 						<ListItemText
 							disableTypography
-							primary={<TruncatingLabel text={sub.text} />}
+							primary={
+								<TruncatingLabel
+									text={sub.text}
+									fontWeight={ROW_LABEL_WEIGHT}
+								/>
+							}
 						/>
-						<GroupChevron open={open} />
+						<RowChevron open={open} />
 					</ListItemButton>
 					<Collapse in={open} timeout='auto' unmountOnExit>
 						<Box data-testid={`sidebar-children-${sub.text}`}>
@@ -506,7 +613,12 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
 				<ListItemText
 					disableTypography
-					primary={<TruncatingLabel text={sub.text} />}
+					primary={
+						<TruncatingLabel
+							text={sub.text}
+							fontWeight={ROW_LABEL_WEIGHT}
+						/>
+					}
 				/>
 			</ListItemButton>
 		);
@@ -767,18 +879,18 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
 	const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-	// Collapsed, the 60px header only fits one button: it shows the logo and
-	// swaps to the hamburger on hover/focus, so the brand stays visible.
+	// Collapsed, the header only fits one button: it shows the logo and swaps
+	// to the panel icon on hover/focus, so the brand stays visible.
 	const toggleContent =
 		collapsed && logo ? (
 			<>
 				<Box className='toggle-logo' sx={{ display: 'flex' }}>
 					{logo}
 				</Box>
-				<MenuRounded className='toggle-icon' sx={{ display: 'none' }} />
+				<PanelIcon className='toggle-icon' hidden />
 			</>
 		) : (
-			<MenuRounded />
+			<PanelIcon />
 		);
 	const headerBar = showHeaderBar ? (
 		<Box
@@ -791,13 +903,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				alignItems: 'center',
 				gap: 1.5,
 				bgcolor: headerBg,
-				borderBottom: `1px solid ${headerDivider}`,
 				justifyContent: collapsed ? 'center' : 'flex-start',
-				// Expanded: 20px inset centers the hamburger glyph on the item
-				// icon column (16px list padding + 12px row padding + half of
-				// the 24px icon = 40px, minus the button's 8px + 12px to its
-				// own center). Collapsed: centered like the rail icons.
-				px: collapsed ? 0 : 2.5
+				// Expanded: lines the toggle glyph up with the row icons below
+				// (12px panel padding + 12px row padding = 24px, minus the
+				// button's own 8px). Collapsed: centered like the rail icons.
+				px: collapsed ? 0 : 2
 			}}
 		>
 			<Tooltip title={toggleLabel} placement='right' arrow>
@@ -826,7 +936,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					title={title}
 					appName={title || 'App'}
 					onClick={onBrandClick}
-					color={headerFg}
+					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
 			) : null}
@@ -849,13 +959,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					logo={logo}
 					appName={title || 'App'}
 					onClick={onBrandClick}
-					color={headerFg}
+					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
 			</Box>
 		) : null;
 
-	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 2;
+	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 1.5;
 
 	return (
 		<Box
@@ -881,9 +991,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			}}
 		>
 			{headerBar ?? railBrand}
-			{search ? (
-				<Box sx={{ flexShrink: 0, px: horizontalPadding, pt: 1.5 }}>
-					{search}
+			{topContent ? (
+				<Box
+					sx={{ flexShrink: 0, px: horizontalPadding, pt: 1, pb: 1 }}
+				>
+					{topContent}
 				</Box>
 			) : null}
 			{/* Scroll container; flex column keeps the bottom group's mt:auto
@@ -902,24 +1014,27 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				}}
 			>
 				{renderLinkStack(mainLinks)}
-				{/* Bottom group, pinned to the bottom by mt:auto. */}
+				{/* Bottom group, pinned to the bottom by mt:auto. With a footer
+				    the divider moves below it, between the links and the user. */}
 				{secondaryLinks.length > 0 ? (
 					<Box sx={{ mt: 'auto', pt: 2 }}>
-						<Divider sx={{ mb: 1, borderColor: 'divider' }} />
+						{footer ? null : (
+							<Divider sx={{ mb: 1, borderColor: 'divider' }} />
+						)}
 						{renderLinkStack(secondaryLinks)}
 					</Box>
 				) : null}
 			</Box>
 			{footer ? (
-				<Box
-					sx={{
-						flexShrink: 0,
-						px: horizontalPadding,
-						py: 1.5,
-						borderTop: `1px solid ${headerDivider}`
-					}}
-				>
-					{footer}
+				<Box sx={{ flexShrink: 0, px: horizontalPadding, pb: 1.5 }}>
+					<Box
+						sx={{
+							borderTop: `1px solid ${headerDivider}`,
+							pt: 1.5
+						}}
+					>
+						{footer}
+					</Box>
 				</Box>
 			) : null}
 		</Box>

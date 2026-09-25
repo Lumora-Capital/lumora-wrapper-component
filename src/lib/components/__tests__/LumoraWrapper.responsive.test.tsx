@@ -258,12 +258,12 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 		};
 
-		it('renders a full-height 264px panel with its own header', () => {
+		it('renders a full-height 288px panel with its own header', () => {
 			renderCollapsible();
 
 			const sidebar = screen.getByTestId('collapsible-sidebar');
 			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
-			expect(sidebar).toHaveStyle({ width: '264px', minWidth: '264px' });
+			expect(sidebar).toHaveStyle({ width: '288px', minWidth: '288px' });
 			// The panel spans the full viewport height from the top — its own
 			// 60px header block holds the toggle and brand.
 			const aside = sidebar.closest('aside');
@@ -273,7 +273,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			const contentArea = screen
 				.getByTestId('test-content')
 				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('width: calc(100% - 264px)');
+			expect(contentArea).toHaveStyle('width: calc(100% - 288px)');
 		});
 
 		it('stacks brand, search, links and footer top to bottom', () => {
@@ -287,8 +287,8 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				screen.getByTestId('sidebar-header-brand'),
 				screen.getByPlaceholderText('Global search'),
 				screen.getByTestId('sidebar-item-Home'),
-				screen.getByTestId('sidebar-notifications'),
-				screen.getByTestId('sidebar-user')
+				screen.getByTestId('sidebar-user'),
+				screen.getByTestId('sidebar-notifications')
 			];
 			order.forEach(el => expect(sidebar).toContainElement(el));
 			order
@@ -299,10 +299,6 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 							Node.DOCUMENT_POSITION_FOLLOWING
 					).toBeTruthy()
 				);
-			// Expanded: the rows carry their labels
-			expect(
-				within(sidebar).getByText('Notifications')
-			).toBeInTheDocument();
 			expect(
 				within(sidebar).getByText('Riley Carter')
 			).toBeInTheDocument();
@@ -378,14 +374,15 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 					{ name: 'Test App logo' }
 				)
 			).toBeInTheDocument();
+			// Collapsed: the user row keeps only its avatar
 			expect(
-				within(sidebar).queryByText('Notifications')
+				within(screen.getByTestId('sidebar-user')).queryByText('User')
 			).not.toBeInTheDocument();
 
 			// Round-trip: expanding restores the original layout.
 			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
 			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
-			expect(sidebar).toHaveStyle({ width: '264px' });
+			expect(sidebar).toHaveStyle({ width: '288px' });
 			expect(
 				screen.getByTestId('sidebar-header-brand')
 			).toBeInTheDocument();
@@ -423,23 +420,177 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).not.toBeInTheDocument();
 		});
 
-		it('uses a slim top bar + drawer on mobile', () => {
-			renderCollapsible({}, true);
+		it('uses the top bar for the brand and a bottom bar for navigation on mobile', () => {
+			renderCollapsible(
+				{
+					userName: 'Riley Carter',
+					showAssistant: true,
+					onAssistantClick: jest.fn(),
+					notificationCount: 3,
+					searchComponent: <input placeholder='Global search' />
+				},
+				true
+			);
 
-			// No desktop panel at all on mobile.
-			expect(
-				screen.queryByTestId('collapsible-sidebar')
-			).not.toBeInTheDocument();
-			// The mobile top bar carries the brand and opens the drawer.
+			// No desktop panel on mobile; the top bar only carries the brand
 			const topBar = screen.getByRole('banner');
 			expect(within(topBar).getByText('Test App')).toBeInTheDocument();
-			const menuButton = within(topBar).getByRole('button', {
-				name: /open navigation menu/i
-			});
-			fireEvent.click(menuButton);
 			expect(
-				document.querySelectorAll('[class*="MuiDrawer"]').length
-			).toBeGreaterThan(0);
+				within(topBar).queryByRole('button', {
+					name: /navigation menu/i
+				})
+			).not.toBeInTheDocument();
+
+			const bar = screen.getByRole('navigation', {
+				name: 'Mobile navigation'
+			});
+			expect(
+				within(bar)
+					.getAllByRole('button')
+					.map(b => b.getAttribute('aria-label'))
+			).toEqual([
+				'Menu',
+				'Ask Nexa',
+				'Search',
+				'Account menu for Riley Carter'
+			]);
+			// Notifications sit at the top right instead
+			expect(
+				within(topBar).getByRole('button', {
+					name: 'Notifications, 3 unread'
+				})
+			).toBeInTheDocument();
+		});
+
+		it('pins mobileBottomBarLinks between Menu and Nexa, highlighting the current page', () => {
+			const onLinkClick = jest.fn();
+			renderCollapsible(
+				{
+					showAssistant: true,
+					onAssistantClick: jest.fn(),
+					activePath: '/home',
+					onLinkClick,
+					mobileBottomBarLinks: [
+						mockSidebarLinks[0], // Home, the current page
+						mockSidebarLinks[1], // Settings
+						mockSidebarLinks[2], // Profile: over the limit of two
+						{ text: 'Group only', icon: null } // no path: skipped
+					]
+				},
+				true
+			);
+			const bar = screen.getByRole('navigation', {
+				name: 'Mobile navigation'
+			});
+			expect(
+				within(bar)
+					.getAllByRole('button')
+					.map(b => b.getAttribute('aria-label'))
+			).toEqual([
+				'Menu',
+				'Home',
+				'Settings',
+				'Ask Nexa',
+				'Account menu for User'
+			]);
+
+			const home = within(bar).getByRole('button', { name: 'Home' });
+			const settings = within(bar).getByRole('button', {
+				name: 'Settings'
+			});
+			expect(home).toHaveAttribute('aria-current', 'page');
+			expect(settings).not.toHaveAttribute('aria-current');
+			fireEvent.click(settings);
+			expect(onLinkClick).toHaveBeenCalledWith('/settings');
+		});
+
+		it('opens the notifications drawer from the top-bar bell', async () => {
+			const Panel = () => <div>notification list</div>;
+			renderCollapsible(
+				{ notificationCount: 2, NotificationSidebarContent: Panel },
+				true
+			);
+			fireEvent.click(
+				within(screen.getByRole('banner')).getByRole('button', {
+					name: 'Notifications, 2 unread'
+				})
+			);
+			expect(
+				await screen.findByText('notification list')
+			).toBeInTheDocument();
+		});
+
+		it('opens the links drawer, the search sheet and the user menu from the bottom bar', async () => {
+			const onLinkClick = jest.fn();
+			renderCollapsible(
+				{
+					userName: 'Riley Carter',
+					onLinkClick,
+					searchComponent: <input placeholder='Global search' />
+				},
+				true
+			);
+			const bar = screen.getByRole('navigation', {
+				name: 'Mobile navigation'
+			});
+
+			// Menu: a bottom sheet (one-handed reach) holding the same sidebar
+			// as desktop, expanded and full width; a link closes it
+			fireEvent.click(within(bar).getByRole('button', { name: 'Menu' }));
+			const drawerSidebar = await screen.findByTestId(
+				'collapsible-sidebar'
+			);
+			expect(drawerSidebar).toHaveAttribute('data-collapsed', 'false');
+			expect(drawerSidebar).toHaveStyle({ width: '100%' });
+			expect(screen.getByLabelText('Navigation')).toHaveClass(
+				'MuiDrawer-paperAnchorBottom'
+			);
+			fireEvent.click(within(drawerSidebar).getByText('Settings'));
+			expect(onLinkClick).toHaveBeenCalledWith('/settings');
+
+			fireEvent.click(
+				within(bar).getByRole('button', { name: 'Search' })
+			);
+			expect(
+				await screen.findByPlaceholderText('Global search')
+			).toBeInTheDocument();
+			fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+			fireEvent.click(
+				within(bar).getByRole('button', {
+					name: 'Account menu for Riley Carter'
+				})
+			);
+			expect(
+				await screen.findByRole('menuitem', { name: /log out/i })
+			).toBeInTheDocument();
+		});
+
+		it("keeps the hamburger drawer with mobileNavigation='drawer'", async () => {
+			renderCollapsible(
+				{
+					mobileNavigation: 'drawer',
+					userName: 'Riley Carter',
+					searchComponent: <input placeholder='Global search' />
+				},
+				true
+			);
+			expect(
+				screen.queryByRole('navigation', { name: 'Mobile navigation' })
+			).not.toBeInTheDocument();
+			fireEvent.click(
+				within(screen.getByRole('banner')).getByRole('button', {
+					name: /open navigation menu/i
+				})
+			);
+			// A left drawer that holds search and the user row too
+			expect(screen.getByLabelText('Navigation')).toHaveClass(
+				'MuiDrawer-paperAnchorLeft'
+			);
+			expect(
+				await screen.findByPlaceholderText('Global search')
+			).toBeInTheDocument();
+			expect(screen.getByTestId('sidebar-user')).toBeInTheDocument();
 		});
 	});
 

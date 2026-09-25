@@ -755,7 +755,7 @@ describe('CollapsibleSidebar', () => {
 			renderSidebar({
 				showHeaderBar: true,
 				collapsed: false,
-				search: <input placeholder='Find' />,
+				topContent: <input placeholder='Find' />,
 				footer: <div data-testid='footer'>Footer</div>
 			});
 			const search = screen.getByPlaceholderText('Find');
@@ -784,6 +784,53 @@ describe('CollapsibleSidebar', () => {
 					'brand-logo'
 				)
 			).toBeInTheDocument();
+		});
+	});
+
+	describe('row action', () => {
+		const withAction = (onClick: () => void): SidebarLink[] => [
+			{
+				text: 'Help & support',
+				path: '/help',
+				icon: <Settings />,
+				action: { label: 'New request', icon: <Home />, onClick }
+			}
+		];
+
+		it('is its own button: it runs the action without navigating', () => {
+			const onAction = jest.fn();
+			const onLinkClick = jest.fn();
+			const onLinkAction = jest.fn();
+			renderSidebar({
+				collapsed: false,
+				secondaryLinks: withAction(onAction),
+				onLinkClick,
+				onLinkAction
+			});
+
+			const button = screen.getByRole('button', { name: 'New request' });
+			// A sibling of the row, not nested inside it
+			expect(
+				screen.getByTestId('sidebar-item-Help & support')
+			).not.toContainElement(button);
+			fireEvent.click(button);
+			expect(onAction).toHaveBeenCalledTimes(1);
+			expect(onLinkAction).toHaveBeenCalledTimes(1);
+			expect(onLinkClick).not.toHaveBeenCalled();
+
+			fireEvent.click(screen.getByTestId('sidebar-item-Help & support'));
+			expect(onLinkClick).toHaveBeenCalledWith('/help');
+			expect(onAction).toHaveBeenCalledTimes(1);
+		});
+
+		it('is left out of the collapsed rail', () => {
+			renderSidebar({
+				collapsed: true,
+				secondaryLinks: withAction(jest.fn())
+			});
+			expect(
+				screen.queryByRole('button', { name: 'New request' })
+			).not.toBeInTheDocument();
 		});
 	});
 });

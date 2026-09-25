@@ -101,7 +101,7 @@ describe('LumoraWrapper - session', () => {
 				screen.getByRole('button', { name: /account menu for riley/i })
 			);
 			fireEvent.click(
-				await screen.findByRole('menuitem', { name: /logout/i })
+				await screen.findByRole('menuitem', { name: /log out/i })
 			);
 			expect(onLogout).toHaveBeenCalled();
 		});

@@ -1,10 +1,12 @@
-import type { SxProps, Theme } from '@mui/material';
+import type { Breakpoint, SxProps, Theme } from '@mui/material';
 import {
 	Box,
 	CircularProgress,
 	CssBaseline,
 	Drawer,
 	Grid,
+	Stack,
+	SwipeableDrawer,
 	useMediaQuery,
 	useTheme
 } from '@mui/material';
@@ -23,11 +25,17 @@ import { validateAndRefreshTokens } from '../tokenValidator';
 import AssistantButton from './AssistantButton';
 import Brand from './Brand';
 import CardAlert from './CardAlert';
+import ChatPopup from './ChatPopup';
 import CollapsibleSidebar from './CollapsibleSidebar';
 import MenuContent from './MenuContent';
-import MobileSidebar from './MobileSidebar';
+import MobileBottomNav, {
+	MOBILE_BOTTOM_NAV_HEIGHT_PX
+} from './MobileBottomNav';
+import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
+import NotificationBell from './NotificationBell';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
+import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import {
 	deriveGroupTint,
@@ -46,11 +54,30 @@ const RAIL_LABELED_WIDTH_PX = 80;
 /** Height of the mobile-only top bar; the content is offset by it on mobile. */
 const MOBILE_BAR_HEIGHT_PX = 56;
 
+/** Width of the drawer-mode links drawer (capped at 85% of the screen). */
+const MOBILE_DRAWER_WIDTH_PX = 300;
+
 /** Collapsible sidebar variant widths and persistence key. */
-const COLLAPSIBLE_EXPANDED_WIDTH_PX = 264;
+const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
 const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
 const SIDEBAR_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const SIDEBAR_TRANSITION = 'width 200ms ease, left 200ms ease';
+
+/** Floating Nexa button (52px) plus a 16px gap, kept clear by the chat popup. */
+const FLOATING_ASSISTANT_CLEARANCE_PX = 68;
+
+/** Content padding in theme spacing units: 16px on phones, 40px from `md`. */
+const DEFAULT_CONTENT_PADDING = { xs: 2, md: 5 };
+
+type SpacingValue = number | string;
+export type ContentPadding =
+	| SpacingValue
+	| Partial<Record<Breakpoint, SpacingValue>>;
+
+/** Mac shows ⌘, everything else Ctrl. */
+const isApplePlatform = () =>
+	typeof navigator !== 'undefined' &&
+	/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 /**
  * A child of a sidebar parent. It is a page (`path`), or — with `subitems`
@@ -66,12 +93,27 @@ export type SidebarSubLink = {
 	subitems?: SidebarSubLink[];
 };
 
+/** A quick action shown at the end of a sidebar row, e.g. "New request". */
+export type SidebarLinkAction = {
+	/** Accessible name and tooltip. */
+	label: string;
+	icon: React.ReactNode;
+	onClick: () => void;
+};
+
 /** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export type SidebarLink = {
 	text: string;
 	path?: string;
 	icon: React.ReactNode;
 	subitems?: SidebarSubLink[];
+	/**
+	 * A button at the end of the row (links without `subitems`), for an action
+	 * next to the page, like opening a request popup beside the requests list.
+	 * Shown in the expanded sidebar and the mobile menu; the narrow rails have
+	 * no room for it, so also offer it elsewhere (e.g. `userMenuItems`).
+	 */
+	action?: SidebarLinkAction;
 };
 
 export interface LumoraWrapperProps {
@@ -93,6 +135,20 @@ export interface LumoraWrapperProps {
 	 * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
 	 */
 	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
+	/**
+	 * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
+	 * with Menu (the links drawer), Search, Nexa and the user menu, so the main
+	 * actions are one tap away; notifications sit at the top right. `drawer`: a hamburger in the
+	 * top bar opening a drawer that holds everything.
+	 */
+	mobileNavigation?: 'bottom-bar' | 'drawer';
+	/**
+	 * Pages pinned in the mobile bottom bar between Menu and Nexa, e.g. the
+	 * app's main list. One keeps the bar at an even five items with Nexa in
+	 * the middle; at most two are shown. Each needs a `path`; it highlights
+	 * from `activePath` and navigates through `onLinkClick`.
+	 */
+	mobileBottomBarLinks?: SidebarLink[];
 	/** Brand logo; defaults to the Lumora logo. */
 	logo?: React.ReactNode;
 	/**
@@ -107,6 +163,21 @@ export interface LumoraWrapperProps {
 	 * fixed narrow rails the icon opens it in a popover.
 	 */
 	searchComponent?: React.ReactNode;
+	/**
+	 * Wordmark and default-logo tint, when it should differ from the sidebar
+	 * text (e.g. a teal CENTRA over dark-gray links).
+	 */
+	brandColor?: string;
+	/**
+	 * Padding around the page content: theme spacing units, a single CSS
+	 * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+	 * for pages that fill the whole content area. To take a single block (e.g.
+	 * a page header) edge to edge while keeping the padding, wrap it in
+	 * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
+	 */
+	contentPadding?: ContentPadding;
+	/** Extra entries in the user menu between Notifications and Settings, e.g. "What's New". */
+	userMenuItems?: UserMenuItem[];
 	/** Surface background of the collapsible sidebar (default '#ffffff'). */
 	sidebarBackgroundColor?: string;
 	/**
@@ -182,12 +253,36 @@ export interface LumoraWrapperProps {
 	onThemeToggle?: () => void;
 	// API base URL for axios client
 	apiBaseUrl: string;
-	// Chat sidebar props
+	// Nexa chat panel
+	/** The chat UI, shown while `useChatSidebar().isOpen` is true. */
 	GlobalChatSidebar?: React.ComponentType;
+	/** Hook (called every render) reporting whether the chat is open. */
 	useChatSidebar?: () => { isOpen: boolean };
+	/**
+	 * `floating` (default): the chat opens as a popup card over the page, so
+	 * the content keeps its full width. `inline`: a column beside the content
+	 * that narrows it (the previous behavior).
+	 */
+	chatPanelMode?: 'floating' | 'inline';
+	/** Floating popup corner: `right` (default) or `left`, beside the sidebar. */
+	chatPanelPosition?: 'left' | 'right';
+	/** Floating popup width in px (default 420). Full screen on phones. */
+	chatPanelWidth?: number;
+	/** Called on Esc while the floating chat is open; usually closes it. */
+	onChatClose?: () => void;
 	// Assistant (chat) launcher
-	/** Show the floating Nexa assistant button (bottom-right). */
+	/** Show the Nexa assistant launcher. */
 	showAssistant?: boolean;
+	/**
+	 * `sidebar` (default): an "Ask Nexa" button under the brand (an icon on the
+	 * collapsed and narrow rails). `floating`: a button in the bottom-right corner.
+	 */
+	assistantPlacement?: 'sidebar' | 'floating';
+	/**
+	 * Letter that opens Nexa with ⌘ (Mac) / Ctrl, shown as a hint on the
+	 * button. Defaults to 'j'; `false` turns the shortcut off.
+	 */
+	assistantShortcut?: string | false;
 	/** Click handler for the assistant button; typically toggles the chat sidebar. */
 	onAssistantClick?: () => void;
 	/** Highlight the assistant button while the chat is open. */
@@ -242,6 +337,18 @@ export interface LumoraWrapperProps {
 	sidebarSectionTitle?: string;
 }
 
+/** Theme spacing units -> px, per breakpoint; CSS strings pass through. */
+const resolveContentPadding = (padding: ContentPadding, theme: Theme) => {
+	const toCss = (value: SpacingValue) =>
+		typeof value === 'number' ? theme.spacing(value) : value;
+	if (typeof padding === 'object') {
+		return Object.fromEntries(
+			Object.entries(padding).map(([bp, value]) => [bp, toCss(value)])
+		);
+	}
+	return toCss(padding);
+};
+
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -254,9 +361,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSidebar = true,
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
+	mobileNavigation = 'bottom-bar',
+	mobileBottomBarLinks,
 	logo,
 	onBrandClick,
 	searchComponent,
+	brandColor,
+	contentPadding = DEFAULT_CONTENT_PADDING,
+	userMenuItems,
 	sidebarBackgroundColor,
 	sidebarHeaderBackgroundColor,
 	groupAccentColor,
@@ -288,7 +400,13 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onThemeToggle,
 	GlobalChatSidebar,
 	useChatSidebar,
+	chatPanelMode = 'floating',
+	chatPanelPosition = 'right',
+	chatPanelWidth = 420,
+	onChatClose,
 	showAssistant = false,
+	assistantPlacement = 'sidebar',
+	assistantShortcut = 'j',
 	onAssistantClick,
 	assistantActive = false,
 	assistantBusy = false,
@@ -325,7 +443,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Always a hex value so the hover tint can be derived from it.
 	const sidebarChromeFg =
 		sidebarForegroundColor ?? (isDark ? '#ffffff' : resolvedSidebarAccent);
-	const sidebarChromeHover = deriveGroupTint(sidebarChromeFg);
+	// Hover / pressed tint for the sidebar chrome: the group tint when the
+	// host sets one, else a wash of the idle color
+	const sidebarChromeHover =
+		groupAccentColor ?? deriveGroupTint(sidebarChromeFg);
 	// Header brand tint. With no custom header background the header is part
 	// of the sidebar surface, so the brand keeps the idle chrome tint. A custom
 	// header background switches to auto-contrast so the brand stays legible.
@@ -354,8 +475,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			}}
 		/>
 	);
-	const headerLogo = logo ?? renderMaskLogo(sidebarHeaderFg);
-	const railLogo = logo ?? renderMaskLogo(sidebarChromeFg);
+	const resolvedBrandColor = brandColor ?? sidebarHeaderFg;
+	const headerLogo = logo ?? renderMaskLogo(resolvedBrandColor);
+	const railLogo = logo ?? renderMaskLogo(brandColor ?? sidebarChromeFg);
 	// Collapsible sidebar collapsed state is owned here so the content offset
 	// stays in sync with the sidebar width. Restored from localStorage.
 	const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
@@ -383,11 +505,17 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		}
 	}
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+	const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+	const useBottomBar = isMobile && mobileNavigation === 'bottom-bar';
+	// Room the bottom bar takes, including the phone's home-indicator inset
+	const bottomBarSpace = `calc(${MOBILE_BOTTOM_NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`;
 	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
 	const isChatOpen = chatSidebarHook?.isOpen ?? false;
+	const showInlineChat =
+		chatPanelMode === 'inline' && isChatOpen && Boolean(GlobalChatSidebar);
 	const onVerifyRef = useRef(onVerify);
 	const hasLoadedUserDataRef = useRef(false);
 
@@ -399,6 +527,34 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	useEffect(() => {
 		onVerifyRef.current = onVerify;
 	}, [onVerify]);
+
+	// ⌘/Ctrl + letter opens Nexa. Read the handler through a ref so the
+	// listener is not re-bound on every render.
+	const onAssistantClickRef = useRef(onAssistantClick);
+	onAssistantClickRef.current = onAssistantClick;
+	const shortcutKey =
+		showAssistant && assistantShortcut
+			? assistantShortcut.toLowerCase()
+			: null;
+	useEffect(() => {
+		if (!shortcutKey) {
+			return undefined;
+		}
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				event.key.toLowerCase() === shortcutKey &&
+				onAssistantClickRef.current
+			) {
+				event.preventDefault();
+				onAssistantClickRef.current();
+			}
+		};
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [shortcutKey]);
 
 	// The host owns logout (API call + clearing tokens); an async handler's
 	// rejection is logged here so it never surfaces as an unhandled rejection.
@@ -506,6 +662,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		NotificationSidebarContent &&
 		(() => {
 			setMobileSidebarOpen(false);
+			setMobileSearchOpen(false);
 			setNotificationDrawerOpen(true);
 		});
 	// Notifications + user; `compact` for the collapsed and narrow rails.
@@ -513,6 +670,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		SidebarFooterProps,
 		'compact' | 'color' | 'hoverColor'
 	> = {
+		avatarColor: resolvedSidebarAccent,
+		menuItems: userMenuItems,
 		showNotifications,
 		notificationCount,
 		onNotificationsClick: openNotifications,
@@ -535,6 +694,20 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			hoverColor={sidebarChromeHover}
 		/>
 	);
+	const shortcutKeys = shortcutKey
+		? [isApplePlatform() ? '⌘' : 'Ctrl', shortcutKey.toUpperCase()]
+		: undefined;
+	const renderAssistant = (compact: boolean) =>
+		showAssistant && assistantPlacement === 'sidebar' ? (
+			<AssistantButton
+				variant={compact ? 'sidebar-icon' : 'sidebar'}
+				onClick={onAssistantClick}
+				active={assistantActive}
+				busy={assistantBusy}
+				shortcutKeys={shortcutKeys}
+				accentColor={sidebarChromeFg}
+			/>
+		) : null;
 	const renderSearch = (mode: 'full' | 'expand' | 'popover') =>
 		searchNode ? (
 			<SidebarSearch
@@ -549,7 +722,25 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				color={sidebarChromeFg}
 				hoverColor={sidebarChromeHover}
 			/>
+		) : null;
+	// Under the brand: Ask Nexa, then the host's search
+	const renderTopContent = (mode: 'full' | 'expand' | 'popover') => {
+		const assistant = renderAssistant(mode !== 'full');
+		const search = renderSearch(mode);
+		return assistant || search ? (
+			<Stack
+				spacing={1.5}
+				sx={{ alignItems: mode === 'full' ? 'stretch' : 'center' }}
+			>
+				{assistant}
+				{search}
+			</Stack>
 		) : undefined;
+	};
+	const resolvedContentPadding = resolveContentPadding(
+		contentPadding,
+		muiNativeTheme
+	);
 
 	return (
 		<ThemeProvider theme={muiTheme}>
@@ -565,8 +756,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				{isMobile && (
 					<MobileTopBar
 						height={MOBILE_BAR_HEIGHT_PX}
+						// With the bottom bar, the drawer opens from its Menu item
 						onMenuClick={
-							showSidebar
+							showSidebar && !useBottomBar
 								? () => setMobileSidebarOpen(true)
 								: undefined
 						}
@@ -575,6 +767,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						onBrandClick={onBrandClick}
 						background={resolvedSidebarHeaderBg}
 						color={sidebarHeaderFg}
+						brandColor={resolvedBrandColor}
+						endContent={
+							showNotifications ? (
+								<NotificationBell
+									count={notificationCount}
+									onClick={openNotifications}
+									color={sidebarHeaderFg}
+									hoverColor={sidebarChromeHover}
+									tooltipPlacement='bottom'
+									testId='mobile-notifications'
+								/>
+							) : undefined
+						}
 					/>
 				)}
 
@@ -600,6 +805,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							bgcolor: useCollapsibleSidebar
 								? resolvedSidebarSurface
 								: undefined,
+							borderRight: '1px solid',
+							borderColor: 'divider',
 							transition: SIDEBAR_TRANSITION,
 							...sidebarStyles
 						}}
@@ -613,6 +820,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							logo={headerLogo}
 							title={appName}
 							onBrandClick={onBrandClick}
+							brandColor={resolvedBrandColor}
 							headerBackgroundColor={
 								useCollapsibleSidebar
 									? resolvedSidebarHeaderBg
@@ -644,7 +852,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									? RAIL_LABELED_WIDTH_PX
 									: COLLAPSIBLE_COLLAPSED_WIDTH_PX
 							}
-							search={renderSearch(
+							topContent={renderTopContent(
 								useRailLabeledSidebar
 									? 'popover'
 									: sidebarCollapsed
@@ -702,11 +910,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									logo={railLogo}
 									appName={appName}
 									onClick={onBrandClick}
-									color={sidebarChromeFg}
+									color={brandColor ?? sidebarChromeFg}
 									testId='sidebar-header-brand'
 								/>
 							</Box>
-							{renderSearch('popover')}
+							{renderTopContent('popover')}
 							<Box
 								sx={{
 									flex: '1 1 auto',
@@ -718,7 +926,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								}}
 							>
 								<MenuContent
-									variant='rail'
 									mainLinks={sidebarLinks}
 									secondaryLinks={secondarySidebarLinks}
 									activePath={activePath}
@@ -736,28 +943,119 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					</Drawer>
 				)}
 
-				{/* Mobile Sidebar */}
+				{/* Mobile: the links, in the same sidebar as desktop (expanded).
+				    Bottom-bar mode: a sheet rising from the bottom, within thumb
+				    reach. Drawer mode: a left drawer that also holds Nexa, search
+				    and the user. */}
 				{showSidebar && isMobile && (
-					<MobileSidebar
+					<SwipeableDrawer
+						anchor={useBottomBar ? 'bottom' : 'left'}
 						open={mobileSidebarOpen}
+						onOpen={() => setMobileSidebarOpen(true)}
 						onClose={() => setMobileSidebarOpen(false)}
-						mainLinks={sidebarLinks}
-						secondaryLinks={secondarySidebarLinks}
+						disableSwipeToOpen
+						sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}
+						slotProps={{
+							paper: {
+								'aria-label': 'Navigation',
+								sx: {
+									bgcolor: resolvedSidebarSurface,
+									backgroundImage: 'none',
+									...(useBottomBar
+										? {
+												maxHeight: 'min(80vh, 640px)',
+												borderTopLeftRadius: '16px',
+												borderTopRightRadius: '16px',
+												pb: 'env(safe-area-inset-bottom, 0px)'
+											}
+										: { maxWidth: '85vw' })
+								}
+							} as object
+						}}
+					>
+						{useBottomBar && (
+							// Grab handle: the sheet can be swiped down to close
+							<Box
+								aria-hidden='true'
+								sx={{
+									width: 36,
+									height: 4,
+									borderRadius: '2px',
+									bgcolor: 'divider',
+									mx: 'auto',
+									mt: 1,
+									mb: 0.5,
+									flexShrink: 0
+								}}
+							/>
+						)}
+						<CollapsibleSidebar
+							mainLinks={sidebarLinks}
+							secondaryLinks={secondarySidebarLinks}
+							activePath={activePath}
+							onLinkClick={path => {
+								onLinkClick?.(path);
+								setMobileSidebarOpen(false);
+							}}
+							// A row action (e.g. a request popup) opens over the page
+							onLinkAction={() => setMobileSidebarOpen(false)}
+							collapsed={false}
+							expandedWidth={
+								useBottomBar ? '100%' : MOBILE_DRAWER_WIDTH_PX
+							}
+							activeAccentColor={resolvedSidebarAccent}
+							groupAccentColor={groupAccentColor}
+							activeForegroundColor={activeSidebarForegroundColor}
+							foregroundColor={sidebarForegroundColor}
+							surfaceBackgroundColor={resolvedSidebarSurface}
+							topInsetPx={useBottomBar ? 8 : 0}
+							topContent={
+								useBottomBar
+									? undefined
+									: renderTopContent('full')
+							}
+							footer={
+								useBottomBar ? undefined : renderFooter(false)
+							}
+						/>
+						{alertProps?.show && <CardAlert {...alertProps} />}
+					</SwipeableDrawer>
+				)}
+
+				{useBottomBar && searchNode && (
+					<MobileSearchSheet
+						open={mobileSearchOpen}
+						onClose={() => setMobileSearchOpen(false)}
+						search={searchNode}
+					/>
+				)}
+
+				{useBottomBar && (
+					<MobileBottomNav
+						{...footerProps}
+						pinnedLinks={mobileBottomBarLinks}
 						activePath={activePath}
 						onLinkClick={onLinkClick}
-						search={searchNode}
-						footer={
-							// The drawer sits on the theme paper, not the sidebar surface
-							<SidebarFooter
-								{...footerProps}
-								compact={false}
-								color='text.primary'
-								hoverColor='action.hover'
-							/>
+						onMenuClick={
+							showSidebar
+								? () => setMobileSidebarOpen(true)
+								: undefined
 						}
-						alertProps={alertProps}
-						accentColor={resolvedSidebarAccent}
-						groupAccentColor={groupAccentColor}
+						menuOpen={mobileSidebarOpen}
+						onSearchClick={
+							searchNode
+								? () => setMobileSearchOpen(true)
+								: undefined
+						}
+						searchOpen={mobileSearchOpen}
+						showAssistant={showAssistant}
+						onAssistantClick={onAssistantClick}
+						assistantActive={assistantActive}
+						showProfile={showProfile}
+						background={resolvedSidebarSurface}
+						color={sidebarChromeFg}
+						activeColor={resolvedSidebarAccent}
+						activeBackground={sidebarChromeHover}
 					/>
 				)}
 
@@ -766,63 +1064,103 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					component='main'
 					sx={{
 						flexGrow: 1,
-						p: 3,
+						'--lumora-content-padding': resolvedContentPadding,
+						// Where sticky page elements should pin (below the mobile bar)
+						'--lumora-sticky-top': isMobile
+							? `${MOBILE_BAR_HEIGHT_PX}px`
+							: '0px',
+						p: 'var(--lumora-content-padding)',
 						width: desktopSidebarWidthPx
 							? `calc(100% - ${desktopSidebarWidthPx}px)`
 							: '100%',
 						transition: SIDEBAR_TRANSITION,
 						mt: isMobile ? `${MOBILE_BAR_HEIGHT_PX}px` : 0,
+						// Keep the last content clear of the bottom bar
+						...(useBottomBar && {
+							pb: `calc(var(--lumora-content-padding) + ${bottomBarSpace})`
+						}),
 						backgroundColor: resolvedContentBg,
 						...contentStyles
 					}}
 				>
-					<Grid container spacing={3}>
-						<Grid
-							size={{
-								xs: 12,
-								md: isChatOpen && GlobalChatSidebar ? 8.5 : 12
-							}}
-							sx={{
-								display: 'flex',
-								flexDirection: 'column'
-							}}
-						>
-							{children}
-						</Grid>
-						{isChatOpen && GlobalChatSidebar && (
+					{chatPanelMode === 'inline' ? (
+						<Grid container spacing={3}>
 							<Grid
-								size={{ xs: 12, md: 3.5 }}
+								size={{
+									xs: 12,
+									md: showInlineChat ? 8.5 : 12
+								}}
 								sx={{
 									display: 'flex',
-									flexDirection: 'column',
-									// Sticks in view and fills the viewport minus the
-									// main area's 24px padding above and below
-									position: { xs: 'static', md: 'sticky' },
-									top: { xs: 'auto', md: '24px' },
-									alignSelf: 'flex-start',
-									height: {
-										xs: 'auto',
-										md: 'calc(100vh - 48px)'
-									},
-									maxHeight: {
-										xs: 'none',
-										md: 'calc(100vh - 48px)'
-									}
+									flexDirection: 'column'
 								}}
 							>
-								<GlobalChatSidebar />
+								{children}
 							</Grid>
-						)}
-					</Grid>
+							{showInlineChat && GlobalChatSidebar && (
+								<Grid
+									size={{ xs: 12, md: 3.5 }}
+									sx={{
+										display: 'flex',
+										flexDirection: 'column',
+										// Sticks in view and fills the viewport minus the
+										// main area's 24px padding above and below
+										position: {
+											xs: 'static',
+											md: 'sticky'
+										},
+										top: { xs: 'auto', md: '24px' },
+										alignSelf: 'flex-start',
+										height: {
+											xs: 'auto',
+											md: 'calc(100vh - 48px)'
+										},
+										maxHeight: {
+											xs: 'none',
+											md: 'calc(100vh - 48px)'
+										}
+									}}
+								>
+									<GlobalChatSidebar />
+								</Grid>
+							)}
+						</Grid>
+					) : (
+						children
+					)}
 				</Box>
 
-				{showAssistant && (
-					<AssistantButton
-						onClick={onAssistantClick}
-						active={assistantActive}
-						busy={assistantBusy}
-					/>
+				{chatPanelMode === 'floating' && GlobalChatSidebar && (
+					<ChatPopup
+						open={isChatOpen}
+						position={chatPanelPosition}
+						width={chatPanelWidth}
+						sidebarWidthPx={desktopSidebarWidthPx}
+						// Sits above the floating Nexa button when there is one
+						bottomOffsetPx={
+							showAssistant && assistantPlacement === 'floating'
+								? FLOATING_ASSISTANT_CLEARANCE_PX
+								: 0
+						}
+						fullScreen={isMobile}
+						fullScreenBottom={useBottomBar ? bottomBarSpace : '0px'}
+						onClose={onChatClose}
+					>
+						<GlobalChatSidebar />
+					</ChatPopup>
 				)}
+
+				{showAssistant &&
+					assistantPlacement === 'floating' &&
+					!useBottomBar && (
+						<AssistantButton
+							variant='floating'
+							shortcutKeys={shortcutKeys}
+							onClick={onAssistantClick}
+							active={assistantActive}
+							busy={assistantBusy}
+						/>
+					)}
 
 				{/* Notification sidebar drawer (container + toggle only; content from host) */}
 				{showNotifications && NotificationSidebarContent && (

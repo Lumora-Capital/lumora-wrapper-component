@@ -1,3 +1,4 @@
+import * as React from 'react';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
@@ -67,22 +68,74 @@ describe('LumoraWrapper', () => {
 			);
 		});
 
-		it('floats the Nexa button when showAssistant is on', () => {
+		it('puts Ask Nexa in the sidebar by default, with its shortcut hint', () => {
 			const onAssistantClick = jest.fn();
 			renderWrapper({ showAssistant: true, onAssistantClick });
-			const nexa = screen.getByRole('button', {
-				name: 'Toggle Nexa assistant'
-			});
-			expect(nexa).toHaveStyle({ position: 'fixed' });
+			const nexa = screen.getByRole('button', { name: 'Ask Nexa' });
+			expect(nexa).toHaveAttribute('data-variant', 'sidebar-icon');
 			fireEvent.click(nexa);
 			expect(onAssistantClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('hides the Nexa button by default', () => {
+		it('floats Nexa with assistantPlacement="floating"', () => {
+			renderWrapper({
+				showAssistant: true,
+				assistantPlacement: 'floating'
+			});
+			expect(
+				screen.getByRole('button', { name: 'Ask Nexa' })
+			).toHaveStyle({
+				position: 'fixed'
+			});
+		});
+
+		it('opens Nexa with Ctrl/⌘ + J, unless the shortcut is off', () => {
+			const onAssistantClick = jest.fn();
+			const { unmount } = renderWrapper({
+				showAssistant: true,
+				onAssistantClick
+			});
+			fireEvent.keyDown(window, { key: 'j', ctrlKey: true });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
+			fireEvent.keyDown(window, { key: 'j' });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
+			unmount();
+
+			renderWrapper({
+				showAssistant: true,
+				onAssistantClick,
+				assistantShortcut: false
+			});
+			fireEvent.keyDown(window, { key: 'j', metaKey: true });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
+		});
+
+		it('hides Nexa by default', () => {
 			renderWrapper();
 			expect(
-				screen.queryByRole('button', { name: 'Toggle Nexa assistant' })
+				screen.queryByRole('button', { name: 'Ask Nexa' })
 			).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Content padding', () => {
+		it('defaults to the 40px layout spacing from md up', () => {
+			renderWrapper();
+			expect(screen.getByRole('main')).toHaveStyle({
+				padding: 'var(--lumora-content-padding)'
+			});
+		});
+
+		it('lets full-bleed pages drop the padding', () => {
+			renderWrapper({ contentPadding: 0 });
+			expect(
+				screen
+					.getByRole('main')
+					.style.getPropertyValue('--lumora-content-padding') ||
+					getComputedStyle(screen.getByRole('main')).getPropertyValue(
+						'--lumora-content-padding'
+					)
+			).toBe('0px');
 		});
 	});
 
@@ -92,33 +145,51 @@ describe('LumoraWrapper', () => {
 				screen.getByRole('button', { name: /account menu for riley/i })
 			);
 
-		it('opens settings, dark mode and logout from the user row', async () => {
+		it('lists notifications, host items, settings, theme and log out', async () => {
 			const onSettingsClick = jest.fn();
+			const onWhatsNew = jest.fn();
 			renderWrapper({
 				userName: 'Riley Carter',
+				notificationCount: 25,
 				showThemeToggler: true,
 				onThemeToggle: jest.fn(),
-				onSettingsClick
+				onSettingsClick,
+				userMenuItems: [
+					{
+						key: 'whats-new',
+						label: "What's New",
+						badge: 1,
+						onClick: onWhatsNew
+					}
+				]
 			});
 			openUserMenu();
 
+			const labels = (await screen.findAllByRole('menuitem')).map(
+				item => item.textContent
+			);
+			expect(labels).toEqual([
+				'Notifications25',
+				"What's New1",
+				'Settings',
+				'Log out'
+			]);
 			expect(
-				await screen.findByRole('menuitem', { name: /settings/i })
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole('menuitemcheckbox', { name: /dark mode/i })
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole('menuitem', { name: /logout/i })
+				screen.getByRole('group', { name: 'Theme' })
 			).toBeInTheDocument();
 
 			fireEvent.click(
-				screen.getByRole('menuitem', { name: /settings/i })
+				screen.getByRole('menuitem', { name: /what's new/i })
+			);
+			expect(onWhatsNew).toHaveBeenCalledTimes(1);
+			openUserMenu();
+			fireEvent.click(
+				await screen.findByRole('menuitem', { name: /settings/i })
 			);
 			expect(onSettingsClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('toggles the theme from the dark mode switch', async () => {
+		it('switches the theme from the Light / Dark control', async () => {
 			const onThemeToggle = jest.fn();
 			renderWrapper({
 				userName: 'Riley Carter',
@@ -128,20 +199,20 @@ describe('LumoraWrapper', () => {
 			});
 			openUserMenu();
 
-			const darkMode = await screen.findByRole('menuitemcheckbox', {
-				name: /dark mode/i
-			});
-			expect(darkMode).toHaveAttribute('aria-checked', 'true');
-			fireEvent.click(darkMode);
+			const dark = await screen.findByRole('button', { name: 'Dark' });
+			expect(dark).toHaveAttribute('aria-pressed', 'true');
+			fireEvent.click(dark);
+			expect(onThemeToggle).not.toHaveBeenCalled();
+			fireEvent.click(screen.getByRole('button', { name: 'Light' }));
 			expect(onThemeToggle).toHaveBeenCalledTimes(1);
 		});
 
-		it('leaves out dark mode unless showThemeToggler is set', async () => {
+		it('leaves out the theme control unless showThemeToggler is set', async () => {
 			renderWrapper({ userName: 'Riley Carter' });
 			openUserMenu();
-			await screen.findByRole('menuitem', { name: /logout/i });
+			await screen.findByRole('menuitem', { name: /log out/i });
 			expect(
-				screen.queryByRole('menuitemcheckbox', { name: /dark mode/i })
+				screen.queryByRole('group', { name: 'Theme' })
 			).not.toBeInTheDocument();
 		});
 
@@ -242,25 +313,70 @@ describe('LumoraWrapper', () => {
 		});
 	});
 
-	describe('Chat sidebar', () => {
-		it('renders GlobalChatSidebar only while useChatSidebar reports open', () => {
-			const GlobalChatSidebar = () => <div data-testid='chat' />;
-			const { rerender } = renderWrapper({
-				GlobalChatSidebar,
-				useChatSidebar: () => ({ isOpen: false })
-			});
-			expect(screen.queryByTestId('chat')).not.toBeInTheDocument();
-
-			rerender(
-				<LumoraWrapper
-					{...lumoraTestRequiredProps}
-					GlobalChatSidebar={GlobalChatSidebar}
-					useChatSidebar={() => ({ isOpen: true })}
-				>
-					<div />
-				</LumoraWrapper>
+	describe('Chat panel', () => {
+		const Chat = () => {
+			// State that must survive closing and reopening the popup
+			const [draft, setDraft] = React.useState('');
+			return (
+				<input
+					data-testid='chat'
+					value={draft}
+					onChange={e => setDraft(e.target.value)}
+				/>
 			);
-			expect(screen.getByTestId('chat')).toBeInTheDocument();
+		};
+		const renderChat = (
+			isOpen: boolean,
+			props: Partial<LumoraWrapperProps> = {}
+		) => (
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				GlobalChatSidebar={Chat}
+				useChatSidebar={() => ({ isOpen })}
+				{...props}
+			>
+				<div data-testid='test-content'>Test Content</div>
+			</LumoraWrapper>
+		);
+
+		it('opens as a floating popup that leaves the content width alone', () => {
+			const { rerender } = render(renderChat(false));
+			expect(screen.queryByTestId('chat')).not.toBeInTheDocument();
+			const width = screen.getByRole('main').style.width;
+
+			rerender(renderChat(true));
+			const popup = screen.getByRole('dialog', { name: 'Nexa chat' });
+			expect(popup).toHaveStyle({ position: 'fixed' });
+			expect(popup).toContainElement(screen.getByTestId('chat'));
+			expect(screen.getByRole('main').style.width).toBe(width);
+			expect(screen.getByRole('main')).not.toContainElement(popup);
+		});
+
+		it('keeps the chat mounted (and its state) after closing', () => {
+			const { rerender } = render(renderChat(true));
+			fireEvent.change(screen.getByTestId('chat'), {
+				target: { value: 'half-typed question' }
+			});
+			rerender(renderChat(false));
+			rerender(renderChat(true));
+			expect(screen.getByTestId('chat')).toHaveValue(
+				'half-typed question'
+			);
+		});
+
+		it('calls onChatClose on Esc while open', () => {
+			const onChatClose = jest.fn();
+			render(renderChat(true, { onChatClose }));
+			fireEvent.keyDown(window, { key: 'Escape' });
+			expect(onChatClose).toHaveBeenCalledTimes(1);
+		});
+
+		it('still supports the inline column with chatPanelMode="inline"', () => {
+			render(renderChat(true, { chatPanelMode: 'inline' }));
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+			expect(screen.getByRole('main')).toContainElement(
+				screen.getByTestId('chat')
+			);
 		});
 	});
 

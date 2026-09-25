@@ -1,3 +1,4 @@
+import { Breakpoint } from '@mui/material';
 import { default as default_2 } from 'react';
 import { PaletteMode } from '@mui/material/styles';
 import * as React_2 from 'react';
@@ -64,6 +65,8 @@ export declare interface CollapsibleSidebarProps {
     secondaryLinks?: SidebarLink[];
     activePath?: string;
     onLinkClick?: (path: string) => void;
+    /** Called after a row's `action` runs, e.g. to close the mobile menu. */
+    onLinkAction?: () => void;
     /** Brand logo, rendered in the header bar while expanded. */
     logo?: React_2.ReactNode;
     /** App title wordmark (uppercased); shown in the header bar while expanded. */
@@ -89,6 +92,8 @@ export declare interface CollapsibleSidebarProps {
      * when the header background is a non-hex value.
      */
     headerForegroundColor?: string;
+    /** Wordmark + logo tint in the header; defaults to `headerForegroundColor`. */
+    brandColor?: string;
     /** Solid background of the highlighted item — shared by the active item and
      * any item on hover (default '#01584f'). */
     activeAccentColor?: string;
@@ -111,7 +116,8 @@ export declare interface CollapsibleSidebarProps {
     onCollapsedChange?: (collapsed: boolean) => void;
     /** localStorage key for the uncontrolled/persisted state. */
     persistKey?: string;
-    expandedWidth?: number;
+    /** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
+    expandedWidth?: number | string;
     collapsedWidth?: number;
     /**
      * When collapsed, show `link.text` as a caption beneath each icon instead of
@@ -124,12 +130,43 @@ export declare interface CollapsibleSidebarProps {
      */
     topInsetPx?: number;
     /**
-     * Rendered between the brand and the links (e.g. a global search). The
-     * owner decides what to show for the collapsed state.
+     * Rendered between the brand and the links (e.g. an assistant launcher and
+     * a global search). The owner decides what to show for the collapsed state.
      */
-    search?: React_2.ReactNode;
+    topContent?: React_2.ReactNode;
     /** Pinned below the links, outside the scroll area (e.g. notifications + user). */
     footer?: React_2.ReactNode;
+}
+
+export declare type ContentPadding = SpacingValue | Partial<Record<Breakpoint, SpacingValue>>;
+
+/**
+ * A band that spans the whole content area of LumoraWrapper, edge to edge,
+ * whatever `contentPadding` is — e.g. a page header with a stepper and tabs.
+ * It cancels the padding with negative margins read from the wrapper's
+ * `--lumora-content-padding`, so the rest of the page keeps its spacing.
+ */
+export declare const FullBleedSection: React_2.FC<FullBleedSectionProps>;
+
+export declare interface FullBleedSectionProps {
+    children: React_2.ReactNode;
+    /**
+     * Also cancel the top padding, so the section starts flush under the top
+     * of the content area. Use it for the first element of a page (default).
+     */
+    flushTop?: boolean;
+    /** Stay pinned to the top while the page scrolls (e.g. a detail header with tabs). */
+    sticky?: boolean;
+    /** Section background; defaults to the theme paper color. */
+    background?: string;
+    /** Hairline under the section. Default true. */
+    divider?: boolean;
+    /**
+     * Keep the page padding inside the section so its content lines up with
+     * the rest of the page. Default true; `false` lets content touch the edges.
+     */
+    inset?: boolean;
+    sx?: SxProps<Theme>;
 }
 
 /**
@@ -166,6 +203,11 @@ export declare const getDesignTokens: (mode: PaletteMode) => ThemeOptions;
  */
 export declare const isAuthenticated: () => AuthResult;
 
+/** Keyboard shortcut hint, e.g. ⌘ J. */
+export declare const Kbd: React_2.FC<{
+    keys: string[];
+}>;
+
 /**
  * Log authentication errors for debugging
  * @param error - The error to log
@@ -200,6 +242,20 @@ export declare interface LumoraWrapperProps {
      * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
      */
     sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
+    /**
+     * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
+     * with Menu (the links drawer), Search, Nexa and the user menu, so the main
+     * actions are one tap away; notifications sit at the top right. `drawer`: a hamburger in the
+     * top bar opening a drawer that holds everything.
+     */
+    mobileNavigation?: 'bottom-bar' | 'drawer';
+    /**
+     * Pages pinned in the mobile bottom bar between Menu and Nexa, e.g. the
+     * app's main list. One keeps the bar at an even five items with Nexa in
+     * the middle; at most two are shown. Each needs a `path`; it highlights
+     * from `activePath` and navigates through `onLinkClick`.
+     */
+    mobileBottomBarLinks?: SidebarLink[];
     /** Brand logo; defaults to the Lumora logo. */
     logo?: default_2.ReactNode;
     /**
@@ -214,6 +270,21 @@ export declare interface LumoraWrapperProps {
      * fixed narrow rails the icon opens it in a popover.
      */
     searchComponent?: default_2.ReactNode;
+    /**
+     * Wordmark and default-logo tint, when it should differ from the sidebar
+     * text (e.g. a teal CENTRA over dark-gray links).
+     */
+    brandColor?: string;
+    /**
+     * Padding around the page content: theme spacing units, a single CSS
+     * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+     * for pages that fill the whole content area. To take a single block (e.g.
+     * a page header) edge to edge while keeping the padding, wrap it in
+     * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
+     */
+    contentPadding?: ContentPadding;
+    /** Extra entries in the user menu between Notifications and Settings, e.g. "What's New". */
+    userMenuItems?: UserMenuItem[];
     /** Surface background of the collapsible sidebar (default '#ffffff'). */
     sidebarBackgroundColor?: string;
     /**
@@ -284,12 +355,36 @@ export declare interface LumoraWrapperProps {
     showThemeToggler?: boolean;
     onThemeToggle?: () => void;
     apiBaseUrl: string;
+    /** The chat UI, shown while `useChatSidebar().isOpen` is true. */
     GlobalChatSidebar?: default_2.ComponentType;
+    /** Hook (called every render) reporting whether the chat is open. */
     useChatSidebar?: () => {
         isOpen: boolean;
     };
-    /** Show the floating Nexa assistant button (bottom-right). */
+    /**
+     * `floating` (default): the chat opens as a popup card over the page, so
+     * the content keeps its full width. `inline`: a column beside the content
+     * that narrows it (the previous behavior).
+     */
+    chatPanelMode?: 'floating' | 'inline';
+    /** Floating popup corner: `right` (default) or `left`, beside the sidebar. */
+    chatPanelPosition?: 'left' | 'right';
+    /** Floating popup width in px (default 420). Full screen on phones. */
+    chatPanelWidth?: number;
+    /** Called on Esc while the floating chat is open; usually closes it. */
+    onChatClose?: () => void;
+    /** Show the Nexa assistant launcher. */
     showAssistant?: boolean;
+    /**
+     * `sidebar` (default): an "Ask Nexa" button under the brand (an icon on the
+     * collapsed and narrow rails). `floating`: a button in the bottom-right corner.
+     */
+    assistantPlacement?: 'sidebar' | 'floating';
+    /**
+     * Letter that opens Nexa with ⌘ (Mac) / Ctrl, shown as a hint on the
+     * button. Defaults to 'j'; `false` turns the shortcut off.
+     */
+    assistantShortcut?: string | false;
     /** Click handler for the assistant button; typically toggles the chat sidebar. */
     onAssistantClick?: () => void;
     /** Highlight the assistant button while the chat is open. */
@@ -349,6 +444,21 @@ export declare type SidebarLink = {
     path?: string;
     icon: default_2.ReactNode;
     subitems?: SidebarSubLink[];
+    /**
+     * A button at the end of the row (links without `subitems`), for an action
+     * next to the page, like opening a request popup beside the requests list.
+     * Shown in the expanded sidebar and the mobile menu; the narrow rails have
+     * no room for it, so also offer it elsewhere (e.g. `userMenuItems`).
+     */
+    action?: SidebarLinkAction;
+};
+
+/** A quick action shown at the end of a sidebar row, e.g. "New request". */
+export declare type SidebarLinkAction = {
+    /** Accessible name and tooltip. */
+    label: string;
+    icon: default_2.ReactNode;
+    onClick: () => void;
 };
 
 /**
@@ -364,6 +474,8 @@ export declare type SidebarSubLink = {
     icon?: default_2.ReactNode;
     subitems?: SidebarSubLink[];
 };
+
+declare type SpacingValue = number | string;
 
 /**
  * Storage result interface
@@ -392,6 +504,16 @@ export declare interface UserData {
     role?: string;
     [key: string]: any;
 }
+
+/** An extra entry in the user menu, e.g. "What's New". */
+export declare type UserMenuItem = {
+    key: string;
+    label: string;
+    icon?: React_2.ReactNode;
+    /** Count shown as a red pill; hidden when 0 or unset. */
+    badge?: number;
+    onClick?: () => void;
+};
 
 /**
  * User result interface
