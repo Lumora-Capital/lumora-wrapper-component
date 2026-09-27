@@ -5,7 +5,10 @@ jest.mock('./lib/authUtils', () => {
 	const actual = jest.requireActual('./lib/authUtils');
 	return {
 		...actual,
-		isAuthenticated: jest.fn(() => ({ isAuthenticated: true, error: null })),
+		isAuthenticated: jest.fn(() => ({
+			isAuthenticated: true,
+			error: null
+		})),
 		getCurrentUser: jest.fn(() => ({
 			user: {
 				name: 'Test User',
@@ -18,25 +21,7 @@ jest.mock('./lib/authUtils', () => {
 	};
 });
 
-// Mock fetch globally
-globalThis.fetch = jest.fn();
-
-// Mock Response constructor
-globalThis.Response = class Response {
-	ok: boolean;
-	status: number;
-	statusText: string;
-	json: () => Promise<any>;
-
-	constructor(body?: any, init?: ResponseInit) {
-		this.ok = init?.status ? init.status >= 200 && init.status < 300 : true;
-		this.status = init?.status || 200;
-		this.statusText = init?.statusText || 'OK';
-		this.json = () => Promise.resolve(body);
-	}
-} as any;
-
-// Mock console methods to avoid noise in tests
+// Silence expected auth/session logging
 globalThis.console = {
 	...console,
 	log: jest.fn(),
@@ -46,9 +31,6 @@ globalThis.console = {
 
 // jsdom does not implement ResizeObserver (used for rail caption truncation checks)
 globalThis.ResizeObserver = class ResizeObserver {
-	constructor(_callback: ResizeObserverCallback) {
-		void _callback;
-	}
 	observe() {}
 	unobserve() {}
 	disconnect() {}

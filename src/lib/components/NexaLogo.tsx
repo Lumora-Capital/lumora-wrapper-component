@@ -3,7 +3,6 @@ import * as React from 'react';
 interface NexaLogoProps {
 	/** Rendered width/height in px (keeps the 33:30 aspect ratio). Default 20. */
 	size?: number;
-	style?: React.CSSProperties;
 }
 
 /**
@@ -11,7 +10,7 @@ interface NexaLogoProps {
  * (rather than a `/public` asset) so it bundles into the library and keeps its
  * multi-color fills, which a monochrome CSS mask would flatten.
  */
-const NexaLogo: React.FC<NexaLogoProps> = ({ size = 20, style }) => (
+const NexaLogo: React.FC<NexaLogoProps> = ({ size = 20 }) => (
 	<svg
 		width={size}
 		height={(size * 30) / 33}
@@ -20,7 +19,6 @@ const NexaLogo: React.FC<NexaLogoProps> = ({ size = 20, style }) => (
 		xmlns='http://www.w3.org/2000/svg'
 		aria-hidden='true'
 		focusable='false'
-		style={style}
 	>
 		<path
 			d='M21.7931 29.9243V20.5466L11.0774 10.4528V20.5466L21.7931 29.9243Z'

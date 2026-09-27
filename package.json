@@ -17,17 +17,16 @@
 		"dist"
 	],
 	"scripts": {
-		"dev": "vite",
+		"dev": "vite --config vite.demo.config.ts",
 		"build": "NODE_ENV=production tsc --project tsconfig.build.json && NODE_ENV=production vite build",
-		"build:lib": "NODE_ENV=production tsc --project tsconfig.build.json && NODE_ENV=production vite build",
 		"build:demo": "vite build --config vite.demo.config.ts",
-		"preview": "vite preview",
+		"preview": "vite preview --config vite.demo.config.ts",
+		"typecheck": "tsc --project tsconfig.app.json --noEmit",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage",
 		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"lint:format": "prettier --check . && echo 'All files are properly formatted'"
+		"format:check": "prettier --check ."
 	},
 	"peerDependencies": {
 		"@emotion/react": "^11.14.0",

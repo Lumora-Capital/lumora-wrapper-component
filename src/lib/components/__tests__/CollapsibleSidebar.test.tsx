@@ -713,13 +713,16 @@ describe('CollapsibleSidebar', () => {
 					title='Polymer'
 				/>
 			);
-			// Collapsed: only the hamburger fits — the brand is gone.
+			// Collapsed: the wordmark is gone; the logo stays as the toggle.
 			expect(
 				screen.queryByTestId('sidebar-header-brand')
 			).not.toBeInTheDocument();
 			const collapsedToggle = screen.getByTestId(
 				'sidebar-collapse-toggle'
 			);
+			expect(
+				within(collapsedToggle).getByTestId('brand-logo')
+			).toBeInTheDocument();
 			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
 			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
 		});
@@ -744,6 +747,90 @@ describe('CollapsibleSidebar', () => {
 			expect(screen.getByTestId('sidebar-header')).toHaveStyle({
 				backgroundColor: 'rgb(18, 52, 86)'
 			});
+		});
+	});
+
+	describe('search and footer slots', () => {
+		it('renders the search above the links and the footer below them', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				topContent: <input placeholder='Find' />,
+				footer: <div data-testid='footer'>Footer</div>
+			});
+			const search = screen.getByPlaceholderText('Find');
+			const firstLink = screen.getByTestId('sidebar-item-Dashboard');
+			const footer = screen.getByTestId('footer');
+			expect(
+				search.compareDocumentPosition(firstLink) &
+					Node.DOCUMENT_POSITION_FOLLOWING
+			).toBeTruthy();
+			expect(
+				screen
+					.getByTestId('sidebar-item-Configuration')
+					.compareDocumentPosition(footer) &
+					Node.DOCUMENT_POSITION_FOLLOWING
+			).toBeTruthy();
+		});
+
+		it('shows the logo on top of the labeled rail (no header bar)', () => {
+			renderSidebar({
+				collapsed: true,
+				showLabels: true,
+				logo: <svg data-testid='brand-logo' />
+			});
+			expect(
+				within(screen.getByTestId('sidebar-header-brand')).getByTestId(
+					'brand-logo'
+				)
+			).toBeInTheDocument();
+		});
+	});
+
+	describe('row action', () => {
+		const withAction = (onClick: () => void): SidebarLink[] => [
+			{
+				text: 'Help & support',
+				path: '/help',
+				icon: <Settings />,
+				action: { label: 'New request', icon: <Home />, onClick }
+			}
+		];
+
+		it('is its own button: it runs the action without navigating', () => {
+			const onAction = jest.fn();
+			const onLinkClick = jest.fn();
+			const onLinkAction = jest.fn();
+			renderSidebar({
+				collapsed: false,
+				secondaryLinks: withAction(onAction),
+				onLinkClick,
+				onLinkAction
+			});
+
+			const button = screen.getByRole('button', { name: 'New request' });
+			// A sibling of the row, not nested inside it
+			expect(
+				screen.getByTestId('sidebar-item-Help & support')
+			).not.toContainElement(button);
+			fireEvent.click(button);
+			expect(onAction).toHaveBeenCalledTimes(1);
+			expect(onLinkAction).toHaveBeenCalledTimes(1);
+			expect(onLinkClick).not.toHaveBeenCalled();
+
+			fireEvent.click(screen.getByTestId('sidebar-item-Help & support'));
+			expect(onLinkClick).toHaveBeenCalledWith('/help');
+			expect(onAction).toHaveBeenCalledTimes(1);
+		});
+
+		it('is left out of the collapsed rail', () => {
+			renderSidebar({
+				collapsed: true,
+				secondaryLinks: withAction(jest.fn())
+			});
+			expect(
+				screen.queryByRole('button', { name: 'New request' })
+			).not.toBeInTheDocument();
 		});
 	});
 });

@@ -1,65 +1,20 @@
+import * as React from 'react';
+import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
+	lumoraTestRequiredProps,
+	mockSidebarLinks,
 	render,
 	screen,
-	waitFor,
 	within
-} from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { Home, Settings, Person } from '@mui/icons-material';
-import LumoraWrapper, {
-	type LumoraWrapperProps,
-	type SidebarLink
-} from '../LumoraWrapper';
-import { lumoraTestRequiredProps } from './testUtils';
-import '@testing-library/jest-dom';
+} from './testUtils';
 
-jest.mock('../../tokenValidator', () => ({
-	validateAndRefreshTokens: jest.fn().mockResolvedValue(true)
-}));
-
-import { validateAndRefreshTokens } from '../../tokenValidator';
-
-// Mock window.location is handled in setupTests.ts
-
-// Test theme
-const theme = createTheme();
-
-// Test data
-const mockSidebarLinks: SidebarLink[] = [
-	{
-		text: 'Home',
-		path: '/home',
-		icon: <Home data-testid='home-icon' />
-	},
-	{
-		text: 'Settings',
-		path: '/settings',
-		icon: <Settings data-testid='settings-icon' />
-	},
-	{
-		text: 'Profile',
-		path: '/profile',
-		icon: <Person data-testid='profile-icon' />
-	}
-];
-
-const mockAppLogo = <div data-testid='app-logo'>Test Logo</div>;
-
-// Helper function to render component with theme
-const renderWithTheme = (props: Partial<LumoraWrapperProps> = {}) => {
-	const defaultProps: LumoraWrapperProps = {
-		...lumoraTestRequiredProps,
-		children: <div data-testid='test-content'>Test Content</div>,
-		...props
-	};
-
-	return render(
-		<ThemeProvider theme={theme}>
-			<LumoraWrapper {...defaultProps} />
-		</ThemeProvider>
+const renderWrapper = (props: Partial<LumoraWrapperProps> = {}) =>
+	render(
+		<LumoraWrapper {...lumoraTestRequiredProps} {...props}>
+			<div data-testid='test-content'>Test Content</div>
+		</LumoraWrapper>
 	);
-};
 
 describe('LumoraWrapper', () => {
 	beforeEach(() => {
@@ -67,146 +22,271 @@ describe('LumoraWrapper', () => {
 	});
 
 	describe('Basic Rendering', () => {
-		it('renders children correctly', () => {
-			renderWithTheme();
+		it('renders children', () => {
+			renderWrapper();
 			expect(screen.getByTestId('test-content')).toBeInTheDocument();
 		});
 
-		it('renders with default props', () => {
-			renderWithTheme();
-			expect(screen.getByTestId('test-content')).toBeInTheDocument();
-		});
-
-		it('applies custom styles to main container', () => {
-			const customStyle = { backgroundColor: 'red' };
-			const { container } = renderWithTheme({ style: customStyle });
-
-			const root = container.firstElementChild as HTMLElement;
-			expect(root).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' });
+		it('applies custom styles to the root container', () => {
+			const { container } = renderWrapper({
+				style: { backgroundColor: 'red' }
+			});
+			expect(container.firstElementChild).toHaveStyle({
+				backgroundColor: 'rgb(255, 0, 0)'
+			});
 		});
 	});
 
-	describe('Header Functionality', () => {
-		it('makes the navbar brand (app name + logo) a button when onBrandClick is given', () => {
+	describe('Brand and layout', () => {
+		it('has no header on desktop; the brand lives in the sidebar', () => {
+			renderWrapper({ appName: 'Test App' });
+			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+			expect(
+				screen.getByTestId('sidebar-header-brand')
+			).toBeInTheDocument();
+		});
+
+		it('makes the sidebar brand a button when onBrandClick is given', () => {
 			const onBrandClick = jest.fn();
-			renderWithTheme({
+			renderWrapper({
 				appName: 'Centra',
-				logo: mockAppLogo,
+				logo: <div data-testid='app-logo'>Test Logo</div>,
 				onBrandClick
 			});
-			const brand = screen.getByTestId('navbar-brand');
+			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(brand.tagName).toBe('BUTTON');
 			expect(brand).toHaveAccessibleName('Centra home');
 			expect(within(brand).getByTestId('app-logo')).toBeInTheDocument();
-			fireEvent.click(within(brand).getByText('Centra'));
+			fireEvent.click(brand);
 			expect(onBrandClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('keeps the navbar brand static without onBrandClick', () => {
-			renderWithTheme({ appName: 'Centra' });
-			expect(screen.getByTestId('navbar-brand').tagName).not.toBe(
+		it('keeps the sidebar brand static without onBrandClick', () => {
+			renderWrapper({ appName: 'Centra' });
+			expect(screen.getByTestId('sidebar-header-brand').tagName).not.toBe(
 				'BUTTON'
 			);
 		});
 
-		it('renders header when showHeader is true', () => {
-			renderWithTheme({ showHeader: true, appName: 'Test App' });
-			expect(screen.getByRole('banner')).toBeInTheDocument();
-			expect(screen.getByText('Test App')).toBeInTheDocument();
+		it('puts Ask Nexa in the sidebar by default, with its shortcut hint', () => {
+			const onAssistantClick = jest.fn();
+			renderWrapper({ showAssistant: true, onAssistantClick });
+			const nexa = screen.getByRole('button', { name: 'Ask Nexa' });
+			expect(nexa).toHaveAttribute('data-variant', 'sidebar-icon');
+			fireEvent.click(nexa);
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('does not render header when showHeader is false', () => {
-			renderWithTheme({ showHeader: false });
-			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-		});
-
-		it('renders app name when provided', () => {
-			renderWithTheme({
-				showHeader: true,
-				appName: 'My App'
+		it('floats Nexa with assistantPlacement="floating"', () => {
+			renderWrapper({
+				showAssistant: true,
+				assistantPlacement: 'floating'
 			});
-			expect(screen.getByText('My App')).toBeInTheDocument();
+			expect(
+				screen.getByRole('button', { name: 'Ask Nexa' })
+			).toHaveStyle({
+				position: 'fixed'
+			});
 		});
 
-		it('accepts pageName prop (navbar shows app name only)', () => {
-			renderWithTheme({
-				showHeader: true,
-				appName: 'Nav App',
-				pageName: 'My Application'
+		it('opens Nexa with Ctrl/⌘ + J, unless the shortcut is off', () => {
+			const onAssistantClick = jest.fn();
+			const { unmount } = renderWrapper({
+				showAssistant: true,
+				onAssistantClick
 			});
-			expect(screen.getByText('Nav App')).toBeInTheDocument();
-			expect(screen.getByTestId('test-content')).toBeInTheDocument();
+			fireEvent.keyDown(window, { key: 'j', ctrlKey: true });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
+			fireEvent.keyDown(window, { key: 'j' });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
+			unmount();
+
+			renderWrapper({
+				showAssistant: true,
+				onAssistantClick,
+				assistantShortcut: false
+			});
+			fireEvent.keyDown(window, { key: 'j', metaKey: true });
+			expect(onAssistantClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('applies custom styles to main container', () => {
-			const customStyle = { backgroundColor: 'blue' };
-			const { container } = renderWithTheme({
-				showHeader: true,
-				style: customStyle
-			});
-
-			const root = container.firstElementChild as HTMLElement;
-			expect(root).toHaveStyle({ backgroundColor: 'rgb(0, 0, 255)' });
+		it('hides Nexa by default', () => {
+			renderWrapper();
+			expect(
+				screen.queryByRole('button', { name: 'Ask Nexa' })
+			).not.toBeInTheDocument();
 		});
 	});
 
-	describe('Sidebar Functionality', () => {
-		it('renders sidebar when showSidebar is true', () => {
-			renderWithTheme({
-				showSidebar: true,
-				sidebarLinks: mockSidebarLinks
+	describe('Content padding', () => {
+		it('defaults to the 40px layout spacing from md up', () => {
+			renderWrapper();
+			expect(screen.getByRole('main')).toHaveStyle({
+				padding: 'var(--lumora-content-padding)'
 			});
+		});
 
-			// Default rail: icon links with aria-label; captions off unless showSidebarRailTitles
+		it('lets full-bleed pages drop the padding', () => {
+			renderWrapper({ contentPadding: 0 });
 			expect(
-				screen.getByRole('link', { name: /home/i })
+				screen
+					.getByRole('main')
+					.style.getPropertyValue('--lumora-content-padding') ||
+					getComputedStyle(screen.getByRole('main')).getPropertyValue(
+						'--lumora-content-padding'
+					)
+			).toBe('0px');
+		});
+	});
+
+	describe('User menu', () => {
+		const openUserMenu = () =>
+			fireEvent.click(
+				screen.getByRole('button', { name: /account menu for riley/i })
+			);
+
+		it('lists notifications, host items, settings, theme and log out', async () => {
+			const onSettingsClick = jest.fn();
+			const onWhatsNew = jest.fn();
+			renderWrapper({
+				userName: 'Riley Carter',
+				notificationCount: 25,
+				showThemeToggler: true,
+				onThemeToggle: jest.fn(),
+				onSettingsClick,
+				userMenuItems: [
+					{
+						key: 'whats-new',
+						label: "What's New",
+						badge: 1,
+						onClick: onWhatsNew
+					}
+				]
+			});
+			openUserMenu();
+
+			const labels = (await screen.findAllByRole('menuitem')).map(
+				item => item.textContent
+			);
+			expect(labels).toEqual([
+				'Notifications25',
+				"What's New1",
+				'Settings',
+				'Log out'
+			]);
+			expect(
+				screen.getByRole('group', { name: 'Theme' })
 			).toBeInTheDocument();
+
+			fireEvent.click(
+				screen.getByRole('menuitem', { name: /what's new/i })
+			);
+			expect(onWhatsNew).toHaveBeenCalledTimes(1);
+			openUserMenu();
+			fireEvent.click(
+				await screen.findByRole('menuitem', { name: /settings/i })
+			);
+			expect(onSettingsClick).toHaveBeenCalledTimes(1);
+		});
+
+		it('switches the theme from the Light / Dark control', async () => {
+			const onThemeToggle = jest.fn();
+			renderWrapper({
+				userName: 'Riley Carter',
+				showThemeToggler: true,
+				onThemeToggle,
+				theme: 'dark'
+			});
+			openUserMenu();
+
+			const dark = await screen.findByRole('button', { name: 'Dark' });
+			expect(dark).toHaveAttribute('aria-pressed', 'true');
+			fireEvent.click(dark);
+			expect(onThemeToggle).not.toHaveBeenCalled();
+			fireEvent.click(screen.getByRole('button', { name: 'Light' }));
+			expect(onThemeToggle).toHaveBeenCalledTimes(1);
+		});
+
+		it('leaves out the theme control unless showThemeToggler is set', async () => {
+			renderWrapper({ userName: 'Riley Carter' });
+			openUserMenu();
+			await screen.findByRole('menuitem', { name: /log out/i });
+			expect(
+				screen.queryByRole('group', { name: 'Theme' })
+			).not.toBeInTheDocument();
+		});
+
+		it('hides the user row when showProfile is false', () => {
+			renderWrapper({ userName: 'Riley Carter', showProfile: false });
+			expect(
+				screen.queryByTestId('sidebar-user')
+			).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Search', () => {
+		it('renders nothing without a search component', () => {
+			renderWrapper();
+			expect(
+				screen.queryByTestId('sidebar-search')
+			).not.toBeInTheDocument();
+		});
+
+		it('opens the search component beside the rail', async () => {
+			renderWrapper({
+				searchComponent: <input placeholder='Global search' />
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+			expect(
+				await screen.findByPlaceholderText('Global search')
+			).toBeInTheDocument();
+		});
+
+		it('still renders the deprecated customNavbar in the search slot', async () => {
+			const Legacy = ({ label }: { label: string }) => (
+				<input placeholder={label} />
+			);
+			renderWrapper({
+				sidebarVariant: 'collapsible',
+				customNavbar: Legacy,
+				customNavbarProps: { label: 'Legacy search' }
+			});
+			expect(
+				screen.getByPlaceholderText('Legacy search')
+			).toBeInTheDocument();
+		});
+	});
+
+	describe('Sidebar', () => {
+		it('renders sidebar links with their paths and icons', () => {
+			renderWrapper({ sidebarLinks: mockSidebarLinks });
+
+			expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute(
+				'href',
+				'/home'
+			);
 			expect(
 				screen.getByRole('link', { name: /settings/i })
-			).toBeInTheDocument();
+			).toHaveAttribute('href', '/settings');
 			expect(
 				screen.getByRole('link', { name: /profile/i })
-			).toBeInTheDocument();
-		});
-
-		it('does not render sidebar when showSidebar is false', () => {
-			renderWithTheme({ showSidebar: false });
-
-			expect(
-				screen.queryByRole('link', { name: /home/i })
-			).not.toBeInTheDocument();
-			expect(
-				screen.queryByRole('link', { name: /settings/i })
-			).not.toBeInTheDocument();
-		});
-
-		it('renders sidebar links with correct paths and icons', () => {
-			renderWithTheme({
-				showSidebar: true,
-				sidebarLinks: mockSidebarLinks
-			});
-
-			const homeLink = screen.getByRole('link', { name: /home/i });
-			const settingsLink = screen.getByRole('link', {
-				name: /settings/i
-			});
-			const profileLink = screen.getByRole('link', { name: /profile/i });
-
-			expect(homeLink).toHaveAttribute('href', '/home');
-			expect(settingsLink).toHaveAttribute('href', '/settings');
-			expect(profileLink).toHaveAttribute('href', '/profile');
+			).toHaveAttribute('href', '/profile');
 
 			expect(screen.getByTestId('home-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
 			expect(screen.getByTestId('profile-icon')).toBeInTheDocument();
 		});
 
-		it('handles empty sidebar links array', () => {
-			renderWithTheme({
-				showSidebar: true,
-				sidebarLinks: []
+		it('does not render the sidebar when showSidebar is false', () => {
+			renderWrapper({
+				showSidebar: false,
+				sidebarLinks: mockSidebarLinks
 			});
+			expect(screen.queryByRole('link')).not.toBeInTheDocument();
+		});
 
+		it('handles an empty sidebar links array', () => {
+			renderWrapper({ sidebarLinks: [] });
 			expect(
 				document.querySelector('.MuiDrawer-root')
 			).toBeInTheDocument();
@@ -214,260 +294,114 @@ describe('LumoraWrapper', () => {
 		});
 
 		it('applies custom sidebar styles', () => {
-			const sidebarStyles = { backgroundColor: 'green' };
-			renderWithTheme({
-				showSidebar: true,
-				sidebarStyles
+			renderWrapper({ sidebarStyles: { backgroundColor: 'green' } });
+			expect(document.querySelector('.MuiDrawer-root')).toHaveStyle({
+				backgroundColor: 'rgb(0, 128, 0)'
 			});
-
-			const drawer = document.querySelector(
-				'.MuiDrawer-root'
-			) as HTMLElement | null;
-			expect(drawer).toBeInTheDocument();
-			expect(drawer).toHaveStyle({ backgroundColor: 'rgb(0, 128, 0)' });
 		});
 	});
 
 	describe('Content Area', () => {
-		it('applies correct margin when header is shown', () => {
-			renderWithTheme({ showHeader: true });
-
-			const contentArea = screen.getByRole('main');
-			expect(contentArea).toHaveStyle({ marginTop: '60px' });
-		});
-
-		it('applies no margin when header is not shown', () => {
-			renderWithTheme({ showHeader: false });
-
-			const contentArea = screen.getByRole('main');
-			expect(contentArea).toHaveStyle({ marginTop: '0px' });
+		it('starts the content at the top on desktop', () => {
+			renderWrapper();
+			expect(screen.getByRole('main')).toHaveStyle({ marginTop: '0px' });
 		});
 
 		it('applies custom content styles', () => {
-			const contentStyles = { padding: '20px' };
-			renderWithTheme({ contentStyles });
-
-			const contentArea = screen
-				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('padding: 20px');
+			renderWrapper({ contentStyles: { padding: '20px' } });
+			expect(screen.getByRole('main')).toHaveStyle('padding: 20px');
 		});
 	});
 
-	describe('Token Refresh Logic', () => {
-		beforeEach(() => {
-			jest.clearAllMocks();
-			(validateAndRefreshTokens as jest.Mock).mockResolvedValue(true);
+	describe('Chat panel', () => {
+		const Chat = () => {
+			// State that must survive closing and reopening the popup
+			const [draft, setDraft] = React.useState('');
+			return (
+				<input
+					data-testid='chat'
+					value={draft}
+					onChange={e => setDraft(e.target.value)}
+				/>
+			);
+		};
+		const renderChat = (
+			isOpen: boolean,
+			props: Partial<LumoraWrapperProps> = {}
+		) => (
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				GlobalChatSidebar={Chat}
+				useChatSidebar={() => ({ isOpen })}
+				{...props}
+			>
+				<div data-testid='test-content'>Test Content</div>
+			</LumoraWrapper>
+		);
+
+		it('opens as a floating popup that leaves the content width alone', () => {
+			const { rerender } = render(renderChat(false));
+			expect(screen.queryByTestId('chat')).not.toBeInTheDocument();
+			const width = screen.getByRole('main').style.width;
+
+			rerender(renderChat(true));
+			const popup = screen.getByRole('dialog', { name: 'Nexa chat' });
+			expect(popup).toHaveStyle({ position: 'fixed' });
+			expect(popup).toContainElement(screen.getByTestId('chat'));
+			expect(screen.getByRole('main').style.width).toBe(width);
+			expect(screen.getByRole('main')).not.toContainElement(popup);
 		});
 
-		it('does not call validateAndRefreshTokens when enableRefreshToken is false', async () => {
-			renderWithTheme({ enableRefreshToken: false });
-
-			await waitFor(() => {
-				expect(screen.getByTestId('test-content')).toBeInTheDocument();
+		it('keeps the chat mounted (and its state) after closing', () => {
+			const { rerender } = render(renderChat(true));
+			fireEvent.change(screen.getByTestId('chat'), {
+				target: { value: 'half-typed question' }
 			});
-
-			expect(validateAndRefreshTokens).not.toHaveBeenCalled();
+			rerender(renderChat(false));
+			rerender(renderChat(true));
+			expect(screen.getByTestId('chat')).toHaveValue(
+				'half-typed question'
+			);
 		});
 
-		it('calls validateAndRefreshTokens when enableRefreshToken is true', async () => {
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(validateAndRefreshTokens).toHaveBeenCalled();
-			});
-			const call = (validateAndRefreshTokens as jest.Mock).mock.calls[0];
-			expect(call[1]).toBe(lumoraTestRequiredProps.redirectToLogin);
+		it('calls onChatClose on Esc while open', () => {
+			const onChatClose = jest.fn();
+			render(renderChat(true, { onChatClose }));
+			fireEvent.keyDown(window, { key: 'Escape' });
+			expect(onChatClose).toHaveBeenCalledTimes(1);
 		});
 
-		/** 
-		it('refreshes token when it expires within threshold', async () => {
-			// Set token expiry to 5 minutes from now (within threshold)
-			const futureTime = new Date('2024-01-01T10:05:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			const mockResponse = {
-				ok: true,
-				json: () => Promise.resolve({
-					token: 'new-token',
-					tokenExpiry: new Date('2024-01-01T11:00:00Z').toISOString()
-				})
-			};
-			mockFetch.mockResolvedValueOnce(mockResponse as Response);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).toHaveBeenCalledWith('/api/auth/refresh', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					credentials: 'include',
-				});
-			});
-
-			expect(mockCookies.set).toHaveBeenCalledWith('token', 'new-token', {
-				expires: 7,
-				secure: true,
-				sameSite: 'strict'
-			});
-
-			expect(mockCookies.set).toHaveBeenCalledWith('tokenExpiry', expect.any(String), {
-				expires: 7,
-				secure: true,
-				sameSite: 'strict'
-			});
-
-			expect(console.log).toHaveBeenCalledWith('Token refreshed successfully');
+		it('still supports the inline column with chatPanelMode="inline"', () => {
+			render(renderChat(true, { chatPanelMode: 'inline' }));
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+			expect(screen.getByRole('main')).toContainElement(
+				screen.getByTestId('chat')
+			);
 		});
-
-		it('handles token refresh failure and redirects to login', async () => {
-			// Set token expiry to 5 minutes from now
-			const futureTime = new Date('2024-01-01T10:05:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).toHaveBeenCalled();
-			});
-
-			expect(mockCookies.remove).toHaveBeenCalledWith('token');
-			expect(mockCookies.remove).toHaveBeenCalledWith('tokenExpiry');
-			expect((window as any).location.href).toBe('http://localhost:3000/');
-			expect(console.error).toHaveBeenCalledWith('Token refresh failed:', expect.any(Error));
-		});
-
-		it('handles API error response and redirects to login', async () => {
-			// Set token expiry to 5 minutes from now
-			const futureTime = new Date('2024-01-01T10:05:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			const mockResponse = {
-				ok: false,
-				status: 401
-			};
-			mockFetch.mockResolvedValueOnce(mockResponse as Response);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).toHaveBeenCalled();
-			});
-
-			expect(mockCookies.remove).toHaveBeenCalledWith('token');
-			expect(mockCookies.remove).toHaveBeenCalledWith('tokenExpiry');
-			expect((window as any).location.href).toBe('http://localhost:3000/');
-			expect(console.error).toHaveBeenCalledWith('Token refresh failed:', expect.any(Error));
-		});
-
-		it('redirects to login when token is already expired', async () => {
-			// Set token expiry to 5 minutes ago (expired)
-			const pastTime = new Date('2024-01-01T09:55:00Z');
-			mockCookies.get.mockReturnValue(pastTime.toISOString() as any);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).not.toHaveBeenCalled();
-			});
-
-			expect(mockCookies.remove).toHaveBeenCalledWith('token');
-			expect(mockCookies.remove).toHaveBeenCalledWith('tokenExpiry');
-			expect((window as any).location.href).toBe('http://localhost:3000/');
-			expect(console.warn).toHaveBeenCalledWith('Token has expired, redirecting to login');
-		});
-
-		it('handles token refresh with missing token in response', async () => {
-			// Set token expiry to 5 minutes from now
-			const futureTime = new Date('2024-01-01T10:05:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			const mockResponse = {
-				ok: true,
-				json: () => Promise.resolve({
-					// No token in response
-					tokenExpiry: new Date('2024-01-01T11:00:00Z').toISOString()
-				})
-			};
-			mockFetch.mockResolvedValueOnce(mockResponse as Response);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).toHaveBeenCalled();
-			});
-
-			// Should not call Cookies.set for token
-			expect(mockCookies.set).not.toHaveBeenCalledWith('token', expect.any(String), expect.any(Object));
-			expect(mockCookies.set).toHaveBeenCalledWith('tokenExpiry', expect.any(String), expect.any(Object));
-		});
-
-		it('handles token refresh with missing tokenExpiry in response', async () => {
-			// Set token expiry to 5 minutes from now
-			const futureTime = new Date('2024-01-01T10:05:00Z');
-			mockCookies.get.mockReturnValue(futureTime.toISOString() as any);
-
-			const mockResponse = {
-				ok: true,
-				json: () => Promise.resolve({
-					token: 'new-token'
-					// No tokenExpiry in response
-				})
-			};
-			mockFetch.mockResolvedValueOnce(mockResponse as Response);
-
-			renderWithTheme({ enableRefreshToken: true });
-
-			await waitFor(() => {
-				expect(mockFetch).toHaveBeenCalled();
-			});
-
-			// Should not call Cookies.set for tokenExpiry
-			expect(mockCookies.set).toHaveBeenCalledWith('token', 'new-token', expect.any(Object));
-			expect(mockCookies.set).not.toHaveBeenCalledWith('tokenExpiry', expect.any(String), expect.any(Object));
-		});
-		*/
 	});
 
-	describe('Integration Tests', () => {
-		it('renders complete layout with all features enabled', () => {
-			renderWithTheme({
-				showHeader: true,
-				showSidebar: true,
-				appName: 'My App',
-				pageName: 'Dashboard',
-				sidebarLinks: mockSidebarLinks
+	describe('Notifications drawer', () => {
+		it('opens the host-provided content from the notifications row', () => {
+			const NotificationSidebarContent = ({
+				onClose
+			}: {
+				onClose: () => void;
+			}) => (
+				<button type='button' onClick={onClose}>
+					close notifications
+				</button>
+			);
+			renderWrapper({
+				showNotifications: true,
+				notificationCount: 2,
+				NotificationSidebarContent
 			});
 
-			// Check all components are rendered
-			expect(screen.getByRole('banner')).toBeInTheDocument();
-			expect(screen.getByText('My App')).toBeInTheDocument();
 			expect(
-				screen.getByRole('link', { name: /home/i })
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole('link', { name: /settings/i })
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole('link', { name: /profile/i })
-			).toBeInTheDocument();
-			expect(screen.getByTestId('test-content')).toBeInTheDocument();
-		});
-
-		it('renders minimal layout with all features disabled', () => {
-			renderWithTheme({
-				showHeader: false,
-				showSidebar: false
-			});
-
-			// Check only content is rendered
-			expect(screen.getByTestId('test-content')).toBeInTheDocument();
-			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-			expect(screen.queryByRole('list')).not.toBeInTheDocument();
+				screen.queryByText('close notifications')
+			).not.toBeInTheDocument();
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+			expect(screen.getByText('close notifications')).toBeInTheDocument();
 		});
 	});
 });

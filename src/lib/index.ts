@@ -1,24 +1,32 @@
-// Export the LumoraWrapper component and its props interface
-import type {
-	LumoraWrapperProps,
-	SidebarLink,
-	SidebarSubLink
+import CollapsibleSidebar, {
+	type CollapsibleSidebarProps
+} from './components/CollapsibleSidebar';
+import FullBleedSection, {
+	type FullBleedSectionProps
+} from './components/FullBleedSection';
+import Kbd from './components/Kbd';
+import LumoraWrapper, {
+	type ContentPadding,
+	type LumoraWrapperProps,
+	type SidebarLink,
+	type SidebarLinkAction,
+	type SidebarSubLink
 } from './components/LumoraWrapper';
-import LumoraWrapper from './components/LumoraWrapper';
-// Export the standalone collapsible sidebar and its props
-import type { CollapsibleSidebarProps } from './components/CollapsibleSidebar';
-import CollapsibleSidebar from './components/CollapsibleSidebar';
+import type { UserMenuItem } from './components/UserMenu';
 
-// Export authentication utilities
 export * from './authUtils';
+export { getDesignTokens } from './theme';
 
-export { CollapsibleSidebar, LumoraWrapper };
+export { CollapsibleSidebar, FullBleedSection, Kbd, LumoraWrapper };
 export type {
 	CollapsibleSidebarProps,
+	ContentPadding,
+	FullBleedSectionProps,
 	LumoraWrapperProps,
 	SidebarLink,
-	SidebarSubLink
+	SidebarLinkAction,
+	SidebarSubLink,
+	UserMenuItem
 };
 
-// Re-export for better tree-shaking
 export default LumoraWrapper;

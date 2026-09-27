@@ -1,13 +1,11 @@
-import React from 'react';
-import { render, type RenderOptions } from '@testing-library/react';
+import { Home, Person, Settings } from '@mui/icons-material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { Home, Settings, Person } from '@mui/icons-material';
+import { render, type RenderOptions } from '@testing-library/react';
+import type * as React from 'react';
 import type { LumoraWrapperProps, SidebarLink } from '../LumoraWrapper';
 
-// Create a test theme
-export const testTheme = createTheme();
+const testTheme = createTheme();
 
-// Mock sidebar links for testing
 export const mockSidebarLinks: SidebarLink[] = [
 	{
 		text: 'Home',
@@ -26,10 +24,7 @@ export const mockSidebarLinks: SidebarLink[] = [
 	}
 ];
 
-// Mock app logo for testing
-export const mockAppLogo = <div data-testid='app-logo'>Test Logo</div>;
-
-/** Required LumoraWrapper props for unit tests (session gate is mocked in suites that need it). */
+/** Required LumoraWrapper props (the session gate itself is mocked in setupTests.ts). */
 export const lumoraTestRequiredProps: Pick<
 	LumoraWrapperProps,
 	'onLogout' | 'apiBaseUrl' | 'redirectToLogin'
@@ -39,48 +34,17 @@ export const lumoraTestRequiredProps: Pick<
 	redirectToLogin: jest.fn()
 };
 
-// Default test props
-export const defaultTestProps: Partial<LumoraWrapperProps> = {
-	children: <div data-testid='test-content'>Test Content</div>,
-	...lumoraTestRequiredProps
-};
-
-// Custom render function with theme provider
+/** Render inside a default MUI theme, as a host app would. */
 const customRender = (
 	ui: React.ReactElement,
 	options?: Omit<RenderOptions, 'wrapper'>
-) => {
-	const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-		<ThemeProvider theme={testTheme}>{children}</ThemeProvider>
-	);
+) =>
+	render(ui, {
+		wrapper: ({ children }) => (
+			<ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+		),
+		...options
+	});
 
-	return render(ui, { wrapper: Wrapper, ...options });
-};
-
-// Re-export everything
 export * from '@testing-library/react';
 export { customRender as render };
-
-// Helper function to create test props
-export const createTestProps = (
-	overrides: Partial<LumoraWrapperProps> = {}
-): LumoraWrapperProps =>
-	({
-		...lumoraTestRequiredProps,
-		...defaultTestProps,
-		...overrides
-	}) as LumoraWrapperProps;
-
-// Helper function to mock token expiry
-export const mockTokenExpiry = (minutesFromNow: number) => {
-	const futureTime = new Date();
-	futureTime.setMinutes(futureTime.getMinutes() + minutesFromNow);
-	return futureTime.toISOString();
-};
-
-// Helper function to mock expired token
-export const mockExpiredToken = (minutesAgo: number) => {
-	const pastTime = new Date();
-	pastTime.setMinutes(pastTime.getMinutes() - minutesAgo);
-	return pastTime.toISOString();
-};

@@ -1,7 +1,10 @@
+import { Breakpoint } from '@mui/material';
 import { default as default_2 } from 'react';
+import { PaletteMode } from '@mui/material/styles';
 import * as React_2 from 'react';
 import { SxProps } from '@mui/material';
 import { Theme } from '@mui/material';
+import { ThemeOptions } from '@mui/material/styles';
 
 /**
  * Authentication error codes
@@ -62,6 +65,8 @@ export declare interface CollapsibleSidebarProps {
     secondaryLinks?: SidebarLink[];
     activePath?: string;
     onLinkClick?: (path: string) => void;
+    /** Called after a row's `action` runs, e.g. to close the mobile menu. */
+    onLinkAction?: () => void;
     /** Brand logo, rendered in the header bar while expanded. */
     logo?: React_2.ReactNode;
     /** App title wordmark (uppercased); shown in the header bar while expanded. */
@@ -87,6 +92,8 @@ export declare interface CollapsibleSidebarProps {
      * when the header background is a non-hex value.
      */
     headerForegroundColor?: string;
+    /** Wordmark + logo tint in the header; defaults to `headerForegroundColor`. */
+    brandColor?: string;
     /** Solid background of the highlighted item — shared by the active item and
      * any item on hover (default '#01584f'). */
     activeAccentColor?: string;
@@ -109,7 +116,8 @@ export declare interface CollapsibleSidebarProps {
     onCollapsedChange?: (collapsed: boolean) => void;
     /** localStorage key for the uncontrolled/persisted state. */
     persistKey?: string;
-    expandedWidth?: number;
+    /** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
+    expandedWidth?: number | string;
     collapsedWidth?: number;
     /**
      * When collapsed, show `link.text` as a caption beneath each icon instead of
@@ -117,11 +125,48 @@ export declare interface CollapsibleSidebarProps {
      */
     showLabels?: boolean;
     /**
-     * Top padding (px) reserved inside the sidebar surface. The full-height
-     * `rail-labeled` layout uses this to clear the navbar height so the first
-     * item starts below the bar (rather than flush against the top).
+     * Top padding (px) above the links when there is no header bar, e.g. to
+     * clear a host app's own fixed top bar.
      */
     topInsetPx?: number;
+    /**
+     * Rendered between the brand and the links (e.g. an assistant launcher and
+     * a global search). The owner decides what to show for the collapsed state.
+     */
+    topContent?: React_2.ReactNode;
+    /** Pinned below the links, outside the scroll area (e.g. notifications + user). */
+    footer?: React_2.ReactNode;
+}
+
+export declare type ContentPadding = SpacingValue | Partial<Record<Breakpoint, SpacingValue>>;
+
+/**
+ * A band that spans the whole content area of LumoraWrapper, edge to edge,
+ * whatever `contentPadding` is — e.g. a page header with a stepper and tabs.
+ * It cancels the padding with negative margins read from the wrapper's
+ * `--lumora-content-padding`, so the rest of the page keeps its spacing.
+ */
+export declare const FullBleedSection: React_2.FC<FullBleedSectionProps>;
+
+export declare interface FullBleedSectionProps {
+    children: React_2.ReactNode;
+    /**
+     * Also cancel the top padding, so the section starts flush under the top
+     * of the content area. Use it for the first element of a page (default).
+     */
+    flushTop?: boolean;
+    /** Stay pinned to the top while the page scrolls (e.g. a detail header with tabs). */
+    sticky?: boolean;
+    /** Section background; defaults to the theme paper color. */
+    background?: string;
+    /** Hairline under the section. Default true. */
+    divider?: boolean;
+    /**
+     * Keep the page padding inside the section so its content lines up with
+     * the rest of the page. Default true; `false` lets content touch the edges.
+     */
+    inset?: boolean;
+    sx?: SxProps<Theme>;
 }
 
 /**
@@ -146,10 +191,22 @@ export declare const getAuthTokens: () => AuthTokens;
 export declare const getCurrentUser: () => UserResult;
 
 /**
+ * Lumora design tokens for a light or dark theme. LumoraWrapper builds its
+ * own theme from these; host apps can reuse them for a matching outer theme:
+ * `createTheme(getDesignTokens(mode))`.
+ */
+export declare const getDesignTokens: (mode: PaletteMode) => ThemeOptions;
+
+/**
  * Check if user is authenticated
  * @returns Authentication status
  */
 export declare const isAuthenticated: () => AuthResult;
+
+/** Keyboard shortcut hint, e.g. ⌘ J. */
+export declare const Kbd: React_2.FC<{
+    keys: string[];
+}>;
 
 /**
  * Log authentication errors for debugging
@@ -170,9 +227,8 @@ export declare interface LumoraWrapperProps {
     children: default_2.ReactNode;
     sidebarLinks?: SidebarLink[];
     secondarySidebarLinks?: SidebarLink[];
+    /** Brand wordmark in the sidebar header (and the mobile top bar). */
     appName?: string;
-    pageName?: string;
-    showHeader?: boolean;
     showSidebar?: boolean;
     /** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
     showSidebarRailTitles?: boolean;
@@ -180,32 +236,62 @@ export declare interface LumoraWrapperProps {
      * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
      * is a full-height panel with its own 60px header (hamburger toggle + brand) that
      * switches between expanded (icon + label rows) and a collapsed icon rail,
-     * persisting its state to localStorage — the brand lives in the sidebar header
-     * while expanded and moves to the navbar while collapsed; `'rail-labeled'` is a
-     * fixed narrow rail with the label stacked under each icon that never collapses
-     * (no toggle). Mobile is unaffected.
+     * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
+     * with the label stacked under each icon that never collapses (no toggle).
+     * Every variant runs the full height with the brand on top and notifications
+     * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
      */
     sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
-    /** Brand logo shown in the navbar; defaults to the Lumora logo. */
+    /**
+     * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
+     * with Menu (the links drawer), Search, Nexa and the user menu, so the main
+     * actions are one tap away; notifications sit at the top right. `drawer`: a hamburger in the
+     * top bar opening a drawer that holds everything.
+     */
+    mobileNavigation?: 'bottom-bar' | 'drawer';
+    /**
+     * Pages pinned in the mobile bottom bar between Menu and Nexa, e.g. the
+     * app's main list. One keeps the bar at an even five items with Nexa in
+     * the middle; at most two are shown. Each needs a `path`; it highlights
+     * from `activePath` and navigates through `onLinkClick`.
+     */
+    mobileBottomBarLinks?: SidebarLink[];
+    /** Brand logo; defaults to the Lumora logo. */
     logo?: default_2.ReactNode;
     /**
-     * Called when the brand block (app name + logo) is clicked — in the navbar,
-     * or in the collapsible sidebar's header while it is expanded. When omitted
+     * Called when the brand block (app name + logo) is clicked. When omitted
      * the brand is static. Typical use: navigate to the app's landing page.
      */
     onBrandClick?: () => void;
     /**
-     * @deprecated No longer rendered. The sidebar header (brand + section label)
-     * was moved to the navbar; this prop is accepted but ignored.
+     * The app's global search, rendered in the sidebar under the brand and
+     * above the links. When the sidebar is collapsed it becomes a search icon
+     * that expands the sidebar and focuses the first input inside it; on the
+     * fixed narrow rails the icon opens it in a popover.
      */
-    sidebarSectionTitle?: string;
+    searchComponent?: default_2.ReactNode;
+    /**
+     * Wordmark and default-logo tint, when it should differ from the sidebar
+     * text (e.g. a teal CENTRA over dark-gray links).
+     */
+    brandColor?: string;
+    /**
+     * Padding around the page content: theme spacing units, a single CSS
+     * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+     * for pages that fill the whole content area. To take a single block (e.g.
+     * a page header) edge to edge while keeping the padding, wrap it in
+     * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
+     */
+    contentPadding?: ContentPadding;
+    /** Extra entries in the user menu between Notifications and Settings, e.g. "What's New". */
+    userMenuItems?: UserMenuItem[];
     /** Surface background of the collapsible sidebar (default '#ffffff'). */
     sidebarBackgroundColor?: string;
     /**
      * Background of the collapsible sidebar's 60px header block (hamburger +
-     * brand). Defaults to the sidebar surface color, in which case the brand
-     * keeps the sidebar accent tint; setting a custom background switches the
-     * brand to auto-contrast against it.
+     * brand) and the mobile top bar. Defaults to the sidebar surface color, in
+     * which case the brand keeps the sidebar accent tint; setting a custom
+     * background switches the brand to auto-contrast against it.
      */
     sidebarHeaderBackgroundColor?: string;
     /** Light accent tint for grouped sub-items and hover (collapsible sidebar). */
@@ -216,26 +302,21 @@ export declare interface LumoraWrapperProps {
     enableRefreshToken?: boolean;
     activePath?: string;
     onLinkClick?: (path: string) => void;
+    /** Show the user row; clicking it opens settings, dark mode and logout. */
+    showProfile?: boolean;
     userName?: string;
-    userEmail?: string;
+    userRole?: string;
     userAvatar?: string;
     onLogout: (error?: Error) => void | Promise<void>;
-    onProfileClick?: () => void;
-    onAccountClick?: () => void;
-    onSettingsClick?: () => void;
+    /** Show the Settings entry in the user menu. */
     showSettings?: boolean;
+    onSettingsClick?: () => void;
     showNotifications?: boolean;
     notificationCount?: number;
-    /** Content component for the notification drawer; receives onClose. When provided, navbar bell opens this drawer. */
+    /** Content component for the notification drawer; receives onClose. When provided, the notifications row opens this drawer. */
     NotificationSidebarContent?: default_2.ComponentType<{
         onClose: () => void;
     }>;
-    showSearchbar?: boolean;
-    searchValue?: string;
-    onSearchChange?: (value: string) => void;
-    onSearchSubmit?: (value: string) => void;
-    showProfile?: boolean;
-    userRole?: string;
     onVerify?: (userData: {
         name: string;
         email: string;
@@ -250,46 +331,91 @@ export declare interface LumoraWrapperProps {
         show?: boolean;
     };
     style?: SxProps<Theme>;
-    headerStyles?: SxProps<Theme>;
     sidebarStyles?: SxProps<Theme>;
     contentStyles?: SxProps<Theme>;
     /**
-     * Brand accent used by the navbar (app name / logo / menu button) and as the
-     * default for the sidebar accent. Defaults to '#01584f'.
+     * Brand accent; the default for the sidebar accent and the logo tint.
+     * Defaults to '#01584f'.
      */
     accentColor?: string;
     /**
      * Accent for the sidebar — the solid fill of the highlighted item, shared by
-     * the active item and any item on hover. Independent of the navbar brand
-     * accent; defaults to `accentColor`.
+     * the active item and any item on hover. Defaults to `accentColor`.
      */
     sidebarAccentColor?: string;
     /**
-     * Idle (inactive) text/icon color for sidebar items, independent of the
-     * active fill. Lets idle labels be tinted (e.g. a light teal) while the
-     * active item uses a darker solid fill. Defaults to the sidebar accent in
-     * light mode / the theme text color on a dark surface.
+     * Idle (inactive) text/icon color for sidebar items, the search icon, the
+     * notifications row and the user row. Defaults to the sidebar accent in
+     * light mode / white on a dark surface.
      */
     sidebarForegroundColor?: string;
     contentBackgroundColor?: string;
-    navbarBackground?: string;
-    navbarAccentColor?: string;
     theme?: 'dark' | 'light';
+    /** Show the Dark mode switch in the user menu. */
     showThemeToggler?: boolean;
     onThemeToggle?: () => void;
     apiBaseUrl: string;
+    /** The chat UI, shown while `useChatSidebar().isOpen` is true. */
     GlobalChatSidebar?: default_2.ComponentType;
+    /** Hook (called every render) reporting whether the chat is open. */
     useChatSidebar?: () => {
         isOpen: boolean;
     };
-    /** Show the Nexa assistant icon (animated border) in the navbar. */
+    /**
+     * `floating` (default): the chat opens as a popup card over the page, so
+     * the content keeps its full width. `inline`: a column beside the content
+     * that narrows it (the previous behavior).
+     */
+    chatPanelMode?: 'floating' | 'inline';
+    /** Floating popup corner: `right` (default) or `left`, beside the sidebar. */
+    chatPanelPosition?: 'left' | 'right';
+    /** Floating popup width in px (default 420). Full screen on phones. */
+    chatPanelWidth?: number;
+    /** Called on Esc while the floating chat is open; usually closes it. */
+    onChatClose?: () => void;
+    /** Show the Nexa assistant launcher. */
     showAssistant?: boolean;
-    /** Click handler for the assistant icon; typically toggles the chat sidebar. */
+    /**
+     * `sidebar` (default): an "Ask Nexa" button under the brand (an icon on the
+     * collapsed and narrow rails). `floating`: a button in the bottom-right corner.
+     */
+    assistantPlacement?: 'sidebar' | 'floating';
+    /**
+     * Letter that opens Nexa with ⌘ (Mac) / Ctrl, shown as a hint on the
+     * button. Defaults to 'j'; `false` turns the shortcut off.
+     */
+    assistantShortcut?: string | false;
+    /** Click handler for the assistant button; typically toggles the chat sidebar. */
     onAssistantClick?: () => void;
-    /** Highlight the assistant icon while the chat is open. */
+    /** Highlight the assistant button while the chat is open. */
     assistantActive?: boolean;
-    /** Animate the assistant icon's ring/beam — only while a chat is ongoing. */
+    /** Animate the assistant button's ring/beam — only while a chat is ongoing. */
     assistantBusy?: boolean;
+    redirectToLogin: () => void;
+    /**
+     * @deprecated Use `searchComponent`. Still rendered in the search slot
+     * (with `customNavbarProps`) when `searchComponent` is not set.
+     */
+    customNavbar?: default_2.ComponentType<any>;
+    /** @deprecated See `customNavbar`. */
+    customNavbarProps?: Record<string, any>;
+    /** @deprecated Accepted but ignored; there is no header on desktop. */
+    showHeader?: boolean;
+    /** @deprecated Accepted but ignored; there is no header on desktop. */
+    headerStyles?: SxProps<Theme>;
+    /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+    showSearchbar?: boolean;
+    /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+    searchValue?: string;
+    /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+    onSearchChange?: (value: string) => void;
+    /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
+    onSearchSubmit?: (value: string) => void;
+    /** @deprecated Accepted but ignored; there is no navbar. */
+    navbarBackground?: string;
+    /** @deprecated Accepted but ignored; there is no navbar. */
+    navbarAccentColor?: string;
+    /** @deprecated Accepted but ignored; there is no navbar. */
     rightExtraContent?: Array<{
         key: string;
         name: string;
@@ -300,16 +426,39 @@ export declare interface LumoraWrapperProps {
         disabled?: boolean;
         tooltip?: string;
     }>;
-    customNavbar?: default_2.ComponentType<any>;
-    customNavbarProps?: Record<string, any>;
-    redirectToLogin: () => void;
+    /** @deprecated Accepted but ignored. */
+    pageName?: string;
+    /** @deprecated Accepted but ignored; the user row shows name and role. */
+    userEmail?: string;
+    /** @deprecated Accepted but ignored; the user menu has no profile entry. */
+    onProfileClick?: () => void;
+    /** @deprecated Accepted but ignored; the user menu has no account entry. */
+    onAccountClick?: () => void;
+    /** @deprecated Accepted but ignored; the sidebar has no section title. */
+    sidebarSectionTitle?: string;
 }
 
+/** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export declare type SidebarLink = {
     text: string;
     path?: string;
     icon: default_2.ReactNode;
     subitems?: SidebarSubLink[];
+    /**
+     * A button at the end of the row (links without `subitems`), for an action
+     * next to the page, like opening a request popup beside the requests list.
+     * Shown in the expanded sidebar and the mobile menu; the narrow rails have
+     * no room for it, so also offer it elsewhere (e.g. `userMenuItems`).
+     */
+    action?: SidebarLinkAction;
+};
+
+/** A quick action shown at the end of a sidebar row, e.g. "New request". */
+export declare type SidebarLinkAction = {
+    /** Accessible name and tooltip. */
+    label: string;
+    icon: default_2.ReactNode;
+    onClick: () => void;
 };
 
 /**
@@ -325,6 +474,8 @@ export declare type SidebarSubLink = {
     icon?: default_2.ReactNode;
     subitems?: SidebarSubLink[];
 };
+
+declare type SpacingValue = number | string;
 
 /**
  * Storage result interface
@@ -353,6 +504,16 @@ export declare interface UserData {
     role?: string;
     [key: string]: any;
 }
+
+/** An extra entry in the user menu, e.g. "What's New". */
+export declare type UserMenuItem = {
+    key: string;
+    label: string;
+    icon?: React_2.ReactNode;
+    /** Count shown as a red pill; hidden when 0 or unset. */
+    badge?: number;
+    onClick?: () => void;
+};
 
 /**
  * User result interface
