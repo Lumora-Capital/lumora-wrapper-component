@@ -129,8 +129,9 @@ const ChatPanel = ({ onClose }: { onClose: () => void }) => (
 		<Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
 			<Typography variant='body2' sx={{ color: 'text.secondary' }}>
 				Rendered through GlobalChatSidebar while useChatSidebar reports
-				it open. It floats over the page, so the content keeps its
-				width. Esc closes it (onChatClose).
+				it open. Pinned to the right over the page, so the content keeps
+				its width; notifications open on top. Esc closes it
+				(onChatClose).
 			</Typography>
 		</Box>
 		<Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -306,7 +307,9 @@ const DemoApp = () => {
 					GlobalChatSidebar={
 						settings.chatSidebar ? GlobalChat : undefined
 					}
-					chatPanelMode={settings.inlineChat ? 'inline' : 'floating'}
+					chatPanelMode={
+						settings.floatingChat ? 'floating' : 'docked'
+					}
 					onChatClose={closeChat}
 					useChatSidebar={() => ({ isOpen: chatOpen })}
 					alertProps={{

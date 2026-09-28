@@ -339,17 +339,45 @@ describe('LumoraWrapper', () => {
 			</LumoraWrapper>
 		);
 
-		it('opens as a floating popup that leaves the content width alone', () => {
+		it('opens pinned to the right, over the page, leaving the content width alone', () => {
 			const { rerender } = render(renderChat(false));
 			expect(screen.queryByTestId('chat')).not.toBeInTheDocument();
-			const width = screen.getByRole('main').style.width;
+			const main = screen.getByRole('main');
+			const width = main.style.width;
 
 			rerender(renderChat(true));
-			const popup = screen.getByRole('dialog', { name: 'Nexa chat' });
-			expect(popup).toHaveStyle({ position: 'fixed' });
-			expect(popup).toContainElement(screen.getByTestId('chat'));
-			expect(screen.getByRole('main').style.width).toBe(width);
-			expect(screen.getByRole('main')).not.toContainElement(popup);
+			const panel = screen.getByRole('complementary', {
+				name: 'Nexa chat'
+			});
+			expect(panel).toHaveAttribute('data-variant', 'docked');
+			expect(panel).toHaveStyle({
+				position: 'fixed',
+				top: '0px',
+				right: '0px',
+				bottom: '0px',
+				width: '420px'
+			});
+			expect(panel).toContainElement(screen.getByTestId('chat'));
+			expect(main).not.toContainElement(panel);
+			expect(main.style.width).toBe(width);
+			expect(main).not.toHaveStyle({ marginRight: '420px' });
+		});
+
+		it('layers below drawers, so notifications open on top of it', () => {
+			render(renderChat(true));
+			// MUI drawers sit at 1200 and menus at 1300
+			expect(
+				Number(
+					getComputedStyle(screen.getByTestId('chat-panel')).zIndex
+				)
+			).toBeLessThan(1200);
+		});
+
+		it('opens as a corner card with chatPanelMode="floating"', () => {
+			render(renderChat(true, { chatPanelMode: 'floating' }));
+			const card = screen.getByRole('dialog', { name: 'Nexa chat' });
+			expect(card).toHaveAttribute('data-variant', 'floating');
+			expect(card).toHaveStyle({ right: '24px', bottom: '24px' });
 		});
 
 		it('keeps the chat mounted (and its state) after closing', () => {
@@ -371,11 +399,11 @@ describe('LumoraWrapper', () => {
 			expect(onChatClose).toHaveBeenCalledTimes(1);
 		});
 
-		it('still supports the inline column with chatPanelMode="inline"', () => {
+		it('treats the old chatPanelMode="inline" as docked', () => {
 			render(renderChat(true, { chatPanelMode: 'inline' }));
-			expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-			expect(screen.getByRole('main')).toContainElement(
-				screen.getByTestId('chat')
+			expect(screen.getByTestId('chat-panel')).toHaveAttribute(
+				'data-variant',
+				'docked'
 			);
 		});
 	});

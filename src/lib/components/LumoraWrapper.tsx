@@ -4,7 +4,6 @@ import {
 	CircularProgress,
 	CssBaseline,
 	Drawer,
-	Grid,
 	Stack,
 	SwipeableDrawer,
 	useMediaQuery,
@@ -25,7 +24,7 @@ import { validateAndRefreshTokens } from '../tokenValidator';
 import AssistantButton from './AssistantButton';
 import Brand from './Brand';
 import CardAlert from './CardAlert';
-import ChatPopup from './ChatPopup';
+import ChatPanel from './ChatPanel';
 import CollapsibleSidebar from './CollapsibleSidebar';
 import MenuContent from './MenuContent';
 import MobileBottomNav, {
@@ -259,16 +258,18 @@ export interface LumoraWrapperProps {
 	/** Hook (called every render) reporting whether the chat is open. */
 	useChatSidebar?: () => { isOpen: boolean };
 	/**
-	 * `floating` (default): the chat opens as a popup card over the page, so
-	 * the content keeps its full width. `inline`: a column beside the content
-	 * that narrows it (the previous behavior).
+	 * `docked` (default): a full-height panel pinned to the right edge, over
+	 * the page; the content keeps its full width. Notifications and the user
+	 * menu open on top of it. `floating`: a card in a corner instead.
+	 * `inline` is the old name for `docked`. On phones the chat fills the
+	 * screen either way.
 	 */
-	chatPanelMode?: 'floating' | 'inline';
-	/** Floating popup corner: `right` (default) or `left`, beside the sidebar. */
+	chatPanelMode?: 'docked' | 'floating' | 'inline';
+	/** Floating card corner: `right` (default) or `left`, beside the sidebar. */
 	chatPanelPosition?: 'left' | 'right';
-	/** Floating popup width in px (default 420). Full screen on phones. */
+	/** Chat panel width in px (default 420). Full screen on phones. */
 	chatPanelWidth?: number;
-	/** Called on Esc while the floating chat is open; usually closes it. */
+	/** Called on Esc while the chat is open; usually closes it. */
 	onChatClose?: () => void;
 	// Assistant (chat) launcher
 	/** Show the Nexa assistant launcher. */
@@ -400,7 +401,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onThemeToggle,
 	GlobalChatSidebar,
 	useChatSidebar,
-	chatPanelMode = 'floating',
+	chatPanelMode = 'docked',
 	chatPanelPosition = 'right',
 	chatPanelWidth = 420,
 	onChatClose,
@@ -514,8 +515,13 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
 	const isChatOpen = chatSidebarHook?.isOpen ?? false;
-	const showInlineChat =
-		chatPanelMode === 'inline' && isChatOpen && Boolean(GlobalChatSidebar);
+	// `inline` is the old name for `docked`
+	const chatVariant = chatPanelMode === 'floating' ? 'floating' : 'docked';
+	// The docked chat lies over the page; a floating Nexa button moves left of it
+	const dockedChatOffsetPx =
+		chatVariant === 'docked' && isChatOpen && GlobalChatSidebar && !isMobile
+			? chatPanelWidth
+			: 0;
 	const onVerifyRef = useRef(onVerify);
 	const hasLoadedUserDataRef = useRef(false);
 
@@ -1083,56 +1089,13 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						...contentStyles
 					}}
 				>
-					{chatPanelMode === 'inline' ? (
-						<Grid container spacing={3}>
-							<Grid
-								size={{
-									xs: 12,
-									md: showInlineChat ? 8.5 : 12
-								}}
-								sx={{
-									display: 'flex',
-									flexDirection: 'column'
-								}}
-							>
-								{children}
-							</Grid>
-							{showInlineChat && GlobalChatSidebar && (
-								<Grid
-									size={{ xs: 12, md: 3.5 }}
-									sx={{
-										display: 'flex',
-										flexDirection: 'column',
-										// Sticks in view and fills the viewport minus the
-										// main area's 24px padding above and below
-										position: {
-											xs: 'static',
-											md: 'sticky'
-										},
-										top: { xs: 'auto', md: '24px' },
-										alignSelf: 'flex-start',
-										height: {
-											xs: 'auto',
-											md: 'calc(100vh - 48px)'
-										},
-										maxHeight: {
-											xs: 'none',
-											md: 'calc(100vh - 48px)'
-										}
-									}}
-								>
-									<GlobalChatSidebar />
-								</Grid>
-							)}
-						</Grid>
-					) : (
-						children
-					)}
+					{children}
 				</Box>
 
-				{chatPanelMode === 'floating' && GlobalChatSidebar && (
-					<ChatPopup
+				{GlobalChatSidebar && (
+					<ChatPanel
 						open={isChatOpen}
+						variant={chatVariant}
 						position={chatPanelPosition}
 						width={chatPanelWidth}
 						sidebarWidthPx={desktopSidebarWidthPx}
@@ -1147,7 +1110,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						onClose={onChatClose}
 					>
 						<GlobalChatSidebar />
-					</ChatPopup>
+					</ChatPanel>
 				)}
 
 				{showAssistant &&
@@ -1155,6 +1118,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					!useBottomBar && (
 						<AssistantButton
 							variant='floating'
+							// Moves left of the docked chat instead of hiding under it
+							rightOffsetPx={dockedChatOffsetPx}
 							shortcutKeys={shortcutKeys}
 							onClick={onAssistantClick}
 							active={assistantActive}

@@ -57,7 +57,7 @@ const SWITCH_GROUPS: Array<{
 			{ key: 'floatingAssistant', label: 'Floating Nexa' },
 			{ key: 'assistantBusy', label: 'Nexa busy' },
 			{ key: 'chatSidebar', label: 'Chat panel (via Nexa)' },
-			{ key: 'inlineChat', label: 'Chat as inline column' },
+			{ key: 'floatingChat', label: 'Chat as floating card' },
 			{ key: 'enableRefreshToken', label: 'Token check on mount' }
 		]
 	}

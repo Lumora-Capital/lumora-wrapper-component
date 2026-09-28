@@ -21,7 +21,7 @@ export type DemoSettings = {
 	showAssistant: boolean;
 	assistantBusy: boolean;
 	chatSidebar: boolean;
-	inlineChat: boolean;
+	floatingChat: boolean;
 	showAlert: boolean;
 	clickableBrand: boolean;
 	enableRefreshToken: boolean;
@@ -47,7 +47,7 @@ export const defaultSettings: DemoSettings = {
 	showAssistant: true,
 	assistantBusy: false,
 	chatSidebar: true,
-	inlineChat: false,
+	floatingChat: false,
 	showAlert: false,
 	clickableBrand: true,
 	enableRefreshToken: false
