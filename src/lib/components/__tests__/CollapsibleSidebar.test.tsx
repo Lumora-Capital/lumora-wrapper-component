@@ -685,7 +685,7 @@ describe('CollapsibleSidebar', () => {
 			).toHaveStyle({ color: 'rgb(255, 255, 255)' });
 		});
 
-		it('shows the brand (logo + uppercase title) only while expanded', () => {
+		it('shows the wordmark only while expanded; collapsed, the toggle sits above the logo', () => {
 			const { rerender } = render(
 				<CollapsibleSidebar
 					mainLinks={mainLinks}
@@ -713,16 +713,19 @@ describe('CollapsibleSidebar', () => {
 					title='Polymer'
 				/>
 			);
-			// Collapsed: the wordmark is gone; the logo stays as the toggle.
+			// Collapsed: the wordmark is gone; the logo stays, separate from
+			// the expand toggle above it
+			const collapsedBrand = screen.getByTestId('sidebar-header-brand');
 			expect(
-				screen.queryByTestId('sidebar-header-brand')
+				within(collapsedBrand).getByTestId('brand-logo')
+			).toBeInTheDocument();
+			expect(
+				within(collapsedBrand).queryByText('Polymer')
 			).not.toBeInTheDocument();
 			const collapsedToggle = screen.getByTestId(
 				'sidebar-collapse-toggle'
 			);
-			expect(
-				within(collapsedToggle).getByTestId('brand-logo')
-			).toBeInTheDocument();
+			expect(collapsedToggle).not.toContainElement(collapsedBrand);
 			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
 			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
 		});
@@ -831,6 +834,33 @@ describe('CollapsibleSidebar', () => {
 			expect(
 				screen.queryByRole('button', { name: 'New request' })
 			).not.toBeInTheDocument();
+		});
+	});
+
+	describe('collapsed header', () => {
+		it('keeps the logo as the brand link, separate from the expand toggle', () => {
+			const onBrandClick = jest.fn();
+			const onCollapsedChange = jest.fn();
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: true,
+				logo: <svg data-testid='brand-logo' />,
+				title: 'Centra',
+				onBrandClick,
+				onCollapsedChange
+			});
+
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Centra home' })
+			);
+			expect(onBrandClick).toHaveBeenCalledTimes(1);
+			expect(onCollapsedChange).not.toHaveBeenCalled();
+
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Expand sidebar' })
+			);
+			expect(onCollapsedChange).toHaveBeenCalledWith(false);
+			expect(onBrandClick).toHaveBeenCalledTimes(1);
 		});
 	});
 });

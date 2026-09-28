@@ -541,12 +541,12 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 
 ### Sidebar top
 
-| Prop              | Type              | Default       | Description                                                        |
-| ----------------- | ----------------- | ------------- | ------------------------------------------------------------------ |
-| `appName`         | `string`          | `'Dashboard'` | Wordmark (the narrow rails show the logo only).                    |
-| `logo`            | `React.ReactNode` | Lumora logo   | Brand logo; on the collapsed rail it doubles as the expand button. |
-| `onBrandClick`    | `() => void`      | —             | Makes the brand a button (e.g. go to the dashboard).               |
-| `searchComponent` | `React.ReactNode` | —             | Your global search ([how it is placed](#3-global-search)).         |
+| Prop              | Type              | Default       | Description                                                                                          |
+| ----------------- | ----------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
+| `appName`         | `string`          | `'Dashboard'` | Wordmark (the narrow rails show the logo only).                                                      |
+| `logo`            | `React.ReactNode` | Lumora logo   | Brand logo. On the collapsed rail it sits under the expand button and keeps its `onBrandClick` link. |
+| `onBrandClick`    | `() => void`      | —             | Makes the brand a button (e.g. go to the dashboard).                                                 |
+| `searchComponent` | `React.ReactNode` | —             | Your global search ([how it is placed](#3-global-search)).                                           |
 
 ### Nexa
 
