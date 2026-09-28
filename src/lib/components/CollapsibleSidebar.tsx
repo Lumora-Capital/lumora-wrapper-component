@@ -146,14 +146,8 @@ const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
 );
 
 /** "Toggle sidebar" glyph: a panel with its sidebar on the left. */
-const PanelIcon: React.FC<{ className?: string; hidden?: boolean }> = ({
-	className,
-	hidden = false
-}) => (
-	<ViewSidebarOutlined
-		className={className}
-		sx={{ transform: 'scaleX(-1)', display: hidden ? 'none' : undefined }}
-	/>
+const PanelIcon: React.FC = () => (
+	<ViewSidebarOutlined sx={{ transform: 'scaleX(-1)' }} />
 );
 
 /** Page-link label weight in the expanded panel. */
@@ -879,35 +873,31 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
 	const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-	// Collapsed, the header only fits one button: it shows the logo and swaps
-	// to the panel icon on hover/focus, so the brand stays visible.
-	const toggleContent =
-		collapsed && logo ? (
-			<>
-				<Box className='toggle-logo' sx={{ display: 'flex' }}>
-					{logo}
-				</Box>
-				<PanelIcon className='toggle-icon' hidden />
-			</>
-		) : (
-			<PanelIcon />
-		);
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
 			sx={{
-				height: HEADER_HEIGHT_PX,
 				minHeight: HEADER_HEIGHT_PX,
 				flexShrink: 0,
 				display: 'flex',
 				alignItems: 'center',
-				gap: 1.5,
 				bgcolor: headerBg,
-				justifyContent: collapsed ? 'center' : 'flex-start',
-				// Expanded: lines the toggle glyph up with the row icons below
-				// (12px panel padding + 12px row padding = 24px, minus the
-				// button's own 8px). Collapsed: centered like the rail icons.
-				px: collapsed ? 0 : 2
+				...(collapsed
+					? {
+							// Toggle on top, the brand logo (its own link) below it
+							flexDirection: 'column',
+							justifyContent: 'center',
+							gap: 1,
+							py: 1.5
+						}
+					: {
+							height: HEADER_HEIGHT_PX,
+							gap: 1.5,
+							// Lines the toggle glyph up with the row icons below
+							// (12px panel padding + 12px row padding = 24px, minus
+							// the button's own 8px)
+							px: 2
+						})
 			}}
 		>
 			<Tooltip title={toggleLabel} placement='right' arrow>
@@ -917,23 +907,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					onClick={handleToggleCollapsed}
 					data-testid='sidebar-collapse-toggle'
 					disableFocusRipple
-					sx={{
-						color: headerFg,
-						'& svg': { color: 'inherit', fill: 'currentColor' },
-						'&:hover, &.Mui-focusVisible': {
-							'& .toggle-logo': { display: 'none' },
-							'& .toggle-icon': { display: 'block' }
-						},
-						...FOCUS_OUTLINE_FIX
-					}}
+					sx={{ color: headerFg, ...FOCUS_OUTLINE_FIX }}
 				>
-					{toggleContent}
+					<PanelIcon />
 				</IconButton>
 			</Tooltip>
-			{!collapsed && (logo || title) ? (
+			{logo || title ? (
 				<Brand
 					logo={logo}
-					title={title}
+					// Collapsed, only the logo fits
+					title={collapsed ? undefined : title}
 					appName={title || 'App'}
 					onClick={onBrandClick}
 					color={brandColor ?? headerFg}

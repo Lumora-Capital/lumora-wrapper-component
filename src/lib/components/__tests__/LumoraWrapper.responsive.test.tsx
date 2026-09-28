@@ -363,17 +363,24 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 					.getByTestId('test-content')
 					.closest('[class*="MuiBox-root"]')
 			).toHaveStyle('width: calc(100% - 72px)');
-			// Collapsed: the wordmark and row labels give way to icons; the
-			// logo stays as the expand button.
+			// Collapsed: the expand toggle sits above the logo, which keeps
+			// its own brand link; the wordmark gives way
+			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(
-				screen.queryByTestId('sidebar-header-brand')
+				within(brand).getByRole('img', { name: 'Test App logo' })
+			).toBeInTheDocument();
+			expect(
+				within(brand).queryByText('Test App')
 			).not.toBeInTheDocument();
 			expect(
-				within(screen.getByTestId('sidebar-collapse-toggle')).getByRole(
-					'img',
-					{ name: 'Test App logo' }
-				)
-			).toBeInTheDocument();
+				screen.getByTestId('sidebar-collapse-toggle')
+			).not.toContainElement(brand);
+			expect(
+				screen
+					.getByTestId('sidebar-collapse-toggle')
+					.compareDocumentPosition(brand) &
+					Node.DOCUMENT_POSITION_FOLLOWING
+			).toBeTruthy();
 			// Collapsed: the user row keeps only its avatar
 			expect(
 				within(screen.getByTestId('sidebar-user')).queryByText('User')
