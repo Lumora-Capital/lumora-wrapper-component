@@ -362,16 +362,18 @@ export declare interface LumoraWrapperProps {
         isOpen: boolean;
     };
     /**
-     * `floating` (default): the chat opens as a popup card over the page, so
-     * the content keeps its full width. `inline`: a column beside the content
-     * that narrows it (the previous behavior).
+     * `docked` (default): a full-height panel pinned to the right edge, over
+     * the page; the content keeps its full width. Notifications and the user
+     * menu open on top of it. `floating`: a card in a corner instead.
+     * `inline` is the old name for `docked`. On phones the chat fills the
+     * screen either way.
      */
-    chatPanelMode?: 'floating' | 'inline';
-    /** Floating popup corner: `right` (default) or `left`, beside the sidebar. */
+    chatPanelMode?: 'docked' | 'floating' | 'inline';
+    /** Floating card corner: `right` (default) or `left`, beside the sidebar. */
     chatPanelPosition?: 'left' | 'right';
-    /** Floating popup width in px (default 420). Full screen on phones. */
+    /** Chat panel width in px (default 420). Full screen on phones. */
     chatPanelWidth?: number;
-    /** Called on Esc while the floating chat is open; usually closes it. */
+    /** Called on Esc while the chat is open; usually closes it. */
     onChatClose?: () => void;
     /** Show the Nexa assistant launcher. */
     showAssistant?: boolean;

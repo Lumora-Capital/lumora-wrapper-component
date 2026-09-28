@@ -55,6 +55,8 @@ interface AssistantButtonProps {
 	shortcutKeys?: string[];
 	/** Sidebar variants: tint of the row, border and label. */
 	accentColor?: string;
+	/** Floating: extra distance from the right edge (e.g. the docked chat). */
+	rightOffsetPx?: number;
 }
 
 const AssistantButton: React.FC<AssistantButtonProps> = ({
@@ -63,7 +65,8 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 	active = false,
 	busy = false,
 	shortcutKeys,
-	accentColor = '#01584f'
+	accentColor = '#01584f',
+	rightOffsetPx = 0
 }) => {
 	const tooltip = shortcutKeys
 		? `Ask Nexa (${shortcutKeys.join('')})`
@@ -149,7 +152,8 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 				data-variant='floating'
 				sx={{
 					position: 'fixed',
-					right: 24,
+					right: 24 + rightOffsetPx,
+					transition: 'right 225ms ease',
 					bottom: 24,
 					// Above page content, below drawers and menus (1200+)
 					zIndex: 1150,

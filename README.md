@@ -1,23 +1,23 @@
 # Lumora Wrapper Component
 
-The shared app shell for Lumora apps (Centra, Nexa, Xpdite, Polymer): a full-height sidebar with the brand, **Ask Nexa**, your global search, navigation and the signed-in user; a padded content area; a floating Nexa chat popup; and a session gate that redirects to login when no tokens are stored.
+The shared app shell for Lumora apps (Centra, Nexa, Xpdite, Polymer): a full-height sidebar with the brand, **Ask Nexa**, your global search, navigation and the signed-in user; a padded content area; the Nexa chat panel pinned to the right; and a session gate that redirects to login when no tokens are stored.
 
 ```
-┌──────────────┬────────────────────────────────────────────┐
-│ ▭  CENTRA // │                                            │
-│ [Ask Nexa ⌘J]│                                            │
-│ [Search… ⌘K] │   Deals            ← your page (children)  │
-│              │                                            │
-│ ☆ My Pins    │   40px padding, configurable per page      │
-│ ▦ Dashboard  │                                            │
-│ ▣ Deals      │                          ┌──────────────┐  │
-│ ⚇ CRM      › │                          │ Nexa chat    │  │
-│              │                          │ (floating    │  │
-│ ☊ Help     › │                          │  popup)      │  │
-├──────────────┤                          └──────────────┘  │
-│ (GP) Gabriel │                                            │
-│       ◔ 26   │                                            │
-└──────────────┴────────────────────────────────────────────┘
+┌──────────────┬──────────────────────────┬──────────────────┐
+│ ▭  CENTRA // │                          │ Nexa chat        │
+│ [Ask Nexa ⌘J]│                          │ pinned right,    │
+│ [Search… ⌘K] │   Deals                  │ over the page    │
+│              │                          │                  │
+│ ☆ My Pins    │   your page (children)   │ (content keeps   │
+│ ▦ Dashboard  │   40px padding,          │ its width)       │
+│ ▣ Deals      │   configurable           │                  │
+│ ⚇ CRM      › │                          │                  │
+│              │                          │                  │
+│ ☊ Help     + │                          │                  │
+├──────────────┤                          │                  │
+│  (GP) Gabriel│                          │                  │
+│ ◔ 26         │                          │                  │
+└──────────────┴──────────────────────────┴──────────────────┘
 ```
 
 There is no header on desktop. On phones, a slim top bar shows the brand and a bottom bar puts Menu, your pinned pages, Nexa, Search and the user one tap away, with notifications at the top right ([Mobile](#7-mobile)).
@@ -255,19 +255,19 @@ import { Kbd } from '@lumora/lumora-wrapper-component';
 
 Your component handles its own ⌘K shortcut; the wrapper does not bind it.
 
-### 4. Nexa (Ask Nexa + chat popup)
+### 4. Nexa (Ask Nexa + chat panel)
 
-| You pass            | What it does                                                                                                         |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `showAssistant`     | Shows **Ask Nexa** under the brand (an icon on collapsed / narrow rails).                                            |
-| `onAssistantClick`  | Called on click and on **⌘J / Ctrl+J**. Usually toggles your chat store.                                             |
-| `GlobalChatSidebar` | Your chat UI. It renders inside a **floating popup** (bottom right) over the page; the content keeps its full width. |
-| `useChatSidebar`    | A hook returning `{ isOpen }`; the popup is shown while `isOpen` is true.                                            |
-| `onChatClose`       | Called on Esc while the popup is open. Put a close button inside your chat UI too.                                   |
-| `assistantActive`   | Highlights the Nexa button while the chat is open.                                                                   |
-| `assistantBusy`     | Animated border while a reply is streaming.                                                                          |
+| You pass            | What it does                                                                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `showAssistant`     | Shows **Ask Nexa** under the brand (an icon on collapsed / narrow rails).                                                                                                        |
+| `onAssistantClick`  | Called on click and on **⌘J / Ctrl+J**. Usually toggles your chat store.                                                                                                         |
+| `GlobalChatSidebar` | Your chat UI. It renders in a **full-height panel pinned to the right**, over the page: the content keeps its full width, and notifications and the user menu open on top of it. |
+| `useChatSidebar`    | A hook returning `{ isOpen }`; the panel is shown while `isOpen` is true.                                                                                                        |
+| `onChatClose`       | Called on Esc while the panel is open. Put a close button inside your chat UI too.                                                                                               |
+| `assistantActive`   | Highlights the Nexa button while the chat is open.                                                                                                                               |
+| `assistantBusy`     | Animated border while a reply is streaming.                                                                                                                                      |
 
-The popup stays mounted after it is first opened, so an unfinished conversation survives closing it. It is 420px wide (`chatPanelWidth`), at most 720px tall, and on phones it fills the screen above the bottom bar (tap Nexa again to close it). Your chat UI should fill the popup (`height: 100%`, flex column).
+The panel stays mounted after it is first opened, so an unfinished conversation survives closing it. It is 420px wide (`chatPanelWidth`) and the full height of the screen; on phones it fills the screen above the bottom bar (tap Nexa again to close it). Your chat UI should fill the panel (`height: 100%`, flex column).
 
 A Zustand store for it:
 
@@ -283,7 +283,7 @@ export const useNexaStore = create(set => ({
 }));
 ```
 
-Options: `chatPanelPosition='left'` opens it beside the sidebar instead; `assistantPlacement='floating'` moves the Nexa button itself to the bottom-right corner (the popup then sits above it); `assistantShortcut={false}` turns off ⌘J; `chatPanelMode='inline'` restores the old side column that narrows the content.
+Options: `chatPanelMode='floating'` opens it as a card in the bottom-right corner instead (`chatPanelPosition='left'` puts that card beside the sidebar); `assistantPlacement='floating'` moves the Nexa button itself to the bottom-right corner (it moves left of the open panel); `assistantShortcut={false}` turns off ⌘J.
 
 ### 5. User, notifications and the user menu
 
@@ -550,20 +550,20 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 
 ### Nexa
 
-| Prop                 | Type                        | Default      | Description                                                          |
-| -------------------- | --------------------------- | ------------ | -------------------------------------------------------------------- |
-| `showAssistant`      | `boolean`                   | `false`      | Show the Ask Nexa button.                                            |
-| `onAssistantClick`   | `() => void`                | —            | Click and ⌘J handler; usually toggles the chat.                      |
-| `assistantActive`    | `boolean`                   | `false`      | Highlight while the chat is open.                                    |
-| `assistantBusy`      | `boolean`                   | `false`      | Animated border while a reply streams.                               |
-| `assistantPlacement` | `'sidebar' \| 'floating'`   | `'sidebar'`  | Button under the brand, or in the bottom-right corner.               |
-| `assistantShortcut`  | `string \| false`           | `'j'`        | ⌘ / Ctrl + this letter opens Nexa; `false` turns it off.             |
-| `GlobalChatSidebar`  | `React.ComponentType`       | —            | Your chat UI, shown in the popup.                                    |
-| `useChatSidebar`     | `() => { isOpen: boolean }` | —            | Hook telling the wrapper whether the chat is open.                   |
-| `onChatClose`        | `() => void`                | —            | Called on Esc while the popup is open.                               |
-| `chatPanelMode`      | `'floating' \| 'inline'`    | `'floating'` | Popup over the page, or the old column that narrows the content.     |
-| `chatPanelPosition`  | `'right' \| 'left'`         | `'right'`    | Popup corner; `left` sits beside the sidebar.                        |
-| `chatPanelWidth`     | `number`                    | `420`        | Popup width in px (fills the screen above the bottom bar on phones). |
+| Prop                 | Type                        | Default     | Description                                                                                                                      |
+| -------------------- | --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `showAssistant`      | `boolean`                   | `false`     | Show the Ask Nexa button.                                                                                                        |
+| `onAssistantClick`   | `() => void`                | —           | Click and ⌘J handler; usually toggles the chat.                                                                                  |
+| `assistantActive`    | `boolean`                   | `false`     | Highlight while the chat is open.                                                                                                |
+| `assistantBusy`      | `boolean`                   | `false`     | Animated border while a reply streams.                                                                                           |
+| `assistantPlacement` | `'sidebar' \| 'floating'`   | `'sidebar'` | Button under the brand, or in the bottom-right corner.                                                                           |
+| `assistantShortcut`  | `string \| false`           | `'j'`       | ⌘ / Ctrl + this letter opens Nexa; `false` turns it off.                                                                         |
+| `GlobalChatSidebar`  | `React.ComponentType`       | —           | Your chat UI, shown in the chat panel.                                                                                           |
+| `useChatSidebar`     | `() => { isOpen: boolean }` | —           | Hook telling the wrapper whether the chat is open.                                                                               |
+| `onChatClose`        | `() => void`                | —           | Called on Esc while the chat is open.                                                                                            |
+| `chatPanelMode`      | `'docked' \| 'floating'`    | `'docked'`  | `docked`: full height, pinned right, over the page. `floating`: a card in a corner. (`'inline'` still works and means `docked`.) |
+| `chatPanelPosition`  | `'right' \| 'left'`         | `'right'`   | Floating card corner; `left` sits beside the sidebar.                                                                            |
+| `chatPanelWidth`     | `number`                    | `420`       | Chat width in px (fills the screen above the bottom bar on phones).                                                              |
 
 ### User and notifications
 
@@ -666,7 +666,7 @@ The navbar is gone. These props still compile but have moved or do nothing:
 | `rightExtraContent`                                                                | No effect; use `userMenuItems` for extra entries.                       |
 | `pageName`, `userEmail`, `onProfileClick`, `onAccountClick`, `sidebarSectionTitle` | No effect.                                                              |
 
-Behavior changes: Nexa is a sidebar button (was in the navbar); the chat opens as a floating popup (was a column that narrowed the page, still available with `chatPanelMode='inline'`); content padding is 40px (was 24px, set `contentPadding={3}` for the old spacing); phones get a bottom bar instead of the hamburger (`mobileNavigation='drawer'` for the old drawer).
+Behavior changes: Nexa is a sidebar button (was in the navbar); the chat opens in a full-height panel pinned to the right, over the page (it used to be a column that narrowed the content; `chatPanelMode='inline'` now gives the pinned panel too); content padding is 40px (was 24px, set `contentPadding={3}` for the old spacing); phones get a bottom bar instead of the hamburger (`mobileNavigation='drawer'` for the old drawer).
 
 ## Development
 
@@ -680,7 +680,7 @@ npm run build        # library -> dist/
 
 ### Playground
 
-`npm run dev` opens a demo app (`src/demo/`) wrapped in LumoraWrapper. The button at the top right opens a panel that toggles props live: sidebar variant, light/dark, nested links, a stand-in search component, notifications and their drawer, the user menu, Ask Nexa (or floating) with the chat popup (or inline column), alert card, Centra colors, a deal detail page with a full-width sticky header, no-padding mode and the token check. "Log out" clears the tokens so you can watch the session gate redirect. Settings survive reloads, and any of them can be set from the URL, e.g. `?sidebarVariant=rail&mode=dark&showSearch=0`. Narrow the window below 900px for the mobile drawer.
+`npm run dev` opens a demo app (`src/demo/`) wrapped in LumoraWrapper. The button at the top right opens a panel that toggles props live: sidebar variant, light/dark, nested links, a stand-in search component, notifications and their drawer, the user menu, Ask Nexa (or floating) with the pinned chat panel (or floating card), alert card, Centra colors, a deal detail page with a full-width sticky header, no-padding mode and the token check. "Log out" clears the tokens so you can watch the session gate redirect. Settings survive reloads, and any of them can be set from the URL, e.g. `?sidebarVariant=rail&mode=dark&showSearch=0`. Narrow the window below 900px for the mobile drawer.
 
 See [TESTING.md](TESTING.md) for the test suites.
 
