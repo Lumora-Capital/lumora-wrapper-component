@@ -13,9 +13,9 @@ import de from "@mui/material/ListItemText";
 import ge from "@mui/material/Stack";
 import J from "@mui/material/Tooltip";
 import ae from "@mui/material/Typography";
-import { useTheme as Rr, createTheme as Ir, alpha as Ae, ThemeProvider as tr } from "@mui/material/styles";
+import { useTheme as yr, createTheme as Ir, alpha as Ae, ThemeProvider as tr } from "@mui/material/styles";
 import * as b from "react";
-import { useMemo as rr, useState as Re, useCallback as ho, useRef as Ot, useEffect as ut } from "react";
+import { useMemo as rr, useState as ye, useCallback as ho, useRef as Ot, useEffect as ut } from "react";
 import xt from "@mui/material/ButtonBase";
 import { useTheme as fo, useMediaQuery as po, Box as Z, CircularProgress as mo, CssBaseline as go, Drawer as or, SwipeableDrawer as xo, Stack as bo } from "@mui/material";
 import nr from "axios";
@@ -25,8 +25,8 @@ import Cr from "@mui/material/Button";
 import wo from "@mui/icons-material/AutoAwesomeRounded";
 import vo from "@mui/material/Grow";
 import Mt from "@mui/material/Paper";
-import yo from "@mui/material/Slide";
-import Ro from "@mui/material/ListSubheader";
+import Ro from "@mui/material/Slide";
+import yo from "@mui/material/ListSubheader";
 import qe from "@mui/material/MenuItem";
 import Io from "@mui/material/MenuList";
 import Co from "@mui/material/Popper";
@@ -227,7 +227,7 @@ const gt = ({
   surfaceBackgroundColor: I,
   collapsed: z,
   defaultCollapsed: B = !1,
-  onCollapsedChange: y,
+  onCollapsedChange: R,
   persistKey: F = Mo,
   expandedWidth: X = Bo,
   collapsedWidth: G = Fo,
@@ -236,7 +236,7 @@ const gt = ({
   topContent: xe,
   footer: A
 }) => {
-  const M = Rr(), L = M.palette.mode === "dark", W = z !== void 0, [ue, be] = b.useState(
+  const M = yr(), L = M.palette.mode === "dark", W = z !== void 0, [ue, be] = b.useState(
     () => Wr(F) ?? B
   ), K = W ? !!z : ue, [$, bt] = b.useState(
     {}
@@ -252,15 +252,15 @@ const gt = ({
     n == null || n(i);
   }, Be = () => {
     const i = !K;
-    W || (be(i), kr(F, i)), y == null || y(i);
+    W || (be(i), kr(F, i)), R == null || R(i);
   }, Fe = (i, w) => {
-    bt((R) => ({ ...R, [i]: !w }));
-  }, Me = (i, w) => $[w] ?? Ie(i, o), Ee = (i, w, R) => ({
+    bt((y) => ({ ...y, [i]: !w }));
+  }, Me = (i, w) => $[w] ?? Ie(i, o), Ee = (i, w, y) => ({
     color: i ? P : se,
     bgcolor: i ? f : "transparent",
     "& .MuiListItemIcon-root": {
       color: i ? P : se,
-      minWidth: R
+      minWidth: y
     },
     "&:hover": i || S ? tt : { bgcolor: w }
   }), rt = {
@@ -269,7 +269,7 @@ const gt = ({
     },
     "&.Mui-selected:hover": tt
   }, we = (i) => {
-    const w = me(i, o), R = /* @__PURE__ */ d(
+    const w = me(i, o), y = /* @__PURE__ */ d(
       dt,
       {
         disabled: !i.path,
@@ -306,10 +306,10 @@ const gt = ({
       i.text
     );
     if (!i.action)
-      return R;
+      return y;
     const { action: E } = i;
     return /* @__PURE__ */ d(m, { sx: { position: "relative" }, children: [
-      R,
+      y,
       /* @__PURE__ */ t(J, { title: E.label, placement: "right", arrow: !0, children: /* @__PURE__ */ t(
         ee,
         {
@@ -349,7 +349,7 @@ const gt = ({
       ) })
     ] }, i.text);
   }, He = (i) => {
-    const w = Ie(i, o), R = me(i, o), E = pt("", i), O = Me(i, E);
+    const w = Ie(i, o), y = me(i, o), E = pt("", i), O = Me(i, E);
     return /* @__PURE__ */ d(
       m,
       {
@@ -364,13 +364,13 @@ const gt = ({
             {
               onClick: () => Fe(E, O),
               "data-testid": `sidebar-item-${i.text}`,
-              "data-active": R ? "true" : "false",
+              "data-active": y ? "true" : "false",
               "aria-expanded": O,
               sx: {
                 borderRadius: "8px",
                 py: 1.25,
                 px: 1.5,
-                ...Ee(R, te, 36)
+                ...Ee(y, te, 36)
               },
               children: [
                 /* @__PURE__ */ t(ce, { children: i.icon }),
@@ -405,8 +405,8 @@ const gt = ({
       },
       i.text
     );
-  }, Ke = (i, w, R) => {
-    const E = pt(w, i), O = $o + (R - 1) * Po;
+  }, Ke = (i, w, y) => {
+    const E = pt(w, i), O = $o + (y - 1) * Po;
     if (Je(i)) {
       const re = Ie(i, o), k = me(i, o), oe = Me(i, E);
       return /* @__PURE__ */ d(m, { "data-testid": `sidebar-group-${i.text}`, children: [
@@ -444,7 +444,7 @@ const gt = ({
           }
         ),
         /* @__PURE__ */ t(er, { in: oe, timeout: "auto", unmountOnExit: !0, children: /* @__PURE__ */ t(m, { "data-testid": `sidebar-children-${i.text}`, children: i.subitems.map(
-          (ne) => Ke(ne, E, R + 1)
+          (ne) => Ke(ne, E, y + 1)
         ) }) })
       ] }, E);
     }
@@ -484,7 +484,7 @@ const gt = ({
       },
       E
     );
-  }, fe = (i, w, R, E, O, C) => {
+  }, fe = (i, w, y, E, O, C) => {
     const re = !O, k = /* @__PURE__ */ d(
       ee,
       {
@@ -526,7 +526,7 @@ const gt = ({
           ...ht
         },
         children: [
-          R,
+          y,
           S ? /* @__PURE__ */ t(
             Ne,
             {
@@ -541,14 +541,14 @@ const gt = ({
     );
     return S ? re ? /* @__PURE__ */ t("span", { children: k }, i) : /* @__PURE__ */ t(b.Fragment, { children: k }, i) : /* @__PURE__ */ t(J, { title: w, placement: "right", arrow: !0, children: re ? /* @__PURE__ */ t("span", { children: k }) : k }, i);
   }, Ue = (i) => {
-    const w = Ie(i, o), R = me(i, o), E = pt("", i), O = Me(i, E), C = /* @__PURE__ */ d(
+    const w = Ie(i, o), y = me(i, o), E = pt("", i), O = Me(i, E), C = /* @__PURE__ */ d(
       ee,
       {
         "aria-label": i.text,
         "aria-expanded": O,
         onClick: () => Fe(E, O),
         "data-testid": `sidebar-item-${i.text}`,
-        "data-active": R ? "true" : "false",
+        "data-active": y ? "true" : "false",
         sx: {
           display: "flex",
           flexDirection: "column",
@@ -558,13 +558,13 @@ const gt = ({
           // 8px padding on all sides of the labeled item container.
           ...S ? { p: 1 } : { py: 0.75 },
           borderRadius: "10px",
-          color: R ? P : se,
-          bgcolor: R ? f : "transparent",
+          color: y ? P : se,
+          bgcolor: y ? f : "transparent",
           // rail-labeled: active AND hover share the highlight. collapsible:
           // original behavior — accent only when active; the outer pill
           // supplies the idle-hover tint, so the button stays transparent.
           "&:hover": S ? { bgcolor: f, color: P } : {
-            bgcolor: R ? f : "transparent"
+            bgcolor: y ? f : "transparent"
           },
           ...ht
         },
@@ -1582,7 +1582,7 @@ const D = {
       children: r
     }
   );
-  return p ? /* @__PURE__ */ t(yo, { direction: "left", in: e, mountOnEnter: !0, children: x }) : /* @__PURE__ */ t(
+  return p ? /* @__PURE__ */ t(Ro, { direction: "left", in: e, mountOnEnter: !0, children: x }) : /* @__PURE__ */ t(
     vo,
     {
       in: e,
@@ -1703,11 +1703,11 @@ const D = {
   surfaceBackgroundColor: c,
   railShowTitles: s
 }) => {
-  const l = Rr(), [h, u] = b.useState(null), [p, N] = b.useState(!1), f = b.useRef(
+  const l = yr(), [h, u] = b.useState(null), [p, N] = b.useState(!1), f = b.useRef(
     null
   ), x = b.useRef(null), v = b.useRef(null), g = b.useRef(!1), I = b.useRef(!1), z = b.useId(), B = () => {
     f.current && (clearTimeout(f.current), f.current = null);
-  }, y = () => {
+  }, R = () => {
     B(), f.current = setTimeout(() => {
       N(!1), f.current = null;
     }, nn);
@@ -1752,7 +1752,7 @@ const D = {
       onBlur: (A) => {
         var L;
         const M = A.relatedTarget;
-        M && ((L = x.current) != null && L.contains(M)) || y();
+        M && ((L = x.current) != null && L.contains(M)) || R();
       },
       onKeyDown: (A) => {
         A.key === "ArrowDown" && (A.preventDefault(), I.current = !0, F());
@@ -1787,7 +1787,7 @@ const D = {
               g.current = !0, F();
             },
             onMouseLeave: () => {
-              g.current = !1, y();
+              g.current = !1, R();
             },
             children: Hr(Ce, e.text, s)
           }
@@ -1806,7 +1806,7 @@ const D = {
                 ref: x,
                 elevation: 0,
                 onMouseEnter: B,
-                onMouseLeave: y,
+                onMouseLeave: R,
                 "data-testid": `rail-submenu-panel-${e.text}`,
                 sx: {
                   bgcolor: c,
@@ -1847,7 +1847,7 @@ const D = {
       const ue = pt(M, W);
       return Je(W) ? [
         /* @__PURE__ */ t(
-          Ro,
+          yo,
           {
             disableSticky: !0,
             title: W.text,
@@ -2050,7 +2050,7 @@ const D = {
       ]
     }
   );
-}, fn = (e) => e ? e.charAt(0).toUpperCase() + e.slice(1).toLowerCase() : "User", pn = (e) => e.split(/\s+/).filter(Boolean).slice(0, 2).map((r) => r.charAt(0).toUpperCase()).join(""), mr = {
+}, fn = (e) => e ? e.replace(/_/g, " ").toUpperCase() : "USER", pn = (e) => e.split(/\s+/).filter(Boolean).slice(0, 2).map((r) => r.charAt(0).toUpperCase()).join(""), mr = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
@@ -2154,8 +2154,8 @@ const D = {
   onThemeToggle: I,
   onLogout: z
 }) => {
-  const B = (y) => () => {
-    r(), y == null || y();
+  const B = (R) => () => {
+    r(), R == null || R();
   };
   return /* @__PURE__ */ d(
     Ao,
@@ -2212,11 +2212,11 @@ const D = {
           /* @__PURE__ */ t(de, { children: "Notifications" }),
           /* @__PURE__ */ t(gr, { count: s })
         ] }),
-        N.map((y) => /* @__PURE__ */ d(qe, { onClick: B(y.onClick), children: [
-          y.icon && /* @__PURE__ */ t(ce, { children: y.icon }),
-          /* @__PURE__ */ t(de, { inset: !y.icon, children: y.label }),
-          /* @__PURE__ */ t(gr, { count: y.badge })
-        ] }, y.key)),
+        N.map((R) => /* @__PURE__ */ d(qe, { onClick: B(R.onClick), children: [
+          R.icon && /* @__PURE__ */ t(ce, { children: R.icon }),
+          /* @__PURE__ */ t(de, { inset: !R.icon, children: R.label }),
+          /* @__PURE__ */ t(gr, { count: R.badge })
+        ] }, R.key)),
         f && /* @__PURE__ */ d(qe, { onClick: B(x), children: [
           /* @__PURE__ */ t(ce, { children: /* @__PURE__ */ t(_o, { fontSize: "small" }) }),
           /* @__PURE__ */ t(de, { children: "Settings" })
@@ -2246,7 +2246,7 @@ const D = {
                 size: "small",
                 "aria-label": "Theme",
                 value: g,
-                onChange: (y, F) => F && F !== g && (I == null ? void 0 : I()),
+                onChange: (R, F) => F && F !== g && (I == null ? void 0 : I()),
                 disabled: !I,
                 sx: {
                   p: 0.5,
@@ -2378,7 +2378,7 @@ const D = {
 }) => {
   const I = f.filter((S) => S.path).slice(0, mn), [z, B] = b.useState(
     null
-  ), { userName: y = "User", userAvatar: F, avatarColor: X } = g, G = { color: u, activeColor: p, activeBackground: N };
+  ), { userName: R = "User", userAvatar: F, avatarColor: X } = g, G = { color: u, activeColor: p, activeBackground: N };
   return /* @__PURE__ */ d(
     Mt,
     {
@@ -2474,11 +2474,11 @@ const D = {
             Ye,
             {
               label: "Account",
-              ariaLabel: `Account menu for ${y}`,
+              ariaLabel: `Account menu for ${R}`,
               icon: /* @__PURE__ */ t(
                 Kr,
                 {
-                  name: y,
+                  name: R,
                   avatar: F,
                   color: X,
                   size: 26
@@ -2807,7 +2807,7 @@ const D = {
       ]
     }
   );
-}, vn = 100, Sr = 80, kt = 56, yn = 300, Er = 288, wr = 72, vr = "lumora:sidebar-collapsed", yr = "width 200ms ease, left 200ms ease", Rn = 68, In = { xs: 2, md: 5 }, Cn = () => typeof navigator < "u" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent), Tn = (e, r) => {
+}, vn = 100, Sr = 80, kt = 56, Rn = 300, Er = 288, wr = 72, vr = "lumora:sidebar-collapsed", Rr = "width 200ms ease, left 200ms ease", yn = 68, In = { xs: 2, md: 5 }, Cn = () => typeof navigator < "u" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent), Tn = (e, r) => {
   const o = (n) => typeof n == "number" ? r.spacing(n) : n;
   return typeof e == "object" ? Object.fromEntries(
     Object.entries(e).map(([n, a]) => [n, o(a)])
@@ -2832,7 +2832,7 @@ const D = {
   sidebarHeaderBackgroundColor: I,
   groupAccentColor: z,
   activeSidebarForegroundColor: B,
-  enableRefreshToken: y = !1,
+  enableRefreshToken: R = !1,
   activePath: F,
   onLinkClick: X,
   showProfile: G = !0,
@@ -2877,7 +2877,7 @@ const D = {
   const at = fo(), V = po(at.breakpoints.down("md")), Oe = rr(
     () => Ir(Zo(Se)),
     [Se]
-  ), i = Se === "dark", w = St ?? "#01584f", R = te ?? w, E = se ?? (i ? "hsl(220, 35%, 9%)" : "#f2f9fc"), O = s === "collapsible", C = s === "rail-labeled", re = O || C, k = g ?? (i ? "hsl(220, 30%, 7%)" : "#ffffff"), oe = I ?? k, ne = Te ?? (i ? "#ffffff" : R), st = z ?? zt(ne), lt = I ? Lt(oe) : ne, Ht = (T) => /* @__PURE__ */ t(
+  ), i = Se === "dark", w = St ?? "#01584f", y = te ?? w, E = se ?? (i ? "hsl(220, 35%, 9%)" : "#f2f9fc"), O = s === "collapsible", C = s === "rail-labeled", re = O || C, k = g ?? (i ? "hsl(220, 30%, 7%)" : "#ffffff"), oe = I ?? k, ne = Te ?? (i ? "#ffffff" : y), st = z ?? zt(ne), lt = I ? Lt(oe) : ne, Ht = (T) => /* @__PURE__ */ t(
     Z,
     {
       role: "img",
@@ -2897,14 +2897,14 @@ const D = {
         WebkitMaskSize: "contain"
       }
     }
-  ), wt = f ?? lt, Kt = u ?? Ht(wt), jr = u ?? Ht(f ?? ne), [Pe, Xr] = Re(
+  ), wt = f ?? lt, Kt = u ?? Ht(wt), jr = u ?? Ht(f ?? ne), [Pe, Xr] = ye(
     () => Wr(vr) ?? !1
   ), Ut = (T) => {
     Xr(T), kr(vr, T);
-  }, [Vr, $t] = Re(!1), Yr = ho(() => $t(!1), []);
+  }, [Vr, $t] = ye(!1), Yr = ho(() => $t(!1), []);
   let ie = 0;
   a && !V && (C ? ie = Sr : O ? ie = Pe ? wr : Er : ie = vn);
-  const [Pt, ye] = Re(!1), [Gt, vt] = Re(!1), j = V && l === "bottom-bar", jt = `calc(${Pr}px + env(safe-area-inset-bottom, 0px))`, [qr, yt] = Re(!1), [Jr, Zr] = Re(!0), [Qr, eo] = Re(!1), Rt = Be == null ? void 0 : Be(), Xt = (Rt == null ? void 0 : Rt.isOpen) ?? !1, Vt = Fe === "floating" ? "floating" : "docked", to = Vt === "docked" && Xt && he && !V ? Ee : 0, ct = Ot(K), Yt = Ot(!1), qt = rr(
+  const [Pt, Re] = ye(!1), [Gt, vt] = ye(!1), j = V && l === "bottom-bar", jt = `calc(${Pr}px + env(safe-area-inset-bottom, 0px))`, [qr, Rt] = ye(!1), [Jr, Zr] = ye(!0), [Qr, eo] = ye(!1), yt = Be == null ? void 0 : Be(), Xt = (yt == null ? void 0 : yt.isOpen) ?? !1, Vt = Fe === "floating" ? "floating" : "docked", to = Vt === "docked" && Xt && he && !V ? Ee : 0, ct = Ot(K), Yt = Ot(!1), qt = rr(
     () => Jo($e),
     [$e]
   );
@@ -2958,8 +2958,8 @@ const D = {
       }
     })();
   }, [ve]), ut(() => {
-    y && Qo(qt, ve);
-  }, [y, qt]), Jr)
+    R && Qo(qt, ve);
+  }, [R, qt]), Jr)
     return /* @__PURE__ */ t(tr, { theme: Oe, children: /* @__PURE__ */ d(
       Z,
       {
@@ -2987,9 +2987,9 @@ const D = {
   if (!Qr)
     return null;
   const je = N ?? (nt ? /* @__PURE__ */ t(nt, { ...it }) : null), Jt = be && (() => {
-    ye(!1), vt(!1), yt(!0);
+    Re(!1), vt(!1), Rt(!0);
   }), Zt = {
-    avatarColor: R,
+    avatarColor: y,
     menuItems: v,
     showNotifications: W,
     notificationCount: ue,
@@ -3066,7 +3066,7 @@ const D = {
           bn,
           {
             height: kt,
-            onMenuClick: a && !j ? () => ye(!0) : void 0,
+            onMenuClick: a && !j ? () => Re(!0) : void 0,
             appName: n,
             logo: Kt,
             onBrandClick: p,
@@ -3107,7 +3107,7 @@ const D = {
               bgcolor: O ? k : void 0,
               borderRight: "1px solid",
               borderColor: "divider",
-              transition: yr,
+              transition: Rr,
               ...P
             },
             children: [
@@ -3125,7 +3125,7 @@ const D = {
                   brandColor: wt,
                   headerBackgroundColor: O ? oe : void 0,
                   headerForegroundColor: O ? lt : void 0,
-                  activeAccentColor: R,
+                  activeAccentColor: y,
                   groupAccentColor: z,
                   activeForegroundColor: B,
                   foregroundColor: Te,
@@ -3216,7 +3216,7 @@ const D = {
                             secondaryLinks: o,
                             activePath: F,
                             onLinkClick: X,
-                            accentColor: R,
+                            accentColor: y,
                             surfaceBackgroundColor: E,
                             railShowTitles: c
                           }
@@ -3236,8 +3236,8 @@ const D = {
           {
             anchor: j ? "bottom" : "left",
             open: Pt,
-            onOpen: () => ye(!0),
-            onClose: () => ye(!1),
+            onOpen: () => Re(!0),
+            onClose: () => Re(!1),
             disableSwipeToOpen: !0,
             sx: { zIndex: (T) => T.zIndex.drawer + 1 },
             slotProps: {
@@ -3280,12 +3280,12 @@ const D = {
                   secondaryLinks: o,
                   activePath: F,
                   onLinkClick: (T) => {
-                    X == null || X(T), ye(!1);
+                    X == null || X(T), Re(!1);
                   },
-                  onLinkAction: () => ye(!1),
+                  onLinkAction: () => Re(!1),
                   collapsed: !1,
-                  expandedWidth: j ? "100%" : yn,
-                  activeAccentColor: R,
+                  expandedWidth: j ? "100%" : Rn,
+                  activeAccentColor: y,
                   groupAccentColor: z,
                   activeForegroundColor: B,
                   foregroundColor: Te,
@@ -3314,7 +3314,7 @@ const D = {
             pinnedLinks: h,
             activePath: F,
             onLinkClick: X,
-            onMenuClick: a ? () => ye(!0) : void 0,
+            onMenuClick: a ? () => Re(!0) : void 0,
             menuOpen: Pt,
             onSearchClick: je ? () => vt(!0) : void 0,
             searchOpen: Gt,
@@ -3324,7 +3324,7 @@ const D = {
             showProfile: G,
             background: k,
             color: ne,
-            activeColor: R,
+            activeColor: y,
             activeBackground: st
           }
         ),
@@ -3339,7 +3339,7 @@ const D = {
               "--lumora-sticky-top": V ? `${kt}px` : "0px",
               p: "var(--lumora-content-padding)",
               width: ie ? `calc(100% - ${ie}px)` : "100%",
-              transition: yr,
+              transition: Rr,
               mt: V ? `${kt}px` : 0,
               // Keep the last content clear of the bottom bar
               ...j && {
@@ -3359,7 +3359,7 @@ const D = {
             position: Me,
             width: Ee,
             sidebarWidthPx: ie,
-            bottomOffsetPx: we && He === "floating" ? Rn : 0,
+            bottomOffsetPx: we && He === "floating" ? yn : 0,
             fullScreen: V,
             fullScreenBottom: j ? jt : "0px",
             onClose: rt,
@@ -3382,14 +3382,14 @@ const D = {
           {
             anchor: "right",
             open: qr,
-            onClose: () => yt(!1),
+            onClose: () => Rt(!1),
             slotProps: {
               paper: { sx: { width: 380, maxWidth: "100vw" } }
             },
             children: /* @__PURE__ */ t(
               be,
               {
-                onClose: () => yt(!1)
+                onClose: () => Rt(!1)
               }
             )
           }
