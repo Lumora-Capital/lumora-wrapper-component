@@ -527,6 +527,23 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).toBeInTheDocument();
 		});
 
+		it("adds the What's New count to the top-bar bell, since the bell opens both tabs", () => {
+			const Panel = () => <div>notification list</div>;
+			renderCollapsible(
+				{
+					notificationCount: 2,
+					whatsNewCount: 1,
+					NotificationSidebarContent: Panel
+				},
+				true
+			);
+			expect(
+				within(screen.getByRole('banner')).getByRole('button', {
+					name: 'Notifications, 3 unread'
+				})
+			).toBeInTheDocument();
+		});
+
 		it('opens the links drawer, the search sheet and the user menu from the bottom bar', async () => {
 			const onLinkClick = jest.fn();
 			renderCollapsible(

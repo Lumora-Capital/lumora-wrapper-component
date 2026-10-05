@@ -740,3 +740,47 @@ describe('PanelSidebar account menu', () => {
 		});
 	});
 });
+
+describe('PanelSidebar footer bell', () => {
+	it('badges the bell with both counts together, and the menu entries with each on its own', () => {
+		renderPanel();
+		// 29 unread notifications + 3 unread What's New: the bell opens both tabs
+		expect(
+			screen.getByLabelText('Notifications, 32 unread')
+		).toBeInTheDocument();
+		const menu = openMenu();
+		expect(
+			within(menu).getByTestId('menu-item-notifications')
+		).toHaveTextContent('29');
+		expect(
+			within(menu).getByTestId('menu-item-whats-new')
+		).toHaveTextContent('3');
+	});
+
+	it("collapsed, shows the avatar dot when only What's New is unread", () => {
+		renderPanel({
+			collapsed: true,
+			notificationCount: 0,
+			whatsNewCount: 3
+		});
+		expect(screen.queryByTestId('panel-notifications')).toBeNull();
+		const dot = screen
+			.getByTestId('panel-user-button')
+			.querySelector('.MuiBadge-dot');
+		expect(dot).not.toBeNull();
+		expect(dot).not.toHaveClass('MuiBadge-invisible');
+	});
+
+	it('collapsed, hides the avatar dot when nothing is unread on either tab', () => {
+		renderPanel({
+			collapsed: true,
+			notificationCount: 0,
+			whatsNewCount: 0
+		});
+		expect(
+			screen
+				.getByTestId('panel-user-button')
+				.querySelector('.MuiBadge-dot')
+		).toHaveClass('MuiBadge-invisible');
+	});
+});

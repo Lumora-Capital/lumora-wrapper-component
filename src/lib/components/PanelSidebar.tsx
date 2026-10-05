@@ -65,8 +65,10 @@ export interface PanelSidebarProps {
 	userRole?: string;
 	userAvatar?: string;
 	showNotifications?: boolean;
+	/** Unread count on the account menu's Notifications entry; the bell adds `whatsNewCount` to it. */
 	notificationCount?: number;
 	onNotificationsClick?: () => void;
+	/** Unread count on the account menu's What's New entry, and the other half of the bell's badge. */
 	whatsNewCount?: number;
 	onWhatsNewClick?: () => void;
 	onProfileClick?: () => void;
@@ -171,9 +173,13 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	);
 
 	// --- User footer ---------------------------------------------------------
+	// The bell opens the updates drawer, which holds both the Notifications and
+	// the What's New tab, so its badge counts both. The account menu's entries
+	// show each count on its own.
+	const bellCount = notificationCount + whatsNewCount;
 	const bell = showNotifications ? (
 		<NotificationBell
-			count={notificationCount}
+			count={bellCount}
 			onClick={onNotificationsClick}
 			color={fg}
 			hoverColor={tint}
@@ -208,7 +214,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					color='error'
 					variant='dot'
 					overlap='circular'
-					invisible={!notificationCount}
+					invisible={!bellCount}
 				>
 					{renderAvatar(36)}
 				</Badge>

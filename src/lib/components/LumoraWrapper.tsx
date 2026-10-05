@@ -273,6 +273,11 @@ export interface LumoraWrapperProps {
 	) => void;
 	// Notifications (above the user)
 	showNotifications?: boolean;
+	/**
+	 * Unread count for the Notifications tab, shown on the user menu's
+	 * Notifications entry. The bell badge shows this plus `whatsNewCount`,
+	 * since the bell opens the drawer that holds both tabs.
+	 */
 	notificationCount?: number;
 	/**
 	 * Content component for the right-side updates drawer; receives `onClose`
@@ -281,7 +286,10 @@ export interface LumoraWrapperProps {
 	 * entry (on `'whats-new'`).
 	 */
 	NotificationSidebarContent?: React.ComponentType<NotificationSidebarContentProps>;
-	/** Unread What's New count for the `panel` account menu; the pill is hidden when 0. */
+	/**
+	 * Unread What's New count: the `panel` account menu's What's New pill
+	 * (hidden when 0), and the other half of the bell badge.
+	 */
 	whatsNewCount?: number;
 	/**
 	 * `panel` account menu fallbacks, used when there is no
@@ -786,6 +794,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		NotificationSidebarContent && (() => openUpdates('notifications'));
 	const openWhatsNew =
 		NotificationSidebarContent && (() => openUpdates('whats-new'));
+	// The bell opens the drawer, which holds both tabs, so its badge counts
+	// both. The menu entries show each count on its own.
+	const bellCount = notificationCount + whatsNewCount;
 	// Notifications + user; `compact` for the collapsed and narrow rails.
 	const footerProps: Omit<
 		SidebarFooterProps,
@@ -892,7 +903,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						endContent={
 							showNotifications ? (
 								<NotificationBell
-									count={notificationCount}
+									count={bellCount}
 									onClick={openNotifications}
 									color={sidebarHeaderFg}
 									hoverColor={sidebarChromeHover}
