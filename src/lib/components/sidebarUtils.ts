@@ -143,3 +143,15 @@ export const writeStoredCollapsed = (key: string, value: boolean): void => {
 		console.warn('Failed to persist sidebar collapsed state:', error);
 	}
 };
+
+/**
+ * Same-tab navigation used by the platform switcher's default behavior.
+ * SSR-safe; kept as a module export so tests can spy on it (jsdom does not
+ * implement navigation).
+ */
+export const navigateTo = (url: string): void => {
+	if (typeof window === 'undefined') {
+		return;
+	}
+	window.location.assign(url);
+};

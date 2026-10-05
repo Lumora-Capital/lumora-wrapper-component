@@ -15,7 +15,10 @@ import {
 	clearAuthTokens,
 	getDesignTokens,
 	isAuthenticated,
-	storeAuthTokens
+	storeAuthTokens,
+	type LumoraPlatform,
+	type NotificationSidebarContentProps,
+	type SettingsSection
 } from '../lib';
 import {
 	flatLinks,
@@ -90,19 +93,63 @@ const DemoSearch = () => (
 	/>
 );
 
-const NotificationPanel = ({ onClose }: { onClose: () => void }) => (
+/** Panel variant: platforms the demo user may switch to (a host passes only the accessible ones). */
+const demoPlatforms: LumoraPlatform[] = [
+	{ key: 'centra', name: 'Centra', url: 'https://centra.lumora.capital' },
+	{ key: 'polymer', name: 'Polymer', url: 'https://polymer.lumora.capital' },
+	{ key: 'xpdite', name: 'XPdite', url: 'https://xpdite.lumora.capital' },
+	{ key: 'core', name: 'Core', url: 'https://core.lumora.capital' }
+];
+
+/** Panel variant: the settings card; rows route through onLinkClick. */
+const toSettingsItems = (base: string, labels: string[]) =>
+	labels.map(text => ({
+		text,
+		path: `${base}/${text.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+	}));
+const demoSettingsSections: SettingsSection[] = [
+	{
+		title: 'Configuration',
+		items: toSettingsItems('/settings/configuration', [
+			'Status management',
+			'Tag management',
+			'Workflow',
+			'Templates',
+			'Deal defaults',
+			'Notification configs'
+		])
+	},
+	{
+		title: 'Admin',
+		items: toSettingsItems('/settings/admin', [
+			'Users & Roles',
+			'Allowed Origins',
+			'Model Provider API Keys',
+			'Maintenance mode'
+		])
+	}
+];
+
+/** Host content for the updates drawer; the panel menu's What's New opens it on the other tab. */
+const NotificationPanel = ({
+	onClose,
+	initialTab = 'notifications'
+}: NotificationSidebarContentProps) => (
 	<Box sx={{ p: 2 }}>
 		<Stack
 			direction='row'
 			sx={{ alignItems: 'center', justifyContent: 'space-between' }}
 		>
-			<Typography variant='h6'>Notifications</Typography>
+			<Typography variant='h6'>
+				{initialTab === 'whats-new' ? "What's New" : 'Notifications'}
+			</Typography>
 			<IconButton aria-label='Close notifications' onClick={onClose}>
 				<CloseIcon />
 			</IconButton>
 		</Stack>
 		<Typography sx={{ mt: 1, color: 'text.secondary' }}>
-			Host-provided content rendered through NotificationSidebarContent.
+			Host-provided content rendered through NotificationSidebarContent
+			(initialTab: {initialTab}).
 		</Typography>
 	</Box>
 );
@@ -259,6 +306,7 @@ const DemoApp = () => {
 					appName='CENTRA'
 					userName={demoUser.name}
 					userRole={demoUser.role}
+					userEmail={demoUser.email}
 					sidebarVariant={settings.sidebarVariant}
 					mobileNavigation={
 						settings.mobileDrawer ? 'drawer' : 'bottom-bar'
@@ -286,6 +334,19 @@ const DemoApp = () => {
 					}
 					showProfile={settings.showProfile}
 					onSettingsClick={() => setActivePath('/settings')}
+					// `panel` variant: the account menu's extra entries, the
+					// settings card and the platform switcher
+					onProfileClick={() => setActivePath('/profile')}
+					onSubmitRequestClick={() => setRequestOpen(true)}
+					whatsNewCount={1}
+					onWhatsNewClick={() => setActivePath('/whats-new')}
+					settingsSections={demoSettingsSections}
+					platforms={demoPlatforms}
+					currentPlatformKey='centra'
+					// The default navigates in the same tab; keep the playground open
+					onPlatformSelect={platform =>
+						window.open(platform.url, '_blank', 'noopener')
+					}
 					showNotifications={settings.showNotifications}
 					notificationCount={26}
 					NotificationSidebarContent={

@@ -66,7 +66,7 @@ export default function AppShell({ children }) {
 			apiBaseUrl='https://dev.api.lumora.capital' // required
 			redirectToLogin={redirectToLogin} // required, keep it stable
 			onLogout={handleLogout} // required
-			sidebarVariant='collapsible'
+			sidebarVariant='panel' // collapsible sidebar + the account menu
 			appName='CENTRA'
 			sidebarLinks={links}
 		>
@@ -101,7 +101,13 @@ import { mainLinks, secondaryLinks } from './navigation';
 import { useNexaStore } from '@/stores/nexa';
 import { useSessionStore } from '@/stores/session';
 import { useThemeStore } from '@/stores/theme';
-import { centraColors, userMenuItems, fullBleedRoutes } from './shellConfig';
+import {
+	centraColors,
+	fullBleedRoutes,
+	platforms,
+	settingsSections,
+	userMenuItems
+} from './shellConfig';
 
 // A module-level hook, so it is called the same way on every render
 const useChatSidebar = () => ({ isOpen: useNexaStore(s => s.isOpen) });
@@ -135,7 +141,7 @@ export default function AppShell({ children }) {
 			onLogout={handleLogout}
 			onVerify={setUser} // the stored user, once, after the session check
 			// Layout
-			sidebarVariant='collapsible'
+			sidebarVariant='panel' // collapsible sidebar + the account menu
 			sidebarLinks={mainLinks}
 			secondarySidebarLinks={secondaryLinks}
 			activePath={pathname}
@@ -164,6 +170,14 @@ export default function AppShell({ children }) {
 			showThemeToggler
 			theme={mode}
 			onThemeToggle={toggle}
+			// Account menu (panel variant): profile, support request,
+			// settings card and the Lumora Platforms switcher
+			userEmail={user?.email}
+			onProfileClick={() => router.push('/profile')}
+			onSubmitRequestClick={openRequestDialog} // see Support requests
+			settingsSections={settingsSections(router)}
+			platforms={platforms}
+			currentPlatformKey='centra'
 			// Look
 			{...(mode === 'light' ? centraColors : {})}
 		>
@@ -325,6 +339,67 @@ export const userMenuItems = router => [
 ```
 
 - The Light / Dark switch calls `onThemeToggle` when the other mode is picked; you own the mode and pass it back as `theme`.
+
+#### The `panel` variant: account menu
+
+`sidebarVariant='panel'` keeps the same collapsible sidebar (brand, Ask Nexa, your search, links) and swaps the user menu for a larger account menu with a profile entry, a support-request entry, a settings card and a platform switcher. Desktop only: phones keep the bottom bar and the standard user menu.
+
+```
+┌──────────────────────────────┐
+│ (GP) Gabriel Paet            │  userName, userEmail, userRole, userAvatar
+│      gabriel@lumora.capital  │
+│      STANDARD USER           │
+├──────────────────────────────┤
+│ ☼ Theme          [ ☼ | ☾ ]   │  showThemeToggler, theme, onThemeToggle
+│ 🔔 Notifications          25 │  showNotifications, notificationCount
+│ 📣 What's New              1 │  whatsNewCount (+ the drawer, or onWhatsNewClick)
+│ ♙ Profile                    │  onProfileClick
+│ ☊ Submit a request           │  onSubmitRequestClick
+│ ⚙  Settings                › │  settingsSections (card) or onSettingsClick
+│ ▤ Lumora Platforms         › │  platforms, currentPlatformKey, onPlatformSelect
+├──────────────────────────────┤
+│ ↪ Log out                    │  onLogout
+└──────────────────────────────┘
+```
+
+Entries render only when their prop is set. `userMenuItems` is not used by this menu.
+
+- **Updates drawer tabs.** With `NotificationSidebarContent`, the bell and the Notifications entry open the drawer with `initialTab='notifications'`, and What's New opens it with `initialTab='whats-new'`. Render both tabs and start on `initialTab`. Without the drawer, Notifications calls `onNotificationsClick` and What's New calls `onWhatsNewClick` (hidden without either).
+- **Settings card.** Pass `settingsSections` and Settings opens a second card of collapsible sections beside the menu instead of calling `onSettingsClick`. Choosing a row runs its own `onClick`, else `onSettingsItemClick(item, section)`, else `onLinkClick(item.path)`.
+- **Platform switcher.** Pass only the `platforms` the signed-in user may access (switching never grants permissions); the entry is hidden when empty. The `currentPlatformKey` row is marked Current and inert. Choosing another platform navigates to its `url` in the same tab, or calls `onPlatformSelect(platform)` instead when provided (SSO hand-off, unsaved-changes checks).
+
+```jsx
+<LumoraWrapper
+	sidebarVariant='panel'
+	userEmail={user?.email}
+	onProfileClick={() => router.push('/profile')}
+	onSubmitRequestClick={openRequestDialog}
+	whatsNewCount={1}
+	settingsSections={[
+		{
+			title: 'Configuration',
+			items: [
+				{ text: 'Status management', path: '/settings/status' },
+				{ text: 'Workflow', path: '/settings/workflow' }
+			]
+		},
+		{
+			title: 'Admin',
+			items: [{ text: 'Users & Roles', path: '/admin/users' }]
+		}
+	]}
+	platforms={[
+		{ key: 'centra', name: 'Centra', url: 'https://centra.lumora.capital' },
+		{
+			key: 'polymer',
+			name: 'Polymer',
+			url: 'https://polymer.lumora.capital'
+		}
+	]}
+	currentPlatformKey='centra'
+	// ...the props from section 1
+/>
+```
 
 #### Support requests
 
@@ -498,16 +573,17 @@ In dark mode, leave them out and the wrapper uses its dark defaults. Fonts come 
 
 ## Props checklist
 
-| Area         | Pass                                                                                                                                | Notes                                                     |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                             | `redirectToLogin` must be stable (`useCallback`).         |
-| Layout       | `sidebarVariant='collapsible'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`        | The default variant is `rail`; Centra uses `collapsible`. |
-| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                              |                                                           |
-| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`       |                                                           |
-| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                    | Not filled in automatically.                              |
-| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle` |                                                           |
-| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                            | Import `FullBleedSection` from the package.               |
-| Look         | the [color props](#8-colors)                                                                                                        |                                                           |
+| Area         | Pass                                                                                                                                       | Notes                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                                    | `redirectToLogin` must be stable (`useCallback`).                                                   |
+| Layout       | `sidebarVariant='panel'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`                     | The default variant is `rail`; Centra uses `panel` (the collapsible sidebar plus the account menu). |
+| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                                     |                                                                                                     |
+| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`              |                                                                                                     |
+| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                           | Not filled in automatically.                                                                        |
+| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle`        |                                                                                                     |
+| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `onSubmitRequestClick`, `settingsSections`, `platforms`, `currentPlatformKey` | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
+| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                                   | Import `FullBleedSection` from the package.                                                         |
+| Look         | the [color props](#8-colors)                                                                                                               |                                                                                                     |
 
 ## Props reference
 
@@ -525,19 +601,19 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 
 ### Layout and navigation
 
-| Prop                    | Type                                                  | Default            | Description                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sidebarVariant`        | `'rail' \| 'collapsible' \| 'rail-labeled'`           | `'rail'`           | `collapsible`: 288px panel that collapses to a 72px icon rail (state saved in localStorage). `rail`: fixed 100px icon rail. `rail-labeled`: fixed 80px rail with captions. |
-| `showSidebar`           | `boolean`                                             | `true`             | Hide the sidebar (desktop) / drawer (mobile).                                                                                                                              |
-| `mobileNavigation`      | `'bottom-bar' \| 'drawer'`                            | `'bottom-bar'`     | Phones: bottom bar with Menu, pinned pages, Nexa, Search and Account (notifications in the top bar), or a hamburger drawer holding everything ([Mobile](#7-mobile)).       |
-| `mobileBottomBarLinks`  | `SidebarLink[]`                                       | —                  | Pages pinned in the mobile bottom bar between Menu and Nexa; one keeps the bar at five items. Max two.                                                                     |
-| `sidebarLinks`          | `SidebarLink[]`                                       | `[]`               | Main navigation.                                                                                                                                                           |
-| `secondarySidebarLinks` | `SidebarLink[]`                                       | `[]`               | Links pinned to the bottom, above the user.                                                                                                                                |
-| `activePath`            | `string`                                              | —                  | Highlights the matching link and opens its parents.                                                                                                                        |
-| `onLinkClick`           | `(path: string) => void`                              | —                  | Called with the clicked link's path. Navigate here.                                                                                                                        |
-| `showSidebarRailTitles` | `boolean`                                             | `false`            | `rail` only: caption under each icon.                                                                                                                                      |
-| `alertProps`            | `{ show, title, message, buttonText, onButtonClick }` | —                  | Card under the links (expanded panel, rail, drawer).                                                                                                                       |
-| `contentPadding`        | `number \| string \| { xs?, sm?, md?, lg?, xl? }`     | `{ xs: 2, md: 5 }` | Padding around the page; also exposed as `--lumora-content-padding`. `0` for full-bleed pages.                                                                             |
+| Prop                    | Type                                                   | Default            | Description                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sidebarVariant`        | `'rail' \| 'collapsible' \| 'rail-labeled' \| 'panel'` | `'rail'`           | `collapsible`: 288px panel that collapses to a 72px icon rail (state saved in localStorage). `rail`: fixed 100px icon rail. `rail-labeled`: fixed 80px rail with captions. `panel`: the collapsible panel with the [account menu](#the-panel-variant-account-menu) in place of the user menu (desktop). |
+| `showSidebar`           | `boolean`                                              | `true`             | Hide the sidebar (desktop) / drawer (mobile).                                                                                                                                                                                                                                                           |
+| `mobileNavigation`      | `'bottom-bar' \| 'drawer'`                             | `'bottom-bar'`     | Phones: bottom bar with Menu, pinned pages, Nexa, Search and Account (notifications in the top bar), or a hamburger drawer holding everything ([Mobile](#7-mobile)).                                                                                                                                    |
+| `mobileBottomBarLinks`  | `SidebarLink[]`                                        | —                  | Pages pinned in the mobile bottom bar between Menu and Nexa; one keeps the bar at five items. Max two.                                                                                                                                                                                                  |
+| `sidebarLinks`          | `SidebarLink[]`                                        | `[]`               | Main navigation.                                                                                                                                                                                                                                                                                        |
+| `secondarySidebarLinks` | `SidebarLink[]`                                        | `[]`               | Links pinned to the bottom, above the user.                                                                                                                                                                                                                                                             |
+| `activePath`            | `string`                                               | —                  | Highlights the matching link and opens its parents.                                                                                                                                                                                                                                                     |
+| `onLinkClick`           | `(path: string) => void`                               | —                  | Called with the clicked link's path. Navigate here.                                                                                                                                                                                                                                                     |
+| `showSidebarRailTitles` | `boolean`                                              | `false`            | `rail` only: caption under each icon.                                                                                                                                                                                                                                                                   |
+| `alertProps`            | `{ show, title, message, buttonText, onButtonClick }`  | —                  | Card under the links (expanded panel, rail, drawer).                                                                                                                                                                                                                                                    |
+| `contentPadding`        | `number \| string \| { xs?, sm?, md?, lg?, xl? }`      | `{ xs: 2, md: 5 }` | Padding around the page; also exposed as `--lumora-content-padding`. `0` for full-bleed pages.                                                                                                                                                                                                          |
 
 ### Sidebar top
 
@@ -567,21 +643,39 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 
 ### User and notifications
 
-| Prop                         | Type                               | Default   | Description                                                        |
-| ---------------------------- | ---------------------------------- | --------- | ------------------------------------------------------------------ |
-| `showProfile`                | `boolean`                          | `true`    | The user row and its menu.                                         |
-| `userName`                   | `string`                           | `'User'`  | Name; also gives the avatar initials.                              |
-| `userRole`                   | `string`                           | `'User'`  | Shown under the name (`"ADMIN"` → `"Admin"`).                      |
-| `userAvatar`                 | `string`                           | —         | Avatar image URL.                                                  |
-| `showNotifications`          | `boolean`                          | `true`    | Bell beside the user and the Notifications menu entry.             |
-| `notificationCount`          | `number`                           | `0`       | Unread count.                                                      |
-| `NotificationSidebarContent` | `React.ComponentType<{ onClose }>` | —         | Drawer content opened by the bell / menu entry.                    |
-| `userMenuItems`              | `UserMenuItem[]`                   | —         | `{ key, label, icon?, badge?, onClick? }` entries before Settings. |
-| `showSettings`               | `boolean`                          | `true`    | Settings entry.                                                    |
-| `onSettingsClick`            | `() => void`                       | —         | Usually opens your settings / profile page.                        |
-| `showThemeToggler`           | `boolean`                          | `false`   | Light / Dark switch in the menu.                                   |
-| `theme`                      | `'light' \| 'dark'`                | `'light'` | Current mode (also drives the wrapper's own MUI theme).            |
-| `onThemeToggle`              | `() => void`                       | —         | Called when the other mode is picked.                              |
+| Prop                         | Type                                            | Default   | Description                                                                                                                                 |
+| ---------------------------- | ----------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `showProfile`                | `boolean`                                       | `true`    | The user row and its menu.                                                                                                                  |
+| `userName`                   | `string`                                        | `'User'`  | Name; also gives the avatar initials.                                                                                                       |
+| `userRole`                   | `string`                                        | `'User'`  | Shown under the name (`"ADMIN"` → `"Admin"`).                                                                                               |
+| `userAvatar`                 | `string`                                        | —         | Avatar image URL.                                                                                                                           |
+| `showNotifications`          | `boolean`                                       | `true`    | Bell beside the user and the Notifications menu entry.                                                                                      |
+| `notificationCount`          | `number`                                        | `0`       | Unread count.                                                                                                                               |
+| `NotificationSidebarContent` | `React.ComponentType<{ onClose, initialTab? }>` | —         | Drawer content opened by the bell / menu entry. `initialTab` is `'notifications'`, or `'whats-new'` from the panel menu's What's New entry. |
+| `userMenuItems`              | `UserMenuItem[]`                                | —         | `{ key, label, icon?, badge?, onClick? }` entries before Settings.                                                                          |
+| `showSettings`               | `boolean`                                       | `true`    | Settings entry.                                                                                                                             |
+| `onSettingsClick`            | `() => void`                                    | —         | Usually opens your settings / profile page.                                                                                                 |
+| `showThemeToggler`           | `boolean`                                       | `false`   | Light / Dark switch in the menu.                                                                                                            |
+| `theme`                      | `'light' \| 'dark'`                             | `'light'` | Current mode (also drives the wrapper's own MUI theme).                                                                                     |
+| `onThemeToggle`              | `() => void`                                    | —         | Called when the other mode is picked.                                                                                                       |
+
+### Account menu (`panel` variant)
+
+Used only with `sidebarVariant='panel'` ([details](#the-panel-variant-account-menu)).
+
+| Prop                   | Type                                                     | Default | Description                                                                                     |
+| ---------------------- | -------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `userEmail`            | `string`                                                 | —       | Shown in the account menu header, under the name.                                               |
+| `onProfileClick`       | `() => void`                                             | —       | Profile entry; hidden when omitted.                                                             |
+| `onSubmitRequestClick` | `() => void`                                             | —       | Submit a request entry; hidden when omitted.                                                    |
+| `whatsNewCount`        | `number`                                                 | `0`     | Unread pill on What's New; hidden when 0.                                                       |
+| `onNotificationsClick` | `() => void`                                             | —       | Notifications entry, when there is no `NotificationSidebarContent`.                             |
+| `onWhatsNewClick`      | `() => void`                                             | —       | What's New entry, when there is no drawer (the entry is hidden without either).                 |
+| `settingsSections`     | `SettingsSection[]`                                      | —       | Settings opens a card of these sections instead of calling `onSettingsClick`.                   |
+| `onSettingsItemClick`  | `(item: SettingsItem, section: SettingsSection) => void` | —       | A settings row was chosen; runs after the row's own `onClick`, before `onLinkClick(item.path)`. |
+| `platforms`            | `LumoraPlatform[]`                                       | —       | Lumora Platforms entry; hidden when empty.                                                      |
+| `currentPlatformKey`   | `string`                                                 | —       | Marks the platform in use (Current, inert).                                                     |
+| `onPlatformSelect`     | `(platform: LumoraPlatform) => void`                     | —       | Replaces the default same-tab navigation to `platform.url`.                                     |
 
 ### Colors and styles
 
@@ -629,6 +723,35 @@ type UserMenuItem = {
 	badge?: number;
 	onClick?: () => void;
 };
+
+type UpdatesTab = 'notifications' | 'whats-new';
+
+interface NotificationSidebarContentProps {
+	onClose: () => void;
+	initialTab?: UpdatesTab; // which tab to open on
+}
+
+// `panel` variant
+type SettingsItem = {
+	key?: string; // stable id (defaults to a slug of text)
+	text: string;
+	path?: string; // routed through onLinkClick when there is no onClick / onSettingsItemClick
+	onClick?: () => void;
+	disabled?: boolean;
+};
+
+type SettingsSection = {
+	title: string; // collapsible header, e.g. "Configuration"
+	items: SettingsItem[];
+	defaultOpen?: boolean; // default false
+};
+
+type LumoraPlatform = {
+	key: string; // matched against currentPlatformKey
+	name: string;
+	url: string; // home page opened in the same tab
+	description?: string; // optional second line
+};
 ```
 
 Also exported: `FullBleedSection` ([detail-page headers](#6-content-spacing-and-full-width-pages)), `CollapsibleSidebar` (the sidebar on its own), `Kbd`, `getDesignTokens`, and the session helpers below.
@@ -658,13 +781,14 @@ Other helpers: `clearAuthTokens`, `getAuthTokens`, `isAuthenticated`, `getCurren
 
 The navbar is gone. These props still compile but have moved or do nothing:
 
-| Old prop                                                                           | Now                                                                     |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `customNavbar` / `customNavbarProps`                                               | Use `searchComponent`. Until you switch, it renders in the search slot. |
-| `showSearchbar`, `searchValue`, `onSearchChange`, `onSearchSubmit`                 | No built-in search anymore; pass `searchComponent`.                     |
-| `showHeader`, `headerStyles`, `navbarBackground`, `navbarAccentColor`              | No effect.                                                              |
-| `rightExtraContent`                                                                | No effect; use `userMenuItems` for extra entries.                       |
-| `pageName`, `userEmail`, `onProfileClick`, `onAccountClick`, `sidebarSectionTitle` | No effect.                                                              |
+| Old prop                                                              | Now                                                                     |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `customNavbar` / `customNavbarProps`                                  | Use `searchComponent`. Until you switch, it renders in the search slot. |
+| `showSearchbar`, `searchValue`, `onSearchChange`, `onSearchSubmit`    | No built-in search anymore; pass `searchComponent`.                     |
+| `showHeader`, `headerStyles`, `navbarBackground`, `navbarAccentColor` | No effect.                                                              |
+| `rightExtraContent`                                                   | No effect; use `userMenuItems` for extra entries.                       |
+| `userEmail`, `onProfileClick`                                         | Used by the `panel` variant's account menu; no effect elsewhere.        |
+| `pageName`, `onAccountClick`, `sidebarSectionTitle`                   | No effect.                                                              |
 
 Behavior changes: Nexa is a sidebar button (was in the navbar); the chat opens in a full-height panel pinned to the right, over the page (it used to be a column that narrowed the content; `chatPanelMode='inline'` now gives the pinned panel too); content padding is 40px (was 24px, set `contentPadding={3}` for the old spacing); phones get a bottom bar instead of the hamburger (`mobileNavigation='drawer'` for the old drawer).
 

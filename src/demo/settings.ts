@@ -1,4 +1,4 @@
-export type SidebarVariant = 'rail' | 'collapsible' | 'rail-labeled';
+export type SidebarVariant = 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
 
 /** Everything the playground panel can toggle. */
 export type DemoSettings = {
@@ -28,7 +28,9 @@ export type DemoSettings = {
 };
 
 export const defaultSettings: DemoSettings = {
-	sidebarVariant: 'collapsible',
+	// `panel`: the collapsible sidebar plus the account menu (theme, settings
+	// card, Lumora Platforms) — the layout Centra is moving to.
+	sidebarVariant: 'panel',
 	mode: 'light',
 	brandColors: true,
 	detailPage: false,
@@ -53,8 +55,15 @@ export const defaultSettings: DemoSettings = {
 	enableRefreshToken: false
 };
 
-const STORAGE_KEY = 'lumora-demo:settings';
-const VARIANTS: SidebarVariant[] = ['rail', 'collapsible', 'rail-labeled'];
+// Bumped (v2) when the default variant became `panel`, so settings saved by
+// the older playground do not keep the account menu hidden.
+const STORAGE_KEY = 'lumora-demo:settings:v2';
+const VARIANTS: SidebarVariant[] = [
+	'rail',
+	'collapsible',
+	'rail-labeled',
+	'panel'
+];
 
 /**
  * Saved settings, then URL overrides on top (`?sidebarVariant=rail&mode=dark&

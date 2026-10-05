@@ -33,6 +33,7 @@ import MobileBottomNav, {
 import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
 import NotificationBell from './NotificationBell';
+import PanelSidebar from './PanelSidebar';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
@@ -115,6 +116,48 @@ export type SidebarLink = {
 	action?: SidebarLinkAction;
 };
 
+/** Tabs of the right-side updates drawer. */
+export type UpdatesTab = 'notifications' | 'whats-new';
+
+/** Props the wrapper passes to the host's updates-drawer content component. */
+export interface NotificationSidebarContentProps {
+	onClose: () => void;
+	/**
+	 * Tab to show when the drawer opens: `'notifications'` from the bell and
+	 * the Notifications entry, `'whats-new'` from the `panel` account menu's
+	 * What's New entry. Hosts with a single-purpose drawer can ignore it.
+	 */
+	initialTab?: UpdatesTab;
+}
+
+/** One row of the `panel` account menu's Settings card. */
+export type SettingsItem = {
+	/** Stable id (defaults to a slug of `text`). */
+	key?: string;
+	text: string;
+	/** Routed through `onLinkClick` when no `onClick`/`onSettingsItemClick`. */
+	path?: string;
+	onClick?: () => void;
+	disabled?: boolean;
+};
+
+/** Collapsible group of settings rows; closed by default. */
+export type SettingsSection = {
+	title: string;
+	items: SettingsItem[];
+	defaultOpen?: boolean;
+};
+
+/** One entry of the Lumora Platforms switcher (`panel` variant account menu). */
+export type LumoraPlatform = {
+	/** Stable id; `currentPlatformKey` matches against it. */
+	key: string;
+	name: string;
+	/** Home page opened (same tab) when the platform is chosen. */
+	url: string;
+	description?: string;
+};
+
 export interface LumoraWrapperProps {
 	children: React.ReactNode;
 	sidebarLinks?: SidebarLink[];
@@ -130,10 +173,15 @@ export interface LumoraWrapperProps {
 	 * switches between expanded (icon + label rows) and a collapsed icon rail,
 	 * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
 	 * with the label stacked under each icon that never collapses (no toggle).
+	 * `'panel'` is the collapsible panel with a richer account menu in place of
+	 * the user menu: Theme, Notifications, What's New, Profile, Submit a
+	 * request, Settings (a card of `settingsSections` when given) and a Lumora
+	 * Platforms switcher (`platforms`). Desktop only; phones use the standard
+	 * mobile navigation and user menu.
 	 * Every variant runs the full height with the brand on top and notifications
 	 * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
 	 */
-	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
+	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
 	/**
 	 * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
 	 * with Menu (the links drawer), Search, Nexa and the user menu, so the main
@@ -200,15 +248,60 @@ export interface LumoraWrapperProps {
 	userName?: string;
 	userRole?: string;
 	userAvatar?: string;
+	/** Shown in the `panel` account menu header, under the name. */
+	userEmail?: string;
 	onLogout: (error?: Error) => void | Promise<void>;
 	/** Show the Settings entry in the user menu. */
 	showSettings?: boolean;
 	onSettingsClick?: () => void;
+	/** Profile entry of the `panel` account menu; hidden when omitted. */
+	onProfileClick?: () => void;
+	/** "Submit a request" entry of the `panel` account menu; hidden when omitted. */
+	onSubmitRequestClick?: () => void;
+	/**
+	 * `panel` account menu: when non-empty, Settings opens a second card
+	 * listing these host-defined sections instead of calling `onSettingsClick`.
+	 */
+	settingsSections?: SettingsSection[];
+	/**
+	 * Called when a settings row is chosen (after the menu closes). Precedence:
+	 * the row's own `onClick`, then this, then `onLinkClick(row.path)`.
+	 */
+	onSettingsItemClick?: (
+		item: SettingsItem,
+		section: SettingsSection
+	) => void;
 	// Notifications (above the user)
 	showNotifications?: boolean;
 	notificationCount?: number;
-	/** Content component for the notification drawer; receives onClose. When provided, the notifications row opens this drawer. */
-	NotificationSidebarContent?: React.ComponentType<{ onClose: () => void }>;
+	/**
+	 * Content component for the right-side updates drawer; receives `onClose`
+	 * and `initialTab`. When provided, the bell and the Notifications entry
+	 * open it (on `'notifications'`), as does the `panel` menu's What's New
+	 * entry (on `'whats-new'`).
+	 */
+	NotificationSidebarContent?: React.ComponentType<NotificationSidebarContentProps>;
+	/** Unread What's New count for the `panel` account menu; the pill is hidden when 0. */
+	whatsNewCount?: number;
+	/**
+	 * `panel` account menu fallbacks, used when there is no
+	 * `NotificationSidebarContent`: the Notifications entry calls the first;
+	 * the What's New entry calls the second (and is hidden without either).
+	 */
+	onNotificationsClick?: () => void;
+	onWhatsNewClick?: () => void;
+	// Platform switcher (`panel` account menu)
+	/** Platforms the signed-in user may switch to. Pass only accessible ones;
+	 * the switcher is hidden when empty. */
+	platforms?: LumoraPlatform[];
+	/** `key` of the platform currently in use — marked "Current" and inert. */
+	currentPlatformKey?: string;
+	/**
+	 * Called when another platform is chosen. When provided it REPLACES the
+	 * default same-tab navigation to `platform.url` (use it for SSO hand-off or
+	 * unsaved-changes checks).
+	 */
+	onPlatformSelect?: (platform: LumoraPlatform) => void;
 	// User data callback
 	onVerify?: (userData: {
 		name: string;
@@ -328,10 +421,6 @@ export interface LumoraWrapperProps {
 	}>;
 	/** @deprecated Accepted but ignored. */
 	pageName?: string;
-	/** @deprecated Accepted but ignored; the user row shows name and role. */
-	userEmail?: string;
-	/** @deprecated Accepted but ignored; the user menu has no profile entry. */
-	onProfileClick?: () => void;
 	/** @deprecated Accepted but ignored; the user menu has no account entry. */
 	onAccountClick?: () => void;
 	/** @deprecated Accepted but ignored; the sidebar has no section title. */
@@ -381,12 +470,23 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	userName,
 	userRole,
 	userAvatar,
+	userEmail,
 	onLogout,
 	showSettings = true,
 	onSettingsClick,
+	onProfileClick,
+	onSubmitRequestClick,
+	settingsSections,
+	onSettingsItemClick,
 	showNotifications = true,
 	notificationCount = 0,
 	NotificationSidebarContent,
+	whatsNewCount = 0,
+	onNotificationsClick,
+	onWhatsNewClick,
+	platforms,
+	currentPlatformKey,
+	onPlatformSelect,
 	onVerify,
 	alertProps,
 	style,
@@ -428,6 +528,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const resolvedContentBg =
 		contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
 	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
+	// The collapsible panel with the account menu (PanelSidebar) on desktop;
+	// phones get the standard mobile navigation.
+	const usePanelSidebar = sidebarVariant === 'panel';
+	const panelDesktop = usePanelSidebar && showSidebar && !isMobile;
 	// Non-collapsible narrow rail with labels — rendered by CollapsibleSidebar
 	// pinned in its shrunk state with captions on.
 	const useRailLabeledSidebar = sidebarVariant === 'rail-labeled';
@@ -497,7 +601,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	if (showSidebar && !isMobile) {
 		if (useRailLabeledSidebar) {
 			desktopSidebarWidthPx = RAIL_LABELED_WIDTH_PX;
-		} else if (useCollapsibleSidebar) {
+		} else if (useCollapsibleSidebar || usePanelSidebar) {
 			desktopSidebarWidthPx = sidebarCollapsed
 				? COLLAPSIBLE_COLLAPSED_WIDTH_PX
 				: COLLAPSIBLE_EXPANDED_WIDTH_PX;
@@ -510,7 +614,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const useBottomBar = isMobile && mobileNavigation === 'bottom-bar';
 	// Room the bottom bar takes, including the phone's home-indicator inset
 	const bottomBarSpace = `calc(${MOBILE_BOTTOM_NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`;
-	const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
+	// Right-side updates drawer; `tab` is what the host content should show.
+	const [updatesDrawer, setUpdatesDrawer] = useState<{
+		open: boolean;
+		tab: UpdatesTab;
+	}>({ open: false, tab: 'notifications' });
+	const closeUpdates = () =>
+		setUpdatesDrawer(prev => ({ ...prev, open: false }));
+	const hasUpdatesDrawer =
+		showNotifications && Boolean(NotificationSidebarContent);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
@@ -664,13 +776,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const searchNode =
 		searchComponent ??
 		(CustomNavbar ? <CustomNavbar {...customNavbarProps} /> : null);
+	// Opens the updates drawer on a tab, over any mobile sheet that is open
+	const openUpdates = (tab: UpdatesTab) => {
+		setMobileSidebarOpen(false);
+		setMobileSearchOpen(false);
+		setUpdatesDrawer({ open: true, tab });
+	};
 	const openNotifications =
-		NotificationSidebarContent &&
-		(() => {
-			setMobileSidebarOpen(false);
-			setMobileSearchOpen(false);
-			setNotificationDrawerOpen(true);
-		});
+		NotificationSidebarContent && (() => openUpdates('notifications'));
+	const openWhatsNew =
+		NotificationSidebarContent && (() => openUpdates('whats-new'));
 	// Notifications + user; `compact` for the collapsed and narrow rails.
 	const footerProps: Omit<
 		SidebarFooterProps,
@@ -877,77 +992,172 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					</Box>
 				)}
 
-				{/* Desktop Sidebar — fixed rail variant */}
-				{showSidebar && !isMobile && !rendersCollapsibleComponent && (
-					<Drawer
-						variant='permanent'
+				{/* Desktop Sidebar — panel variant: the collapsible panel with the
+				    account menu (profile, support, settings card, platforms). */}
+				{panelDesktop && (
+					<Box
+						component='aside'
 						sx={{
 							width: desktopSidebarWidthPx,
+							minWidth: desktopSidebarWidthPx,
 							flexShrink: 0,
 							zIndex: 2,
-							'& .MuiDrawer-paper': {
-								width: desktopSidebarWidthPx,
-								boxSizing: 'border-box',
-								bgcolor: resolvedContentBg,
-								borderRight: 'none'
-							},
+							position: 'sticky',
+							top: 0,
+							alignSelf: 'flex-start',
+							height: '100vh',
+							display: 'flex',
+							flexDirection: 'column',
+							bgcolor: resolvedSidebarSurface,
+							borderRight: '1px solid',
+							borderColor: 'divider',
+							transition: SIDEBAR_TRANSITION,
 							...sidebarStyles
 						}}
 					>
-						<Box
+						<PanelSidebar
+							mainLinks={sidebarLinks}
+							secondaryLinks={secondarySidebarLinks}
+							activePath={activePath}
+							onLinkClick={onLinkClick}
+							logo={headerLogo}
+							title={appName}
+							onBrandClick={onBrandClick}
+							brandColor={resolvedBrandColor}
+							headerBackgroundColor={resolvedSidebarHeaderBg}
+							headerForegroundColor={sidebarHeaderFg}
+							activeAccentColor={resolvedSidebarAccent}
+							groupAccentColor={groupAccentColor}
+							activeForegroundColor={activeSidebarForegroundColor}
+							foregroundColor={sidebarForegroundColor}
+							surfaceBackgroundColor={resolvedSidebarSurface}
+							collapsed={sidebarCollapsed}
+							onCollapsedChange={handleSidebarCollapsedChange}
+							expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
+							collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
+							topContent={renderTopContent(
+								sidebarCollapsed ? 'expand' : 'full'
+							)}
+							// Footer + account menu
+							color={sidebarChromeFg}
+							hoverColor={sidebarChromeHover}
+							avatarColor={resolvedSidebarAccent}
+							showProfile={showProfile}
+							userName={userName}
+							userEmail={userEmail}
+							userRole={userRole}
+							userAvatar={userAvatar}
+							showNotifications={showNotifications}
+							notificationCount={notificationCount}
+							// The drawer wins when the host provides content;
+							// otherwise fall back to the plain callbacks.
+							onNotificationsClick={
+								hasUpdatesDrawer
+									? openNotifications
+									: onNotificationsClick
+							}
+							whatsNewCount={whatsNewCount}
+							onWhatsNewClick={
+								hasUpdatesDrawer
+									? openWhatsNew
+									: onWhatsNewClick
+							}
+							onProfileClick={onProfileClick}
+							onSubmitRequestClick={onSubmitRequestClick}
+							showSettings={showSettings}
+							onSettingsClick={onSettingsClick}
+							settingsSections={settingsSections}
+							onSettingsItemClick={onSettingsItemClick}
+							platforms={platforms}
+							currentPlatformKey={currentPlatformKey}
+							onPlatformSelect={onPlatformSelect}
+							onLogout={handleLogout}
+							theme={themeMode}
+							showThemeToggler={showThemeToggler}
+							onThemeToggle={onThemeToggle}
+						/>
+						{alertProps?.show && !sidebarCollapsed && (
+							<CardAlert {...alertProps} />
+						)}
+					</Box>
+				)}
+
+				{/* Desktop Sidebar — fixed rail variant */}
+				{showSidebar &&
+					!isMobile &&
+					!rendersCollapsibleComponent &&
+					!usePanelSidebar && (
+						<Drawer
+							variant='permanent'
 							sx={{
-								height: '100%',
-								display: 'flex',
-								flexDirection: 'column',
-								pt: 2,
-								// Inset rail content from drawer edges (esp. left) so items do not sit flush
-								px: 1.5,
-								boxSizing: 'border-box'
+								width: desktopSidebarWidthPx,
+								flexShrink: 0,
+								zIndex: 2,
+								'& .MuiDrawer-paper': {
+									width: desktopSidebarWidthPx,
+									boxSizing: 'border-box',
+									bgcolor: resolvedContentBg,
+									borderRight: 'none'
+								},
+								...sidebarStyles
 							}}
 						>
 							<Box
 								sx={{
-									display: 'flex',
-									justifyContent: 'center',
-									mb: 1.5
-								}}
-							>
-								<Brand
-									logo={railLogo}
-									appName={appName}
-									onClick={onBrandClick}
-									color={brandColor ?? sidebarChromeFg}
-									testId='sidebar-header-brand'
-								/>
-							</Box>
-							{renderTopContent('popover')}
-							<Box
-								sx={{
-									flex: '1 1 auto',
-									minHeight: 0,
-									overflowY: 'auto',
+									height: '100%',
 									display: 'flex',
 									flexDirection: 'column',
-									mt: 1
+									pt: 2,
+									// Inset rail content from drawer edges (esp. left) so items do not sit flush
+									px: 1.5,
+									boxSizing: 'border-box'
 								}}
 							>
-								<MenuContent
-									mainLinks={sidebarLinks}
-									secondaryLinks={secondarySidebarLinks}
-									activePath={activePath}
-									onLinkClick={onLinkClick}
-									accentColor={resolvedSidebarAccent}
-									surfaceBackgroundColor={resolvedContentBg}
-									railShowTitles={showSidebarRailTitles}
-								/>
-								{alertProps?.show && (
-									<CardAlert {...alertProps} />
-								)}
+								<Box
+									sx={{
+										display: 'flex',
+										justifyContent: 'center',
+										mb: 1.5
+									}}
+								>
+									<Brand
+										logo={railLogo}
+										appName={appName}
+										onClick={onBrandClick}
+										color={brandColor ?? sidebarChromeFg}
+										testId='sidebar-header-brand'
+									/>
+								</Box>
+								{renderTopContent('popover')}
+								<Box
+									sx={{
+										flex: '1 1 auto',
+										minHeight: 0,
+										overflowY: 'auto',
+										display: 'flex',
+										flexDirection: 'column',
+										mt: 1
+									}}
+								>
+									<MenuContent
+										mainLinks={sidebarLinks}
+										secondaryLinks={secondarySidebarLinks}
+										activePath={activePath}
+										onLinkClick={onLinkClick}
+										accentColor={resolvedSidebarAccent}
+										surfaceBackgroundColor={
+											resolvedContentBg
+										}
+										railShowTitles={showSidebarRailTitles}
+									/>
+									{alertProps?.show && (
+										<CardAlert {...alertProps} />
+									)}
+								</Box>
+								<Box sx={{ py: 1.5 }}>{renderFooter(true)}</Box>
 							</Box>
-							<Box sx={{ py: 1.5 }}>{renderFooter(true)}</Box>
-						</Box>
-					</Drawer>
-				)}
+						</Drawer>
+					)}
 
 				{/* Mobile: the links, in the same sidebar as desktop (expanded).
 				    Bottom-bar mode: a sheet rising from the bottom, within thumb
@@ -1127,18 +1337,22 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						/>
 					)}
 
-				{/* Notification sidebar drawer (container + toggle only; content from host) */}
+				{/* Updates drawer (container only; content from host). `key`
+				    remounts the content when a different tab is requested, so
+				    hosts that read `initialTab` once still switch. */}
 				{showNotifications && NotificationSidebarContent && (
 					<Drawer
 						anchor='right'
-						open={notificationDrawerOpen}
-						onClose={() => setNotificationDrawerOpen(false)}
+						open={updatesDrawer.open}
+						onClose={closeUpdates}
 						slotProps={{
 							paper: { sx: { width: 380, maxWidth: '100vw' } }
 						}}
 					>
 						<NotificationSidebarContent
-							onClose={() => setNotificationDrawerOpen(false)}
+							key={updatesDrawer.tab}
+							onClose={closeUpdates}
+							initialTab={updatesDrawer.tab}
 						/>
 					</Drawer>
 				)}

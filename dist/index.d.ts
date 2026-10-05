@@ -215,6 +215,16 @@ export declare const Kbd: React_2.FC<{
  */
 export declare const logAuthError: (error: Error | AuthError, context?: string) => void;
 
+/** One entry of the Lumora Platforms switcher (`panel` variant account menu). */
+export declare type LumoraPlatform = {
+    /** Stable id; `currentPlatformKey` matches against it. */
+    key: string;
+    name: string;
+    /** Home page opened (same tab) when the platform is chosen. */
+    url: string;
+    description?: string;
+};
+
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -238,10 +248,15 @@ export declare interface LumoraWrapperProps {
      * switches between expanded (icon + label rows) and a collapsed icon rail,
      * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
      * with the label stacked under each icon that never collapses (no toggle).
+     * `'panel'` is the collapsible panel with a richer account menu in place of
+     * the user menu: Theme, Notifications, What's New, Profile, Submit a
+     * request, Settings (a card of `settingsSections` when given) and a Lumora
+     * Platforms switcher (`platforms`). Desktop only; phones use the standard
+     * mobile navigation and user menu.
      * Every variant runs the full height with the brand on top and notifications
      * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
      */
-    sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled';
+    sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
     /**
      * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
      * with Menu (the links drawer), Search, Nexa and the user menu, so the main
@@ -307,16 +322,55 @@ export declare interface LumoraWrapperProps {
     userName?: string;
     userRole?: string;
     userAvatar?: string;
+    /** Shown in the `panel` account menu header, under the name. */
+    userEmail?: string;
     onLogout: (error?: Error) => void | Promise<void>;
     /** Show the Settings entry in the user menu. */
     showSettings?: boolean;
     onSettingsClick?: () => void;
+    /** Profile entry of the `panel` account menu; hidden when omitted. */
+    onProfileClick?: () => void;
+    /** "Submit a request" entry of the `panel` account menu; hidden when omitted. */
+    onSubmitRequestClick?: () => void;
+    /**
+     * `panel` account menu: when non-empty, Settings opens a second card
+     * listing these host-defined sections instead of calling `onSettingsClick`.
+     */
+    settingsSections?: SettingsSection[];
+    /**
+     * Called when a settings row is chosen (after the menu closes). Precedence:
+     * the row's own `onClick`, then this, then `onLinkClick(row.path)`.
+     */
+    onSettingsItemClick?: (item: SettingsItem, section: SettingsSection) => void;
     showNotifications?: boolean;
     notificationCount?: number;
-    /** Content component for the notification drawer; receives onClose. When provided, the notifications row opens this drawer. */
-    NotificationSidebarContent?: default_2.ComponentType<{
-        onClose: () => void;
-    }>;
+    /**
+     * Content component for the right-side updates drawer; receives `onClose`
+     * and `initialTab`. When provided, the bell and the Notifications entry
+     * open it (on `'notifications'`), as does the `panel` menu's What's New
+     * entry (on `'whats-new'`).
+     */
+    NotificationSidebarContent?: default_2.ComponentType<NotificationSidebarContentProps>;
+    /** Unread What's New count for the `panel` account menu; the pill is hidden when 0. */
+    whatsNewCount?: number;
+    /**
+     * `panel` account menu fallbacks, used when there is no
+     * `NotificationSidebarContent`: the Notifications entry calls the first;
+     * the What's New entry calls the second (and is hidden without either).
+     */
+    onNotificationsClick?: () => void;
+    onWhatsNewClick?: () => void;
+    /** Platforms the signed-in user may switch to. Pass only accessible ones;
+     * the switcher is hidden when empty. */
+    platforms?: LumoraPlatform[];
+    /** `key` of the platform currently in use — marked "Current" and inert. */
+    currentPlatformKey?: string;
+    /**
+     * Called when another platform is chosen. When provided it REPLACES the
+     * default same-tab navigation to `platform.url` (use it for SSO hand-off or
+     * unsaved-changes checks).
+     */
+    onPlatformSelect?: (platform: LumoraPlatform) => void;
     onVerify?: (userData: {
         name: string;
         email: string;
@@ -430,15 +484,40 @@ export declare interface LumoraWrapperProps {
     }>;
     /** @deprecated Accepted but ignored. */
     pageName?: string;
-    /** @deprecated Accepted but ignored; the user row shows name and role. */
-    userEmail?: string;
-    /** @deprecated Accepted but ignored; the user menu has no profile entry. */
-    onProfileClick?: () => void;
     /** @deprecated Accepted but ignored; the user menu has no account entry. */
     onAccountClick?: () => void;
     /** @deprecated Accepted but ignored; the sidebar has no section title. */
     sidebarSectionTitle?: string;
 }
+
+/** Props the wrapper passes to the host's updates-drawer content component. */
+export declare interface NotificationSidebarContentProps {
+    onClose: () => void;
+    /**
+     * Tab to show when the drawer opens: `'notifications'` from the bell and
+     * the Notifications entry, `'whats-new'` from the `panel` account menu's
+     * What's New entry. Hosts with a single-purpose drawer can ignore it.
+     */
+    initialTab?: UpdatesTab;
+}
+
+/** One row of the `panel` account menu's Settings card. */
+export declare type SettingsItem = {
+    /** Stable id (defaults to a slug of `text`). */
+    key?: string;
+    text: string;
+    /** Routed through `onLinkClick` when no `onClick`/`onSettingsItemClick`. */
+    path?: string;
+    onClick?: () => void;
+    disabled?: boolean;
+};
+
+/** Collapsible group of settings rows; closed by default. */
+export declare type SettingsSection = {
+    title: string;
+    items: SettingsItem[];
+    defaultOpen?: boolean;
+};
 
 /** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export declare type SidebarLink = {
@@ -495,6 +574,9 @@ export declare interface StorageResult {
  * @returns Result of storage operation
  */
 export declare const storeAuthTokens: (accessToken: string | null, refreshToken: string | null, user?: UserData | null) => StorageResult;
+
+/** Tabs of the right-side updates drawer. */
+export declare type UpdatesTab = 'notifications' | 'whats-new';
 
 /**
  * User data interface

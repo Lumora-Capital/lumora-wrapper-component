@@ -139,6 +139,7 @@ const PlaygroundPanel = ({
 					<ToggleButton value='rail'>Rail</ToggleButton>
 					<ToggleButton value='collapsible'>Collapsible</ToggleButton>
 					<ToggleButton value='rail-labeled'>Labeled</ToggleButton>
+					<ToggleButton value='panel'>Panel</ToggleButton>
 				</ToggleButtonGroup>
 
 				<Typography variant='overline' sx={{ mt: 1 }}>
