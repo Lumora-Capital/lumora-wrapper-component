@@ -141,7 +141,7 @@ export type SettingsItem = {
 	disabled?: boolean;
 };
 
-/** Collapsible group of settings rows; closed by default. */
+/** Collapsible group of settings rows; open by default. */
 export type SettingsSection = {
 	title: string;
 	items: SettingsItem[];
@@ -254,9 +254,12 @@ export interface LumoraWrapperProps {
 	/** Show the Settings entry in the user menu. */
 	showSettings?: boolean;
 	onSettingsClick?: () => void;
-	/** Profile entry of the `panel` account menu; hidden when omitted. */
+	/**
+	 * `panel` account menu: makes the user header a link to the profile, with
+	 * a "View profile" hint on hover.
+	 */
 	onProfileClick?: () => void;
-	/** "Submit a request" entry of the `panel` account menu; hidden when omitted. */
+	/** @deprecated The `panel` account menu no longer has this entry; ignored. */
 	onSubmitRequestClick?: () => void;
 	/**
 	 * `panel` account menu: when non-empty, Settings opens a second card
@@ -274,29 +277,20 @@ export interface LumoraWrapperProps {
 	// Notifications (above the user)
 	showNotifications?: boolean;
 	/**
-	 * Unread count for the Notifications tab, shown on the user menu's
-	 * Notifications entry. The bell badge shows this plus `whatsNewCount`,
-	 * since the bell opens the drawer that holds both tabs.
+	 * Unread count for the Notifications tab. The bell badge shows this plus
+	 * `whatsNewCount`, since the bell opens the drawer that holds both tabs.
 	 */
 	notificationCount?: number;
 	/**
 	 * Content component for the right-side updates drawer; receives `onClose`
-	 * and `initialTab`. When provided, the bell and the Notifications entry
-	 * open it (on `'notifications'`), as does the `panel` menu's What's New
-	 * entry (on `'whats-new'`).
+	 * and `initialTab`. When provided, the bell opens it on `'notifications'`.
 	 */
 	NotificationSidebarContent?: React.ComponentType<NotificationSidebarContentProps>;
-	/**
-	 * Unread What's New count: the `panel` account menu's What's New pill
-	 * (hidden when 0), and the other half of the bell badge.
-	 */
+	/** Unread What's New count: the other half of the bell badge. */
 	whatsNewCount?: number;
-	/**
-	 * `panel` account menu fallbacks, used when there is no
-	 * `NotificationSidebarContent`: the Notifications entry calls the first;
-	 * the What's New entry calls the second (and is hidden without either).
-	 */
+	/** Bell fallback, used when there is no `NotificationSidebarContent`. */
 	onNotificationsClick?: () => void;
+	/** @deprecated The `panel` account menu no longer has this entry; ignored. */
 	onWhatsNewClick?: () => void;
 	// Platform switcher (`panel` account menu)
 	/** Platforms the signed-in user may switch to. Pass only accessible ones;
@@ -483,7 +477,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSettings = true,
 	onSettingsClick,
 	onProfileClick,
-	onSubmitRequestClick,
 	settingsSections,
 	onSettingsItemClick,
 	showNotifications = true,
@@ -491,7 +484,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	NotificationSidebarContent,
 	whatsNewCount = 0,
 	onNotificationsClick,
-	onWhatsNewClick,
 	platforms,
 	currentPlatformKey,
 	onPlatformSelect,
@@ -792,10 +784,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	};
 	const openNotifications =
 		NotificationSidebarContent && (() => openUpdates('notifications'));
-	const openWhatsNew =
-		NotificationSidebarContent && (() => openUpdates('whats-new'));
 	// The bell opens the drawer, which holds both tabs, so its badge counts
-	// both. The menu entries show each count on its own.
+	// both.
 	const bellCount = notificationCount + whatsNewCount;
 	// Notifications + user; `compact` for the collapsed and narrow rails.
 	const footerProps: Omit<
@@ -1069,13 +1059,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									: onNotificationsClick
 							}
 							whatsNewCount={whatsNewCount}
-							onWhatsNewClick={
-								hasUpdatesDrawer
-									? openWhatsNew
-									: onWhatsNewClick
-							}
 							onProfileClick={onProfileClick}
-							onSubmitRequestClick={onSubmitRequestClick}
 							showSettings={showSettings}
 							onSettingsClick={onSettingsClick}
 							settingsSections={settingsSections}

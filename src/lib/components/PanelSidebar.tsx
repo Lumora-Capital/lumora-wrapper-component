@@ -65,14 +65,12 @@ export interface PanelSidebarProps {
 	userRole?: string;
 	userAvatar?: string;
 	showNotifications?: boolean;
-	/** Unread count on the account menu's Notifications entry; the bell adds `whatsNewCount` to it. */
+	/** The bell's badge shows this plus `whatsNewCount`. */
 	notificationCount?: number;
 	onNotificationsClick?: () => void;
-	/** Unread count on the account menu's What's New entry, and the other half of the bell's badge. */
 	whatsNewCount?: number;
-	onWhatsNewClick?: () => void;
+	/** Makes the account menu's user header open the profile. */
 	onProfileClick?: () => void;
-	onSubmitRequestClick?: () => void;
 	showSettings?: boolean;
 	onSettingsClick?: () => void;
 	settingsSections?: SettingsSection[];
@@ -129,9 +127,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	notificationCount = 0,
 	onNotificationsClick,
 	whatsNewCount = 0,
-	onWhatsNewClick,
 	onProfileClick,
-	onSubmitRequestClick,
 	showSettings = true,
 	onSettingsClick,
 	settingsSections,
@@ -317,13 +313,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					showThemeToggler={showThemeToggler}
 					theme={themeMode}
 					onThemeToggle={onThemeToggle}
-					showNotifications={showNotifications}
-					notificationCount={notificationCount}
-					onNotificationsClick={onNotificationsClick}
-					whatsNewCount={whatsNewCount}
-					onWhatsNewClick={onWhatsNewClick}
 					onProfileClick={onProfileClick}
-					onSubmitRequestClick={onSubmitRequestClick}
 					showSettings={showSettings}
 					onSettingsClick={onSettingsClick}
 					settingsSections={settingsSections}

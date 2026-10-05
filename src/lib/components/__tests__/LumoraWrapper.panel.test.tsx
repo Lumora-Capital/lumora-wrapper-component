@@ -94,45 +94,23 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 			);
 		});
 
-		it("opens on the What's New tab from the account menu", async () => {
+		it("has no Notifications, What's New or Submit a request entries in the account menu", () => {
 			renderPanel({
 				NotificationSidebarContent: Content,
-				whatsNewCount: 1
+				whatsNewCount: 1,
+				onSubmitRequestClick: jest.fn()
 			});
 			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-whats-new'));
-			expect(await screen.findByTestId('updates-tab')).toHaveTextContent(
-				'whats-new'
-			);
+			expect(screen.queryByTestId('menu-item-notifications')).toBeNull();
+			expect(screen.queryByTestId('menu-item-whats-new')).toBeNull();
+			expect(screen.queryByTestId('menu-item-submit-request')).toBeNull();
 		});
 
-		it('opens on the notifications tab from the account menu item', async () => {
-			renderPanel({ NotificationSidebarContent: Content });
-			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-notifications'));
-			expect(await screen.findByTestId('updates-tab')).toHaveTextContent(
-				'notifications'
-			);
-		});
-
-		it("shows What's New even without a count when the drawer exists", () => {
-			renderPanel({ NotificationSidebarContent: Content });
-			openMenu();
-			expect(
-				screen.getByTestId('menu-item-whats-new')
-			).toBeInTheDocument();
-		});
-
-		it('falls back to the plain callbacks when no drawer content is provided', () => {
+		it('falls back to the plain callback on the bell when no drawer content is provided', () => {
 			const onNotificationsClick = jest.fn();
-			const onWhatsNewClick = jest.fn();
-			renderPanel({ onNotificationsClick, onWhatsNewClick });
-			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-notifications'));
+			renderPanel({ onNotificationsClick });
+			fireEvent.click(screen.getByLabelText('Notifications, 2 unread'));
 			expect(onNotificationsClick).toHaveBeenCalledTimes(1);
-			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-whats-new'));
-			expect(onWhatsNewClick).toHaveBeenCalledTimes(1);
 			expect(screen.queryByTestId('updates-content')).toBeNull();
 		});
 	});
@@ -187,7 +165,7 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 			expect(
 				screen.getByRole('dialog', { name: 'Settings' })
 			).toBeInTheDocument();
-			fireEvent.click(screen.getByTestId('settings-section-admin'));
+			// Sections start open.
 			fireEvent.click(screen.getByTestId('settings-item-users'));
 			expect(onLinkClick).toHaveBeenCalledWith('/admin/users');
 		});

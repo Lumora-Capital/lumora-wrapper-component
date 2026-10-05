@@ -1,14 +1,10 @@
-import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
-import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
-import PersonOutlineRounded from '@mui/icons-material/PersonOutlineRounded';
 import SettingsBrightnessOutlined from '@mui/icons-material/SettingsBrightnessOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
-import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Divider from '@mui/material/Divider';
@@ -65,28 +61,6 @@ const subPanelSx = {
 	animation: 'sub-panel-in 150ms ease-out',
 	'@media (prefers-reduced-motion: reduce)': { animation: 'none' }
 } as const;
-
-/** Unread-count pill; renders nothing for 0. */
-const CountPill: React.FC<{ count: number }> = ({ count }) =>
-	count ? (
-		<Box
-			sx={{
-				minWidth: 24,
-				height: 24,
-				px: 0.75,
-				borderRadius: '12px',
-				bgcolor: 'error.main',
-				color: 'error.contrastText',
-				fontSize: '0.75rem',
-				fontWeight: 600,
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center'
-			}}
-		>
-			{count}
-		</Box>
-	) : null;
 
 /**
  * Light/Dark toggle: a pill with a sun and a moon, the current mode raised in
@@ -209,13 +183,8 @@ export interface AccountMenuProps {
 	showThemeToggler: boolean;
 	theme: 'light' | 'dark';
 	onThemeToggle?: () => void;
-	showNotifications: boolean;
-	notificationCount: number;
-	onNotificationsClick?: () => void;
-	whatsNewCount: number;
-	onWhatsNewClick?: () => void;
+	/** Makes the user header a link, with a "View profile" hint on hover. */
 	onProfileClick?: () => void;
-	onSubmitRequestClick?: () => void;
 	showSettings: boolean;
 	/** Direct handler, used when no `settingsSections` are given. */
 	onSettingsClick?: () => void;
@@ -254,13 +223,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	showThemeToggler,
 	theme: themeMode,
 	onThemeToggle,
-	showNotifications,
-	notificationCount,
-	onNotificationsClick,
-	whatsNewCount,
-	onWhatsNewClick,
 	onProfileClick,
-	onSubmitRequestClick,
 	showSettings,
 	onSettingsClick,
 	settingsSections,
@@ -419,6 +382,63 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	const settingsActive = subPanel === 'settings';
 	const platformsActive = subPanel === 'platforms';
 
+	// Name / email / role. With onProfileClick the whole row opens the
+	// profile and the role line swaps to "View profile" on hover / focus.
+	// It sits outside the MenuList, so it's reached with Tab.
+	const userHeader = (
+		<Stack direction='row' sx={{ alignItems: 'center', gap: 1.5, p: 2 }}>
+			{renderAvatar(44)}
+			<Box sx={{ minWidth: 0, flex: 1 }}>
+				{/* name / email / role */}
+				<Typography noWrap sx={{ fontWeight: 600 }}>
+					{userName}
+				</Typography>
+				{userEmail ? (
+					<Typography
+						noWrap
+						variant='body2'
+						data-testid='account-menu-email'
+						sx={{ color: 'text.secondary' }}
+					>
+						{userEmail}
+					</Typography>
+				) : null}
+				{roleLabel ? (
+					<Typography
+						noWrap
+						variant='caption'
+						data-role
+						data-testid='account-menu-role'
+						sx={{
+							display: 'block',
+							letterSpacing: '0.02em',
+							color: 'text.secondary'
+						}}
+					>
+						{roleLabel}
+					</Typography>
+				) : null}
+				{onProfileClick ? (
+					<Typography
+						noWrap
+						variant='caption'
+						data-hint
+						data-testid='account-menu-view-profile'
+						sx={{
+							letterSpacing: '0.02em',
+							fontWeight: 600,
+							color: accentColor,
+							textDecoration: 'underline',
+							textUnderlineOffset: '2px'
+						}}
+					>
+						View profile
+					</Typography>
+				) : null}
+			</Box>
+		</Stack>
+	);
+
 	return (
 		<Popover
 			open={open}
@@ -460,42 +480,29 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 				data-testid='account-menu'
 				sx={{ ...cardSx, width, minWidth: width }}
 			>
-				<Stack
-					direction='row'
-					sx={{ alignItems: 'center', gap: 1.5, p: 2 }}
-				>
-					{renderAvatar(44)}
-					<Box sx={{ minWidth: 0, flex: 1 }}>
-						{/* name / email / role */}
-						<Typography noWrap sx={{ fontWeight: 600 }}>
-							{userName}
-						</Typography>
-						{userEmail ? (
-							<Typography
-								noWrap
-								variant='body2'
-								data-testid='account-menu-email'
-								sx={{ color: 'text.secondary' }}
-							>
-								{userEmail}
-							</Typography>
-						) : null}
-						{roleLabel ? (
-							<Typography
-								noWrap
-								variant='caption'
-								data-testid='account-menu-role'
-								sx={{
-									display: 'block',
-									letterSpacing: '0.02em',
-									color: 'text.secondary'
-								}}
-							>
-								{roleLabel}
-							</Typography>
-						) : null}
-					</Box>
-				</Stack>
+				{onProfileClick ? (
+					<ButtonBase
+						onClick={() => closeMenuThen(onProfileClick)}
+						data-testid='account-menu-header'
+						sx={{
+							display: 'block',
+							width: '100%',
+							textAlign: 'left',
+							transition: 'background-color 150ms ease',
+							'& [data-hint]': { display: 'none' },
+							'&:hover, &.Mui-focusVisible': {
+								bgcolor: tint,
+								'& [data-hint]': { display: 'block' },
+								'& [data-role]': { display: 'none' }
+							},
+							...FOCUS_OUTLINE_FIX
+						}}
+					>
+						{userHeader}
+					</ButtonBase>
+				) : (
+					<Box data-testid='account-menu-header'>{userHeader}</Box>
+				)}
 				<Divider />
 				{/* Theme row: above the list, not in it. It's not a menu item, and
 				    MenuList would otherwise hand its first child autoFocus and
@@ -536,60 +543,6 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					autoFocusItem={open}
 					sx={{ px: 1, pt: showThemeToggler ? 0 : 0.5, pb: 0.5 }}
 				>
-					{showNotifications ? (
-						<MenuItem
-							onClick={() => closeMenuThen(onNotificationsClick)}
-							data-testid='menu-item-notifications'
-							sx={itemSx}
-						>
-							<ListItemIcon>
-								<NotificationsOutlined fontSize='small' />
-							</ListItemIcon>
-							<Typography sx={{ flex: 1 }}>
-								Notifications
-							</Typography>
-							<CountPill count={notificationCount} />
-						</MenuItem>
-					) : null}
-					{onWhatsNewClick ? (
-						<MenuItem
-							onClick={() => closeMenuThen(onWhatsNewClick)}
-							data-testid='menu-item-whats-new'
-							sx={itemSx}
-						>
-							<ListItemIcon>
-								<AutoAwesomeOutlined fontSize='small' />
-							</ListItemIcon>
-							<Typography sx={{ flex: 1 }}>
-								What&apos;s New
-							</Typography>
-							<CountPill count={whatsNewCount} />
-						</MenuItem>
-					) : null}
-					{onProfileClick ? (
-						<MenuItem
-							onClick={() => closeMenuThen(onProfileClick)}
-							data-testid='menu-item-profile'
-							sx={itemSx}
-						>
-							<ListItemIcon>
-								<PersonOutlineRounded fontSize='small' />
-							</ListItemIcon>
-							Profile
-						</MenuItem>
-					) : null}
-					{onSubmitRequestClick ? (
-						<MenuItem
-							onClick={() => closeMenuThen(onSubmitRequestClick)}
-							data-testid='menu-item-submit-request'
-							sx={itemSx}
-						>
-							<ListItemIcon>
-								<SupportAgentOutlined fontSize='small' />
-							</ListItemIcon>
-							Submit a request
-						</MenuItem>
-					) : null}
 					{showSettingsItem ? (
 						<MenuItem
 							ref={settingsItemRef}

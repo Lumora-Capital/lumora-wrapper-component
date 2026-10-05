@@ -328,9 +328,12 @@ export declare interface LumoraWrapperProps {
     /** Show the Settings entry in the user menu. */
     showSettings?: boolean;
     onSettingsClick?: () => void;
-    /** Profile entry of the `panel` account menu; hidden when omitted. */
+    /**
+     * `panel` account menu: makes the user header a link to the profile, with
+     * a "View profile" hint on hover.
+     */
     onProfileClick?: () => void;
-    /** "Submit a request" entry of the `panel` account menu; hidden when omitted. */
+    /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onSubmitRequestClick?: () => void;
     /**
      * `panel` account menu: when non-empty, Settings opens a second card
@@ -344,29 +347,20 @@ export declare interface LumoraWrapperProps {
     onSettingsItemClick?: (item: SettingsItem, section: SettingsSection) => void;
     showNotifications?: boolean;
     /**
-     * Unread count for the Notifications tab, shown on the user menu's
-     * Notifications entry. The bell badge shows this plus `whatsNewCount`,
-     * since the bell opens the drawer that holds both tabs.
+     * Unread count for the Notifications tab. The bell badge shows this plus
+     * `whatsNewCount`, since the bell opens the drawer that holds both tabs.
      */
     notificationCount?: number;
     /**
      * Content component for the right-side updates drawer; receives `onClose`
-     * and `initialTab`. When provided, the bell and the Notifications entry
-     * open it (on `'notifications'`), as does the `panel` menu's What's New
-     * entry (on `'whats-new'`).
+     * and `initialTab`. When provided, the bell opens it on `'notifications'`.
      */
     NotificationSidebarContent?: default_2.ComponentType<NotificationSidebarContentProps>;
-    /**
-     * Unread What's New count: the `panel` account menu's What's New pill
-     * (hidden when 0), and the other half of the bell badge.
-     */
+    /** Unread What's New count: the other half of the bell badge. */
     whatsNewCount?: number;
-    /**
-     * `panel` account menu fallbacks, used when there is no
-     * `NotificationSidebarContent`: the Notifications entry calls the first;
-     * the What's New entry calls the second (and is hidden without either).
-     */
+    /** Bell fallback, used when there is no `NotificationSidebarContent`. */
     onNotificationsClick?: () => void;
+    /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onWhatsNewClick?: () => void;
     /** Platforms the signed-in user may switch to. Pass only accessible ones;
      * the switcher is hidden when empty. */
@@ -520,7 +514,7 @@ export declare type SettingsItem = {
     disabled?: boolean;
 };
 
-/** Collapsible group of settings rows; closed by default. */
+/** Collapsible group of settings rows; open by default. */
 export declare type SettingsSection = {
     title: string;
     items: SettingsItem[];

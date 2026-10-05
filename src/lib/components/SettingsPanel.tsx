@@ -35,12 +35,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	width,
 	sx
 }) => {
-	// Keyed by section title; absent = the section's own default (closed).
+	// Keyed by section title; absent = the section's own default (open).
 	const [openSections, setOpenSections] = React.useState<
 		Record<string, boolean>
 	>({});
 	const isOpen = (section: SettingsSection) =>
-		openSections[section.title] ?? section.defaultOpen ?? false;
+		openSections[section.title] ?? section.defaultOpen ?? true;
 	const toggle = (section: SettingsSection) =>
 		setOpenSections(prev => ({
 			...prev,

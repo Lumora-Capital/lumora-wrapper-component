@@ -33,9 +33,7 @@ const baseProps: PanelSidebarProps = {
 	notificationCount: 29,
 	onNotificationsClick: jest.fn(),
 	whatsNewCount: 3,
-	onWhatsNewClick: jest.fn(),
 	onProfileClick: jest.fn(),
-	onSubmitRequestClick: jest.fn(),
 	onSettingsClick: jest.fn(),
 	platforms,
 	currentPlatformKey: 'centra',
@@ -77,10 +75,6 @@ describe('PanelSidebar account menu', () => {
 				.getAllByRole('menuitem')
 				.map(el => el.getAttribute('data-testid'));
 			expect(ids).toEqual([
-				'menu-item-notifications',
-				'menu-item-whats-new',
-				'menu-item-profile',
-				'menu-item-submit-request',
 				'menu-item-settings',
 				'menu-item-platforms',
 				'menu-item-logout'
@@ -126,6 +120,29 @@ describe('PanelSidebar account menu', () => {
 			).toHaveTextContent('Admin');
 		});
 
+		it('opens the profile from the whole header, with a "View profile" hint', async () => {
+			renderPanel();
+			openMenu();
+			const header = screen.getByTestId('account-menu-header');
+			expect(header.tagName).toBe('BUTTON');
+			expect(
+				within(header).getByTestId('account-menu-view-profile')
+			).toHaveTextContent('View profile');
+			fireEvent.click(header);
+			expect(baseProps.onProfileClick).toHaveBeenCalledTimes(1);
+			await expectMenuClosed();
+		});
+
+		it('leaves the header static without onProfileClick', () => {
+			renderPanel({ onProfileClick: undefined });
+			openMenu();
+			const header = screen.getByTestId('account-menu-header');
+			expect(header.tagName).not.toBe('BUTTON');
+			expect(
+				screen.queryByTestId('account-menu-view-profile')
+			).toBeNull();
+		});
+
 		it('omits the header email line when no email is given', () => {
 			renderPanel({ userEmail: undefined });
 			openMenu();
@@ -147,10 +164,10 @@ describe('PanelSidebar account menu', () => {
 			expect(openMenu()).toBeInTheDocument();
 		});
 
-		it('focuses the first menu item (Notifications) on open', () => {
+		it('focuses the first menu item (Settings) on open', () => {
 			renderPanel();
 			openMenu();
-			expect(screen.getByTestId('menu-item-notifications')).toHaveFocus();
+			expect(screen.getByTestId('menu-item-settings')).toHaveFocus();
 		});
 	});
 
@@ -209,7 +226,7 @@ describe('PanelSidebar account menu', () => {
 		it('is skipped by arrow traversal (the toggle is reached with Tab)', () => {
 			renderPanel();
 			openMenu();
-			const first = screen.getByTestId('menu-item-notifications');
+			const first = screen.getByTestId('menu-item-settings');
 			expect(first).toHaveFocus();
 			// Up from the first menu item wraps to the last — not the Theme row.
 			fireEvent.keyDown(first, { key: 'ArrowUp' });
@@ -222,42 +239,11 @@ describe('PanelSidebar account menu', () => {
 			renderPanel({ showThemeToggler: false });
 			openMenu();
 			expect(screen.queryByTestId('menu-item-theme')).toBeNull();
-			expect(screen.getByTestId('menu-item-notifications')).toHaveFocus();
+			expect(screen.getByTestId('menu-item-settings')).toHaveFocus();
 		});
 	});
 
 	describe('items', () => {
-		it('shows the notification count and opens notifications', async () => {
-			renderPanel();
-			openMenu();
-			const item = screen.getByTestId('menu-item-notifications');
-			expect(within(item).getByText('29')).toBeInTheDocument();
-			fireEvent.click(item);
-			expect(baseProps.onNotificationsClick).toHaveBeenCalledTimes(1);
-			await expectMenuClosed();
-		});
-
-		it("renders What's New only with a handler and hides a zero count", () => {
-			const { unmount } = renderPanel({ onWhatsNewClick: undefined });
-			openMenu();
-			expect(screen.queryByTestId('menu-item-whats-new')).toBeNull();
-			unmount();
-
-			renderPanel({ whatsNewCount: 0 });
-			openMenu();
-			const item = screen.getByTestId('menu-item-whats-new');
-			expect(within(item).queryByText('0')).toBeNull();
-		});
-
-		it("shows the What's New count and calls its handler", () => {
-			renderPanel();
-			openMenu();
-			const item = screen.getByTestId('menu-item-whats-new');
-			expect(within(item).getByText('3')).toBeInTheDocument();
-			fireEvent.click(item);
-			expect(baseProps.onWhatsNewClick).toHaveBeenCalledTimes(1);
-		});
-
 		it('renders Settings per showSettings and calls its handler', () => {
 			const { unmount } = renderPanel({ showSettings: false });
 			openMenu();
@@ -483,21 +469,19 @@ describe('PanelSidebar account menu', () => {
 			fireEvent.click(screen.getByTestId('menu-item-settings'));
 			return screen.getByRole('dialog', { name: 'Settings' });
 		};
-		const expandSection = (slug: string) =>
-			fireEvent.click(screen.getByTestId(`settings-section-${slug}`));
 
-		it('opens beside the menu with collapsed sections; first header focused', () => {
+		it('opens beside the menu with every section expanded; first header focused', () => {
 			renderPanel({ settingsSections: sections });
 			openMenu();
 			const panel = openSettings();
-			// Only the two section headers render while everything is collapsed.
-			expect(within(panel).getAllByRole('menuitem')).toHaveLength(2);
+			// Two headers plus their four items.
+			expect(within(panel).getAllByRole('menuitem')).toHaveLength(6);
 			const header = screen.getByTestId('settings-section-configuration');
 			expect(header).toHaveFocus();
-			expect(header).toHaveAttribute('aria-expanded', 'false');
+			expect(header).toHaveAttribute('aria-expanded', 'true');
 			expect(
-				screen.queryByTestId('settings-item-status-management')
-			).toBeNull();
+				screen.getByTestId('settings-item-status-management')
+			).toBeInTheDocument();
 			expect(baseProps.onSettingsClick).not.toHaveBeenCalled();
 			expect(screen.getByTestId('menu-item-settings')).toHaveAttribute(
 				'aria-expanded',
@@ -515,24 +499,24 @@ describe('PanelSidebar account menu', () => {
 			openSettings();
 			const header = screen.getByTestId('settings-section-admin');
 			fireEvent.click(header);
-			expect(header).toHaveAttribute('aria-expanded', 'true');
-			expect(
-				screen.getByTestId('settings-item-users')
-			).toBeInTheDocument();
-			expect(screen.queryByTestId('settings-item-workflow')).toBeNull();
-			fireEvent.click(header);
+			expect(header).toHaveAttribute('aria-expanded', 'false');
 			expect(screen.queryByTestId('settings-item-users')).toBeNull();
-		});
-
-		it('honours defaultOpen', () => {
-			renderPanel({
-				settingsSections: [{ ...sections[0], defaultOpen: true }]
-			});
-			openMenu();
-			openSettings();
 			expect(
 				screen.getByTestId('settings-item-workflow')
 			).toBeInTheDocument();
+			fireEvent.click(header);
+			expect(
+				screen.getByTestId('settings-item-users')
+			).toBeInTheDocument();
+		});
+
+		it('honours defaultOpen: false', () => {
+			renderPanel({
+				settingsSections: [{ ...sections[0], defaultOpen: false }]
+			});
+			openMenu();
+			openSettings();
+			expect(screen.queryByTestId('settings-item-workflow')).toBeNull();
 		});
 
 		it('routes a row with a path through onLinkClick and closes the menu', async () => {
@@ -540,7 +524,6 @@ describe('PanelSidebar account menu', () => {
 			renderPanel({ settingsSections: sections, onLinkClick });
 			openMenu();
 			openSettings();
-			expandSection('configuration');
 			fireEvent.click(screen.getByTestId('settings-item-workflow'));
 			expect(onLinkClick).toHaveBeenCalledWith('/settings/workflow');
 			await expectMenuClosed();
@@ -556,7 +539,6 @@ describe('PanelSidebar account menu', () => {
 			});
 			openMenu();
 			openSettings();
-			expandSection('admin');
 			fireEvent.click(screen.getByTestId('settings-item-custom'));
 			expect(sections[1].items[1].onClick).toHaveBeenCalledTimes(1);
 			expect(onSettingsItemClick).not.toHaveBeenCalled();
@@ -564,7 +546,6 @@ describe('PanelSidebar account menu', () => {
 
 			openMenu();
 			openSettings();
-			expandSection('admin');
 			fireEvent.click(screen.getByTestId('settings-item-users'));
 			expect(onSettingsItemClick).toHaveBeenCalledWith(
 				sections[1].items[0],
@@ -647,7 +628,6 @@ describe('PanelSidebar account menu', () => {
 				header.compareDocumentPosition(chevron) &
 					Node.DOCUMENT_POSITION_FOLLOWING
 			).toBeTruthy();
-			expandSection('configuration');
 			const item = screen.getByTestId('settings-item-status-management');
 			// Just the label: no decorative bullet element.
 			expect(item.querySelector('[aria-hidden]')).toBeNull();
@@ -753,19 +733,12 @@ describe('PanelSidebar account menu', () => {
 });
 
 describe('PanelSidebar footer bell', () => {
-	it('badges the bell with both counts together, and the menu entries with each on its own', () => {
+	it('badges the bell with both counts together', () => {
 		renderPanel();
 		// 29 unread notifications + 3 unread What's New: the bell opens both tabs
 		expect(
 			screen.getByLabelText('Notifications, 32 unread')
 		).toBeInTheDocument();
-		const menu = openMenu();
-		expect(
-			within(menu).getByTestId('menu-item-notifications')
-		).toHaveTextContent('29');
-		expect(
-			within(menu).getByTestId('menu-item-whats-new')
-		).toHaveTextContent('3');
 	});
 
 	it("collapsed, shows the avatar dot when only What's New is unread", () => {

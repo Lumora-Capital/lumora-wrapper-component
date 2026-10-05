@@ -170,11 +170,10 @@ export default function AppShell({ children }) {
 			showThemeToggler
 			theme={mode}
 			onThemeToggle={toggle}
-			// Account menu (panel variant): profile, support request,
+			// Account menu (panel variant): profile link on the header,
 			// settings card and the Lumora Platforms switcher
 			userEmail={user?.email}
 			onProfileClick={() => router.push('/profile')}
-			onSubmitRequestClick={openRequestDialog} // see Support requests
 			settingsSections={settingsSections(router)}
 			platforms={platforms}
 			currentPlatformKey='centra'
@@ -342,19 +341,15 @@ export const userMenuItems = router => [
 
 #### The `panel` variant: account menu
 
-`sidebarVariant='panel'` keeps the same collapsible sidebar (brand, Ask Nexa, your search, links) and swaps the user menu for a larger account menu with a profile entry, a support-request entry, a settings card and a platform switcher. Desktop only: phones keep the bottom bar and the standard user menu.
+`sidebarVariant='panel'` keeps the same collapsible sidebar (brand, Ask Nexa, your search, links) and swaps the user menu for a larger account menu: a header that links to the profile, a settings card and a platform switcher. Desktop only: phones keep the bottom bar and the standard user menu.
 
 ```
 ┌──────────────────────────────┐
-│ (GP) Gabriel Paet            │  userName, userEmail, userRole, userAvatar
-│      gabriel@lumora.capital  │
-│      STANDARD USER           │
+│ (GP) Gabriel Paet            │  userName, userEmail, userRole, userAvatar;
+│      gabriel@lumora.capital  │  the whole row calls onProfileClick
+│      STANDARD USER           │  (role swaps to "View profile" on hover)
 ├──────────────────────────────┤
 │ ☼ Theme          [ ☼ | ☾ ]   │  showThemeToggler, theme, onThemeToggle
-│ 🔔 Notifications          25 │  showNotifications, notificationCount
-│ 📣 What's New              1 │  whatsNewCount (+ the drawer, or onWhatsNewClick)
-│ ♙ Profile                    │  onProfileClick
-│ ☊ Submit a request           │  onSubmitRequestClick
 │ ⚙  Settings                › │  settingsSections (card) or onSettingsClick
 │ ▤ Lumora Platforms         › │  platforms, currentPlatformKey, onPlatformSelect
 ├──────────────────────────────┤
@@ -364,8 +359,8 @@ export const userMenuItems = router => [
 
 Entries render only when their prop is set. `userMenuItems` is not used by this menu.
 
-- **Updates drawer tabs.** With `NotificationSidebarContent`, the bell and the Notifications entry open the drawer with `initialTab='notifications'`, and What's New opens it with `initialTab='whats-new'`. Render both tabs and start on `initialTab`. Without the drawer, Notifications calls `onNotificationsClick` and What's New calls `onWhatsNewClick` (hidden without either). The bell's badge shows `notificationCount + whatsNewCount` — it opens the drawer, which holds both tabs — while the Notifications and What's New entries each show their own count.
-- **Settings card.** Pass `settingsSections` and Settings opens a second card of collapsible sections beside the menu instead of calling `onSettingsClick`. Choosing a row runs its own `onClick`, else `onSettingsItemClick(item, section)`, else `onLinkClick(item.path)`.
+- **Updates drawer.** Notifications and What's New live behind the footer bell, not in this menu. With `NotificationSidebarContent` the bell opens the drawer with `initialTab='notifications'`; without it, the bell calls `onNotificationsClick`. Its badge shows `notificationCount + whatsNewCount`, since the drawer holds both tabs.
+- **Settings card.** Pass `settingsSections` and Settings opens a second card of collapsible sections (expanded unless `defaultOpen: false`) beside the menu instead of calling `onSettingsClick`. Choosing a row runs its own `onClick`, else `onSettingsItemClick(item, section)`, else `onLinkClick(item.path)`.
 - **Platform switcher.** Pass only the `platforms` the signed-in user may access (switching never grants permissions); the entry is hidden when empty. The `currentPlatformKey` row is marked Current and inert. Choosing another platform opens its `url` in a new tab (so the current app stays put), or calls `onPlatformSelect(platform)` instead when provided (SSO hand-off, unsaved-changes checks, same-tab navigation).
 
 ```jsx
@@ -373,8 +368,6 @@ Entries render only when their prop is set. `userMenuItems` is not used by this 
 	sidebarVariant='panel'
 	userEmail={user?.email}
 	onProfileClick={() => router.push('/profile')}
-	onSubmitRequestClick={openRequestDialog}
-	whatsNewCount={1}
 	settingsSections={[
 		{
 			title: 'Configuration',
@@ -666,11 +659,9 @@ Used only with `sidebarVariant='panel'` ([details](#the-panel-variant-account-me
 | Prop                   | Type                                                     | Default | Description                                                                                     |
 | ---------------------- | -------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------- |
 | `userEmail`            | `string`                                                 | —       | Shown in the account menu header, under the name.                                               |
-| `onProfileClick`       | `() => void`                                             | —       | Profile entry; hidden when omitted.                                                             |
-| `onSubmitRequestClick` | `() => void`                                             | —       | Submit a request entry; hidden when omitted.                                                    |
-| `whatsNewCount`        | `number`                                                 | `0`     | Unread pill on What's New (hidden when 0); also added to the bell's badge.                      |
-| `onNotificationsClick` | `() => void`                                             | —       | Notifications entry, when there is no `NotificationSidebarContent`.                             |
-| `onWhatsNewClick`      | `() => void`                                             | —       | What's New entry, when there is no drawer (the entry is hidden without either).                 |
+| `onProfileClick`       | `() => void`                                             | —       | Makes the header a link to the profile ("View profile" on hover).                               |
+| `whatsNewCount`        | `number`                                                 | `0`     | Added to the bell's badge.                                                                      |
+| `onNotificationsClick` | `() => void`                                             | —       | Bell handler, when there is no `NotificationSidebarContent`.                                    |
 | `settingsSections`     | `SettingsSection[]`                                      | —       | Settings opens a card of these sections instead of calling `onSettingsClick`.                   |
 | `onSettingsItemClick`  | `(item: SettingsItem, section: SettingsSection) => void` | —       | A settings row was chosen; runs after the row's own `onClick`, before `onLinkClick(item.path)`. |
 | `platforms`            | `LumoraPlatform[]`                                       | —       | Lumora Platforms entry; hidden when empty.                                                      |
@@ -743,7 +734,7 @@ type SettingsItem = {
 type SettingsSection = {
 	title: string; // collapsible header, e.g. "Configuration"
 	items: SettingsItem[];
-	defaultOpen?: boolean; // default false
+	defaultOpen?: boolean; // default true
 };
 
 type LumoraPlatform = {
