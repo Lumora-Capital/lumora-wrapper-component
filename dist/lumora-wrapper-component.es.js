@@ -160,7 +160,7 @@ const Tt = ({
       console.warn("Failed to persist sidebar collapsed state:", o);
     }
 }, bn = (t) => {
-  typeof window > "u" || window.location.assign(t);
+  typeof window > "u" || window.open(t, "_blank", "noopener,noreferrer");
 }, Sn = 264, En = 72, wn = "lumora:sidebar-collapsed", yn = "width 200ms ease", Nr = 64, Rt = {
   "&:focus, &:focus-visible": { outline: "none" }
 }, vn = 16, Rn = 14, In = 4, Cn = 2.5, Wr = "0.7rem", kr = 22, tt = ({ text: t, variant: r = "body1", center: o = !1, fontSize: n, fontWeight: i }) => {

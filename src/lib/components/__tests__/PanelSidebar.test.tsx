@@ -372,7 +372,7 @@ describe('PanelSidebar account menu', () => {
 
 		it('does nothing when the current platform is chosen', () => {
 			const navigate = jest
-				.spyOn(sidebarUtils, 'navigateTo')
+				.spyOn(sidebarUtils, 'openInNewTab')
 				.mockImplementation(() => {});
 			const onPlatformSelect = jest.fn();
 			renderPanel({ onPlatformSelect });
@@ -387,7 +387,7 @@ describe('PanelSidebar account menu', () => {
 
 		it('hands another platform to onPlatformSelect instead of navigating', async () => {
 			const navigate = jest
-				.spyOn(sidebarUtils, 'navigateTo')
+				.spyOn(sidebarUtils, 'openInNewTab')
 				.mockImplementation(() => {});
 			const onPlatformSelect = jest.fn();
 			renderPanel({ onPlatformSelect });
@@ -400,9 +400,9 @@ describe('PanelSidebar account menu', () => {
 			navigate.mockRestore();
 		});
 
-		it('navigates to the platform URL in the same tab by default', () => {
+		it('opens the platform URL in a new tab by default', () => {
 			const navigate = jest
-				.spyOn(sidebarUtils, 'navigateTo')
+				.spyOn(sidebarUtils, 'openInNewTab')
 				.mockImplementation(() => {});
 			renderPanel();
 			openMenu();
@@ -410,6 +410,19 @@ describe('PanelSidebar account menu', () => {
 			fireEvent.click(screen.getByTestId('platform-item-core'));
 			expect(navigate).toHaveBeenCalledWith('https://core.test');
 			navigate.mockRestore();
+		});
+
+		it('openInNewTab opens a noopener tab rather than replacing the page', () => {
+			const open = jest
+				.spyOn(window, 'open')
+				.mockImplementation(() => null);
+			sidebarUtils.openInNewTab('https://core.test');
+			expect(open).toHaveBeenCalledWith(
+				'https://core.test',
+				'_blank',
+				'noopener,noreferrer'
+			);
+			open.mockRestore();
 		});
 	});
 

@@ -153,7 +153,7 @@ export type LumoraPlatform = {
 	/** Stable id; `currentPlatformKey` matches against it. */
 	key: string;
 	name: string;
-	/** Home page opened (same tab) when the platform is chosen. */
+	/** Home page opened in a new tab when the platform is chosen. */
 	url: string;
 	description?: string;
 };
@@ -298,8 +298,8 @@ export interface LumoraWrapperProps {
 	currentPlatformKey?: string;
 	/**
 	 * Called when another platform is chosen. When provided it REPLACES the
-	 * default same-tab navigation to `platform.url` (use it for SSO hand-off or
-	 * unsaved-changes checks).
+	 * default of opening `platform.url` in a new tab (use it for SSO hand-off
+	 * or unsaved-changes checks).
 	 */
 	onPlatformSelect?: (platform: LumoraPlatform) => void;
 	// User data callback

@@ -366,7 +366,7 @@ Entries render only when their prop is set. `userMenuItems` is not used by this 
 
 - **Updates drawer tabs.** With `NotificationSidebarContent`, the bell and the Notifications entry open the drawer with `initialTab='notifications'`, and What's New opens it with `initialTab='whats-new'`. Render both tabs and start on `initialTab`. Without the drawer, Notifications calls `onNotificationsClick` and What's New calls `onWhatsNewClick` (hidden without either).
 - **Settings card.** Pass `settingsSections` and Settings opens a second card of collapsible sections beside the menu instead of calling `onSettingsClick`. Choosing a row runs its own `onClick`, else `onSettingsItemClick(item, section)`, else `onLinkClick(item.path)`.
-- **Platform switcher.** Pass only the `platforms` the signed-in user may access (switching never grants permissions); the entry is hidden when empty. The `currentPlatformKey` row is marked Current and inert. Choosing another platform navigates to its `url` in the same tab, or calls `onPlatformSelect(platform)` instead when provided (SSO hand-off, unsaved-changes checks).
+- **Platform switcher.** Pass only the `platforms` the signed-in user may access (switching never grants permissions); the entry is hidden when empty. The `currentPlatformKey` row is marked Current and inert. Choosing another platform opens its `url` in a new tab (so the current app stays put), or calls `onPlatformSelect(platform)` instead when provided (SSO hand-off, unsaved-changes checks, same-tab navigation).
 
 ```jsx
 <LumoraWrapper
@@ -675,7 +675,7 @@ Used only with `sidebarVariant='panel'` ([details](#the-panel-variant-account-me
 | `onSettingsItemClick`  | `(item: SettingsItem, section: SettingsSection) => void` | —       | A settings row was chosen; runs after the row's own `onClick`, before `onLinkClick(item.path)`. |
 | `platforms`            | `LumoraPlatform[]`                                       | —       | Lumora Platforms entry; hidden when empty.                                                      |
 | `currentPlatformKey`   | `string`                                                 | —       | Marks the platform in use (Current, inert).                                                     |
-| `onPlatformSelect`     | `(platform: LumoraPlatform) => void`                     | —       | Replaces the default same-tab navigation to `platform.url`.                                     |
+| `onPlatformSelect`     | `(platform: LumoraPlatform) => void`                     | —       | Replaces the default of opening `platform.url` in a new tab.                                    |
 
 ### Colors and styles
 
@@ -749,7 +749,7 @@ type SettingsSection = {
 type LumoraPlatform = {
 	key: string; // matched against currentPlatformKey
 	name: string;
-	url: string; // home page opened in the same tab
+	url: string; // home page opened in a new tab
 	description?: string; // optional second line
 };
 ```

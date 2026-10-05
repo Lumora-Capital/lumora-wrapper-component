@@ -343,10 +343,6 @@ const DemoApp = () => {
 					settingsSections={demoSettingsSections}
 					platforms={demoPlatforms}
 					currentPlatformKey='centra'
-					// The default navigates in the same tab; keep the playground open
-					onPlatformSelect={platform =>
-						window.open(platform.url, '_blank', 'noopener')
-					}
 					showNotifications={settings.showNotifications}
 					notificationCount={26}
 					NotificationSidebarContent={

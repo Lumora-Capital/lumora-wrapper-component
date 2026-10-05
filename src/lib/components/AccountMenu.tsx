@@ -28,7 +28,7 @@ import type {
 } from './LumoraWrapper';
 import PlatformsPanel from './PlatformsPanel';
 import SettingsPanel from './SettingsPanel';
-import { navigateTo } from './sidebarUtils';
+import { openInNewTab } from './sidebarUtils';
 
 const PLATFORMS_PANEL_WIDTH_PX = 288;
 const SETTINGS_PANEL_WIDTH_PX = 300;
@@ -377,7 +377,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		if (onPlatformSelect) {
 			onPlatformSelect(platform);
 		} else {
-			navigateTo(platform.url);
+			openInNewTab(platform.url);
 		}
 	};
 
