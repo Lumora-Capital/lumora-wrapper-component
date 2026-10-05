@@ -99,7 +99,7 @@ describe('PanelSidebar account menu', () => {
 			const menu = openMenu();
 			const name = within(menu).getByText('Riley Carter');
 			const email = within(menu).getByText('riley.carter@example.com');
-			const role = within(menu).getByText('SUPER ADMIN');
+			const role = within(menu).getByText('Super Admin');
 			expect(email).toHaveAttribute('data-testid', 'account-menu-email');
 			expect(name.nextElementSibling).toBe(email);
 			expect(email.nextElementSibling).toBe(role);
@@ -110,9 +110,20 @@ describe('PanelSidebar account menu', () => {
 			const button = screen.getByTestId('panel-user-button');
 			const name = within(button).getByText('Riley Carter');
 			const role = within(button).getByTestId('panel-user-role');
-			expect(role).toHaveTextContent('SUPER ADMIN');
+			expect(role).toHaveTextContent('Super Admin');
 			expect(name.nextElementSibling).toBe(role);
 			expect(button).not.toHaveTextContent('riley.carter@example.com');
+		});
+
+		it('title-cases the role however it is stored, on the footer and in the menu', () => {
+			renderPanel({ userRole: 'admin' });
+			expect(screen.getByTestId('panel-user-role')).toHaveTextContent(
+				'Admin'
+			);
+			const menu = openMenu();
+			expect(
+				within(menu).getByTestId('account-menu-role')
+			).toHaveTextContent('Admin');
 		});
 
 		it('omits the header email line when no email is given', () => {

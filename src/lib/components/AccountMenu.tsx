@@ -487,8 +487,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 								data-testid='account-menu-role'
 								sx={{
 									display: 'block',
-									textTransform: 'uppercase',
-									letterSpacing: '0.04em',
+									letterSpacing: '0.02em',
 									color: 'text.secondary'
 								}}
 							>

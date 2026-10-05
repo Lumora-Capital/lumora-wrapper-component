@@ -13,6 +13,12 @@ export interface SidebarFooterProps extends UserMenuOptions {
 	/** Hover background, and the user row's background while its menu is open. */
 	hoverColor: string;
 	showProfile: boolean;
+	/**
+	 * Unread What's New count. The bell opens the updates drawer, which holds
+	 * both tabs, so its badge shows this plus `notificationCount`; the menu's
+	 * Notifications entry shows `notificationCount` alone.
+	 */
+	whatsNewCount?: number;
 }
 
 /**
@@ -24,6 +30,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 	color,
 	hoverColor,
 	showProfile,
+	whatsNewCount = 0,
 	...menuOptions
 }) => {
 	const {
@@ -96,7 +103,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 				)}
 				{showNotifications && (
 					<NotificationBell
-						count={notificationCount}
+						count={notificationCount + whatsNewCount}
 						onClick={onNotificationsClick}
 						color={color}
 						hoverColor={hoverColor}

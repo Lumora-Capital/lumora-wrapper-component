@@ -276,6 +276,20 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(contentArea).toHaveStyle('width: calc(100% - 288px)');
 		});
 
+		it("badges the sidebar bell with notifications and What's New together", () => {
+			const Panel = () => <div>notification list</div>;
+			renderCollapsible({
+				notificationCount: 2,
+				whatsNewCount: 1,
+				NotificationSidebarContent: Panel
+			});
+			// The bell opens the drawer that holds both tabs
+			expect(screen.getByTestId('sidebar-notifications')).toHaveAttribute(
+				'aria-label',
+				'Notifications, 3 unread'
+			);
+		});
+
 		it('stacks brand, search, links and footer top to bottom', () => {
 			renderCollapsible({
 				searchComponent: <input placeholder='Global search' />,

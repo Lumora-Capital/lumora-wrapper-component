@@ -14,7 +14,7 @@ import type {
 	SidebarLink
 } from './LumoraWrapper';
 import NotificationBell from './NotificationBell';
-import { deriveGroupTint } from './sidebarUtils';
+import { deriveGroupTint, formatRole } from './sidebarUtils';
 import { UserAvatar } from './UserMenu';
 
 /** Host apps often outline every `button:focus`; keep the footer clean after a click. */
@@ -161,8 +161,8 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	const footerRef = React.useRef<HTMLButtonElement>(null);
 	const [menuOpen, setMenuOpen] = React.useState(false);
 
-	// Display only: "SUPER_ADMIN" -> "SUPER ADMIN" (uppercased by the caption style)
-	const roleLabel = userRole ? userRole.replace(/_/g, ' ') : undefined;
+	// Display only: "SUPER_ADMIN" -> "Super Admin". The stored role is untouched.
+	const roleLabel = userRole ? formatRole(userRole) : undefined;
 	const renderAvatar = (size: number) => (
 		<UserAvatar
 			name={userName}
@@ -238,7 +238,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 								display: 'block',
 								color: fg,
 								opacity: 0.85,
-								textTransform: 'uppercase',
 								letterSpacing: '0.02em',
 								lineHeight: 1.3
 							}}

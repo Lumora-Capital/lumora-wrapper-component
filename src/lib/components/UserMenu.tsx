@@ -14,6 +14,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
+import { formatRole } from './sidebarUtils';
 
 /** An extra entry in the user menu, e.g. "What's New". */
 export type UserMenuItem = {
@@ -45,9 +46,8 @@ export interface UserMenuOptions {
 	onLogout: () => void;
 }
 
-/** Display only: "SUPER_ADMIN" -> "SUPER ADMIN"; "USER" when unset. The stored role is untouched. */
-const formatRole = (role?: string) =>
-	role ? role.replace(/_/g, ' ').toUpperCase() : 'USER';
+/** Display only: "SUPER_ADMIN" -> "Super Admin"; "User" when unset. The stored role is untouched. */
+const roleLabel = (role?: string) => (role ? formatRole(role) : 'User');
 
 /** "Gabriel Paet" -> "GP". */
 const initials = (name: string) =>
@@ -140,7 +140,7 @@ export const Identity: React.FC<{
 					variant='caption'
 					sx={{ ...ellipsis, opacity: 0.8, color: 'inherit' }}
 				>
-					{formatRole(role)}
+					{roleLabel(role)}
 				</Typography>
 			</Box>
 		)}

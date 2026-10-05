@@ -806,6 +806,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		menuItems: userMenuItems,
 		showNotifications,
 		notificationCount,
+		whatsNewCount,
 		onNotificationsClick: openNotifications,
 		showProfile,
 		userName,
