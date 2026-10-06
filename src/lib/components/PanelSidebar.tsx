@@ -27,7 +27,7 @@ export interface PanelSidebarProps {
 	secondaryLinks?: SidebarLink[];
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
-	// Header bar (collapse toggle + brand) — forwarded to CollapsibleSidebar
+	// Header bar (the brand) — forwarded to CollapsibleSidebar
 	logo?: React.ReactNode;
 	title?: string;
 	onBrandClick?: () => void;
@@ -40,9 +40,8 @@ export interface PanelSidebarProps {
 	activeForegroundColor?: string;
 	foregroundColor?: string;
 	surfaceBackgroundColor?: string;
-	// Collapse / expand (controlled by the wrapper)
+	// Collapse / expand (the wrapper opens it on hover)
 	collapsed: boolean;
-	onCollapsedChange: (collapsed: boolean) => void;
 	expandedWidth: number;
 	collapsedWidth: number;
 	/**
@@ -89,7 +88,7 @@ export interface PanelSidebarProps {
 
 /**
  * The `panel` sidebar variant: the collapsible sidebar (header bar with the
- * collapse toggle and brand, the wrapper's Ask Nexa + search as `topContent`,
+ * brand, the wrapper's Ask Nexa + search as `topContent`,
  * the nav list) with a user footer that opens the account menu — theme,
  * notifications and What's New, profile, support request, the settings card,
  * the Lumora Platforms switcher and log out (see AccountMenu).
@@ -111,7 +110,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	foregroundColor,
 	surfaceBackgroundColor,
 	collapsed,
-	onCollapsedChange,
 	expandedWidth,
 	collapsedWidth,
 	topContent,
@@ -292,7 +290,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				foregroundColor={foregroundColor}
 				surfaceBackgroundColor={surface}
 				collapsed={collapsed}
-				onCollapsedChange={onCollapsedChange}
 				expandedWidth={expandedWidth}
 				collapsedWidth={collapsedWidth}
 				topContent={topContent}

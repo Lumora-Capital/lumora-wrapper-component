@@ -1,6 +1,12 @@
 import { Home, Person, Settings } from '@mui/icons-material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { render, type RenderOptions } from '@testing-library/react';
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	type RenderOptions
+} from '@testing-library/react';
 import type * as React from 'react';
 import type { LumoraWrapperProps, SidebarLink } from '../LumoraWrapper';
 
@@ -45,6 +51,14 @@ const customRender = (
 		),
 		...options
 	});
+
+/** Hover the collapsible / panel sidebar open, as a pointer would. */
+export const hoverSidebarOpen = async () => {
+	const panel = screen.getByTestId('sidebar-hover-panel');
+	fireEvent.mouseOver(panel);
+	await waitFor(() => expect(panel).toHaveAttribute('data-expanded', 'true'));
+	return panel;
+};
 
 export * from '@testing-library/react';
 export { customRender as render };

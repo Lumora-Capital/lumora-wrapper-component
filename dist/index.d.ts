@@ -76,7 +76,7 @@ export declare interface CollapsibleSidebarProps {
     /** @deprecated Never rendered — the section header row was dropped. */
     sectionTitle?: string;
     /**
-     * Render the 60px in-sidebar header bar (collapse hamburger + brand). Used
+     * Render the 64px in-sidebar header bar (the brand). Used
      * by the full-height collapsible layout; off by default so the labeled rail
      * and existing consumers are unaffected. When on, `topInsetPx` is ignored —
      * the header itself occupies the top of the surface.
@@ -85,7 +85,7 @@ export declare interface CollapsibleSidebarProps {
     /** Header bar background; defaults to the sidebar surface color. */
     headerBackgroundColor?: string;
     /**
-     * Header bar foreground (hamburger + wordmark + logo). Defaults to the idle
+     * Header bar foreground (wordmark + logo). Defaults to the idle
      * accent-on-surface tint (see `foregroundColor`) when the header shares the
      * sidebar surface, and to auto-contrast from `headerBackgroundColor` when
      * one is given. Auto-contrast only parses hex colors — set this explicitly
@@ -109,13 +109,8 @@ export declare interface CollapsibleSidebarProps {
     foregroundColor?: string;
     /** Sidebar surface background (default '#ffffff'). */
     surfaceBackgroundColor?: string;
-    /** Controlled collapsed state. When provided, the owner also persists it. */
+    /** Icon rail when true; the owner decides when (e.g. on hover). */
     collapsed?: boolean;
-    /** Uncontrolled initial state used only when nothing is persisted. */
-    defaultCollapsed?: boolean;
-    onCollapsedChange?: (collapsed: boolean) => void;
-    /** localStorage key for the uncontrolled/persisted state. */
-    persistKey?: string;
     /** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
     expandedWidth?: number | string;
     collapsedWidth?: number;

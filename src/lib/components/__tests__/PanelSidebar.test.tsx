@@ -23,7 +23,6 @@ const platforms: LumoraPlatform[] = [
 const baseProps: PanelSidebarProps = {
 	mainLinks: links,
 	collapsed: false,
-	onCollapsedChange: jest.fn(),
 	expandedWidth: 264,
 	collapsedWidth: 72,
 	userName: 'Riley Carter',

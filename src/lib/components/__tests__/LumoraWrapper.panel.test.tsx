@@ -5,6 +5,7 @@ import LumoraWrapper, {
 } from '../LumoraWrapper';
 import {
 	fireEvent,
+	hoverSidebarOpen,
 	lumoraTestRequiredProps,
 	mockSidebarLinks,
 	render,
@@ -88,6 +89,7 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 
 		it('opens on the notifications tab from the footer bell', async () => {
 			renderPanel({ NotificationSidebarContent: Content });
+			await hoverSidebarOpen();
 			fireEvent.click(screen.getByLabelText('Notifications, 2 unread'));
 			expect(await screen.findByTestId('updates-tab')).toHaveTextContent(
 				'notifications'
@@ -106,9 +108,10 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 			expect(screen.queryByTestId('menu-item-submit-request')).toBeNull();
 		});
 
-		it('falls back to the plain callback on the bell when no drawer content is provided', () => {
+		it('falls back to the plain callback on the bell when no drawer content is provided', async () => {
 			const onNotificationsClick = jest.fn();
 			renderPanel({ onNotificationsClick });
+			await hoverSidebarOpen();
 			fireEvent.click(screen.getByLabelText('Notifications, 2 unread'));
 			expect(onNotificationsClick).toHaveBeenCalledTimes(1);
 			expect(screen.queryByTestId('updates-content')).toBeNull();

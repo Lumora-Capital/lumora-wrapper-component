@@ -1,6 +1,7 @@
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
+	hoverSidebarOpen,
 	lumoraTestRequiredProps,
 	mockSidebarLinks,
 	render,
@@ -38,8 +39,9 @@ describe('LumoraWrapper - Accessibility', () => {
 			).toBeInTheDocument();
 		});
 
-		it('keeps the page heading hierarchy to the host (brand is not a heading level 1)', () => {
+		it('keeps the page heading hierarchy to the host (brand is not a heading level 1)', async () => {
 			renderWrapper({ sidebarVariant: 'collapsible', appName: 'Centra' });
+			await hoverSidebarOpen();
 			expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
 				'Page Title'
 			);

@@ -37,32 +37,26 @@ const renderSidebar = (
 		/>
 	);
 
-beforeEach(() => {
-	window.localStorage.clear();
-});
-
 describe('CollapsibleSidebar', () => {
 	describe('collapse state', () => {
-		// The collapse toggle lives in the in-sidebar header bar (showHeaderBar);
-		// without it, this component only reads the collapsed state.
-		it('restores the persisted collapsed state from localStorage on mount', () => {
-			const persistKey = 'test:sidebar-collapsed';
-			window.localStorage.setItem(persistKey, 'true');
-			renderSidebar({ persistKey });
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'true'
+		// No toggle of its own: the owner opens it (the wrapper does on hover)
+		it('is expanded by default and follows the collapsed prop', () => {
+			const { rerender } = renderSidebar({ showHeaderBar: true });
+			const sidebar = screen.getByTestId('collapsible-sidebar');
+			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+			rerender(
+				<CollapsibleSidebar
+					mainLinks={mainLinks}
+					showHeaderBar
+					collapsed
+				/>
 			);
-		});
-
-		it('reflects the controlled collapsed prop over stored state', () => {
-			const persistKey = 'test:sidebar-collapsed';
-			window.localStorage.setItem(persistKey, 'true');
-			renderSidebar({ persistKey, collapsed: false });
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'false'
-			);
+			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+			expect(
+				screen.queryByRole('button', {
+					name: /collapse sidebar|expand sidebar/i
+				})
+			).not.toBeInTheDocument();
 		});
 	});
 
@@ -564,42 +558,6 @@ describe('CollapsibleSidebar', () => {
 			expect(
 				screen.queryByTestId('sidebar-header')
 			).not.toBeInTheDocument();
-			expect(
-				screen.queryByTestId('sidebar-collapse-toggle')
-			).not.toBeInTheDocument();
-		});
-
-		it('controlled: the toggle reports the next state without flipping itself', () => {
-			const onCollapsedChange = jest.fn();
-			renderSidebar({
-				showHeaderBar: true,
-				collapsed: false,
-				onCollapsedChange
-			});
-			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
-			expect(onCollapsedChange).toHaveBeenCalledWith(true);
-			// Controlled: the owner decides; the component itself must not flip.
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'false'
-			);
-		});
-
-		it('uncontrolled: the toggle flips the state and persists it', () => {
-			const persistKey = 'test:sidebar-collapsed';
-			const onCollapsedChange = jest.fn();
-			renderSidebar({
-				showHeaderBar: true,
-				persistKey,
-				onCollapsedChange
-			});
-			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'true'
-			);
-			expect(window.localStorage.getItem(persistKey)).toBe('true');
-			expect(onCollapsedChange).toHaveBeenCalledWith(true);
 		});
 
 		it('makes the header brand a button when onBrandClick is given', () => {
@@ -647,10 +605,6 @@ describe('CollapsibleSidebar', () => {
 				color: 'rgb(9, 193, 174)'
 			});
 			expect(brand).toHaveStyle({ color: 'rgb(9, 193, 174)' });
-			// The floating toggle's chevron follows the accent too
-			expect(screen.getByTestId('sidebar-collapse-toggle')).toHaveStyle({
-				color: 'rgb(9, 193, 174)'
-			});
 		});
 
 		it('prefers foregroundColor for the header brand on a plain surface', () => {
@@ -686,7 +640,7 @@ describe('CollapsibleSidebar', () => {
 			).toHaveStyle({ color: 'rgb(255, 255, 255)' });
 		});
 
-		it('shows the wordmark only while expanded; collapsed, the toggle sits above the logo', () => {
+		it('shows the wordmark only while expanded; collapsed, just the logo', () => {
 			const { rerender } = render(
 				<CollapsibleSidebar
 					mainLinks={mainLinks}
@@ -701,18 +655,6 @@ describe('CollapsibleSidebar', () => {
 			expect(within(brand).getByText('Polymer')).toHaveStyle({
 				textTransform: 'uppercase'
 			});
-			const toggle = screen.getByTestId('sidebar-collapse-toggle');
-			expect(toggle).toHaveAccessibleName('Collapse sidebar');
-			expect(toggle).toHaveAttribute('aria-expanded', 'true');
-			// Expanded, the toggle sits inside the brand row on the right,
-			// kept out of the header's flow so the brand stays centered
-			expect(toggle).toHaveStyle({
-				position: 'absolute',
-				transform: 'translate(-16px, -50%)'
-			});
-			expect(screen.getByTestId('sidebar-header')).not.toContainElement(
-				toggle
-			);
 
 			rerender(
 				<CollapsibleSidebar
@@ -723,8 +665,6 @@ describe('CollapsibleSidebar', () => {
 					title='Polymer'
 				/>
 			);
-			// Collapsed: the wordmark is gone; the logo stays, separate from
-			// the expand toggle floating on the sidebar's right edge
 			const collapsedBrand = screen.getByTestId('sidebar-header-brand');
 			expect(
 				within(collapsedBrand).getByTestId('brand-logo')
@@ -732,20 +672,6 @@ describe('CollapsibleSidebar', () => {
 			expect(
 				within(collapsedBrand).queryByText('Polymer')
 			).not.toBeInTheDocument();
-			const collapsedToggle = screen.getByTestId(
-				'sidebar-collapse-toggle'
-			);
-			expect(collapsedToggle).not.toContainElement(collapsedBrand);
-			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
-			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
-			expect(collapsedToggle).toHaveStyle({
-				position: 'absolute',
-				transform: 'translate(50%, -50%)'
-			});
-			// Outside the nav, so the nav's clipping can't cut it off
-			expect(
-				screen.getByTestId('collapsible-sidebar')
-			).not.toContainElement(collapsedToggle);
 		});
 
 		it('applies headerBackgroundColor and falls back to the surface color', () => {
@@ -856,28 +782,19 @@ describe('CollapsibleSidebar', () => {
 	});
 
 	describe('collapsed header', () => {
-		it('keeps the logo as the brand link, separate from the expand toggle', () => {
+		it('keeps the logo as the brand link', () => {
 			const onBrandClick = jest.fn();
-			const onCollapsedChange = jest.fn();
 			renderSidebar({
 				showHeaderBar: true,
 				collapsed: true,
 				logo: <svg data-testid='brand-logo' />,
 				title: 'Centra',
-				onBrandClick,
-				onCollapsedChange
+				onBrandClick
 			});
 
 			fireEvent.click(
 				screen.getByRole('button', { name: 'Centra home' })
 			);
-			expect(onBrandClick).toHaveBeenCalledTimes(1);
-			expect(onCollapsedChange).not.toHaveBeenCalled();
-
-			fireEvent.click(
-				screen.getByRole('button', { name: 'Expand sidebar' })
-			);
-			expect(onCollapsedChange).toHaveBeenCalledWith(false);
 			expect(onBrandClick).toHaveBeenCalledTimes(1);
 		});
 	});

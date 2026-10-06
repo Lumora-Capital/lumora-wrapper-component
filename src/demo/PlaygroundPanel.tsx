@@ -190,15 +190,6 @@ const PlaygroundPanel = ({
 					<Button variant='outlined' onClick={onLogout}>
 						Log out (test the session gate)
 					</Button>
-					<Button
-						variant='outlined'
-						onClick={() => {
-							localStorage.removeItem('lumora:sidebar-collapsed');
-							window.location.reload();
-						}}
-					>
-						Forget sidebar collapsed state
-					</Button>
 					<Button color='inherit' onClick={onReset}>
 						Reset playground
 					</Button>
