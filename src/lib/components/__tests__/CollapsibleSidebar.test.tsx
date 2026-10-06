@@ -79,6 +79,49 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
+	describe('subtitle', () => {
+		const agentLinks: SidebarLink[] = [
+			{
+				text: 'Liam',
+				subtitle: 'Legal & Compliance',
+				path: '#switch-agent',
+				icon: <People />
+			}
+		];
+
+		it('shows the subtitle as a second line under the label when expanded', () => {
+			render(
+				<CollapsibleSidebar
+					mainLinks={[]}
+					secondaryLinks={agentLinks}
+				/>
+			);
+			const row = screen.getByTestId('sidebar-item-Liam');
+			expect(within(row).getByText('Liam')).toBeInTheDocument();
+			expect(
+				within(row).getByText('Legal & Compliance')
+			).toBeInTheDocument();
+		});
+
+		it('names both in the rail tooltip when collapsed', async () => {
+			render(
+				<CollapsibleSidebar
+					mainLinks={[]}
+					secondaryLinks={agentLinks}
+					collapsed
+				/>
+			);
+			const icon = screen.getByTestId('sidebar-item-Liam');
+			expect(icon).toHaveAttribute(
+				'aria-label',
+				'Liam · Legal & Compliance'
+			);
+			fireEvent.mouseOver(icon);
+			const tooltip = await screen.findByRole('tooltip');
+			expect(tooltip).toHaveTextContent('Liam · Legal & Compliance');
+		});
+	});
+
 	describe('active and sub-menu accents', () => {
 		it('marks the active parent and renders its child group inline when expanded', () => {
 			renderSidebar({ collapsed: false, activePath: '/crm' });

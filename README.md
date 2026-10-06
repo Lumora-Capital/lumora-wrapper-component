@@ -243,6 +243,12 @@ A link without `subitems` can carry an **`action`**: a small button at the end o
 
 The button shows in the expanded sidebar and in the mobile Menu sheet (which closes so your popup appears over the page). The collapsed and narrow rails have no room for it, so also offer the action somewhere always reachable, such as the user menu ([example](#support-requests)).
 
+A link can also carry a **`subtitle`**: a second, lighter line under `text` in the `collapsible` / `panel` sidebar and the mobile Menu sheet, e.g. the role beneath a person's name. The collapsed rail puts it in the icon's tooltip (`Liam · Legal & Compliance`). A two-line row gives its icon 48px, room for a 36px avatar.
+
+```tsx
+{ text: 'Liam', subtitle: 'Legal & Compliance', path: '#switch-agent', icon: <Avatar src={liam} sx={{ width: 36, height: 36 }} /> }
+```
+
 ### 3. Global search
 
 Pass your own component as `searchComponent`; the wrapper only places it.

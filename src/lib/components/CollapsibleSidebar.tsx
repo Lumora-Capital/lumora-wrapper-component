@@ -361,7 +361,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					px: 1.5,
 					// Room for the action button laid over the row's end
 					...(link.action && { pr: 6 }),
-					...expandedRowSx(active, groupTint, 36),
+					...(link.subtitle && { py: 1 }),
+					// A two-line row usually leads with a larger avatar; give it room
+					...expandedRowSx(
+						active,
+						groupTint,
+						link.subtitle ? 48 : 36
+					),
 					...selectedRowSx
 				}}
 			>
@@ -374,6 +380,20 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							fontWeight={ROW_LABEL_WEIGHT}
 						/>
 					}
+					secondary={
+						link.subtitle ? (
+							<Box
+								component='span'
+								sx={{ display: 'block', opacity: 0.85 }}
+							>
+								<TruncatingLabel
+									text={link.subtitle}
+									fontSize='0.8125rem'
+								/>
+							</Box>
+						) : undefined
+					}
+					sx={link.subtitle ? { my: 0 } : undefined}
 				/>
 			</ListItemButton>
 		);
@@ -802,10 +822,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		>
 			{renderCollapsedIcon(
 				link.text,
-				link.text,
+				link.subtitle ? `${link.text} · ${link.subtitle}` : link.text,
 				link.icon,
 				isSubLinkActive(link, activePath),
-				link.path ? () => handleClick(link.path!) : undefined
+				link.path ? () => handleClick(link.path!) : undefined,
+				{ testId: `sidebar-item-${link.text}` }
 			)}
 		</Box>
 	);

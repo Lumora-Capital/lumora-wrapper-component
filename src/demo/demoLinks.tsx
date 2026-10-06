@@ -7,6 +7,7 @@ import {
 	PeopleOutline as PeopleIcon,
 	StarBorderRounded as PinsIcon
 } from '@mui/icons-material';
+import Avatar from '@mui/material/Avatar';
 import type { SidebarLink, SidebarSubLink } from '../lib';
 
 /** Flat links, like most host apps. */
@@ -45,7 +46,14 @@ export const nestedLinks: SidebarLink[] = [
 ];
 
 export const secondaryLinks: SidebarLink[] = [
-	{ text: 'Help & support', path: '/help', icon: <SupportIcon /> }
+	{ text: 'Help & support', path: '/help', icon: <SupportIcon /> },
+	// A two-line row, like Xpdite's agent switcher: name over role
+	{
+		text: 'Liam',
+		subtitle: 'Legal & Compliance',
+		path: '/agent',
+		icon: <Avatar sx={{ width: 36, height: 36, fontSize: 15 }}>L</Avatar>
+	}
 ];
 
 /** Page title for a path, from the links above. */
