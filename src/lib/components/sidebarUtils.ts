@@ -159,15 +159,16 @@ export const openInNewTab = (url: string): void => {
 };
 
 /**
- * Display label for a stored role: "SUPER_ADMIN" -> "Super Admin",
- * "admin" -> "Admin". Title-cased word by word, so the role reads the same
- * under the user's name, in the account menu and in the classic user menu.
- * The stored value is untouched.
+ * Display label for a stored role: "SUPER_ADMIN" -> "SUPER ADMIN",
+ * "admin" -> "ADMIN". Underscores become spaces and the whole label is in
+ * capitals (owner, 2026-09-29), so the role reads the same under the user's
+ * name, in the account menu and in the classic user menu. Display only — the
+ * stored value is untouched.
  */
 export const formatRole = (role: string): string =>
 	role
 		.replace(/_/g, ' ')
 		.split(/\s+/)
 		.filter(Boolean)
-		.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-		.join(' ');
+		.join(' ')
+		.toUpperCase();
