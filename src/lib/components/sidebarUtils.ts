@@ -109,41 +109,6 @@ const parseColorToRgb = (color: string): [number, number, number] | null => {
 	return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 };
 
-const isBrowser = () =>
-	typeof window !== 'undefined' && Boolean(window.localStorage);
-
-/**
- * Read a persisted collapsed flag. Returns `null` when unset or unavailable so
- * callers can fall back to their own default.
- */
-export const readStoredCollapsed = (key: string): boolean | null => {
-	if (!isBrowser()) {
-		return null;
-	}
-	try {
-		const raw = window.localStorage.getItem(key);
-		if (raw === null) {
-			return null;
-		}
-		return raw === 'true';
-	} catch (error) {
-		console.warn('Failed to read sidebar collapsed state:', error);
-		return null;
-	}
-};
-
-/** Persist the collapsed flag; swallows storage errors (quota, privacy mode). */
-export const writeStoredCollapsed = (key: string, value: boolean): void => {
-	if (!isBrowser()) {
-		return;
-	}
-	try {
-		window.localStorage.setItem(key, value ? 'true' : 'false');
-	} catch (error) {
-		console.warn('Failed to persist sidebar collapsed state:', error);
-	}
-};
-
 /**
  * New-tab navigation used by the platform switcher's default behavior, so the
  * host app stays open while the other platform loads. `noopener,noreferrer`

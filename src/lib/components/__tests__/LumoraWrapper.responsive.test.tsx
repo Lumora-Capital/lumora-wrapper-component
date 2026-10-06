@@ -1,7 +1,15 @@
-import { fireEvent, screen, within } from '@testing-library/react';
 import { useMediaQuery } from '@mui/material';
 import LumoraWrapper from '../LumoraWrapper';
-import { render, lumoraTestRequiredProps, mockSidebarLinks } from './testUtils';
+import {
+	act,
+	fireEvent,
+	hoverSidebarOpen,
+	lumoraTestRequiredProps,
+	mockSidebarLinks,
+	render,
+	screen,
+	within
+} from './testUtils';
 
 // Mock useMediaQuery hook
 jest.mock('@mui/material', () => ({
@@ -235,10 +243,6 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 	});
 
 	describe("sidebarVariant='collapsible'", () => {
-		beforeEach(() => {
-			window.localStorage.clear();
-		});
-
 		const renderCollapsible = (
 			extraProps: Record<string, unknown> = {},
 			mobile = false
@@ -258,31 +262,80 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 		};
 
-		it('renders a full-height 288px panel with its own header', () => {
+		it('stays a 72px rail and opens over the page on hover', async () => {
 			renderCollapsible();
 
 			const sidebar = screen.getByTestId('collapsible-sidebar');
-			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
-			expect(sidebar).toHaveStyle({ width: '288px', minWidth: '288px' });
-			// The panel spans the full viewport height from the top — its own
-			// 60px header block holds the toggle and brand.
-			const aside = sidebar.closest('aside');
-			expect(aside).toHaveStyle({ height: '100vh', top: '0px' });
-			expect(screen.getByTestId('sidebar-header')).toBeInTheDocument();
-			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 			const contentArea = screen
 				.getByTestId('test-content')
 				.closest('[class*="MuiBox-root"]');
-			expect(contentArea).toHaveStyle('width: calc(100% - 288px)');
+			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+			expect(sidebar).toHaveStyle({ width: '72px', minWidth: '72px' });
+			// The rail spans the full viewport height from the top, with its
+			// own header block for the brand.
+			const aside = sidebar.closest('aside');
+			expect(aside).toHaveStyle({
+				width: '72px',
+				height: '100vh',
+				top: '0px'
+			});
+			expect(screen.getByTestId('sidebar-header')).toBeInTheDocument();
+			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+			expect(contentArea).toHaveStyle('width: calc(100% - 72px)');
+
+			// Hover: the full panel lays over the page; the page stays put
+			const panel = await hoverSidebarOpen();
+			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+			expect(sidebar).toHaveStyle({ width: '288px' });
+			expect(panel).toHaveStyle({ position: 'absolute', width: '288px' });
+			expect(aside).toHaveStyle({ width: '72px' });
+			expect(contentArea).toHaveStyle('width: calc(100% - 72px)');
+
+			fireEvent.mouseOver(screen.getByTestId('test-content'));
+			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
 		});
 
-		it("badges the sidebar bell with notifications and What's New together", () => {
+		it('has no collapse toggle and keeps no saved state', async () => {
+			window.localStorage.setItem('lumora:sidebar-collapsed', 'false');
+			renderCollapsible();
+
+			// A previously saved expanded state no longer pins it open
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'true'
+			);
+			expect(
+				screen.queryByRole('button', {
+					name: /collapse sidebar|expand sidebar/i
+				})
+			).not.toBeInTheDocument();
+			window.localStorage.clear();
+		});
+
+		it('ignores a pointer that only passes over the rail', () => {
+			jest.useFakeTimers();
+			try {
+				renderCollapsible();
+				const panel = screen.getByTestId('sidebar-hover-panel');
+				fireEvent.mouseOver(panel);
+				fireEvent.mouseOver(screen.getByTestId('test-content'));
+				act(() => {
+					jest.runOnlyPendingTimers();
+				});
+				expect(panel).toHaveAttribute('data-expanded', 'false');
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+
+		it("badges the sidebar bell with notifications and What's New together", async () => {
 			const Panel = () => <div>notification list</div>;
 			renderCollapsible({
 				notificationCount: 2,
 				whatsNewCount: 1,
 				NotificationSidebarContent: Panel
 			});
+			await hoverSidebarOpen();
 			// The bell opens the drawer that holds both tabs
 			expect(screen.getByTestId('sidebar-notifications')).toHaveAttribute(
 				'aria-label',
@@ -290,11 +343,12 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 		});
 
-		it('stacks brand, search, links and footer top to bottom', () => {
+		it('stacks brand, search, links and footer top to bottom', async () => {
 			renderCollapsible({
 				searchComponent: <input placeholder='Global search' />,
 				userName: 'Riley Carter'
 			});
+			await hoverSidebarOpen();
 
 			const sidebar = screen.getByTestId('collapsible-sidebar');
 			const order = [
@@ -318,8 +372,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).toBeInTheDocument();
 		});
 
-		it('collapsed: the search icon expands the sidebar and focuses the field', () => {
-			window.localStorage.setItem('lumora:sidebar-collapsed', 'true');
+		it('collapsed: the search icon opens the sidebar and focuses the field', () => {
 			renderCollapsible({
 				searchComponent: <input placeholder='Global search' />
 			});
@@ -329,16 +382,22 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).not.toBeInTheDocument();
 			fireEvent.click(screen.getByRole('button', { name: 'Search' }));
 
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'false'
-			);
+			const sidebar = screen.getByTestId('collapsible-sidebar');
+			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
 			expect(screen.getByPlaceholderText('Global search')).toHaveFocus();
+
+			// Pinned while searching: the pointer leaving doesn't close it,
+			// a click on the page does
+			fireEvent.mouseOver(screen.getByTestId('test-content'));
+			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+			fireEvent.pointerDown(screen.getByTestId('test-content'));
+			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
 		});
 
-		it('tints the clickable sidebar-header brand with the accent, not auto-contrast', () => {
+		it('tints the clickable sidebar-header brand with the accent, not auto-contrast', async () => {
 			const onBrandClick = jest.fn();
 			renderCollapsible({ accentColor: '#09c1ae', onBrandClick });
+			await hoverSidebarOpen();
 
 			// Regression: on the default white surface the brand went black.
 			const brand = screen.getByTestId('sidebar-header-brand');
@@ -353,32 +412,21 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(onBrandClick).toHaveBeenCalledTimes(1);
 		});
 
-		it('auto-contrasts the sidebar-header brand on a custom header background', () => {
+		it('auto-contrasts the sidebar-header brand on a custom header background', async () => {
 			renderCollapsible({
 				accentColor: '#09c1ae',
 				sidebarHeaderBackgroundColor: '#01584f'
 			});
+			await hoverSidebarOpen();
 			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(within(brand).getByText('Test App')).toHaveStyle({
 				color: 'rgb(255, 255, 255)'
 			});
 		});
 
-		it('toggles via the header hamburger: widths, brand and footer follow', () => {
+		it('rail: logo only and a compact footer; hover brings back the rest', async () => {
 			renderCollapsible();
 
-			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
-
-			const sidebar = screen.getByTestId('collapsible-sidebar');
-			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
-			expect(sidebar).toHaveStyle({ width: '72px', minWidth: '72px' });
-			expect(
-				screen
-					.getByTestId('test-content')
-					.closest('[class*="MuiBox-root"]')
-			).toHaveStyle('width: calc(100% - 72px)');
-			// Collapsed: the expand toggle floats on the sidebar edge ahead
-			// of the logo, which keeps its own brand link; the wordmark gives way
 			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(
 				within(brand).getByRole('img', { name: 'Test App logo' })
@@ -386,45 +434,23 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(
 				within(brand).queryByText('Test App')
 			).not.toBeInTheDocument();
-			expect(
-				screen.getByTestId('sidebar-collapse-toggle')
-			).not.toContainElement(brand);
-			expect(
-				screen
-					.getByTestId('sidebar-collapse-toggle')
-					.compareDocumentPosition(brand) &
-					Node.DOCUMENT_POSITION_FOLLOWING
-			).toBeTruthy();
-			// Collapsed: the user row keeps only its avatar
+			// The user row keeps only its avatar
 			expect(
 				within(screen.getByTestId('sidebar-user')).queryByText('User')
 			).not.toBeInTheDocument();
 
-			// Round-trip: expanding restores the original layout.
-			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
-			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
-			expect(sidebar).toHaveStyle({ width: '288px' });
+			await hoverSidebarOpen();
 			expect(
-				screen.getByTestId('sidebar-header-brand')
+				within(screen.getByTestId('sidebar-header-brand')).getByText(
+					'Test App'
+				)
+			).toBeInTheDocument();
+			expect(
+				within(screen.getByTestId('sidebar-user')).getByText('User')
 			).toBeInTheDocument();
 		});
 
-		it('restores the persisted collapsed state on mount', () => {
-			window.localStorage.setItem('lumora:sidebar-collapsed', 'true');
-			renderCollapsible();
-
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'true'
-			);
-			expect(
-				screen
-					.getByTestId('test-content')
-					.closest('[class*="MuiBox-root"]')
-			).toHaveStyle('width: calc(100% - 72px)');
-		});
-
-		it('shows the alert card only while expanded', () => {
+		it('shows the alert card only while open', async () => {
 			renderCollapsible({
 				alertProps: {
 					show: true,
@@ -434,11 +460,11 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				}
 			});
 
-			expect(screen.getByText('Storage almost full')).toBeInTheDocument();
-			fireEvent.click(screen.getByTestId('sidebar-collapse-toggle'));
 			expect(
 				screen.queryByText('Storage almost full')
 			).not.toBeInTheDocument();
+			await hoverSidebarOpen();
+			expect(screen.getByText('Storage almost full')).toBeInTheDocument();
 		});
 
 		it('uses the top bar for the brand and a bottom bar for navigation on mobile', () => {

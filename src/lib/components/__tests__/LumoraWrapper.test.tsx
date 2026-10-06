@@ -2,6 +2,7 @@ import * as React from 'react';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
+	hoverSidebarOpen,
 	lumoraTestRequiredProps,
 	mockSidebarLinks,
 	render,
@@ -251,6 +252,7 @@ describe('LumoraWrapper', () => {
 				customNavbar: Legacy,
 				customNavbarProps: { label: 'Legacy search' }
 			});
+			await hoverSidebarOpen();
 			expect(
 				screen.getByPlaceholderText('Legacy search')
 			).toBeInTheDocument();

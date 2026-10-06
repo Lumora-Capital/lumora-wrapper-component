@@ -1,6 +1,5 @@
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
-import KeyboardDoubleArrowLeftRounded from '@mui/icons-material/KeyboardDoubleArrowLeftRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
@@ -23,21 +22,13 @@ import {
 	hasChildren,
 	isSidebarLinkActive,
 	isSubLinkActive,
-	nodeKey,
-	readStoredCollapsed,
-	writeStoredCollapsed
+	nodeKey
 } from './sidebarUtils';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
-const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
-const WIDTH_TRANSITION = 'width 200ms ease';
-/** In-sidebar header height (collapse toggle + brand). */
+/** In-sidebar header height (the brand). */
 const HEADER_HEIGHT_PX = 64;
-/** Round collapse/expand toggle, level with the sidebar header. */
-const FLOATING_TOGGLE_SIZE_PX = 28;
-/** Expanded, the toggle sits this far in from the sidebar's right edge. */
-const EXPANDED_TOGGLE_INSET_PX = 16;
 /** Host apps (and the demo's base CSS) often outline every `button:focus`,
  * which lingers after a mouse click — neutralize it on all sidebar icon
  * buttons (same treatment as the navbar hamburger). */
@@ -170,7 +161,7 @@ export interface CollapsibleSidebarProps {
 	/** @deprecated Never rendered — the section header row was dropped. */
 	sectionTitle?: string;
 	/**
-	 * Render the 60px in-sidebar header bar (collapse hamburger + brand). Used
+	 * Render the 64px in-sidebar header bar (the brand). Used
 	 * by the full-height collapsible layout; off by default so the labeled rail
 	 * and existing consumers are unaffected. When on, `topInsetPx` is ignored —
 	 * the header itself occupies the top of the surface.
@@ -179,7 +170,7 @@ export interface CollapsibleSidebarProps {
 	/** Header bar background; defaults to the sidebar surface color. */
 	headerBackgroundColor?: string;
 	/**
-	 * Header bar foreground (hamburger + wordmark + logo). Defaults to the idle
+	 * Header bar foreground (wordmark + logo). Defaults to the idle
 	 * accent-on-surface tint (see `foregroundColor`) when the header shares the
 	 * sidebar surface, and to auto-contrast from `headerBackgroundColor` when
 	 * one is given. Auto-contrast only parses hex colors — set this explicitly
@@ -205,13 +196,8 @@ export interface CollapsibleSidebarProps {
 	/** Sidebar surface background (default '#ffffff'). */
 	surfaceBackgroundColor?: string;
 	// Collapse / expand
-	/** Controlled collapsed state. When provided, the owner also persists it. */
+	/** Icon rail when true; the owner decides when (e.g. on hover). */
 	collapsed?: boolean;
-	/** Uncontrolled initial state used only when nothing is persisted. */
-	defaultCollapsed?: boolean;
-	onCollapsedChange?: (collapsed: boolean) => void;
-	/** localStorage key for the uncontrolled/persisted state. */
-	persistKey?: string;
 	/** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
 	expandedWidth?: number | string;
 	collapsedWidth?: number;
@@ -252,10 +238,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	activeForegroundColor,
 	foregroundColor,
 	surfaceBackgroundColor,
-	collapsed: collapsedProp,
-	defaultCollapsed = false,
-	onCollapsedChange,
-	persistKey = DEFAULT_PERSIST_KEY,
+	collapsed = false,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
 	showLabels = false,
@@ -265,15 +248,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 }) => {
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
-	const isControlled = collapsedProp !== undefined;
-
-	// Uncontrolled: restore the initial value from localStorage on first render
-	// (SSR-safe). The collapse toggle lives in the header bar (`showHeaderBar`);
-	// controlled owners keep the state and persist it themselves.
-	const [internalCollapsed, setInternalCollapsed] = React.useState<boolean>(
-		() => readStoredCollapsed(persistKey) ?? defaultCollapsed
-	);
-	const collapsed = isControlled ? Boolean(collapsedProp) : internalCollapsed;
 
 	// User-toggled open state per group, keyed by `nodeKey`; groups the user
 	// hasn't touched follow the active path (see `isGroupOpen`).
@@ -305,7 +279,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const surface =
 		surfaceBackgroundColor ??
 		(isDark ? theme.palette.background.paper : '#ffffff');
-	// Accent-colored chrome (brand title, toggle, logo, inactive icons) uses the
+	// Accent-colored chrome (brand title, logo, inactive icons) uses the
 	// brand accent in light mode (per the mockup); in dark mode the accent is too
 	// dim on the dark surface, so fall back to the theme's primary text color.
 	// `foregroundColor` overrides this so idle labels can be tinted independently
@@ -333,17 +307,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const handleClick = (path: string) => {
 		onLinkClick?.(path);
-	};
-
-	// Header-bar hamburger. Controlled owners persist the state themselves, so
-	// only the uncontrolled path writes storage (avoids double-writes).
-	const handleToggleCollapsed = () => {
-		const next = !collapsed;
-		if (!isControlled) {
-			setInternalCollapsed(next);
-			writeStoredCollapsed(persistKey, next);
-		}
-		onCollapsedChange?.(next);
 	};
 
 	// Explicit toggle: pass the group's current open state so an auto-opened
@@ -871,81 +834,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
-	const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-	// Round toggle level with the header: inside the brand row on the right
-	// while expanded, floating on the sidebar's right edge while collapsed. One
-	// element for both (so focus survives a click), positioned outside the nav
-	// (see the return) so the nav's width-animation clipping doesn't cut off
-	// the overhanging half.
-	const toggleTranslate = collapsed
-		? 'translate(50%, -50%)'
-		: `translate(-${EXPANDED_TOGGLE_INSET_PX}px, -50%)`;
-	const floatingToggle = showHeaderBar ? (
-		<Tooltip title={toggleLabel} placement='right' arrow>
-			<IconButton
-				aria-label={toggleLabel}
-				aria-expanded={!collapsed}
-				onClick={handleToggleCollapsed}
-				data-testid='sidebar-collapse-toggle'
-				disableFocusRipple
-				size='small'
-				sx={{
-					position: 'absolute',
-					top: HEADER_HEIGHT_PX / 2,
-					right: 0,
-					transform: toggleTranslate,
-					zIndex: 1,
-					width: FLOATING_TOGGLE_SIZE_PX,
-					height: FLOATING_TOGGLE_SIZE_PX,
-					p: 0,
-					transition:
-						'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
-					...(collapsed
-						? {
-								// Overhanging the edge: a light accent tint (the
-								// Ask Nexa button's treatment), border and lift so
-								// it reads at a glance. The tint is layered over
-								// the opaque surface so it looks the same over the
-								// sidebar and over the page. accentOnSurface: the
-								// accent is too dim on a dark surface.
-								color: accentOnSurface,
-								bgcolor: surface,
-								backgroundImage: `linear-gradient(${groupTint}, ${groupTint})`,
-								border: `1px solid color-mix(in srgb, ${activeAccent} 35%, transparent)`,
-								boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-								'&:hover, &.Mui-focusVisible': {
-									bgcolor: surface,
-									borderColor: activeAccent,
-									transform: `${toggleTranslate} scale(1.1)`,
-									boxShadow: '0 2px 8px rgba(0, 0, 0, 0.14)'
-								}
-							}
-						: {
-								// In the brand row: the header's own colors, tinted
-								// only on hover. The transparent border keeps the
-								// size steady between states.
-								color: headerFg,
-								bgcolor: headerBg,
-								border: '1px solid transparent',
-								'&:hover, &.Mui-focusVisible': {
-									bgcolor: headerBg,
-									backgroundImage: `linear-gradient(${headerDivider}, ${headerDivider})`
-								}
-							}),
-					...FOCUS_OUTLINE_FIX
-				}}
-			>
-				{/* One chevron, turned to point the way the sidebar will move */}
-				<KeyboardDoubleArrowLeftRounded
-					sx={{
-						fontSize: 18,
-						transition: 'transform 200ms ease',
-						transform: collapsed ? 'rotate(180deg)' : 'none'
-					}}
-				/>
-			</IconButton>
-		</Tooltip>
-	) : null;
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
@@ -997,7 +885,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 1.5;
 
-	const nav = (
+	return (
 		<Box
 			component='nav'
 			aria-label='Main sidebar'
@@ -1016,8 +904,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				// (e.g. an alert card below it) stay within the viewport.
 				flex: '1 1 auto',
 				minHeight: 0,
-				overflow: 'hidden',
-				transition: WIDTH_TRANSITION
+				// Snaps to its width; an owner that animates the switch (the
+				// wrapper's hover panel) clips it from a container, so the
+				// rows never reflow mid-animation.
+				overflow: 'hidden'
 			}}
 		>
 			{headerBar ?? railBrand}
@@ -1067,25 +957,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Box>
 				</Box>
 			) : null}
-		</Box>
-	);
-
-	if (!floatingToggle) return nav;
-	// Positioning context for the floating toggle; mirrors the nav's flex
-	// sizing so the host layout is unchanged.
-	return (
-		<Box
-			sx={{
-				position: 'relative',
-				display: 'flex',
-				flexDirection: 'column',
-				flex: '1 1 auto',
-				minHeight: 0,
-				height: '100%'
-			}}
-		>
-			{floatingToggle}
-			{nav}
 		</Box>
 	);
 };
