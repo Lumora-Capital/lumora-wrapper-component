@@ -46,8 +46,8 @@ export interface UserMenuOptions {
 	onLogout: () => void;
 }
 
-/** Display only: "SUPER_ADMIN" -> "Super Admin"; "User" when unset. The stored role is untouched. */
-const roleLabel = (role?: string) => (role ? formatRole(role) : 'User');
+/** Display only: "SUPER_ADMIN" -> "SUPER ADMIN"; "USER" when unset. The stored role is untouched. */
+const roleLabel = (role?: string) => (role ? formatRole(role) : 'USER');
 
 /** "Gabriel Paet" -> "GP". */
 const initials = (name: string) =>

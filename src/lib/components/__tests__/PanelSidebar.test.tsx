@@ -93,7 +93,7 @@ describe('PanelSidebar account menu', () => {
 			const menu = openMenu();
 			const name = within(menu).getByText('Riley Carter');
 			const email = within(menu).getByText('riley.carter@example.com');
-			const role = within(menu).getByText('Super Admin');
+			const role = within(menu).getByText('SUPER ADMIN');
 			expect(email).toHaveAttribute('data-testid', 'account-menu-email');
 			expect(name.nextElementSibling).toBe(email);
 			expect(email.nextElementSibling).toBe(role);
@@ -104,20 +104,20 @@ describe('PanelSidebar account menu', () => {
 			const button = screen.getByTestId('panel-user-button');
 			const name = within(button).getByText('Riley Carter');
 			const role = within(button).getByTestId('panel-user-role');
-			expect(role).toHaveTextContent('Super Admin');
+			expect(role).toHaveTextContent('SUPER ADMIN');
 			expect(name.nextElementSibling).toBe(role);
 			expect(button).not.toHaveTextContent('riley.carter@example.com');
 		});
 
-		it('title-cases the role however it is stored, on the footer and in the menu', () => {
+		it('shows the role in capitals however it is stored, on the footer and in the menu', () => {
 			renderPanel({ userRole: 'admin' });
 			expect(screen.getByTestId('panel-user-role')).toHaveTextContent(
-				'Admin'
+				'ADMIN'
 			);
 			const menu = openMenu();
 			expect(
 				within(menu).getByTestId('account-menu-role')
-			).toHaveTextContent('Admin');
+			).toHaveTextContent('ADMIN');
 		});
 
 		it('opens the profile from the whole header, with a "View profile" hint', async () => {

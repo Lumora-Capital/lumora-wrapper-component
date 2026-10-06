@@ -157,7 +157,7 @@ const Tt = ({
     }
 }, pn = (t) => {
   typeof window > "u" || window.open(t, "_blank", "noopener,noreferrer");
-}, no = (t) => t.replace(/_/g, " ").split(/\s+/).filter(Boolean).map((r) => r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()).join(" "), fn = 264, mn = 72, xn = "lumora:sidebar-collapsed", gn = "width 200ms ease", _r = 64, Rt = {
+}, no = (t) => t.replace(/_/g, " ").split(/\s+/).filter(Boolean).join(" ").toUpperCase(), fn = 264, mn = 72, xn = "lumora:sidebar-collapsed", gn = "width 200ms ease", _r = 64, Rt = {
   "&:focus, &:focus-visible": { outline: "none" }
 }, bn = 16, Sn = 14, En = 4, yn = 2.5, Tr = "0.7rem", Ar = 22, tt = ({ text: t, variant: r = "body1", center: o = !1, fontSize: n, fontWeight: i }) => {
   const h = m.useRef(null), [s, l] = m.useState(!1), c = m.useCallback(() => {
@@ -2060,7 +2060,7 @@ const P = {
       ]
     }
   );
-}, Un = (t) => t ? no(t) : "User", Kn = (t) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((r) => r.charAt(0).toUpperCase()).join(""), Br = {
+}, Un = (t) => t ? no(t) : "USER", Kn = (t) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((r) => r.charAt(0).toUpperCase()).join(""), Br = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
