@@ -103,6 +103,12 @@ export type SidebarLink = {
 	text: string;
 	path?: string;
 	icon: React.ReactNode;
+	/**
+	 * A second, lighter line under `text` in the expanded sidebar and the mobile
+	 * menu, e.g. the role beneath a person's name. The collapsed rail shows it in
+	 * the icon's tooltip.
+	 */
+	subtitle?: string;
 	subitems?: SidebarSubLink[];
 	/**
 	 * A button at the end of the row (links without `subitems`), for an action
