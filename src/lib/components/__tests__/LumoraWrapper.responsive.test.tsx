@@ -377,8 +377,8 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 					.getByTestId('test-content')
 					.closest('[class*="MuiBox-root"]')
 			).toHaveStyle('width: calc(100% - 72px)');
-			// Collapsed: the expand toggle sits above the logo, which keeps
-			// its own brand link; the wordmark gives way
+			// Collapsed: the expand toggle floats on the sidebar edge ahead
+			// of the logo, which keeps its own brand link; the wordmark gives way
 			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(
 				within(brand).getByRole('img', { name: 'Test App logo' })

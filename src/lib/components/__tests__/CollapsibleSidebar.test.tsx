@@ -647,6 +647,7 @@ describe('CollapsibleSidebar', () => {
 				color: 'rgb(9, 193, 174)'
 			});
 			expect(brand).toHaveStyle({ color: 'rgb(9, 193, 174)' });
+			// The floating toggle's chevron follows the accent too
 			expect(screen.getByTestId('sidebar-collapse-toggle')).toHaveStyle({
 				color: 'rgb(9, 193, 174)'
 			});
@@ -703,6 +704,15 @@ describe('CollapsibleSidebar', () => {
 			const toggle = screen.getByTestId('sidebar-collapse-toggle');
 			expect(toggle).toHaveAccessibleName('Collapse sidebar');
 			expect(toggle).toHaveAttribute('aria-expanded', 'true');
+			// Expanded, the toggle sits inside the brand row on the right,
+			// kept out of the header's flow so the brand stays centered
+			expect(toggle).toHaveStyle({
+				position: 'absolute',
+				transform: 'translate(-16px, -50%)'
+			});
+			expect(screen.getByTestId('sidebar-header')).not.toContainElement(
+				toggle
+			);
 
 			rerender(
 				<CollapsibleSidebar
@@ -714,7 +724,7 @@ describe('CollapsibleSidebar', () => {
 				/>
 			);
 			// Collapsed: the wordmark is gone; the logo stays, separate from
-			// the expand toggle above it
+			// the expand toggle floating on the sidebar's right edge
 			const collapsedBrand = screen.getByTestId('sidebar-header-brand');
 			expect(
 				within(collapsedBrand).getByTestId('brand-logo')
@@ -728,6 +738,14 @@ describe('CollapsibleSidebar', () => {
 			expect(collapsedToggle).not.toContainElement(collapsedBrand);
 			expect(collapsedToggle).toHaveAccessibleName('Expand sidebar');
 			expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
+			expect(collapsedToggle).toHaveStyle({
+				position: 'absolute',
+				transform: 'translate(50%, -50%)'
+			});
+			// Outside the nav, so the nav's clipping can't cut it off
+			expect(
+				screen.getByTestId('collapsible-sidebar')
+			).not.toContainElement(collapsedToggle);
 		});
 
 		it('applies headerBackgroundColor and falls back to the surface color', () => {

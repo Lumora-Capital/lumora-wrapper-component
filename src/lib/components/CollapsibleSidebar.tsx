@@ -1,7 +1,7 @@
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
+import KeyboardDoubleArrowLeftRounded from '@mui/icons-material/KeyboardDoubleArrowLeftRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
-import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
@@ -34,6 +34,10 @@ const DEFAULT_PERSIST_KEY = 'lumora:sidebar-collapsed';
 const WIDTH_TRANSITION = 'width 200ms ease';
 /** In-sidebar header height (collapse toggle + brand). */
 const HEADER_HEIGHT_PX = 64;
+/** Round collapse/expand toggle, level with the sidebar header. */
+const FLOATING_TOGGLE_SIZE_PX = 28;
+/** Expanded, the toggle sits this far in from the sidebar's right edge. */
+const EXPANDED_TOGGLE_INSET_PX = 16;
 /** Host apps (and the demo's base CSS) often outline every `button:focus`,
  * which lingers after a mouse click — neutralize it on all sidebar icon
  * buttons (same treatment as the navbar hamburger). */
@@ -143,11 +147,6 @@ const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
 			transform: open ? 'rotate(90deg)' : 'none'
 		}}
 	/>
-);
-
-/** "Toggle sidebar" glyph: a panel with its sidebar on the left. */
-const PanelIcon: React.FC = () => (
-	<ViewSidebarOutlined sx={{ transform: 'scaleX(-1)' }} />
 );
 
 /** Page-link label weight in the expanded panel. */
@@ -873,45 +872,93 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
 	const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+	// Round toggle level with the header: inside the brand row on the right
+	// while expanded, floating on the sidebar's right edge while collapsed. One
+	// element for both (so focus survives a click), positioned outside the nav
+	// (see the return) so the nav's width-animation clipping doesn't cut off
+	// the overhanging half.
+	const toggleTranslate = collapsed
+		? 'translate(50%, -50%)'
+		: `translate(-${EXPANDED_TOGGLE_INSET_PX}px, -50%)`;
+	const floatingToggle = showHeaderBar ? (
+		<Tooltip title={toggleLabel} placement='right' arrow>
+			<IconButton
+				aria-label={toggleLabel}
+				aria-expanded={!collapsed}
+				onClick={handleToggleCollapsed}
+				data-testid='sidebar-collapse-toggle'
+				disableFocusRipple
+				size='small'
+				sx={{
+					position: 'absolute',
+					top: HEADER_HEIGHT_PX / 2,
+					right: 0,
+					transform: toggleTranslate,
+					zIndex: 1,
+					width: FLOATING_TOGGLE_SIZE_PX,
+					height: FLOATING_TOGGLE_SIZE_PX,
+					p: 0,
+					transition:
+						'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+					...(collapsed
+						? {
+								// Overhanging the edge: a light accent tint (the
+								// Ask Nexa button's treatment), border and lift so
+								// it reads at a glance. The tint is layered over
+								// the opaque surface so it looks the same over the
+								// sidebar and over the page. accentOnSurface: the
+								// accent is too dim on a dark surface.
+								color: accentOnSurface,
+								bgcolor: surface,
+								backgroundImage: `linear-gradient(${groupTint}, ${groupTint})`,
+								border: `1px solid color-mix(in srgb, ${activeAccent} 35%, transparent)`,
+								boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+								'&:hover, &.Mui-focusVisible': {
+									bgcolor: surface,
+									borderColor: activeAccent,
+									transform: `${toggleTranslate} scale(1.1)`,
+									boxShadow: '0 2px 8px rgba(0, 0, 0, 0.14)'
+								}
+							}
+						: {
+								// In the brand row: the header's own colors, tinted
+								// only on hover. The transparent border keeps the
+								// size steady between states.
+								color: headerFg,
+								bgcolor: headerBg,
+								border: '1px solid transparent',
+								'&:hover, &.Mui-focusVisible': {
+									bgcolor: headerBg,
+									backgroundImage: `linear-gradient(${headerDivider}, ${headerDivider})`
+								}
+							}),
+					...FOCUS_OUTLINE_FIX
+				}}
+			>
+				{/* One chevron, turned to point the way the sidebar will move */}
+				<KeyboardDoubleArrowLeftRounded
+					sx={{
+						fontSize: 18,
+						transition: 'transform 200ms ease',
+						transform: collapsed ? 'rotate(180deg)' : 'none'
+					}}
+				/>
+			</IconButton>
+		</Tooltip>
+	) : null;
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
 			sx={{
+				height: HEADER_HEIGHT_PX,
 				minHeight: HEADER_HEIGHT_PX,
 				flexShrink: 0,
 				display: 'flex',
 				alignItems: 'center',
-				bgcolor: headerBg,
-				...(collapsed
-					? {
-							// Toggle on top, the brand logo (its own link) below it
-							flexDirection: 'column',
-							justifyContent: 'center',
-							gap: 1,
-							py: 1.5
-						}
-					: {
-							height: HEADER_HEIGHT_PX,
-							gap: 1.5,
-							// Lines the toggle glyph up with the row icons below
-							// (12px panel padding + 12px row padding = 24px, minus
-							// the button's own 8px)
-							px: 2
-						})
+				justifyContent: 'center',
+				bgcolor: headerBg
 			}}
 		>
-			<Tooltip title={toggleLabel} placement='right' arrow>
-				<IconButton
-					aria-label={toggleLabel}
-					aria-expanded={!collapsed}
-					onClick={handleToggleCollapsed}
-					data-testid='sidebar-collapse-toggle'
-					disableFocusRipple
-					sx={{ color: headerFg, ...FOCUS_OUTLINE_FIX }}
-				>
-					<PanelIcon />
-				</IconButton>
-			</Tooltip>
 			{logo || title ? (
 				<Brand
 					logo={logo}
@@ -950,7 +997,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 1.5;
 
-	return (
+	const nav = (
 		<Box
 			component='nav'
 			aria-label='Main sidebar'
@@ -1020,6 +1067,25 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Box>
 				</Box>
 			) : null}
+		</Box>
+	);
+
+	if (!floatingToggle) return nav;
+	// Positioning context for the floating toggle; mirrors the nav's flex
+	// sizing so the host layout is unchanged.
+	return (
+		<Box
+			sx={{
+				position: 'relative',
+				display: 'flex',
+				flexDirection: 'column',
+				flex: '1 1 auto',
+				minHeight: 0,
+				height: '100%'
+			}}
+		>
+			{floatingToggle}
+			{nav}
 		</Box>
 	);
 };
