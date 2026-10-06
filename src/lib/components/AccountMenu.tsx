@@ -4,7 +4,6 @@ import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import SettingsBrightnessOutlined from '@mui/icons-material/SettingsBrightnessOutlined';
-import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Divider from '@mui/material/Divider';
@@ -17,22 +16,16 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import * as React from 'react';
-import type {
-	LumoraPlatform,
-	SettingsItem,
-	SettingsSection
-} from './LumoraWrapper';
+import type { LumoraPlatform } from './LumoraWrapper';
 import PlatformsPanel from './PlatformsPanel';
-import SettingsPanel from './SettingsPanel';
 import { openInNewTab } from './sidebarUtils';
+import { CountPill } from './UserMenu';
+import type { UserMenuItem } from './UserMenu';
 
 const PLATFORMS_PANEL_WIDTH_PX = 288;
-const SETTINGS_PANEL_WIDTH_PX = 300;
 const FOCUS_OUTLINE_FIX = {
 	'&:focus, &:focus-visible': { outline: 'none' }
 } as const;
-
-type SubPanelKind = 'platforms' | 'settings';
 
 /**
  * Chrome shared by both cards; the Popover paper itself is transparent and
@@ -179,23 +172,17 @@ export interface AccountMenuProps {
 	accentColor: string;
 	/** Low-alpha accent wash (hover / highlighted rows). */
 	tint: string;
-	// Items — each renders only when its handler/flag is present.
+	// Built in: Theme, Lumora Platforms and Log out — each renders only when
+	// its handler/flag is present. Every other row is the host's `menuItems`.
 	showThemeToggler: boolean;
 	theme: 'light' | 'dark';
 	onThemeToggle?: () => void;
 	/** Makes the user header a link, with a "View profile" hint on hover. */
 	onProfileClick?: () => void;
-	showSettings: boolean;
-	/** Direct handler, used when no `settingsSections` are given. */
-	onSettingsClick?: () => void;
-	/** When non-empty, Settings opens a second card listing these sections. */
-	settingsSections?: SettingsSection[];
-	onSettingsItemClick?: (
-		item: SettingsItem,
-		section: SettingsSection
-	) => void;
-	/** Fallback for settings items that only carry a `path`. */
+	/** Navigates menu items that carry a `path` and no `onClick`. */
 	onLinkClick?: (path: string) => void;
+	/** Host rows between Theme and Lumora Platforms, in the given order. */
+	menuItems?: UserMenuItem[];
 	platforms?: LumoraPlatform[];
 	currentPlatformKey?: string;
 	/** Replaces the default same-tab navigation when provided. */
@@ -205,8 +192,8 @@ export interface AccountMenuProps {
 
 /**
  * Account menu for the `panel` sidebar: one Popover whose transparent paper
- * holds the menu card and, beside it, a second card (Lumora Platforms or
- * Settings) while one is open. One modal means one focus trap and one
+ * holds the menu card and, beside it, the Lumora Platforms card while it is
+ * open. One modal means one focus trap and one
  * backdrop; Escape closes the second card first, then the menu.
  */
 const AccountMenu: React.FC<AccountMenuProps> = ({
@@ -224,11 +211,8 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	theme: themeMode,
 	onThemeToggle,
 	onProfileClick,
-	showSettings,
-	onSettingsClick,
-	settingsSections,
-	onSettingsItemClick,
 	onLinkClick,
+	menuItems = [],
 	platforms,
 	currentPlatformKey,
 	onPlatformSelect,
@@ -244,7 +228,6 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	const [paperEl, setPaperEl] = React.useState<HTMLDivElement | null>(null);
 	const menuCardRef = React.useRef<HTMLDivElement>(null);
 	const platformsItemRef = React.useRef<HTMLLIElement>(null);
-	const settingsItemRef = React.useRef<HTMLLIElement>(null);
 	// Same reasoning as `paperEl`: the second card mounts conditionally, so a
 	// state setter as its ref re-runs the alignment effect when it appears.
 	const [subCardEl, setSubCardEl] = React.useState<HTMLDivElement | null>(
@@ -253,14 +236,11 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	// Distance (px) from the menu's bottom edge up to the second card's bottom
 	// edge, chosen so the card's top lines up with the row that opened it.
 	const [subCardGap, setSubCardGap] = React.useState(0);
-	const [subPanel, setSubPanel] = React.useState<SubPanelKind | null>(null);
+	const [platformsOpen, setPlatformsOpen] = React.useState(false);
 	const hasPlatforms = Boolean(platforms?.length);
-	const hasSettingsPanel = showSettings && Boolean(settingsSections?.length);
-	const showSettingsItem =
-		showSettings && (hasSettingsPanel || Boolean(onSettingsClick));
 
 	// Popover positions the paper by its `top` once, so content that grows or
-	// shrinks (a second card mounting, or a settings section expanding) would
+	// shrinks (the second card mounting) would
 	// extend down over the footer or leave a gap above it. Re-anchor on every
 	// size change instead — ResizeObserver fires per animation frame, so the
 	// bottom edge stays pinned to the footer throughout.
@@ -270,12 +250,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	// taller than the menu stays bottom-aligned and grows upward instead.
 	const alignSubCard = React.useCallback(() => {
 		const menuEl = menuCardRef.current;
-		const triggerEl =
-			subPanel === 'platforms'
-				? platformsItemRef.current
-				: subPanel === 'settings'
-					? settingsItemRef.current
-					: null;
+		const triggerEl = platformsOpen ? platformsItemRef.current : null;
 		if (!open || !menuEl || !triggerEl || !subCardEl) {
 			setSubCardGap(0);
 			return;
@@ -287,7 +262,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		const max = Math.max(0, menuRect.height - cardHeight);
 		const next = Math.round(Math.min(Math.max(wanted, 0), max));
 		setSubCardGap(prev => (prev === next ? prev : next));
-	}, [open, subPanel, subCardEl]);
+	}, [open, platformsOpen, subCardEl]);
 
 	// Before paint, whenever the card appears or swaps.
 	React.useLayoutEffect(() => {
@@ -310,7 +285,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	// Fresh state on the next open (reset after the exit transition so the
 	// content doesn't collapse mid-fade).
 	const resetState = () => {
-		setSubPanel(null);
+		setPlatformsOpen(false);
 	};
 
 	const closeMenuThen = (callback?: () => void) => {
@@ -319,17 +294,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	};
 
 	// Closing the second card hands focus back to the row that opened it.
-	const closeSubPanel = () => {
-		const trigger =
-			subPanel === 'platforms' ? platformsItemRef : settingsItemRef;
-		setSubPanel(null);
-		trigger.current?.focus();
-	};
-
-	// The Settings / Lumora Platforms rows toggle their card: a second click
-	// on the open row closes it, a click on the other row swaps.
-	const toggleSubPanel = (kind: SubPanelKind) => {
-		setSubPanel(prev => (prev === kind ? null : kind));
+	const closePlatforms = () => {
+		setPlatformsOpen(false);
+		platformsItemRef.current?.focus();
 	};
 
 	const handlePlatformSelect = (platform: LumoraPlatform) => {
@@ -344,17 +311,11 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		}
 	};
 
-	// Precedence: the item's own handler, then the host's generic handler,
-	// then plain navigation via the sidebar's link callback.
-	const handleSettingsItem = (
-		item: SettingsItem,
-		section: SettingsSection
-	) => {
+	// Host rows: their own handler, else navigation to their path.
+	const handleMenuItem = (item: UserMenuItem) => {
 		onClose();
 		if (item.onClick) {
 			item.onClick();
-		} else if (onSettingsItemClick) {
-			onSettingsItemClick(item, section);
 		} else if (item.path) {
 			onLinkClick?.(item.path);
 		}
@@ -363,15 +324,15 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	// Escape closes the second card first; otherwise it bubbles to the
 	// Popover (Modal) which closes the whole menu.
 	const handlePaperKeyDown = (event: React.KeyboardEvent) => {
-		if (event.key === 'Escape' && subPanel) {
+		if (event.key === 'Escape' && platformsOpen) {
 			event.stopPropagation();
-			closeSubPanel();
+			closePlatforms();
 		}
 	};
 
 	const itemSx = { borderRadius: '8px', py: 1, gap: 0.5 } as const;
 	const chevronSx = { color: 'text.secondary', fontSize: 20 } as const;
-	// Rows that open a second card take the active look only while it's open.
+	// The Platforms row takes the active look only while its card is open.
 	const activeRowSx = {
 		color: accentColor,
 		bgcolor: tint,
@@ -379,8 +340,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		'& .MuiSvgIcon-root': { color: accentColor },
 		'&:hover': { bgcolor: alpha(accentColor, 0.22) }
 	} as const;
-	const settingsActive = subPanel === 'settings';
-	const platformsActive = subPanel === 'platforms';
+	const platformsActive = platformsOpen;
 
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
@@ -543,42 +503,27 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					autoFocusItem={open}
 					sx={{ px: 1, pt: showThemeToggler ? 0 : 0.5, pb: 0.5 }}
 				>
-					{showSettingsItem ? (
+					{menuItems.map(item => (
 						<MenuItem
-							ref={settingsItemRef}
-							onClick={
-								hasSettingsPanel
-									? () => toggleSubPanel('settings')
-									: () => closeMenuThen(onSettingsClick)
-							}
-							aria-haspopup={
-								hasSettingsPanel ? 'dialog' : undefined
-							}
-							aria-expanded={
-								hasSettingsPanel ? settingsActive : undefined
-							}
-							data-active={settingsActive ? 'true' : 'false'}
-							data-testid='menu-item-settings'
-							sx={
-								settingsActive
-									? { ...itemSx, ...activeRowSx }
-									: itemSx
-							}
+							key={item.key}
+							onClick={() => handleMenuItem(item)}
+							data-testid={`menu-item-${item.key}`}
+							sx={itemSx}
 						>
-							<ListItemIcon>
-								<SettingsOutlined fontSize='small' />
-							</ListItemIcon>
-							<Typography sx={{ flex: 1 }}>Settings</Typography>
-							<ChevronRightRounded sx={chevronSx} />
+							<ListItemIcon>{item.icon}</ListItemIcon>
+							<Typography sx={{ flex: 1 }}>
+								{item.label}
+							</Typography>
+							<CountPill count={item.badge} />
 						</MenuItem>
-					) : null}
+					))}
 					{hasPlatforms ? (
 						<Divider component='li' sx={{ my: 0.5 }} />
 					) : null}
 					{hasPlatforms ? (
 						<MenuItem
 							ref={platformsItemRef}
-							onClick={() => toggleSubPanel('platforms')}
+							onClick={() => setPlatformsOpen(prev => !prev)}
 							aria-haspopup='dialog'
 							aria-expanded={platformsActive}
 							data-active={platformsActive ? 'true' : 'false'}
@@ -622,32 +567,22 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			{/* Second card — mounted only while open. The wrapper is what gets
 			    measured and lifted; inline style because the gap changes per
 			    animation frame and must not mint a class per value. */}
-			{(hasPlatforms && subPanel === 'platforms') ||
-			(hasSettingsPanel && subPanel === 'settings') ? (
+			{hasPlatforms && platformsOpen ? (
 				<Box
 					ref={setSubCardEl}
 					data-testid='account-menu-subcard'
 					style={{ marginBottom: subCardGap }}
 					sx={{ display: 'flex' }}
 				>
-					{subPanel === 'platforms' ? (
-						<PlatformsPanel
-							platforms={platforms!}
-							currentPlatformKey={currentPlatformKey}
-							onSelect={handlePlatformSelect}
-							accentColor={accentColor}
-							tint={tint}
-							width={PLATFORMS_PANEL_WIDTH_PX}
-							sx={subPanelSx}
-						/>
-					) : (
-						<SettingsPanel
-							sections={settingsSections!}
-							onItemClick={handleSettingsItem}
-							width={SETTINGS_PANEL_WIDTH_PX}
-							sx={subPanelSx}
-						/>
-					)}
+					<PlatformsPanel
+						platforms={platforms!}
+						currentPlatformKey={currentPlatformKey}
+						onSelect={handlePlatformSelect}
+						accentColor={accentColor}
+						tint={tint}
+						width={PLATFORMS_PANEL_WIDTH_PX}
+						sx={subPanelSx}
+					/>
 				</Box>
 			) : null}
 		</Popover>

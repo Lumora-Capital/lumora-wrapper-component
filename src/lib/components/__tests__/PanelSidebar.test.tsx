@@ -1,10 +1,6 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import PanelSidebar, { type PanelSidebarProps } from '../PanelSidebar';
-import type {
-	LumoraPlatform,
-	SettingsSection,
-	SidebarLink
-} from '../LumoraWrapper';
+import type { LumoraPlatform, SidebarLink } from '../LumoraWrapper';
 import * as sidebarUtils from '../sidebarUtils';
 import { fireEvent, render, screen, waitFor, within } from './testUtils';
 
@@ -33,7 +29,15 @@ const baseProps: PanelSidebarProps = {
 	onNotificationsClick: jest.fn(),
 	whatsNewCount: 3,
 	onProfileClick: jest.fn(),
-	onSettingsClick: jest.fn(),
+	// The panel menu has no built-in Settings: hosts pass it as a menu item.
+	menuItems: [
+		{
+			key: 'settings',
+			label: 'Settings',
+			icon: <span>S</span>,
+			onClick: jest.fn()
+		}
+	],
 	platforms,
 	currentPlatformKey: 'centra',
 	onLogout: jest.fn(),
@@ -243,16 +247,58 @@ describe('PanelSidebar account menu', () => {
 	});
 
 	describe('items', () => {
-		it('renders Settings per showSettings and calls its handler', () => {
-			const { unmount } = renderPanel({ showSettings: false });
-			openMenu();
-			expect(screen.queryByTestId('menu-item-settings')).toBeNull();
-			unmount();
+		it('has only Theme, Lumora Platforms and Log out built in', () => {
+			renderPanel({ menuItems: [] });
+			const menu = openMenu();
+			expect(screen.getByTestId('menu-item-theme')).toBeInTheDocument();
+			expect(
+				within(menu)
+					.getAllByRole('menuitem')
+					.map(el => el.getAttribute('data-testid'))
+			).toEqual(['menu-item-platforms', 'menu-item-logout']);
+		});
 
-			renderPanel();
+		it('lists host menu items after Theme, in order, with their badges', () => {
+			renderPanel({
+				menuItems: [
+					{ key: 'settings', label: 'Settings', path: '/settings' },
+					{ key: 'help', label: 'Help', badge: 4, onClick: jest.fn() }
+				]
+			});
+			const menu = openMenu();
+			const ids = within(menu)
+				.getAllByRole('menuitem')
+				.map(el => el.getAttribute('data-testid'));
+			expect(ids).toEqual([
+				'menu-item-settings',
+				'menu-item-help',
+				'menu-item-platforms',
+				'menu-item-logout'
+			]);
+			expect(screen.getByTestId('menu-item-help')).toHaveTextContent(
+				'Help4'
+			);
+		});
+
+		it('runs a host item onClick, else navigates to its path, then closes', async () => {
+			const onLinkClick = jest.fn();
+			const onClick = jest.fn();
+			renderPanel({
+				onLinkClick,
+				menuItems: [
+					{ key: 'settings', label: 'Settings', path: '/settings' },
+					{ key: 'help', label: 'Help', path: '/help', onClick }
+				]
+			});
 			openMenu();
 			fireEvent.click(screen.getByTestId('menu-item-settings'));
-			expect(baseProps.onSettingsClick).toHaveBeenCalledTimes(1);
+			expect(onLinkClick).toHaveBeenCalledWith('/settings');
+			await expectMenuClosed();
+
+			openMenu();
+			fireEvent.click(screen.getByTestId('menu-item-help'));
+			expect(onClick).toHaveBeenCalledTimes(1);
+			expect(onLinkClick).toHaveBeenCalledTimes(1);
 		});
 
 		it('calls onLogout from Log out', () => {
@@ -443,166 +489,20 @@ describe('PanelSidebar account menu', () => {
 			);
 		});
 	});
-	describe('Settings panel', () => {
-		const sections: SettingsSection[] = [
-			{
-				title: 'Configuration',
-				items: [
-					{ text: 'Status management', path: '/settings/status' },
-					{ text: 'Workflow', path: '/settings/workflow' }
-				]
-			},
-			{
-				title: 'Admin',
-				items: [
-					{
-						key: 'users',
-						text: 'Users & Roles',
-						path: '/settings/users'
-					},
-					{ text: 'Custom', onClick: jest.fn() }
-				]
-			}
-		];
-		const openSettings = () => {
-			fireEvent.click(screen.getByTestId('menu-item-settings'));
-			return screen.getByRole('dialog', { name: 'Settings' });
-		};
-
-		it('opens beside the menu with every section expanded; first header focused', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			const panel = openSettings();
-			// Two headers plus their four items.
-			expect(within(panel).getAllByRole('menuitem')).toHaveLength(6);
-			const header = screen.getByTestId('settings-section-configuration');
-			expect(header).toHaveFocus();
-			expect(header).toHaveAttribute('aria-expanded', 'true');
-			expect(
-				screen.getByTestId('settings-item-status-management')
-			).toBeInTheDocument();
-			expect(baseProps.onSettingsClick).not.toHaveBeenCalled();
-			expect(screen.getByTestId('menu-item-settings')).toHaveAttribute(
-				'aria-expanded',
-				'true'
-			);
-			expect(screen.getByTestId('menu-item-settings')).toHaveAttribute(
-				'data-active',
-				'true'
-			);
-		});
-
-		it('expands and collapses a section independently', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			openSettings();
-			const header = screen.getByTestId('settings-section-admin');
-			fireEvent.click(header);
-			expect(header).toHaveAttribute('aria-expanded', 'false');
-			expect(screen.queryByTestId('settings-item-users')).toBeNull();
-			expect(
-				screen.getByTestId('settings-item-workflow')
-			).toBeInTheDocument();
-			fireEvent.click(header);
-			expect(
-				screen.getByTestId('settings-item-users')
-			).toBeInTheDocument();
-		});
-
-		it('honours defaultOpen: false', () => {
-			renderPanel({
-				settingsSections: [{ ...sections[0], defaultOpen: false }]
-			});
-			openMenu();
-			openSettings();
-			expect(screen.queryByTestId('settings-item-workflow')).toBeNull();
-		});
-
-		it('routes a row with a path through onLinkClick and closes the menu', async () => {
-			const onLinkClick = jest.fn();
-			renderPanel({ settingsSections: sections, onLinkClick });
-			openMenu();
-			openSettings();
-			fireEvent.click(screen.getByTestId('settings-item-workflow'));
-			expect(onLinkClick).toHaveBeenCalledWith('/settings/workflow');
-			await expectMenuClosed();
-		});
-
-		it('prefers the row onClick, then onSettingsItemClick, over the path', async () => {
-			const onLinkClick = jest.fn();
-			const onSettingsItemClick = jest.fn();
-			renderPanel({
-				settingsSections: sections,
-				onLinkClick,
-				onSettingsItemClick
-			});
-			openMenu();
-			openSettings();
-			fireEvent.click(screen.getByTestId('settings-item-custom'));
-			expect(sections[1].items[1].onClick).toHaveBeenCalledTimes(1);
-			expect(onSettingsItemClick).not.toHaveBeenCalled();
-			await expectMenuClosed();
-
-			openMenu();
-			openSettings();
-			fireEvent.click(screen.getByTestId('settings-item-users'));
-			expect(onSettingsItemClick).toHaveBeenCalledWith(
-				sections[1].items[0],
-				sections[1]
-			);
-			expect(onLinkClick).not.toHaveBeenCalled();
-		});
-
-		it('Escape closes the card first and returns focus to Settings; no X button', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			openSettings();
-			fireEvent.keyDown(
-				screen.getByTestId('settings-section-configuration'),
-				{ key: 'Escape' }
-			);
-			expect(screen.queryByTestId('settings-panel')).toBeNull();
-			expect(screen.getByTestId('menu-item-settings')).toHaveFocus();
-
-			// No close button on this card: Escape or the Settings row closes it.
-			openSettings();
-			expect(screen.queryByTestId('settings-panel-close')).toBeNull();
-			expect(
-				within(screen.getByTestId('settings-panel')).queryByRole(
-					'button'
-				)
-			).toBeNull();
-		});
-
-		it('clicking the Settings row again closes its card', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			openSettings();
-			const row = screen.getByTestId('menu-item-settings');
-			fireEvent.click(row);
-			expect(screen.queryByTestId('settings-panel')).toBeNull();
-			expect(row).toHaveAttribute('data-active', 'false');
-			expect(row).toHaveAttribute('aria-expanded', 'false');
-			expect(screen.getByTestId('account-menu')).toBeInTheDocument();
-			expect(baseProps.onSettingsClick).not.toHaveBeenCalled();
-			fireEvent.click(row);
-			expect(screen.getByTestId('settings-panel')).toBeInTheDocument();
-			expect(row).toHaveAttribute('data-active', 'true');
-		});
-
+	describe('second card', () => {
 		it('lets clicks on the empty paper area around the card fall through to the backdrop', async () => {
-			renderPanel({ settingsSections: sections });
+			renderPanel();
 			const menu = openMenu();
-			openSettings();
-			// The transparent paper spans both cards, and the short Settings
-			// card is bottom-aligned, so the paper area above it is empty.
-			// jsdom does no hit-testing, so assert the pointer-events contract
-			// that makes those clicks reach the backdrop: paper none, cards auto.
+			openPlatforms();
+			// The transparent paper spans both cards, and the shorter card is
+			// bottom-aligned, so the paper area above it can be empty. jsdom
+			// does no hit-testing, so assert the pointer-events contract that
+			// makes those clicks reach the backdrop: paper none, cards auto.
 			const paper = menu.parentElement as HTMLElement;
 			expect(paper).toHaveClass('MuiPopover-paper');
 			expect(paper).toHaveStyle({ pointerEvents: 'none' });
 			expect(menu).toHaveStyle({ pointerEvents: 'auto' });
-			expect(screen.getByTestId('settings-panel')).toHaveStyle({
+			expect(screen.getByTestId('platforms-panel')).toHaveStyle({
 				pointerEvents: 'auto'
 			});
 			// A backdrop click closes the card and the menu together.
@@ -610,27 +510,7 @@ describe('PanelSidebar account menu', () => {
 				document.querySelector('.MuiBackdrop-root') as HTMLElement
 			);
 			await expectMenuClosed();
-			expect(screen.queryByTestId('settings-panel')).toBeNull();
-		});
-
-		it('puts the chevron after the header text and renders items without bullets', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			openSettings();
-			const header = screen.getByTestId('settings-section-configuration');
-			const chevron = screen.getByTestId(
-				'settings-section-configuration-chevron'
-			);
-			// Chevron is the trailing child, after the title.
-			expect(header.lastElementChild).toBe(chevron);
-			expect(
-				header.compareDocumentPosition(chevron) &
-					Node.DOCUMENT_POSITION_FOLLOWING
-			).toBeTruthy();
-			const item = screen.getByTestId('settings-item-status-management');
-			// Just the label: no decorative bullet element.
-			expect(item.querySelector('[aria-hidden]')).toBeNull();
-			expect(item.textContent).toBe('Status management');
+			expect(screen.queryByTestId('platforms-panel')).toBeNull();
 		});
 
 		describe('alignment with the trigger row', () => {
@@ -660,15 +540,15 @@ describe('PanelSidebar account menu', () => {
 
 			afterEach(() => jest.restoreAllMocks());
 
-			it('lifts the card so its top edge meets the Settings row', () => {
+			it('lifts the card so its top edge meets the Lumora Platforms row', () => {
 				mockRects({
 					'account-menu': { top: 100, bottom: 700, height: 600 },
-					'menu-item-settings': { top: 400 },
+					'menu-item-platforms': { top: 400 },
 					'account-menu-subcard': { height: 200 }
 				});
-				renderPanel({ settingsSections: sections });
+				renderPanel();
 				openMenu();
-				openSettings();
+				openPlatforms();
 				// 700 - (400 + 200): card spans 400–600, level with the row.
 				expect(screen.getByTestId('account-menu-subcard')).toHaveStyle(
 					'margin-bottom: 100px'
@@ -692,41 +572,17 @@ describe('PanelSidebar account menu', () => {
 			it('never lifts a card above the menu top', () => {
 				mockRects({
 					'account-menu': { top: 100, bottom: 700, height: 600 },
-					'menu-item-settings': { top: 110 },
+					'menu-item-platforms': { top: 110 },
 					'account-menu-subcard': { height: 200 }
 				});
-				renderPanel({ settingsSections: sections });
+				renderPanel();
 				openMenu();
-				openSettings();
+				openPlatforms();
 				// Wanted 390, but 600 - 200 = 400 is the ceiling; 390 fits.
 				expect(screen.getByTestId('account-menu-subcard')).toHaveStyle(
 					'margin-bottom: 390px'
 				);
 			});
-		});
-
-		it('swaps with the platforms card so only one second card is open', () => {
-			renderPanel({ settingsSections: sections });
-			openMenu();
-			openSettings();
-			openPlatforms();
-			expect(screen.queryByTestId('settings-panel')).toBeNull();
-			expect(screen.getAllByRole('dialog')).toHaveLength(1);
-			// Active look follows the open card.
-			expect(screen.getByTestId('menu-item-settings')).toHaveAttribute(
-				'data-active',
-				'false'
-			);
-			expect(screen.getByTestId('menu-item-platforms')).toHaveAttribute(
-				'data-active',
-				'true'
-			);
-		});
-
-		it('is hidden with showSettings=false even when sections are given', () => {
-			renderPanel({ settingsSections: sections, showSettings: false });
-			openMenu();
-			expect(screen.queryByTestId('menu-item-settings')).toBeNull();
 		});
 	});
 });

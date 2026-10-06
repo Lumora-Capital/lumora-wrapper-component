@@ -244,10 +244,10 @@ export declare interface LumoraWrapperProps {
      * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
      * with the label stacked under each icon that never collapses (no toggle).
      * `'panel'` is the collapsible panel with a richer account menu in place of
-     * the user menu: Theme, Notifications, What's New, Profile, Submit a
-     * request, Settings (a card of `settingsSections` when given) and a Lumora
-     * Platforms switcher (`platforms`). Desktop only; phones use the standard
-     * mobile navigation and user menu.
+     * the user menu: a profile header, Theme, the host's `userMenuItems`
+     * (Settings and any other links), the Lumora Platforms switcher
+     * (`platforms`) and Log out. Desktop only; phones use the standard mobile
+     * navigation and user menu.
      * Every variant runs the full height with the brand on top and notifications
      * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
      */
@@ -293,7 +293,13 @@ export declare interface LumoraWrapperProps {
      * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
      */
     contentPadding?: ContentPadding;
-    /** Extra entries in the user menu between Notifications and Settings, e.g. "What's New". */
+    /**
+     * Host entries in the user menu, e.g. Settings or "What's New": between
+     * Notifications and Settings in the standard menu, and every row between
+     * Theme and Lumora Platforms in the `panel` account menu, which has no
+     * built-in Settings. Each runs its `onClick`, or navigates to its `path`
+     * via `onLinkClick`.
+     */
     userMenuItems?: UserMenuItem[];
     /** Surface background of the collapsible sidebar (default '#ffffff'). */
     sidebarBackgroundColor?: string;
@@ -320,7 +326,10 @@ export declare interface LumoraWrapperProps {
     /** Shown in the `panel` account menu header, under the name. */
     userEmail?: string;
     onLogout: (error?: Error) => void | Promise<void>;
-    /** Show the Settings entry in the user menu. */
+    /**
+     * Show the Settings entry in the standard user menu. The `panel` account
+     * menu ignores both: give it a Settings row in `userMenuItems` instead.
+     */
     showSettings?: boolean;
     onSettingsClick?: () => void;
     /**
@@ -331,14 +340,11 @@ export declare interface LumoraWrapperProps {
     /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onSubmitRequestClick?: () => void;
     /**
-     * `panel` account menu: when non-empty, Settings opens a second card
-     * listing these host-defined sections instead of calling `onSettingsClick`.
+     * @deprecated The `panel` account menu no longer has a Settings card;
+     * ignored. Link to a settings page from `userMenuItems` instead.
      */
     settingsSections?: SettingsSection[];
-    /**
-     * Called when a settings row is chosen (after the menu closes). Precedence:
-     * the row's own `onClick`, then this, then `onLinkClick(row.path)`.
-     */
+    /** @deprecated Went with the Settings card; ignored. */
     onSettingsItemClick?: (item: SettingsItem, section: SettingsSection) => void;
     showNotifications?: boolean;
     /**
@@ -498,7 +504,7 @@ export declare interface NotificationSidebarContentProps {
     initialTab?: UpdatesTab;
 }
 
-/** One row of the `panel` account menu's Settings card. */
+/** @deprecated Row of the removed `panel` Settings card; kept for type imports. */
 export declare type SettingsItem = {
     /** Stable id (defaults to a slug of `text`). */
     key?: string;
@@ -509,7 +515,7 @@ export declare type SettingsItem = {
     disabled?: boolean;
 };
 
-/** Collapsible group of settings rows; open by default. */
+/** @deprecated Group of the removed `panel` Settings card; kept for type imports. */
 export declare type SettingsSection = {
     title: string;
     items: SettingsItem[];
@@ -586,7 +592,11 @@ export declare interface UserData {
     [key: string]: any;
 }
 
-/** An extra entry in the user menu, e.g. "What's New". */
+/**
+ * An extra entry in the user menu (and the `panel` account menu), e.g.
+ * "What's New". Give it an `onClick`, or a `path` to navigate through the
+ * wrapper's `onLinkClick`; `onClick` wins when both are set.
+ */
 export declare type UserMenuItem = {
     key: string;
     label: string;
@@ -594,6 +604,7 @@ export declare type UserMenuItem = {
     /** Count shown as a red pill; hidden when 0 or unset. */
     badge?: number;
     onClick?: () => void;
+    path?: string;
 };
 
 /**
