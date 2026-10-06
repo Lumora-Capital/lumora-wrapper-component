@@ -48,6 +48,16 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		null
 	);
 	const menuOpen = Boolean(menuAnchor);
+	// The menu hangs off the open panel's footer; it goes when the panel
+	// shrinks to the rail. Only a change closes it: the rail-labeled footer is
+	// always compact and opens its menu from there.
+	const wasCompact = React.useRef(compact);
+	React.useEffect(() => {
+		if (compact && !wasCompact.current) {
+			setMenuAnchor(null);
+		}
+		wasCompact.current = compact;
+	}, [compact]);
 
 	if (!showNotifications && !showProfile) {
 		return null;
