@@ -8,6 +8,7 @@ import {
 	mockSidebarLinks,
 	render,
 	screen,
+	waitFor,
 	within
 } from './testUtils';
 
@@ -370,6 +371,27 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(
 				within(sidebar).getByText('Riley Carter')
 			).toBeInTheDocument();
+		});
+
+		it('closes the user menu when the panel shrinks back to the rail', async () => {
+			renderCollapsible({ userName: 'Riley Carter' });
+			const panel = await hoverSidebarOpen();
+			fireEvent.click(screen.getByTestId('sidebar-user'));
+			expect(screen.getByText('Log out')).toBeInTheDocument();
+
+			// Off the panel, over the page: the panel and its menu both go
+			const backdrop = document.querySelector('.MuiBackdrop-root')!;
+			jest.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
+				new DOMRect(0, 0, 288, 800)
+			);
+			fireEvent.mouseMove(backdrop, { clientX: 600, clientY: 400 });
+			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
+				'data-collapsed',
+				'true'
+			);
+			await waitFor(() =>
+				expect(screen.queryByText('Log out')).not.toBeInTheDocument()
+			);
 		});
 
 		it('collapsed: the search icon opens the sidebar and focuses the field', () => {
