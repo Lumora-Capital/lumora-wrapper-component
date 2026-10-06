@@ -75,6 +75,28 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 		).toHaveTextContent('riley.carter@example.com');
 	});
 
+	it('closes the panel and its account menu when the pointer moves off the panel', async () => {
+		renderPanel();
+		await hoverSidebarOpen();
+		openMenu();
+
+		// Over the panel, the menu's full-screen backdrop keeps it open
+		const backdrop = document.querySelector('.MuiBackdrop-root')!;
+		const panel = screen.getByTestId('sidebar-hover-panel');
+		jest.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
+			new DOMRect(0, 0, 288, 800)
+		);
+		fireEvent.mouseMove(backdrop, { clientX: 100, clientY: 400 });
+		expect(panel).toHaveAttribute('data-expanded', 'true');
+
+		// Off the panel, over the page: both go
+		fireEvent.mouseMove(backdrop, { clientX: 600, clientY: 400 });
+		expect(panel).toHaveAttribute('data-expanded', 'false');
+		await waitFor(() =>
+			expect(screen.queryByTestId('account-menu')).not.toBeInTheDocument()
+		);
+	});
+
 	describe('updates drawer', () => {
 		const Content = jest.fn(
 			({ initialTab, onClose }: NotificationSidebarContentProps) => (
