@@ -1,6 +1,7 @@
 import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
@@ -17,8 +18,7 @@ import {
 	isAuthenticated,
 	storeAuthTokens,
 	type LumoraPlatform,
-	type NotificationSidebarContentProps,
-	type SettingsSection
+	type NotificationSidebarContentProps
 } from '../lib';
 import {
 	flatLinks,
@@ -99,35 +99,6 @@ const demoPlatforms: LumoraPlatform[] = [
 	{ key: 'polymer', name: 'Polymer', url: 'https://polymer.lumora.capital' },
 	{ key: 'xpdite', name: 'XPdite', url: 'https://xpdite.lumora.capital' },
 	{ key: 'core', name: 'Core', url: 'https://core.lumora.capital' }
-];
-
-/** Panel variant: the settings card; rows route through onLinkClick. */
-const toSettingsItems = (base: string, labels: string[]) =>
-	labels.map(text => ({
-		text,
-		path: `${base}/${text.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-	}));
-const demoSettingsSections: SettingsSection[] = [
-	{
-		title: 'Configuration',
-		items: toSettingsItems('/settings/configuration', [
-			'Status management',
-			'Tag management',
-			'Workflow',
-			'Templates',
-			'Deal defaults',
-			'Notification configs'
-		])
-	},
-	{
-		title: 'Admin',
-		items: toSettingsItems('/settings/admin', [
-			'Users & Roles',
-			'Allowed Origins',
-			'Model Provider API Keys',
-			'Maintenance mode'
-		])
-	}
 ];
 
 /** Host content for the updates drawer; the panel menu's What's New opens it on the other tab. */
@@ -334,13 +305,10 @@ const DemoApp = () => {
 					}
 					showProfile={settings.showProfile}
 					onSettingsClick={() => setActivePath('/settings')}
-					// `panel` variant: the account menu's extra entries, the
-					// settings card and the platform switcher
+					// `panel` variant: the profile header and the platform
+					// switcher; its other rows come from userMenuItems
 					onProfileClick={() => setActivePath('/profile')}
-					onSubmitRequestClick={() => setRequestOpen(true)}
 					whatsNewCount={1}
-					onWhatsNewClick={() => setActivePath('/whats-new')}
-					settingsSections={demoSettingsSections}
 					platforms={demoPlatforms}
 					currentPlatformKey='centra'
 					showNotifications={settings.showNotifications}
@@ -376,6 +344,12 @@ const DemoApp = () => {
 						buttonText: 'Upgrade'
 					}}
 					userMenuItems={[
+						{
+							key: 'settings',
+							label: 'Settings',
+							icon: <SettingsOutlinedIcon fontSize='small' />,
+							path: '/settings'
+						},
 						{
 							key: 'whats-new',
 							label: "What's New",

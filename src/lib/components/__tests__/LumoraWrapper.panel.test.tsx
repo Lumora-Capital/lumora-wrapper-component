@@ -141,17 +141,24 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 	});
 
 	describe('pass-through props', () => {
-		it('wires onSettingsClick / showSettings into the account menu', () => {
+		it('has no built-in Settings; userMenuItems rows navigate via onLinkClick', () => {
 			const onSettingsClick = jest.fn();
+			const onLinkClick = jest.fn();
 			const { unmount } = renderPanel({ onSettingsClick });
 			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-settings'));
-			expect(onSettingsClick).toHaveBeenCalledTimes(1);
+			expect(screen.queryByTestId('menu-item-settings')).toBeNull();
 			unmount();
 
-			renderPanel({ onSettingsClick, showSettings: false });
+			renderPanel({
+				onLinkClick,
+				userMenuItems: [
+					{ key: 'settings', label: 'Settings', path: '/settings' }
+				]
+			});
 			openMenu();
-			expect(screen.queryByTestId('menu-item-settings')).toBeNull();
+			fireEvent.click(screen.getByTestId('menu-item-settings'));
+			expect(onLinkClick).toHaveBeenCalledWith('/settings');
+			expect(onSettingsClick).not.toHaveBeenCalled();
 		});
 
 		it('wires platforms, currentPlatformKey and onPlatformSelect', async () => {
@@ -172,27 +179,6 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 			await waitFor(() =>
 				expect(screen.queryByTestId('account-menu')).toBeNull()
 			);
-		});
-
-		it('wires settingsSections and onLinkClick routing', () => {
-			const onLinkClick = jest.fn();
-			renderPanel({
-				settingsSections: [
-					{
-						title: 'Admin',
-						items: [{ text: 'Users', path: '/admin/users' }]
-					}
-				],
-				onLinkClick
-			});
-			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-settings'));
-			expect(
-				screen.getByRole('dialog', { name: 'Settings' })
-			).toBeInTheDocument();
-			// Sections start open.
-			fireEvent.click(screen.getByTestId('settings-item-users'));
-			expect(onLinkClick).toHaveBeenCalledWith('/admin/users');
 		});
 
 		it('hides the platform switcher when no platforms are given', () => {

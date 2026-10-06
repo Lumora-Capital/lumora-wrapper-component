@@ -16,7 +16,11 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { formatRole } from './sidebarUtils';
 
-/** An extra entry in the user menu, e.g. "What's New". */
+/**
+ * An extra entry in the user menu (and the `panel` account menu), e.g.
+ * "What's New". Give it an `onClick`, or a `path` to navigate through the
+ * wrapper's `onLinkClick`; `onClick` wins when both are set.
+ */
 export type UserMenuItem = {
 	key: string;
 	label: string;
@@ -24,6 +28,7 @@ export type UserMenuItem = {
 	/** Count shown as a red pill; hidden when 0 or unset. */
 	badge?: number;
 	onClick?: () => void;
+	path?: string;
 };
 
 /** What the user menu shows; shared by the sidebar footer and the mobile bar. */
@@ -65,7 +70,7 @@ const ellipsis = {
 	maxWidth: '100%'
 } as const;
 
-const CountPill: React.FC<{ count?: number }> = ({ count }) =>
+export const CountPill: React.FC<{ count?: number }> = ({ count }) =>
 	count ? (
 		<Box
 			component='span'

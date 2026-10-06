@@ -7,15 +7,11 @@ import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import AccountMenu from './AccountMenu';
 import CollapsibleSidebar from './CollapsibleSidebar';
-import type {
-	LumoraPlatform,
-	SettingsItem,
-	SettingsSection,
-	SidebarLink
-} from './LumoraWrapper';
+import type { LumoraPlatform, SidebarLink } from './LumoraWrapper';
 import NotificationBell from './NotificationBell';
 import { deriveGroupTint, formatRole } from './sidebarUtils';
 import { UserAvatar } from './UserMenu';
+import type { UserMenuItem } from './UserMenu';
 
 /** Host apps often outline every `button:focus`; keep the footer clean after a click. */
 const FOCUS_OUTLINE_FIX = {
@@ -70,13 +66,8 @@ export interface PanelSidebarProps {
 	whatsNewCount?: number;
 	/** Makes the account menu's user header open the profile. */
 	onProfileClick?: () => void;
-	showSettings?: boolean;
-	onSettingsClick?: () => void;
-	settingsSections?: SettingsSection[];
-	onSettingsItemClick?: (
-		item: SettingsItem,
-		section: SettingsSection
-	) => void;
+	/** Host rows in the account menu (Settings, help…), below Theme. */
+	menuItems?: UserMenuItem[];
 	platforms?: LumoraPlatform[];
 	currentPlatformKey?: string;
 	onPlatformSelect?: (platform: LumoraPlatform) => void;
@@ -89,9 +80,9 @@ export interface PanelSidebarProps {
 /**
  * The `panel` sidebar variant: the collapsible sidebar (header bar with the
  * brand, the wrapper's Ask Nexa + search as `topContent`,
- * the nav list) with a user footer that opens the account menu — theme,
- * notifications and What's New, profile, support request, the settings card,
- * the Lumora Platforms switcher and log out (see AccountMenu).
+ * the nav list) with a user footer that opens the account menu — profile
+ * header, theme, the host's `menuItems`, the Lumora Platforms switcher and
+ * log out (see AccountMenu).
  */
 const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	mainLinks,
@@ -126,10 +117,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	onNotificationsClick,
 	whatsNewCount = 0,
 	onProfileClick,
-	showSettings = true,
-	onSettingsClick,
-	settingsSections,
-	onSettingsItemClick,
+	menuItems,
 	platforms,
 	currentPlatformKey,
 	onPlatformSelect,
@@ -317,11 +305,8 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					theme={themeMode}
 					onThemeToggle={onThemeToggle}
 					onProfileClick={onProfileClick}
-					showSettings={showSettings}
-					onSettingsClick={onSettingsClick}
-					settingsSections={settingsSections}
-					onSettingsItemClick={onSettingsItemClick}
 					onLinkClick={onLinkClick}
+					menuItems={menuItems}
 					platforms={platforms}
 					currentPlatformKey={currentPlatformKey}
 					onPlatformSelect={onPlatformSelect}
