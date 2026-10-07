@@ -373,25 +373,26 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			).toBeInTheDocument();
 		});
 
-		it('closes the user menu when the panel shrinks back to the rail', async () => {
+		it('stays open while the user menu is open, even with the pointer on the page', async () => {
 			renderCollapsible({ userName: 'Riley Carter' });
 			const panel = await hoverSidebarOpen();
 			fireEvent.click(screen.getByTestId('sidebar-user'));
 			expect(screen.getByText('Log out')).toBeInTheDocument();
 
-			// Off the panel, over the page: the panel and its menu both go
+			// The menu's backdrop covers the page; over it the panel stays open
 			const backdrop = document.querySelector('.MuiBackdrop-root')!;
-			jest.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
-				new DOMRect(0, 0, 288, 800)
-			);
+			fireEvent.mouseOver(backdrop);
 			fireEvent.mouseMove(backdrop, { clientX: 600, clientY: 400 });
-			expect(screen.getByTestId('collapsible-sidebar')).toHaveAttribute(
-				'data-collapsed',
-				'true'
-			);
+			expect(panel).toHaveAttribute('data-expanded', 'true');
+			expect(screen.getByText('Log out')).toBeInTheDocument();
+
+			// Once the menu is closed, leaving the panel collapses it
+			fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 			await waitFor(() =>
 				expect(screen.queryByText('Log out')).not.toBeInTheDocument()
 			);
+			fireEvent.mouseOver(screen.getByTestId('test-content'));
+			expect(panel).toHaveAttribute('data-expanded', 'false');
 		});
 
 		it('collapsed: the search icon opens the sidebar and focuses the field', () => {

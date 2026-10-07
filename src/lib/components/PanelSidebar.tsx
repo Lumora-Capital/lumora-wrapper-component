@@ -142,12 +142,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 
 	const footerRef = React.useRef<HTMLButtonElement>(null);
 	const [menuOpen, setMenuOpen] = React.useState(false);
-	// The menu hangs off the open panel's footer; it goes when the panel does
-	React.useEffect(() => {
-		if (collapsed) {
-			setMenuOpen(false);
-		}
-	}, [collapsed]);
 
 	// Display only: "SUPER_ADMIN" -> "Super Admin". The stored role is untouched.
 	const roleLabel = userRole ? formatRole(userRole) : undefined;
