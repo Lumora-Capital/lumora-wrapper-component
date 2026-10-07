@@ -9,13 +9,10 @@ const HOVER_OPEN_DELAY_MS = 100;
  * it, or while pinned open (the rail's search icon pins it so the field can
  * take focus). A pin lasts until focus or a click lands outside, or Escape.
  *
- * Hover is tracked with `mouseover` / `mousemove` rather than enter/leave:
- * React bubbles them through portals, so the open account menu counts as
- * inside, and they still fire on the page once a closing menu's backdrop is
- * gone, where React would send no leave event. The menu's invisible backdrop
- * covers the whole screen, so it counts as inside only over the panel: moving
- * off the panel with the menu open closes both (`mousemove`, since the
- * pointer never crosses into a new element there).
+ * Hover is tracked with `mouseover` rather than enter/leave: React bubbles it
+ * through portals, so the open account menu (and its backdrop) count as
+ * inside, and it still fires on the page once a closing menu's backdrop is
+ * gone, where React would send no leave event.
  */
 const useHoverExpand = () => {
 	const rootRef = React.useRef<HTMLDivElement>(null);
@@ -43,12 +40,10 @@ const useHoverExpand = () => {
 			setHovered(false);
 		};
 		document.addEventListener('mouseover', closeOutside);
-		document.addEventListener('mousemove', closeOutside);
 		document.documentElement.addEventListener('mouseleave', closeOnExit);
 		return () => {
 			clearOpenTimer();
 			document.removeEventListener('mouseover', closeOutside);
-			document.removeEventListener('mousemove', closeOutside);
 			document.documentElement.removeEventListener(
 				'mouseleave',
 				closeOnExit
@@ -69,33 +64,17 @@ const useHoverExpand = () => {
 		return () => document.removeEventListener('pointerdown', unpinOutside);
 	}, [pinned]);
 
-	const trackPointer = (event: React.MouseEvent<HTMLDivElement>) => {
-		const target = event.target as Element;
-		if (target.classList?.contains('MuiBackdrop-root')) {
-			const rect = rootRef.current?.getBoundingClientRect();
-			const overPanel =
-				rect &&
-				event.clientX >= rect.left &&
-				event.clientX <= rect.right &&
-				event.clientY >= rect.top &&
-				event.clientY <= rect.bottom;
-			if (!overPanel) {
-				return;
-			}
-		}
-		insideEvents.current.add(event.nativeEvent);
-		if (!hovered && openTimer.current === undefined) {
-			openTimer.current = setTimeout(() => {
-				openTimer.current = undefined;
-				setHovered(true);
-			}, HOVER_OPEN_DELAY_MS);
-		}
-	};
-
 	const rootProps = {
 		ref: rootRef,
-		onMouseOver: trackPointer,
-		onMouseMove: trackPointer,
+		onMouseOver: (event: React.MouseEvent<HTMLDivElement>) => {
+			insideEvents.current.add(event.nativeEvent);
+			if (!hovered && openTimer.current === undefined) {
+				openTimer.current = setTimeout(() => {
+					openTimer.current = undefined;
+					setHovered(true);
+				}, HOVER_OPEN_DELAY_MS);
+			}
+		},
 		// Focus moving to an element outside unpins; a null target (the
 		// focused element unmounted as the panel swapped layouts) does not.
 		onBlur: (event: React.FocusEvent<HTMLDivElement>) => {
