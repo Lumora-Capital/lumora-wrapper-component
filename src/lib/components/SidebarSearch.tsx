@@ -16,16 +16,10 @@ interface SidebarSearchProps {
 	/** The host app's search component. */
 	search: React.ReactNode;
 	/**
-	 * `full`: the component inline. `expand`: an icon that asks the owner to
-	 * expand the sidebar (the collapsed collapsible variant). `popover`: an
-	 * icon that opens the component beside the rail (fixed narrow rails).
+	 * `full`: the component inline (the mobile menu). `popover`: an icon that
+	 * opens the component beside the rail (every desktop sidebar).
 	 */
-	mode: 'full' | 'expand' | 'popover';
-	/** `expand` mode: called on click; the owner expands and sets `autoFocus`. */
-	onExpand?: () => void;
-	/** `full` mode: focus the field once mounted (after an expand request). */
-	autoFocus?: boolean;
-	onAutoFocused?: () => void;
+	mode: 'full' | 'popover';
 	color: string;
 	hoverColor: string;
 }
@@ -34,30 +28,15 @@ interface SidebarSearchProps {
 const SidebarSearch: React.FC<SidebarSearchProps> = ({
 	search,
 	mode,
-	onExpand,
-	autoFocus = false,
-	onAutoFocused,
 	color,
 	hoverColor
 }) => {
-	const containerRef = React.useRef<HTMLDivElement>(null);
 	const [popoverAnchor, setPopoverAnchor] =
 		React.useState<HTMLElement | null>(null);
 
-	React.useEffect(() => {
-		if (mode === 'full' && autoFocus) {
-			focusFirstField(containerRef.current);
-			onAutoFocused?.();
-		}
-	}, [mode, autoFocus, onAutoFocused]);
-
 	if (mode === 'full') {
 		return (
-			<Box
-				ref={containerRef}
-				data-testid='sidebar-search'
-				sx={{ width: '100%' }}
-			>
+			<Box data-testid='sidebar-search' sx={{ width: '100%' }}>
 				{search}
 			</Box>
 		);
@@ -71,11 +50,7 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 			<Tooltip title='Search' placement='right' arrow>
 				<IconButton
 					aria-label='Search'
-					onClick={event =>
-						mode === 'expand'
-							? onExpand?.()
-							: setPopoverAnchor(event.currentTarget)
-					}
+					onClick={event => setPopoverAnchor(event.currentTarget)}
 					sx={{
 						width: 44,
 						height: 44,

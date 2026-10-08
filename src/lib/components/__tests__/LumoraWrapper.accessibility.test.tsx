@@ -1,11 +1,11 @@
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
-	hoverSidebarOpen,
 	lumoraTestRequiredProps,
 	mockSidebarLinks,
 	render,
-	screen
+	screen,
+	within
 } from './testUtils';
 
 const renderWrapper = (props: Partial<LumoraWrapperProps> = {}) =>
@@ -39,13 +39,16 @@ describe('LumoraWrapper - Accessibility', () => {
 			).toBeInTheDocument();
 		});
 
-		it('keeps the page heading hierarchy to the host (brand is not a heading level 1)', async () => {
+		it('keeps the page heading hierarchy to the host (no heading level 1 in the sidebar)', () => {
 			renderWrapper({ sidebarVariant: 'collapsible', appName: 'Centra' });
-			await hoverSidebarOpen();
 			expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
 				'Page Title'
 			);
-			expect(screen.getByText('Centra').tagName).toBe('H6');
+			expect(
+				within(
+					screen.getByRole('navigation', { name: 'Main sidebar' })
+				).queryByRole('heading', { level: 1 })
+			).not.toBeInTheDocument();
 		});
 	});
 

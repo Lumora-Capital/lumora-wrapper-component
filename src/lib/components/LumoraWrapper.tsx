@@ -10,13 +10,7 @@ import {
 	useTheme
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import React, {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { clearAuthTokens, getCurrentUser, isAuthenticated } from '../authUtils';
 import { createAxiosClient } from '../axiosClient';
 import { getDesignTokens } from '../theme';
@@ -38,7 +32,6 @@ import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
-import useHoverExpand from './useHoverExpand';
 
 /** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
 const DESKTOP_RAIL_WIDTH_PX = 100;
@@ -53,12 +46,10 @@ const MOBILE_BAR_HEIGHT_PX = 56;
 /** Width of the drawer-mode links drawer (capped at 85% of the screen). */
 const MOBILE_DRAWER_WIDTH_PX = 300;
 
-/** Collapsible / panel sidebar widths: the rail, and the panel that opens
- * over the page on hover. */
+/** Collapsible / panel sidebar: the labeled rail's width (same as
+ * rail-labeled), and the account menu's reference width. */
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
-const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
-const HOVER_PANEL_TRANSITION =
-	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
+const COLLAPSIBLE_COLLAPSED_WIDTH_PX = RAIL_LABELED_WIDTH_PX;
 
 /** Floating Nexa button (52px) plus a 16px gap, kept clear by the chat popup. */
 const FLOATING_ASSISTANT_CLEARANCE_PX = 68;
@@ -171,12 +162,12 @@ export interface LumoraWrapperProps {
 	/** When true on desktop (`md`+), rail shows `link.text` under each icon (drawer width is unchanged). */
 	showSidebarRailTitles?: boolean;
 	/**
-	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail; `'collapsible'`
-	 * is a full-height panel with its own 60px header (hamburger toggle + brand) that
-	 * switches between expanded (icon + label rows) and a collapsed icon rail,
-	 * persisting its state to localStorage; `'rail-labeled'` is a fixed narrow rail
-	 * with the label stacked under each icon that never collapses (no toggle).
-	 * `'panel'` is the collapsible panel with a richer account menu in place of
+	 * Desktop sidebar layout. `'rail'` (default) is the fixed icon rail;
+	 * `'collapsible'` is an always-collapsed 80px rail with the brand on top
+	 * and each link's label stacked under its icon — it never expands; a
+	 * parent shows only itself and clicking it opens its sub-items as a
+	 * horizontal bubble beside the rail; `'rail-labeled'` is the same rail
+	 * without the brand header. `'panel'` is the collapsible rail with a richer account menu in place of
 	 * the user menu: a profile header, Theme, the host's `userMenuItems`
 	 * (Settings and any other links), the Lumora Platforms switcher
 	 * (`platforms`) and Log out. Desktop only; phones use the standard mobile
@@ -208,9 +199,8 @@ export interface LumoraWrapperProps {
 	onBrandClick?: () => void;
 	/**
 	 * The app's global search, rendered in the sidebar under the brand and
-	 * above the links. When the sidebar is collapsed it becomes a search icon
-	 * that expands the sidebar and focuses the first input inside it; on the
-	 * fixed narrow rails the icon opens it in a popover.
+	 * above the links. On the desktop rails it is a search icon that opens it
+	 * in a popover beside the rail.
 	 */
 	searchComponent?: React.ReactNode;
 	/**
@@ -590,14 +580,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const resolvedBrandColor = brandColor ?? sidebarHeaderFg;
 	const headerLogo = logo ?? renderMaskLogo(resolvedBrandColor);
 	const railLogo = logo ?? renderMaskLogo(brandColor ?? sidebarChromeFg);
-	// The collapsible and panel sidebars are always a rail; hovering opens the
-	// full panel over the page, so the content never moves.
-	const hoverSidebar = useHoverExpand();
-	const sidebarCollapsed = !hoverSidebar.expanded;
-	// Set when the collapsed rail's search icon expands the sidebar, so the
-	// search field takes focus once it is rendered at full width.
-	const [focusSearch, setFocusSearch] = useState(false);
-	const clearFocusSearch = useCallback(() => setFocusSearch(false), []);
 	// Keep sidebar, drawer paper width and main `calc(100% - …)` in sync.
 	let desktopSidebarWidthPx = 0;
 	if (showSidebar && !isMobile) {
@@ -836,23 +818,17 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				accentColor={sidebarChromeFg}
 			/>
 		) : null;
-	const renderSearch = (mode: 'full' | 'expand' | 'popover') =>
+	const renderSearch = (mode: 'full' | 'popover') =>
 		searchNode ? (
 			<SidebarSearch
 				search={searchNode}
 				mode={mode}
-				onExpand={() => {
-					hoverSidebar.pin();
-					setFocusSearch(true);
-				}}
-				autoFocus={focusSearch}
-				onAutoFocused={clearFocusSearch}
 				color={sidebarChromeFg}
 				hoverColor={sidebarChromeHover}
 			/>
 		) : null;
 	// Under the brand: Ask Nexa, then the host's search
-	const renderTopContent = (mode: 'full' | 'expand' | 'popover') => {
+	const renderTopContent = (mode: 'full' | 'popover') => {
 		const assistant = renderAssistant(mode !== 'full');
 		const search = renderSearch(mode);
 		return assistant || search ? (
@@ -865,8 +841,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			</Stack>
 		) : undefined;
 	};
-	// The collapsible and rail-labeled variants both render CollapsibleSidebar;
-	// rail-labeled is pinned shrunk with captions.
+	// The collapsible and rail-labeled variants both render CollapsibleSidebar
+	// as a captioned rail that never expands (collapsible adds the brand
+	// header); a parent's sub-items open in a bubble beside it.
 	const renderCollapsibleSidebar = () => (
 		<CollapsibleSidebar
 			mainLinks={sidebarLinks}
@@ -889,31 +866,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			activeForegroundColor={activeSidebarForegroundColor}
 			foregroundColor={sidebarForegroundColor}
 			surfaceBackgroundColor={resolvedSidebarSurface}
-			collapsed={useRailLabeledSidebar || sidebarCollapsed}
-			showLabels={useRailLabeledSidebar}
-			expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
-			collapsedWidth={
-				useRailLabeledSidebar
-					? RAIL_LABELED_WIDTH_PX
-					: COLLAPSIBLE_COLLAPSED_WIDTH_PX
-			}
-			topContent={renderTopContent(
-				useRailLabeledSidebar
-					? 'popover'
-					: sidebarCollapsed
-						? 'expand'
-						: 'full'
-			)}
-			footer={renderFooter(useRailLabeledSidebar || sidebarCollapsed)}
+			collapsed
+			showLabels
+			collapsedWidth={RAIL_LABELED_WIDTH_PX}
+			topContent={renderTopContent('popover')}
+			footer={renderFooter(true)}
 		/>
 	);
-	// The collapsible and panel variants: the page keeps the rail's width and
-	// the open panel lays over it, lifted by a shadow. The contents switch to
-	// their open (or rail) layout at once and the panel's clipped edge slides
-	// over them, so opening reveals finished rows instead of reflowing them.
-	const renderHoverSidebar = (content: React.ReactNode) => (
+	// The collapsible and panel variants: a fixed labeled rail running the full
+	// height. It never expands; sub-items open in a bubble beside it.
+	const renderRailSidebar = (content: React.ReactNode) => (
 		<Box
 			component='aside'
+			data-testid='sidebar-rail'
 			sx={{
 				width: COLLAPSIBLE_COLLAPSED_WIDTH_PX,
 				minWidth: COLLAPSIBLE_COLLAPSED_WIDTH_PX,
@@ -923,38 +888,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				position: 'sticky',
 				top: 0,
 				alignSelf: 'flex-start',
-				height: '100vh'
+				height: '100vh',
+				// Flex column so the sidebar shrinks inside the viewport.
+				display: 'flex',
+				flexDirection: 'column',
+				overflow: 'hidden',
+				bgcolor: resolvedSidebarSurface,
+				borderRight: '1px solid',
+				borderColor: 'divider',
+				...sidebarStyles
 			}}
 		>
-			<Box
-				{...hoverSidebar.rootProps}
-				data-testid='sidebar-hover-panel'
-				data-expanded={sidebarCollapsed ? 'false' : 'true'}
-				sx={{
-					position: 'absolute',
-					top: 0,
-					left: 0,
-					height: '100%',
-					width: sidebarCollapsed
-						? COLLAPSIBLE_COLLAPSED_WIDTH_PX
-						: COLLAPSIBLE_EXPANDED_WIDTH_PX,
-					// Flex column so the sidebar shrinks to fit siblings (the
-					// alert card) instead of pushing them off-screen.
-					display: 'flex',
-					flexDirection: 'column',
-					overflow: 'hidden',
-					bgcolor: resolvedSidebarSurface,
-					borderRight: '1px solid',
-					borderColor: 'divider',
-					boxShadow: sidebarCollapsed
-						? 'none'
-						: `4px 0 24px rgba(0, 0, 0, ${isDark ? 0.5 : 0.12})`,
-					transition: HOVER_PANEL_TRANSITION,
-					...sidebarStyles
-				}}
-			>
-				{content}
-			</Box>
+			{content}
 		</Box>
 	);
 	const resolvedContentPadding = resolveContentPadding(
@@ -1029,82 +974,67 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					</Box>
 				)}
 
-				{/* Desktop Sidebar — collapsible variant: the rail that opens
-				    over the page on hover. */}
+				{/* Desktop Sidebar — collapsible variant: an always-collapsed
+				    rail with the brand header. */}
 				{showSidebar &&
 					!isMobile &&
 					useCollapsibleSidebar &&
-					renderHoverSidebar(
-						<>
-							{renderCollapsibleSidebar()}
-							{alertProps?.show && !sidebarCollapsed && (
-								<CardAlert {...alertProps} />
-							)}
-						</>
-					)}
+					renderRailSidebar(renderCollapsibleSidebar())}
 
 				{/* Desktop Sidebar — panel variant: the collapsible variant with
 				    the account menu (profile, host menu items, platforms). */}
 				{panelDesktop &&
-					renderHoverSidebar(
-						<>
-							<PanelSidebar
-								mainLinks={sidebarLinks}
-								secondaryLinks={secondarySidebarLinks}
-								activePath={activePath}
-								onLinkClick={onLinkClick}
-								logo={headerLogo}
-								title={appName}
-								onBrandClick={onBrandClick}
-								brandColor={resolvedBrandColor}
-								headerBackgroundColor={resolvedSidebarHeaderBg}
-								headerForegroundColor={sidebarHeaderFg}
-								activeAccentColor={resolvedSidebarAccent}
-								groupAccentColor={groupAccentColor}
-								activeForegroundColor={
-									activeSidebarForegroundColor
-								}
-								foregroundColor={sidebarForegroundColor}
-								surfaceBackgroundColor={resolvedSidebarSurface}
-								collapsed={sidebarCollapsed}
-								expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
-								collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
-								topContent={renderTopContent(
-									sidebarCollapsed ? 'expand' : 'full'
-								)}
-								// Footer + account menu
-								color={sidebarChromeFg}
-								hoverColor={sidebarChromeHover}
-								avatarColor={resolvedSidebarAccent}
-								showProfile={showProfile}
-								userName={userName}
-								userEmail={userEmail}
-								userRole={userRole}
-								userAvatar={userAvatar}
-								showNotifications={showNotifications}
-								notificationCount={notificationCount}
-								// The drawer wins when the host provides content;
-								// otherwise fall back to the plain callbacks.
-								onNotificationsClick={
-									hasUpdatesDrawer
-										? openNotifications
-										: onNotificationsClick
-								}
-								whatsNewCount={whatsNewCount}
-								onProfileClick={onProfileClick}
-								menuItems={userMenuItems}
-								platforms={platforms}
-								currentPlatformKey={currentPlatformKey}
-								onPlatformSelect={onPlatformSelect}
-								onLogout={handleLogout}
-								theme={themeMode}
-								showThemeToggler={showThemeToggler}
-								onThemeToggle={onThemeToggle}
-							/>
-							{alertProps?.show && !sidebarCollapsed && (
-								<CardAlert {...alertProps} />
-							)}
-						</>
+					renderRailSidebar(
+						<PanelSidebar
+							mainLinks={sidebarLinks}
+							secondaryLinks={secondarySidebarLinks}
+							activePath={activePath}
+							onLinkClick={onLinkClick}
+							logo={headerLogo}
+							title={appName}
+							onBrandClick={onBrandClick}
+							brandColor={resolvedBrandColor}
+							headerBackgroundColor={resolvedSidebarHeaderBg}
+							headerForegroundColor={sidebarHeaderFg}
+							activeAccentColor={resolvedSidebarAccent}
+							groupAccentColor={groupAccentColor}
+							activeForegroundColor={activeSidebarForegroundColor}
+							foregroundColor={sidebarForegroundColor}
+							surfaceBackgroundColor={resolvedSidebarSurface}
+							collapsed
+							showLabels
+							expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
+							collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
+							topContent={renderTopContent('popover')}
+							// Footer + account menu
+							color={sidebarChromeFg}
+							hoverColor={sidebarChromeHover}
+							avatarColor={resolvedSidebarAccent}
+							showProfile={showProfile}
+							userName={userName}
+							userEmail={userEmail}
+							userRole={userRole}
+							userAvatar={userAvatar}
+							showNotifications={showNotifications}
+							notificationCount={notificationCount}
+							// The drawer wins when the host provides content;
+							// otherwise fall back to the plain callbacks.
+							onNotificationsClick={
+								hasUpdatesDrawer
+									? openNotifications
+									: onNotificationsClick
+							}
+							whatsNewCount={whatsNewCount}
+							onProfileClick={onProfileClick}
+							menuItems={userMenuItems}
+							platforms={platforms}
+							currentPlatformKey={currentPlatformKey}
+							onPlatformSelect={onPlatformSelect}
+							onLogout={handleLogout}
+							theme={themeMode}
+							showThemeToggler={showThemeToggler}
+							onThemeToggle={onThemeToggle}
+						/>
 					)}
 
 				{/* Desktop Sidebar — fixed rail variant */}

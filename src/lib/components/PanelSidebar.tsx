@@ -1,4 +1,3 @@
-import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
@@ -40,6 +39,8 @@ export interface PanelSidebarProps {
 	collapsed: boolean;
 	expandedWidth: number;
 	collapsedWidth: number;
+	/** Captions under the rail's icons (see CollapsibleSidebar). */
+	showLabels?: boolean;
 	/**
 	 * Rendered between the brand and the links: the Ask Nexa launcher and the
 	 * host's search, built by the wrapper for the current collapsed state.
@@ -103,6 +104,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	collapsed,
 	expandedWidth,
 	collapsedWidth,
+	showLabels = false,
 	topContent,
 	color,
 	hoverColor,
@@ -190,19 +192,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				...FOCUS_OUTLINE_FIX
 			}}
 		>
-			{collapsed && showNotifications ? (
-				// Collapsed: no room for the bell, so unread shows as a dot
-				<Badge
-					color='error'
-					variant='dot'
-					overlap='circular'
-					invisible={!bellCount}
-				>
-					{renderAvatar(36)}
-				</Badge>
-			) : (
-				renderAvatar(collapsed ? 36 : 40)
-			)}
+			{renderAvatar(collapsed ? 36 : 40)}
 			{!collapsed ? (
 				<Box sx={{ minWidth: 0, textAlign: 'left' }}>
 					<Typography
@@ -232,12 +222,12 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 		</ButtonBase>
 	) : null;
 
-	// Collapsed, the bell folds into the avatar's dot (unless there is no user row)
-	const showBell = Boolean(bell) && (!collapsed || !userButton);
+	// Collapsed, the rail is too narrow for a row: the bell stacks above the
+	// avatar, keeping the user at the bottom.
 	const footer =
-		userButton || showBell ? (
+		userButton || bell ? (
 			<Stack
-				direction='row'
+				direction={collapsed ? 'column-reverse' : 'row'}
 				sx={{
 					alignItems: 'center',
 					gap: 0.5,
@@ -245,7 +235,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				}}
 			>
 				{userButton}
-				{showBell ? bell : null}
+				{bell}
 			</Stack>
 		) : undefined;
 
@@ -280,6 +270,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				collapsed={collapsed}
 				expandedWidth={expandedWidth}
 				collapsedWidth={collapsedWidth}
+				showLabels={showLabels}
 				topContent={topContent}
 				footer={footer}
 			/>

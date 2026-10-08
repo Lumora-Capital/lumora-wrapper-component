@@ -3,7 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import * as React from 'react';
 import CollapsibleSidebar from '../CollapsibleSidebar';
 import type { SidebarLink } from '../LumoraWrapper';
-import { fireEvent, render, screen, within } from './testUtils';
+import { act, fireEvent, render, screen, within } from './testUtils';
 
 const darkTheme = createTheme({ palette: { mode: 'dark' } });
 
@@ -141,20 +141,15 @@ describe('CollapsibleSidebar', () => {
 			).toBeInTheDocument();
 		});
 
-		it('reflects the active parent and its child group on the rail when collapsed', () => {
-			renderSidebar({ collapsed: true, activePath: '/crm' });
-			// The active parent group is rendered as an inline rail group
-			expect(screen.getByTestId('sidebar-group-CRM')).toBeInTheDocument();
+		it('highlights the parent on the rail when it or a sub-page is active, children stay off the rail', () => {
+			renderSidebar({ collapsed: true, activePath: '/crm/people' });
 			expect(screen.getByTestId('sidebar-item-CRM')).toHaveAttribute(
 				'data-active',
 				'true'
 			);
 			expect(
-				screen.getByTestId('sidebar-subitem-People')
-			).toBeInTheDocument();
-			expect(
-				screen.getByTestId('sidebar-subitem-Company')
-			).toBeInTheDocument();
+				screen.queryByTestId('sidebar-subitem-People')
+			).not.toBeInTheDocument();
 		});
 
 		it('marks the active child (not the parent) as active when a sub-path is active', () => {
@@ -169,34 +164,38 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
-	describe('collapsed group toggle', () => {
-		it('reveals an inactive parent’s sub-items inline on the rail on click when collapsed', () => {
+	describe('collapsed group bubble', () => {
+		it('opens the sub-items in a bubble beside the rail on click, and closes on a second click', () => {
 			renderSidebar({ collapsed: true, activePath: '/dashboard' });
+			const parent = screen.getByTestId('sidebar-item-CRM');
 
-			// CRM is not the active group, so its children are not on the rail yet
 			expect(
-				screen.queryByTestId('sidebar-subitem-People')
+				screen.queryByTestId('sidebar-bubble-CRM')
 			).not.toBeInTheDocument();
+			expect(parent).toHaveAttribute('aria-expanded', 'false');
 
-			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
-
-			// The tinted inline group now shows the child icons — no popup panel
-			const group = screen.getByTestId('sidebar-group-CRM');
+			fireEvent.click(parent);
+			const bubble = screen.getByTestId('sidebar-bubble-CRM');
+			expect(parent).toHaveAttribute('aria-expanded', 'true');
+			expect(bubble).toHaveAttribute('role', 'menu');
+			// Rendered outside the rail, so the rail never grows
 			expect(
-				within(group).getByTestId('sidebar-subitem-People')
+				screen.getByTestId('collapsible-sidebar')
+			).not.toContainElement(bubble);
+			expect(
+				within(bubble).getByTestId('sidebar-subitem-People')
+			).toHaveTextContent('People');
+			expect(
+				within(bubble).getByTestId('sidebar-subitem-Company')
 			).toBeInTheDocument();
-			expect(
-				within(group).getByTestId('sidebar-subitem-Company')
-			).toBeInTheDocument();
 
-			// Clicking the parent again collapses the stack
-			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			fireEvent.click(parent);
 			expect(
-				screen.queryByTestId('sidebar-subitem-People')
+				screen.queryByTestId('sidebar-bubble-CRM')
 			).not.toBeInTheDocument();
 		});
 
-		it('navigates when an inline sub-item is clicked after opening', () => {
+		it('navigates and closes when a sub-item is picked', () => {
 			const onLinkClick = jest.fn();
 			renderSidebar({
 				collapsed: true,
@@ -208,6 +207,41 @@ describe('CollapsibleSidebar', () => {
 			fireEvent.click(screen.getByTestId('sidebar-subitem-People'));
 
 			expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
+			expect(
+				screen.queryByTestId('sidebar-bubble-CRM')
+			).not.toBeInTheDocument();
+		});
+
+		it('closes on Escape, returning focus to the parent', () => {
+			renderSidebar({ collapsed: true, activePath: '/dashboard' });
+			const parent = screen.getByTestId('sidebar-item-CRM');
+			fireEvent.click(parent);
+			fireEvent.keyDown(screen.getByTestId('sidebar-subitem-People'), {
+				key: 'Escape'
+			});
+			expect(
+				screen.queryByTestId('sidebar-bubble-CRM')
+			).not.toBeInTheDocument();
+			expect(parent).toHaveFocus();
+		});
+
+		it('closes on a click away', async () => {
+			renderSidebar({ collapsed: true, activePath: '/dashboard' });
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			// ClickAwayListener arms a tick after mounting
+			await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+			fireEvent.click(document.body);
+			expect(
+				screen.queryByTestId('sidebar-bubble-CRM')
+			).not.toBeInTheDocument();
+		});
+
+		it('marks the current page in the bubble', () => {
+			renderSidebar({ collapsed: true, activePath: '/crm/people' });
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			expect(
+				screen.getByTestId('sidebar-subitem-People')
+			).toHaveAttribute('data-active', 'true');
 		});
 	});
 
@@ -357,25 +391,26 @@ describe('CollapsibleSidebar', () => {
 			expect(onLinkClick).toHaveBeenCalledWith('/crm/audiences');
 		});
 
-		it('on the collapsed rail the section’s pages are laid flat, with the section icon when they have none', () => {
+		it('in the collapsed bubble the section’s pages are laid flat, with the section icon when they have none', () => {
 			renderSidebar({
 				mainLinks: nestedLinks,
 				collapsed: true,
 				activePath: '/crm/campaigns'
 			});
-			const group = screen.getByTestId('sidebar-group-CRM');
-			// Three page icons: People, Campaigns, Audiences — no Marketing icon of its own.
+			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
+			const bubble = screen.getByTestId('sidebar-bubble-CRM');
+			// Three pages: People, Campaigns, Audiences — no Marketing tile of its own.
 			expect(
-				within(group).getByTestId('sidebar-subitem-People')
+				within(bubble).getByTestId('sidebar-subitem-People')
 			).toBeInTheDocument();
 			expect(
-				within(group).getByTestId('sidebar-subitem-Campaigns')
+				within(bubble).getByTestId('sidebar-subitem-Campaigns')
 			).toHaveAttribute('data-active', 'true');
 			expect(
-				within(group).getByTestId('sidebar-subitem-Audiences')
+				within(bubble).getByTestId('sidebar-subitem-Audiences')
 			).toBeInTheDocument();
 			expect(
-				within(group).queryByTestId('sidebar-subitem-Marketing')
+				within(bubble).queryByTestId('sidebar-subitem-Marketing')
 			).not.toBeInTheDocument();
 		});
 	});
@@ -392,11 +427,10 @@ describe('CollapsibleSidebar', () => {
 			);
 		});
 
-		it('gives each labeled item 8px padding on all sides', () => {
+		it('gives each labeled item 8px above and below, 4px at the sides', () => {
 			renderSidebar({ collapsed: true, showLabels: true });
-			// p: 1 => 8px on every side of the item container.
 			expect(screen.getByTestId('sidebar-item-Deals')).toHaveStyle({
-				padding: '8px'
+				padding: '8px 4px'
 			});
 		});
 
@@ -457,7 +491,7 @@ describe('CollapsibleSidebar', () => {
 			expect(cssText).toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
 		});
 
-		it('keeps a parent group chevron and expands children inline on click', () => {
+		it('captions the parent too, and opens its children in the bubble on click', () => {
 			const onLinkClick = jest.fn();
 			renderSidebar({
 				collapsed: true,
@@ -466,22 +500,18 @@ describe('CollapsibleSidebar', () => {
 				onLinkClick
 			});
 
-			// Inactive group: children not on the rail until the parent is clicked.
+			const parent = screen.getByTestId('sidebar-item-CRM');
+			expect(within(parent).getByText('CRM')).toBeInTheDocument();
 			expect(
 				screen.queryByTestId('sidebar-subitem-People')
 			).not.toBeInTheDocument();
 
-			fireEvent.click(screen.getByTestId('sidebar-item-CRM'));
-
-			const group = screen.getByTestId('sidebar-group-CRM');
-			expect(
-				within(group).getByTestId('sidebar-subitem-People')
-			).toBeInTheDocument();
-			// Child labels are visible captions too.
-			expect(within(group).getByText('People')).toBeInTheDocument();
+			fireEvent.click(parent);
+			const bubble = screen.getByTestId('sidebar-bubble-CRM');
+			expect(within(bubble).getByText('People')).toBeInTheDocument();
 
 			fireEvent.click(
-				within(group).getByTestId('sidebar-subitem-People')
+				within(bubble).getByTestId('sidebar-subitem-People')
 			);
 			expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
 		});

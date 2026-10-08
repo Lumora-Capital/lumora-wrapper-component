@@ -596,30 +596,18 @@ describe('PanelSidebar footer bell', () => {
 		).toBeInTheDocument();
 	});
 
-	it("collapsed, shows the avatar dot when only What's New is unread", () => {
+	it('collapsed, keeps the bell on the rail, stacked above the avatar', () => {
 		renderPanel({
 			collapsed: true,
 			notificationCount: 0,
 			whatsNewCount: 3
 		});
-		expect(screen.queryByTestId('panel-notifications')).toBeNull();
-		const dot = screen
-			.getByTestId('panel-user-button')
-			.querySelector('.MuiBadge-dot');
-		expect(dot).not.toBeNull();
-		expect(dot).not.toHaveClass('MuiBadge-invisible');
-	});
-
-	it('collapsed, hides the avatar dot when nothing is unread on either tab', () => {
-		renderPanel({
-			collapsed: true,
-			notificationCount: 0,
-			whatsNewCount: 0
-		});
+		const bell = screen.getByTestId('panel-notifications');
+		expect(bell).toHaveAttribute('aria-label', 'Notifications, 3 unread');
 		expect(
-			screen
-				.getByTestId('panel-user-button')
-				.querySelector('.MuiBadge-dot')
-		).toHaveClass('MuiBadge-invisible');
+			bell.compareDocumentPosition(
+				screen.getByTestId('panel-user-button')
+			) & Node.DOCUMENT_POSITION_PRECEDING
+		).toBeTruthy();
 	});
 });

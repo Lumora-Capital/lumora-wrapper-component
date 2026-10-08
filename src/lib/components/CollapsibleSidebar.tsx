@@ -1,17 +1,18 @@
-import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
-import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import Box from '@mui/material/Box';
+import ButtonBase from '@mui/material/ButtonBase';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { keyframes, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
@@ -35,10 +36,37 @@ const HEADER_HEIGHT_PX = 64;
 const FOCUS_OUTLINE_FIX = {
 	'&:focus, &:focus-visible': { outline: 'none' }
 } as const;
-/** Chevron indicator size; kept clearly smaller than the item's own icon. */
-const CHEVRON_FONT_SIZE_PX = 16;
-/** Subtler chevron beneath the icon on the narrow collapsed rail. */
+/** Subtle chevron beneath a parent's icon on the narrow collapsed rail. */
 const CHEVRON_FONT_SIZE_RAIL_PX = 14;
+/** Gap between the rail and the sub-item bubble that opens beside it. */
+const BUBBLE_OFFSET_PX = 12;
+/** Bubble reveal: the bubble wipes open from the rail, then its items fade
+ * in one after another. */
+const BUBBLE_REVEAL_MS = 240;
+const BUBBLE_ITEM_STAGGER_MS = 35;
+const BUBBLE_RADIUS = '18px';
+const bubbleReveal = keyframes`
+	from {
+		opacity: 0;
+		clip-path: inset(0 100% 0 0 round ${BUBBLE_RADIUS});
+	}
+	to {
+		opacity: 1;
+		clip-path: inset(0 0 0 0 round ${BUBBLE_RADIUS});
+	}
+`;
+const bubbleItemReveal = keyframes`
+	from {
+		opacity: 0;
+		transform: translateX(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+`;
+/** Fixed tile width so a row of sub-items lines up; long labels ellipsize. */
+const BUBBLE_ITEM_WIDTH_PX = 84;
 /** Left inset of an expanded child row, and how much each further level adds. */
 const CHILD_INDENT = 4;
 const CHILD_INDENT_STEP = 2.5;
@@ -117,16 +145,13 @@ const TruncatingLabel: React.FC<{
 	);
 };
 
-/** Small up/down chevron marking a parent on the narrow rails. */
-const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
-	open,
-	size = CHEVRON_FONT_SIZE_PX
-}) =>
-	open ? (
-		<KeyboardArrowUpRounded sx={{ fontSize: size, opacity: 0.75 }} />
-	) : (
-		<KeyboardArrowDownRounded sx={{ fontSize: size, opacity: 0.75 }} />
-	);
+/** A parent on the narrow rails: a small right chevron, pointing at the
+ * bubble its sub-items open in. */
+const GroupChevron: React.FC = () => (
+	<ChevronRightRounded
+		sx={{ fontSize: CHEVRON_FONT_SIZE_RAIL_PX, opacity: 0.75 }}
+	/>
+);
 
 /** Expanded rows: a right chevron that turns down while the group is open. */
 const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
@@ -254,6 +279,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
 		{}
 	);
+	// Collapsed rail: the parent whose sub-items bubble is open, and the
+	// parent button it points at. One bubble at a time.
+	const [bubble, setBubble] = React.useState<{
+		key: string;
+		anchor: HTMLElement;
+	} | null>(null);
+	const closeBubble = () => setBubble(null);
 
 	const activeFg = activeForegroundColor ?? getContrastText(activeAccent);
 	// The highlighted look: accent fill + active foreground. Applied to the
@@ -607,7 +639,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		icon: React.ReactNode,
 		active: boolean,
 		onClick: (() => void) | undefined,
-		options?: { insideGroup?: boolean; testId?: string }
+		options?: { testId?: string }
 	) => {
 		const disabled = !onClick;
 		const button = (
@@ -626,8 +658,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								width: '100%',
 								maxWidth: '100%',
 								height: 'auto',
-								// 8px padding on all sides of the item container.
-								p: 1,
+								// 8px above and below, 4px at the sides so captions
+								// like "Dashboard" fit the 80px rail.
+								py: 1,
+								px: 0.5,
 								borderRadius: '8px',
 								color: active ? activeFg : accentOnSurface,
 								bgcolor: active ? activeAccent : 'transparent',
@@ -647,11 +681,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								bgcolor: active ? activeAccent : 'transparent',
 								borderRadius: active ? '8px' : '50%',
 								'&:hover': {
-									bgcolor: active
-										? activeAccent
-										: options?.insideGroup
-											? 'action.hover'
-											: groupTint,
+									bgcolor: active ? activeAccent : groupTint,
 									borderRadius: '8px'
 								},
 								...FOCUS_OUTLINE_FIX
@@ -685,44 +715,52 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		);
 	};
 
-	// A collapsed parent group: the parent icon with a small chevron beneath it
-	// marking that it has children. The icon + chevron share one button so the
-	// active (solid) and hover (tint) background covers the chevron too. Clicking
-	// toggles the inline stack of child icons; active groups start open.
+	// A collapsed parent group: only the parent's icon sits on the rail, with
+	// a small chevron beneath it marking that it has children. Clicking it
+	// opens the sub-items as a horizontal bubble beside the rail (see
+	// `renderBubble`); the rail itself never grows. The icon + chevron share
+	// one button, so the highlight covers the chevron too.
 	const renderCollapsedGroup = (link: SidebarLink) => {
+		// The children are off the rail, so the parent carries the highlight
+		// whenever the current page is it or anything under it.
 		const groupActive = isSidebarLinkActive(link, activePath);
-		const parentActive = isSubLinkActive(link, activePath);
 		const key = nodeKey('', link);
-		const open = isGroupOpen(link, key);
+		const open = bubble?.key === key;
 
 		const parentIconButton = (
 			<IconButton
 				aria-label={link.text}
+				aria-haspopup='true'
 				aria-expanded={open}
-				onClick={() => toggleGroup(key, open)}
+				aria-controls={open ? `sidebar-bubble-${link.text}` : undefined}
+				onClick={event => {
+					const anchor = event.currentTarget;
+					setBubble(open ? null : { key, anchor });
+				}}
 				data-testid={`sidebar-item-${link.text}`}
-				data-active={parentActive ? 'true' : 'false'}
+				data-active={groupActive ? 'true' : 'false'}
 				sx={{
 					display: 'flex',
 					flexDirection: 'column',
 					gap: showLabels ? 0.25 : 0,
 					width: showLabels ? '100%' : 44,
 					maxWidth: '100%',
-					// 8px padding on all sides of the labeled item container.
-					...(showLabels ? { p: 1 } : { py: 0.75 }),
+					// Labeled: 8px above and below, 4px at the sides (room for the caption).
+					...(showLabels ? { py: 1, px: 0.5 } : { py: 0.75 }),
 					borderRadius: '10px',
-					color: parentActive ? activeFg : accentOnSurface,
-					bgcolor: parentActive ? activeAccent : 'transparent',
-					// rail-labeled: active AND hover share the highlight. collapsible:
-					// original behavior — accent only when active; the outer pill
-					// supplies the idle-hover tint, so the button stays transparent.
+					color: groupActive ? activeFg : accentOnSurface,
+					// An open bubble keeps its parent tinted, so the two read
+					// as one control.
+					bgcolor: groupActive
+						? activeAccent
+						: open
+							? groupTint
+							: 'transparent',
+					// rail-labeled: active AND hover share the highlight.
+					// collapsible: accent when active, else the subtle tint.
 					'&:hover': showLabels
 						? { bgcolor: activeAccent, color: activeFg }
-						: {
-								bgcolor: parentActive
-									? activeAccent
-									: 'transparent'
-							},
+						: { bgcolor: groupActive ? activeAccent : groupTint },
 					...FOCUS_OUTLINE_FIX
 				}}
 			>
@@ -751,15 +789,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						fontSize={RAIL_LABEL_FONT_SIZE}
 					/>
 				) : null}
-				<GroupChevron open={open} size={CHEVRON_FONT_SIZE_RAIL_PX} />
+				<GroupChevron />
 			</IconButton>
 		);
 
-		// With a visible caption the tooltip is redundant.
+		// With a visible caption the tooltip is redundant; while the bubble is
+		// open it would only cover it.
 		const parentButton = showLabels ? (
 			parentIconButton
 		) : (
-			<Tooltip title={link.text} placement='right' arrow>
+			<Tooltip title={open ? '' : link.text} placement='right' arrow>
 				{parentIconButton}
 			</Tooltip>
 		);
@@ -770,42 +809,147 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				data-testid={`sidebar-group-${link.text}`}
 				sx={{
 					width: '100%',
-					borderRadius: '10px',
-					py: 0.5,
 					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					gap: 0.5,
-					// The active group's container stays tinted. collapsible tints
-					// the whole group on hover (original); rail-labeled leaves hover
-					// highlighting to the individual items.
-					bgcolor: groupActive ? groupTint : 'transparent',
-					...(showLabels ? {} : { '&:hover': { bgcolor: groupTint } })
+					justifyContent: 'center'
 				}}
 			>
 				{parentButton}
-				{/* Pages at every depth, flat: the rail has no room for a
-				    second chevron, so a section's pages sit beside their
-				    cousins with the section's icon when they have none. */}
-				{open
-					? flattenLeaves(link.subitems, link.icon).map(
-							({ sub, icon }) =>
-								renderCollapsedIcon(
-									sub.path!,
-									sub.text,
-									icon,
-									isSubLinkActive(sub, activePath),
-									() => handleClick(sub.path!),
-									{
-										insideGroup: true,
-										testId: `sidebar-subitem-${sub.text}`
-									}
-								)
-						)
-					: null}
+				{open ? renderBubble(link, bubble.anchor) : null}
 			</Box>
 		);
 	};
+
+	/**
+	 * The sub-items of a collapsed parent, as a row of tiles (icon over label)
+	 * in a rounded bubble beside the parent that wipes open from the rail. Pages at every depth are laid flat —
+	 * a section's pages sit beside their cousins, with the section's icon when
+	 * they have none. Picking one, clicking away or Escape closes it.
+	 */
+	const renderBubble = (link: SidebarLink, anchor: HTMLElement) => (
+		<Popper
+			open
+			anchorEl={anchor}
+			placement='right'
+			modifiers={[
+				{ name: 'offset', options: { offset: [0, BUBBLE_OFFSET_PX] } }
+			]}
+			sx={{ zIndex: theme.zIndex.modal }}
+		>
+			<ClickAwayListener
+				onClickAway={event => {
+					// The parent's own click toggles; don't close it twice
+					if (!anchor.contains(event.target as Node)) {
+						closeBubble();
+					}
+				}}
+			>
+				<Box
+					id={`sidebar-bubble-${link.text}`}
+					role='menu'
+					aria-label={link.text}
+					data-testid={`sidebar-bubble-${link.text}`}
+					onKeyDown={event => {
+						if (event.key === 'Escape') {
+							closeBubble();
+							anchor.focus();
+						}
+					}}
+					sx={{
+						position: 'relative',
+						display: 'flex',
+						alignItems: 'center',
+						gap: 0.5,
+						p: 0.75,
+						// Room for the page beside the rail; scrolls past that
+						maxWidth: `calc(100vw - ${collapsedWidth + BUBBLE_OFFSET_PX * 2}px)`,
+						overflowX: 'auto',
+						bgcolor: surface,
+						border: '1px solid',
+						borderColor: 'divider',
+						borderRadius: BUBBLE_RADIUS,
+						boxShadow: `0 6px 24px rgba(0, 0, 0, ${isDark ? 0.5 : 0.14})`,
+						animation: `${bubbleReveal} ${BUBBLE_REVEAL_MS}ms cubic-bezier(0.2, 0, 0, 1) both`,
+						'@media (prefers-reduced-motion: reduce)': {
+							animation: 'none'
+						}
+					}}
+				>
+					{flattenLeaves(link.subitems, link.icon).map(
+						({ sub, icon }, index) => {
+							const active = isSubLinkActive(sub, activePath);
+							return (
+								<ButtonBase
+									key={sub.path}
+									role='menuitem'
+									onClick={() => {
+										closeBubble();
+										handleClick(sub.path!);
+									}}
+									data-testid={`sidebar-subitem-${sub.text}`}
+									data-active={active ? 'true' : 'false'}
+									sx={{
+										// Icon on top, label beneath it
+										flexShrink: 0,
+										flexDirection: 'column',
+										gap: 0.5,
+										width: BUBBLE_ITEM_WIDTH_PX,
+										px: 0.75,
+										py: 1,
+										borderRadius: '12px',
+										fontWeight: ROW_LABEL_WEIGHT,
+										fontSize: '0.75rem',
+										lineHeight: 1.2,
+										animation: `${bubbleItemReveal} ${BUBBLE_REVEAL_MS}ms ease-out both`,
+										// Starts as the wipe passes it
+										animationDelay: `${80 + index * BUBBLE_ITEM_STAGGER_MS}ms`,
+										'@media (prefers-reduced-motion: reduce)':
+											{
+												animation: 'none'
+											},
+										color: active
+											? activeFg
+											: accentOnSurface,
+										bgcolor: active
+											? activeAccent
+											: 'transparent',
+										'& .MuiSvgIcon-root': { fontSize: 22 },
+										'&:hover': active
+											? highlightSx
+											: { bgcolor: groupTint },
+										// No lingering outline after a click; a clear ring for keyboard focus
+										'&:focus:not(.Mui-focusVisible)': {
+											outline: 'none'
+										},
+										'&.Mui-focusVisible': {
+											outline: '2px solid',
+											outlineColor: active
+												? activeFg
+												: accentOnSurface,
+											outlineOffset: -2
+										}
+									}}
+								>
+									{icon}
+									<Box
+										component='span'
+										title={sub.text}
+										sx={{
+											maxWidth: '100%',
+											overflow: 'hidden',
+											textOverflow: 'ellipsis',
+											whiteSpace: 'nowrap'
+										}}
+									>
+										{sub.text}
+									</Box>
+								</ButtonBase>
+							);
+						}
+					)}
+				</Box>
+			</ClickAwayListener>
+		</Popper>
+	);
 
 	// Collapsed leaf: a single icon (with a tooltip, or a caption when
 	// `showLabels`). Wrapped in a full-width, center-justified row so it lines up
