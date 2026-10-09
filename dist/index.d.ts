@@ -210,16 +210,6 @@ export declare const Kbd: React_2.FC<{
  */
 export declare const logAuthError: (error: Error | AuthError, context?: string) => void;
 
-/** One entry of the Lumora Platforms switcher (`panel` variant account menu). */
-export declare type LumoraPlatform = {
-    /** Stable id; `currentPlatformKey` matches against it. */
-    key: string;
-    name: string;
-    /** Home page opened in a new tab when the platform is chosen. */
-    url: string;
-    description?: string;
-};
-
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -245,8 +235,7 @@ export declare interface LumoraWrapperProps {
      * with the label stacked under each icon that never collapses (no toggle).
      * `'panel'` is the collapsible panel with a richer account menu in place of
      * the user menu: a profile header, Theme, the host's `userMenuItems`
-     * (Settings and any other links), the Lumora Platforms switcher
-     * (`platforms`) and Log out. Desktop only; phones use the standard mobile
+     * (Settings and any other links) and Log out. Desktop only; phones use the standard mobile
      * navigation and user menu.
      * Every variant runs the full height with the brand on top and notifications
      * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
@@ -296,7 +285,7 @@ export declare interface LumoraWrapperProps {
     /**
      * Host entries in the user menu, e.g. Settings or "What's New": between
      * Notifications and Settings in the standard menu, and every row between
-     * Theme and Lumora Platforms in the `panel` account menu, which has no
+     * Theme and Log out in the `panel` account menu, which has no
      * built-in Settings. Each runs its `onClick`, or navigates to its `path`
      * via `onLinkClick`.
      */
@@ -363,17 +352,6 @@ export declare interface LumoraWrapperProps {
     onNotificationsClick?: () => void;
     /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onWhatsNewClick?: () => void;
-    /** Platforms the signed-in user may switch to. Pass only accessible ones;
-     * the switcher is hidden when empty. */
-    platforms?: LumoraPlatform[];
-    /** `key` of the platform currently in use — marked "Current" and inert. */
-    currentPlatformKey?: string;
-    /**
-     * Called when another platform is chosen. When provided it REPLACES the
-     * default of opening `platform.url` in a new tab (use it for SSO hand-off
-     * or unsaved-changes checks).
-     */
-    onPlatformSelect?: (platform: LumoraPlatform) => void;
     onVerify?: (userData: {
         name: string;
         email: string;

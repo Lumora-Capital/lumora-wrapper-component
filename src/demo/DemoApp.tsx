@@ -17,7 +17,6 @@ import {
 	getDesignTokens,
 	isAuthenticated,
 	storeAuthTokens,
-	type LumoraPlatform,
 	type NotificationSidebarContentProps
 } from '../lib';
 import {
@@ -92,14 +91,6 @@ const DemoSearch = () => (
 		}}
 	/>
 );
-
-/** Panel variant: platforms the demo user may switch to (a host passes only the accessible ones). */
-const demoPlatforms: LumoraPlatform[] = [
-	{ key: 'centra', name: 'Centra', url: 'https://centra.lumora.capital' },
-	{ key: 'polymer', name: 'Polymer', url: 'https://polymer.lumora.capital' },
-	{ key: 'xpdite', name: 'XPdite', url: 'https://xpdite.lumora.capital' },
-	{ key: 'core', name: 'Core', url: 'https://core.lumora.capital' }
-];
 
 /** Host content for the updates drawer; the panel menu's What's New opens it on the other tab. */
 const NotificationPanel = ({
@@ -305,12 +296,10 @@ const DemoApp = () => {
 					}
 					showProfile={settings.showProfile}
 					onSettingsClick={() => setActivePath('/settings')}
-					// `panel` variant: the profile header and the platform
-					// switcher; its other rows come from userMenuItems
+					// `panel` variant: the profile header; its other rows come
+					// from userMenuItems
 					onProfileClick={() => setActivePath('/profile')}
 					whatsNewCount={1}
-					platforms={demoPlatforms}
-					currentPlatformKey='centra'
 					showNotifications={settings.showNotifications}
 					notificationCount={26}
 					NotificationSidebarContent={

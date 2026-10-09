@@ -104,7 +104,6 @@ import { useThemeStore } from '@/stores/theme';
 import {
 	centraColors,
 	fullBleedRoutes,
-	platforms,
 	settingsSections,
 	userMenuItems
 } from './shellConfig';
@@ -170,13 +169,11 @@ export default function AppShell({ children }) {
 			showThemeToggler
 			theme={mode}
 			onThemeToggle={toggle}
-			// Account menu (panel variant): profile link on the header,
-			// settings card and the Lumora Platforms switcher
+			// Account menu (panel variant): profile link on the header
+			// and settings card
 			userEmail={user?.email}
 			onProfileClick={() => router.push('/profile')}
 			settingsSections={settingsSections(router)}
-			platforms={platforms}
-			currentPlatformKey='centra'
 			// Look
 			{...(mode === 'light' ? centraColors : {})}
 		>
@@ -347,7 +344,7 @@ export const userMenuItems = router => [
 
 #### The `panel` variant: account menu
 
-`sidebarVariant='panel'` keeps the same collapsible sidebar (brand, Ask Nexa, your search, links) and swaps the user menu for a larger account menu: a header that links to the profile, a settings card and a platform switcher. Desktop only: phones keep the bottom bar and the standard user menu.
+`sidebarVariant='panel'` keeps the same collapsible sidebar (brand, Ask Nexa, your search, links) and swaps the user menu for a larger account menu: a header that links to the profile and a settings card. Desktop only: phones keep the bottom bar and the standard user menu.
 
 ```
 ┌──────────────────────────────┐
@@ -357,7 +354,6 @@ export const userMenuItems = router => [
 ├──────────────────────────────┤
 │ ☼ Theme          [ ☼ | ☾ ]   │  showThemeToggler, theme, onThemeToggle
 │ ⚙  Settings                › │  settingsSections (card) or onSettingsClick
-│ ▤ Lumora Platforms         › │  platforms, currentPlatformKey, onPlatformSelect
 ├──────────────────────────────┤
 │ ↪ Log out                    │  onLogout
 └──────────────────────────────┘
@@ -367,7 +363,6 @@ Entries render only when their prop is set. `userMenuItems` is not used by this 
 
 - **Updates drawer.** Notifications and What's New live behind the footer bell, not in this menu. With `NotificationSidebarContent` the bell opens the drawer with `initialTab='notifications'`; without it, the bell calls `onNotificationsClick`. Its badge shows `notificationCount + whatsNewCount`, since the drawer holds both tabs.
 - **Settings card.** Pass `settingsSections` and Settings opens a second card of collapsible sections (expanded unless `defaultOpen: false`) beside the menu instead of calling `onSettingsClick`. Choosing a row runs its own `onClick`, else `onSettingsItemClick(item, section)`, else `onLinkClick(item.path)`.
-- **Platform switcher.** Pass only the `platforms` the signed-in user may access (switching never grants permissions); the entry is hidden when empty. The `currentPlatformKey` row is marked Current and inert. Choosing another platform opens its `url` in a new tab (so the current app stays put), or calls `onPlatformSelect(platform)` instead when provided (SSO hand-off, unsaved-changes checks, same-tab navigation).
 
 ```jsx
 <LumoraWrapper
@@ -387,15 +382,6 @@ Entries render only when their prop is set. `userMenuItems` is not used by this 
 			items: [{ text: 'Users & Roles', path: '/admin/users' }]
 		}
 	]}
-	platforms={[
-		{ key: 'centra', name: 'Centra', url: 'https://centra.lumora.capital' },
-		{
-			key: 'polymer',
-			name: 'Polymer',
-			url: 'https://polymer.lumora.capital'
-		}
-	]}
-	currentPlatformKey='centra'
 	// ...the props from section 1
 />
 ```
@@ -572,17 +558,17 @@ In dark mode, leave them out and the wrapper uses its dark defaults. Fonts come 
 
 ## Props checklist
 
-| Area         | Pass                                                                                                                                       | Notes                                                                                               |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                                    | `redirectToLogin` must be stable (`useCallback`).                                                   |
-| Layout       | `sidebarVariant='panel'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`                     | The default variant is `rail`; Centra uses `panel` (the collapsible sidebar plus the account menu). |
-| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                                     |                                                                                                     |
-| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`              |                                                                                                     |
-| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                           | Not filled in automatically.                                                                        |
-| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle`        |                                                                                                     |
-| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `onSubmitRequestClick`, `settingsSections`, `platforms`, `currentPlatformKey` | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
-| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                                   | Import `FullBleedSection` from the package.                                                         |
-| Look         | the [color props](#8-colors)                                                                                                               |                                                                                                     |
+| Area         | Pass                                                                                                                                | Notes                                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                             | `redirectToLogin` must be stable (`useCallback`).                                                   |
+| Layout       | `sidebarVariant='panel'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`              | The default variant is `rail`; Centra uses `panel` (the collapsible sidebar plus the account menu). |
+| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                              |                                                                                                     |
+| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`       |                                                                                                     |
+| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                    | Not filled in automatically.                                                                        |
+| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle` |                                                                                                     |
+| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `onSubmitRequestClick`, `settingsSections`                             | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
+| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                            | Import `FullBleedSection` from the package.                                                         |
+| Look         | the [color props](#8-colors)                                                                                                        |                                                                                                     |
 
 ## Props reference
 
@@ -670,9 +656,6 @@ Used only with `sidebarVariant='panel'` ([details](#the-panel-variant-account-me
 | `onNotificationsClick` | `() => void`                                             | —       | Bell handler, when there is no `NotificationSidebarContent`.                                    |
 | `settingsSections`     | `SettingsSection[]`                                      | —       | Settings opens a card of these sections instead of calling `onSettingsClick`.                   |
 | `onSettingsItemClick`  | `(item: SettingsItem, section: SettingsSection) => void` | —       | A settings row was chosen; runs after the row's own `onClick`, before `onLinkClick(item.path)`. |
-| `platforms`            | `LumoraPlatform[]`                                       | —       | Lumora Platforms entry; hidden when empty.                                                      |
-| `currentPlatformKey`   | `string`                                                 | —       | Marks the platform in use (Current, inert).                                                     |
-| `onPlatformSelect`     | `(platform: LumoraPlatform) => void`                     | —       | Replaces the default of opening `platform.url` in a new tab.                                    |
 
 ### Colors and styles
 
@@ -741,13 +724,6 @@ type SettingsSection = {
 	title: string; // collapsible header, e.g. "Configuration"
 	items: SettingsItem[];
 	defaultOpen?: boolean; // default true
-};
-
-type LumoraPlatform = {
-	key: string; // matched against currentPlatformKey
-	name: string;
-	url: string; // home page opened in a new tab
-	description?: string; // optional second line
 };
 ```
 

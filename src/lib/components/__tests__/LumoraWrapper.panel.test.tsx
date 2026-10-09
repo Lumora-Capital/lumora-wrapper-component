@@ -1,6 +1,5 @@
 import { useMediaQuery } from '@mui/material';
 import LumoraWrapper, {
-	type LumoraPlatform,
 	type NotificationSidebarContentProps
 } from '../LumoraWrapper';
 import {
@@ -10,7 +9,6 @@ import {
 	mockSidebarLinks,
 	render,
 	screen,
-	waitFor,
 	within
 } from './testUtils';
 
@@ -22,11 +20,6 @@ jest.mock('@mui/material', () => ({
 const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
 	typeof useMediaQuery
 >;
-
-const platforms: LumoraPlatform[] = [
-	{ key: 'centra', name: 'Centra', url: 'https://centra.test' },
-	{ key: 'polymer', name: 'Polymer', url: 'https://polymer.test' }
-];
 
 const renderPanel = (extraProps: Record<string, unknown> = {}) => {
 	mockUseMediaQuery.mockReturnValue(false);
@@ -139,27 +132,7 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 			expect(onSettingsClick).not.toHaveBeenCalled();
 		});
 
-		it('wires platforms, currentPlatformKey and onPlatformSelect', async () => {
-			const onPlatformSelect = jest.fn();
-			renderPanel({
-				platforms,
-				currentPlatformKey: 'centra',
-				onPlatformSelect
-			});
-			openMenu();
-			fireEvent.click(screen.getByTestId('menu-item-platforms'));
-			expect(screen.getByTestId('platform-item-centra')).toHaveAttribute(
-				'aria-current',
-				'true'
-			);
-			fireEvent.click(screen.getByTestId('platform-item-polymer'));
-			expect(onPlatformSelect).toHaveBeenCalledWith(platforms[1]);
-			await waitFor(() =>
-				expect(screen.queryByTestId('account-menu')).toBeNull()
-			);
-		});
-
-		it('hides the platform switcher when no platforms are given', () => {
+		it('has no platform switcher', () => {
 			renderPanel();
 			openMenu();
 			expect(screen.queryByTestId('menu-item-platforms')).toBeNull();

@@ -110,20 +110,6 @@ const parseColorToRgb = (color: string): [number, number, number] | null => {
 };
 
 /**
- * New-tab navigation used by the platform switcher's default behavior, so the
- * host app stays open while the other platform loads. `noopener,noreferrer`
- * keeps the new tab from reaching back into this window.
- * SSR-safe; kept as a module export so tests can spy on it (jsdom does not
- * implement navigation).
- */
-export const openInNewTab = (url: string): void => {
-	if (typeof window === 'undefined') {
-		return;
-	}
-	window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-/**
  * Display label for a stored role: "SUPER_ADMIN" -> "SUPER ADMIN",
  * "admin" -> "ADMIN". Underscores become spaces and the whole label is in
  * capitals (owner, 2026-09-29), so the role reads the same under the user's

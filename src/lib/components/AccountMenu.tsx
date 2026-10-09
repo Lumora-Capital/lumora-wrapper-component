@@ -1,6 +1,4 @@
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
-import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import SettingsBrightnessOutlined from '@mui/icons-material/SettingsBrightnessOutlined';
@@ -16,24 +14,15 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import * as React from 'react';
-import type { LumoraPlatform } from './LumoraWrapper';
-import PlatformsPanel from './PlatformsPanel';
-import { openInNewTab } from './sidebarUtils';
 import { CountPill } from './UserMenu';
 import type { UserMenuItem } from './UserMenu';
 
-const PLATFORMS_PANEL_WIDTH_PX = 288;
 const FOCUS_OUTLINE_FIX = {
 	'&:focus, &:focus-visible': { outline: 'none' }
 } as const;
 
-/**
- * Chrome shared by both cards; the Popover paper itself is transparent and
- * ignores the pointer, so each card has to opt back in — otherwise the empty
- * paper area above a short second card would swallow outside clicks.
- */
+/** Card chrome; the Popover paper itself is transparent. */
 const cardSx = {
-	pointerEvents: 'auto',
 	bgcolor: 'background.paper',
 	border: '1px solid',
 	borderColor: 'divider',
@@ -42,17 +31,6 @@ const cardSx = {
 	overflow: 'hidden',
 	display: 'flex',
 	flexDirection: 'column'
-} as const;
-
-/** Second card: same chrome plus a short slide-in. */
-const subPanelSx = {
-	...cardSx,
-	'@keyframes sub-panel-in': {
-		from: { opacity: 0, transform: 'translateX(-6px)' },
-		to: { opacity: 1, transform: 'none' }
-	},
-	animation: 'sub-panel-in 150ms ease-out',
-	'@media (prefers-reduced-motion: reduce)': { animation: 'none' }
 } as const;
 
 /**
@@ -172,7 +150,7 @@ export interface AccountMenuProps {
 	accentColor: string;
 	/** Low-alpha accent wash (hover / highlighted rows). */
 	tint: string;
-	// Built in: Theme, Lumora Platforms and Log out — each renders only when
+	// Built in: Theme and Log out — each renders only when
 	// its handler/flag is present. Every other row is the host's `menuItems`.
 	showThemeToggler: boolean;
 	theme: 'light' | 'dark';
@@ -181,20 +159,14 @@ export interface AccountMenuProps {
 	onProfileClick?: () => void;
 	/** Navigates menu items that carry a `path` and no `onClick`. */
 	onLinkClick?: (path: string) => void;
-	/** Host rows between Theme and Lumora Platforms, in the given order. */
+	/** Host rows between Theme and Log out, in the given order. */
 	menuItems?: UserMenuItem[];
-	platforms?: LumoraPlatform[];
-	currentPlatformKey?: string;
-	/** Replaces the default same-tab navigation when provided. */
-	onPlatformSelect?: (platform: LumoraPlatform) => void;
 	onLogout?: () => void;
 }
 
 /**
  * Account menu for the `panel` sidebar: one Popover whose transparent paper
- * holds the menu card and, beside it, the Lumora Platforms card while it is
- * open. One modal means one focus trap and one
- * backdrop; Escape closes the second card first, then the menu.
+ * holds the menu card. Escape or an outside click closes it.
  */
 const AccountMenu: React.FC<AccountMenuProps> = ({
 	open,
@@ -213,9 +185,6 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	onProfileClick,
 	onLinkClick,
 	menuItems = [],
-	platforms,
-	currentPlatformKey,
-	onPlatformSelect,
 	onLogout
 }) => {
 	const theme = useTheme();
@@ -226,89 +195,25 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	// the paper exists. A state setter as the slot ref re-runs the observer
 	// effect exactly when the paper mounts/unmounts.
 	const [paperEl, setPaperEl] = React.useState<HTMLDivElement | null>(null);
-	const menuCardRef = React.useRef<HTMLDivElement>(null);
-	const platformsItemRef = React.useRef<HTMLLIElement>(null);
-	// Same reasoning as `paperEl`: the second card mounts conditionally, so a
-	// state setter as its ref re-runs the alignment effect when it appears.
-	const [subCardEl, setSubCardEl] = React.useState<HTMLDivElement | null>(
-		null
-	);
-	// Distance (px) from the menu's bottom edge up to the second card's bottom
-	// edge, chosen so the card's top lines up with the row that opened it.
-	const [subCardGap, setSubCardGap] = React.useState(0);
-	const [platformsOpen, setPlatformsOpen] = React.useState(false);
-	const hasPlatforms = Boolean(platforms?.length);
 
 	// Popover positions the paper by its `top` once, so content that grows or
-	// shrinks (the second card mounting) would
-	// extend down over the footer or leave a gap above it. Re-anchor on every
-	// size change instead — ResizeObserver fires per animation frame, so the
-	// bottom edge stays pinned to the footer throughout.
-	// The second card sits in the same flex row as the menu, bottom-aligned.
-	// Lift it by a margin so its top edge meets its trigger row (a flyout),
-	// clamped so it never hangs below the menu or pokes out above it. A card
-	// taller than the menu stays bottom-aligned and grows upward instead.
-	const alignSubCard = React.useCallback(() => {
-		const menuEl = menuCardRef.current;
-		const triggerEl = platformsOpen ? platformsItemRef.current : null;
-		if (!open || !menuEl || !triggerEl || !subCardEl) {
-			setSubCardGap(0);
-			return;
-		}
-		const menuRect = menuEl.getBoundingClientRect();
-		const triggerTop = triggerEl.getBoundingClientRect().top;
-		const cardHeight = subCardEl.getBoundingClientRect().height;
-		const wanted = menuRect.bottom - (triggerTop + cardHeight);
-		const max = Math.max(0, menuRect.height - cardHeight);
-		const next = Math.round(Math.min(Math.max(wanted, 0), max));
-		setSubCardGap(prev => (prev === next ? prev : next));
-	}, [open, platformsOpen, subCardEl]);
-
-	// Before paint, whenever the card appears or swaps.
-	React.useLayoutEffect(() => {
-		alignSubCard();
-	}, [alignSubCard]);
-
+	// shrinks would extend down over the footer or leave a gap above it.
+	// Re-anchor on every size change instead — ResizeObserver fires per
+	// animation frame, so the bottom edge stays pinned to the footer throughout.
 	React.useEffect(() => {
 		if (!paperEl || typeof ResizeObserver === 'undefined') {
 			return undefined;
 		}
 		const observer = new ResizeObserver(() => {
 			popoverActions.current?.updatePosition();
-			// Re-measure too, in case the rows moved.
-			alignSubCard();
 		});
 		observer.observe(paperEl);
 		return () => observer.disconnect();
-	}, [paperEl, alignSubCard]);
-
-	// Fresh state on the next open (reset after the exit transition so the
-	// content doesn't collapse mid-fade).
-	const resetState = () => {
-		setPlatformsOpen(false);
-	};
+	}, [paperEl]);
 
 	const closeMenuThen = (callback?: () => void) => {
 		onClose();
 		callback?.();
-	};
-
-	// Closing the second card hands focus back to the row that opened it.
-	const closePlatforms = () => {
-		setPlatformsOpen(false);
-		platformsItemRef.current?.focus();
-	};
-
-	const handlePlatformSelect = (platform: LumoraPlatform) => {
-		if (platform.key === currentPlatformKey) {
-			return;
-		}
-		onClose();
-		if (onPlatformSelect) {
-			onPlatformSelect(platform);
-		} else {
-			openInNewTab(platform.url);
-		}
 	};
 
 	// Host rows: their own handler, else navigation to their path.
@@ -321,26 +226,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		}
 	};
 
-	// Escape closes the second card first; otherwise it bubbles to the
-	// Popover (Modal) which closes the whole menu.
-	const handlePaperKeyDown = (event: React.KeyboardEvent) => {
-		if (event.key === 'Escape' && platformsOpen) {
-			event.stopPropagation();
-			closePlatforms();
-		}
-	};
-
 	const itemSx = { borderRadius: '8px', py: 1, gap: 0.5 } as const;
-	const chevronSx = { color: 'text.secondary', fontSize: 20 } as const;
-	// The Platforms row takes the active look only while its card is open.
-	const activeRowSx = {
-		color: accentColor,
-		bgcolor: tint,
-		'& .MuiListItemIcon-root': { color: accentColor },
-		'& .MuiSvgIcon-root': { color: accentColor },
-		'&:hover': { bgcolor: alpha(accentColor, 0.22) }
-	} as const;
-	const platformsActive = platformsOpen;
 
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
@@ -408,35 +294,24 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
 			transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
 			slotProps={{
-				transition: { onExited: resetState },
 				paper: {
 					ref: setPaperEl,
-					onKeyDown: handlePaperKeyDown,
 					sx: {
-						// Transparent paper: each card draws its own chrome. The
-						// paper's box spans both cards (the second one is shorter
-						// and bottom-aligned), so it must not catch clicks itself —
-						// clicks on its empty area fall through to the backdrop
-						// and close the menu like any other outside click.
+						// Transparent paper: the card draws its own chrome.
 						bgcolor: 'transparent',
 						backgroundImage: 'none',
 						boxShadow: 'none',
 						border: 'none',
 						borderRadius: 0,
 						overflow: 'visible',
-						pointerEvents: 'none',
 						mt: -1,
-						maxWidth: 'calc(100vw - 32px)',
-						display: 'flex',
-						alignItems: 'flex-end',
-						gap: 1
+						maxWidth: 'calc(100vw - 32px)'
 					}
 				}
 			}}
 		>
 			{/* Menu card */}
 			<Box
-				ref={menuCardRef}
 				data-testid='account-menu'
 				sx={{ ...cardSx, width, minWidth: width }}
 			>
@@ -517,32 +392,6 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 							<CountPill count={item.badge} />
 						</MenuItem>
 					))}
-					{hasPlatforms ? (
-						<Divider component='li' sx={{ my: 0.5 }} />
-					) : null}
-					{hasPlatforms ? (
-						<MenuItem
-							ref={platformsItemRef}
-							onClick={() => setPlatformsOpen(prev => !prev)}
-							aria-haspopup='dialog'
-							aria-expanded={platformsActive}
-							data-active={platformsActive ? 'true' : 'false'}
-							data-testid='menu-item-platforms'
-							sx={
-								platformsActive
-									? { ...itemSx, ...activeRowSx }
-									: itemSx
-							}
-						>
-							<ListItemIcon>
-								<LayersOutlined fontSize='small' />
-							</ListItemIcon>
-							<Typography sx={{ flex: 1 }}>
-								Lumora Platforms
-							</Typography>
-							<ChevronRightRounded sx={chevronSx} />
-						</MenuItem>
-					) : null}
 					{onLogout ? (
 						<Divider component='li' sx={{ my: 0.5 }} />
 					) : null}
@@ -563,28 +412,6 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					) : null}
 				</MenuList>
 			</Box>
-
-			{/* Second card — mounted only while open. The wrapper is what gets
-			    measured and lifted; inline style because the gap changes per
-			    animation frame and must not mint a class per value. */}
-			{hasPlatforms && platformsOpen ? (
-				<Box
-					ref={setSubCardEl}
-					data-testid='account-menu-subcard'
-					style={{ marginBottom: subCardGap }}
-					sx={{ display: 'flex' }}
-				>
-					<PlatformsPanel
-						platforms={platforms!}
-						currentPlatformKey={currentPlatformKey}
-						onSelect={handlePlatformSelect}
-						accentColor={accentColor}
-						tint={tint}
-						width={PLATFORMS_PANEL_WIDTH_PX}
-						sx={subPanelSx}
-					/>
-				</Box>
-			) : null}
 		</Popover>
 	);
 };

@@ -7,7 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import AccountMenu from './AccountMenu';
 import CollapsibleSidebar from './CollapsibleSidebar';
-import type { LumoraPlatform, SidebarLink } from './LumoraWrapper';
+import type { SidebarLink } from './LumoraWrapper';
 import NotificationBell from './NotificationBell';
 import { deriveGroupTint, formatRole } from './sidebarUtils';
 import { UserAvatar } from './UserMenu';
@@ -68,9 +68,6 @@ export interface PanelSidebarProps {
 	onProfileClick?: () => void;
 	/** Host rows in the account menu (Settings, help…), below Theme. */
 	menuItems?: UserMenuItem[];
-	platforms?: LumoraPlatform[];
-	currentPlatformKey?: string;
-	onPlatformSelect?: (platform: LumoraPlatform) => void;
 	onLogout?: () => void;
 	theme?: 'dark' | 'light';
 	showThemeToggler?: boolean;
@@ -81,8 +78,7 @@ export interface PanelSidebarProps {
  * The `panel` sidebar variant: the collapsible sidebar (header bar with the
  * brand, the wrapper's Ask Nexa + search as `topContent`,
  * the nav list) with a user footer that opens the account menu — profile
- * header, theme, the host's `menuItems`, the Lumora Platforms switcher and
- * log out (see AccountMenu).
+ * header, theme, the host's `menuItems` and log out (see AccountMenu).
  */
 const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	mainLinks,
@@ -118,9 +114,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	whatsNewCount = 0,
 	onProfileClick,
 	menuItems,
-	platforms,
-	currentPlatformKey,
-	onPlatformSelect,
 	onLogout,
 	theme: themeMode = 'light',
 	showThemeToggler = true,
@@ -301,9 +294,6 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					onProfileClick={onProfileClick}
 					onLinkClick={onLinkClick}
 					menuItems={menuItems}
-					platforms={platforms}
-					currentPlatformKey={currentPlatformKey}
-					onPlatformSelect={onPlatformSelect}
 					onLogout={onLogout}
 				/>
 			) : null}

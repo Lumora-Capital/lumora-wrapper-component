@@ -28,8 +28,8 @@ export type DemoSettings = {
 };
 
 export const defaultSettings: DemoSettings = {
-	// `panel`: the collapsible sidebar plus the account menu (theme, settings
-	// card, Lumora Platforms) — the layout Centra is moving to.
+	// `panel`: the collapsible sidebar plus the account menu (theme and host
+	// rows) — the layout Centra is moving to.
 	sidebarVariant: 'panel',
 	mode: 'light',
 	brandColors: true,
