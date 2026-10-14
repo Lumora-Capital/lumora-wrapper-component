@@ -372,6 +372,26 @@ describe("LumoraWrapper sidebarSubmenu='flyout'", () => {
 		expect(nexa).toHaveAttribute('data-rail-keep-fill');
 	});
 
+	it('keeps the notifications bell on the rail, which never expands', () => {
+		const onNotificationsClick = jest.fn();
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				sidebarVariant='panel'
+				sidebarSubmenu='flyout'
+				sidebarLinks={mainLinks}
+				notificationCount={3}
+				onNotificationsClick={onNotificationsClick}
+			>
+				<div>Page</div>
+			</LumoraWrapper>
+		);
+		const bell = screen.getByTestId('panel-notifications');
+		expect(bell).toHaveTextContent('3');
+		fireEvent.click(bell);
+		expect(onNotificationsClick).toHaveBeenCalled();
+	});
+
 	it('marks the current page with one drop of glass, not a fill', () => {
 		renderWrapper('panel');
 		const active = screen.getByTestId('sidebar-rail-active');

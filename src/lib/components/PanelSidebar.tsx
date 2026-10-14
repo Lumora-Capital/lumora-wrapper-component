@@ -161,6 +161,9 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	// the What's New tab, so its badge counts both. The account menu's entries
 	// show each count on its own.
 	const bellCount = notificationCount + whatsNewCount;
+	// The flyout rail never expands, so the bell cannot wait for the
+	// expanded footer: it stays on the rail, above the avatar
+	const railOnly = collapsed && submenuMode === 'flyout';
 	const bell = showNotifications ? (
 		<NotificationBell
 			count={bellCount}
@@ -192,7 +195,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				...FOCUS_OUTLINE_FIX
 			}}
 		>
-			{collapsed && showNotifications ? (
+			{collapsed && !railOnly && showNotifications ? (
 				// Collapsed: no room for the bell, so unread shows as a dot
 				<Badge
 					color='error'
@@ -234,20 +237,22 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 		</ButtonBase>
 	) : null;
 
-	// Collapsed, the bell folds into the avatar's dot (unless there is no user row)
-	const showBell = Boolean(bell) && (!collapsed || !userButton);
+	// Collapsed, the bell folds into the avatar's dot (unless there is no user
+	// row); on the flyout rail it stacks above the avatar instead
+	const showBell = Boolean(bell) && (!collapsed || railOnly || !userButton);
 	const footer =
 		userButton || showBell ? (
 			<Stack
-				direction='row'
+				direction={railOnly ? 'column' : 'row'}
 				sx={{
 					alignItems: 'center',
 					gap: 0.5,
 					justifyContent: 'center'
 				}}
 			>
+				{railOnly && showBell ? bell : null}
 				{userButton}
-				{showBell ? bell : null}
+				{!railOnly && showBell ? bell : null}
 			</Stack>
 		) : undefined;
 
