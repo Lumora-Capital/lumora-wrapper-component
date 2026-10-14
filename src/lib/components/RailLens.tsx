@@ -12,7 +12,8 @@ import {
 	REDUCED_MOTION,
 	glassBubbleSx,
 	glassLabelSx,
-	glassTintSx
+	glassTintSx,
+	useGlassAccentRgb
 } from './liquidGlass';
 
 /** Marks a rail icon the lens can rest on (any button in the rail is one). */
@@ -96,6 +97,7 @@ export const useGlassLens = ({
 	lean = 3
 }: GlassLensOptions) => {
 	const lensRef = React.useRef<HTMLDivElement>(null);
+	const accentRgb = useGlassAccentRgb();
 	const [box, setBox] = React.useState<LensBox | null>(null);
 	const previousTop = React.useRef<number | null>(null);
 	const current = React.useRef<Element | null>(null);
@@ -229,7 +231,7 @@ export const useGlassLens = ({
 				data-glass-lens=''
 				data-visible={box.visible ? 'true' : 'false'}
 				sx={{
-					...glassBubbleSx(isDark),
+					...glassBubbleSx(isDark, accentRgb),
 					backdropFilter: 'blur(8px) saturate(170%)',
 					WebkitBackdropFilter: 'blur(8px) saturate(170%)',
 					borderRadius: `${radius}px`,

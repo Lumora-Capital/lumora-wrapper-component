@@ -5,7 +5,8 @@
  * so the glass is blur + saturation + highlights everywhere.
  */
 import { keyframes } from '@emotion/react';
-import { withAlpha } from './sidebarUtils';
+import * as React from 'react';
+import { parseColorToRgb, withAlpha } from './sidebarUtils';
 
 /** How much light the glass bends: none at 0, the full material at 1. */
 const GLASS_BLUR_PX = 28;
@@ -38,24 +39,46 @@ export const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 const pointerLight = (radius: number, alpha: number, rgb: string) =>
 	`radial-gradient(${radius}px circle at var(--lx, -9999px) var(--ly, -9999px), rgba(${rgb}, calc(${alpha} * var(--li, 0))) 0%, rgba(${rgb}, 0) 70%)`;
 
+/** The Lumora teal, the light's colour when the host sets no accent. */
+const LUMORA_TEAL_RGB = '9, 193, 174';
+
+/**
+ * The accent the glass takes its light from: the wrapper provides its
+ * sidebar accent, so the light matches each platform's colour. A context
+ * rather than a prop, so the glass cards in portals (flyout, menus) get it.
+ */
+export const GlassAccentContext = React.createContext<string | undefined>(
+	undefined
+);
+
+/** The glass accent as `r, g, b` (teal when unset or not a hex colour). */
+export const useGlassAccentRgb = () => {
+	const accent = React.useContext(GlassAccentContext);
+	const rgb = accent ? parseColorToRgb(accent) : null;
+	return rgb ? rgb.join(', ') : LUMORA_TEAL_RGB;
+};
+
 /**
  * The pointer's light: white on dark glass; on light glass white would not
- * show, so a soft teal (the Lumora accent) instead. Kept gentle — a hint of
- * light following the hand, not a spotlight.
+ * show, so a soft wash of the accent instead. Kept gentle — a hint of light
+ * following the hand, not a spotlight.
  */
 export const POINTER_LIGHT = {
-	dark: { rgb: '255, 255, 255', rim: 0.45, sheen: 0.055 },
-	light: { rgb: '9, 193, 174', rim: 0.55, sheen: 0.09 }
+	dark: { rim: 0.45, sheen: 0.055 },
+	light: { rim: 0.55, sheen: 0.09 }
 } as const;
 const lightFor = (isDark: boolean) =>
 	isDark ? POINTER_LIGHT.dark : POINTER_LIGHT.light;
+/** The light's colour as `r, g, b`, from the accent (`useGlassAccentRgb`). */
+export const pointerLightRgb = (isDark: boolean, accentRgb: string) =>
+	isDark ? '255, 255, 255' : accentRgb;
 
 /**
  * A rim of light around a glass edge: brightest where light would strike a
  * curved edge (top-left, then bottom-right), fading along the sides. Drawn
  * as a 1.25px gradient ring with a mask, so it follows any border radius.
  */
-const glassRimSx = (isDark: boolean) => ({
+const glassRimSx = (isDark: boolean, accentRgb: string) => ({
 	content: '""',
 	position: 'absolute',
 	inset: 0,
@@ -63,7 +86,7 @@ const glassRimSx = (isDark: boolean) => ({
 	padding: '1.25px',
 	pointerEvents: 'none',
 	// The rim glints where the pointer is nearest (see GlassLayer's light)
-	background: `${pointerLight(140, lightFor(isDark).rim, lightFor(isDark).rgb)}, ${
+	background: `${pointerLight(140, lightFor(isDark).rim, pointerLightRgb(isDark, accentRgb))}, ${
 		isDark
 			? 'linear-gradient(140deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 22%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.08) 78%, rgba(255, 255, 255, 0.28) 100%)'
 			: 'linear-gradient(140deg, #ffffff 0%, rgba(255, 255, 255, 0.55) 22%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.4) 78%, rgba(255, 255, 255, 0.95) 100%)'
@@ -80,9 +103,14 @@ const glassRimSx = (isDark: boolean) => ({
  * sheen that is brighter at the top as on a curved surface, and depth from
  * inner light. `solid` is what it falls back to where the backdrop cannot be
  * blurred, or the viewer asked for less transparency. (Chromium also bends
- * the backdrop at the edges; see GlassLayer.)
+ * the backdrop at the edges; see GlassLayer.) The pointer's light takes the
+ * accent (`r, g, b`, from `useGlassAccentRgb`).
  */
-export const glassSurfaceSx = (isDark: boolean, solid: string) => ({
+export const glassSurfaceSx = (
+	isDark: boolean,
+	solid: string,
+	accentRgb = LUMORA_TEAL_RGB
+) => ({
 	position: 'relative' as const,
 	bgcolor: isDark ? 'rgba(30, 36, 48, 0.5)' : 'rgba(255, 255, 255, 0.55)',
 	backgroundImage: isDark
@@ -93,7 +121,7 @@ export const glassSurfaceSx = (isDark: boolean, solid: string) => ({
 	boxShadow: isDark
 		? '0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 0.5px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 24px rgba(255, 255, 255, 0.035)'
 		: '0 24px 60px -12px rgba(15, 23, 42, 0.3), 0 2px 8px rgba(15, 23, 42, 0.08), 0 0 0 0.5px rgba(15, 23, 42, 0.1), inset 0 1px 0 #ffffff, inset 0 0 24px rgba(255, 255, 255, 0.45)',
-	'&::before': glassRimSx(isDark),
+	'&::before': glassRimSx(isDark, accentRgb),
 	// Specular glare across the top-left, as light catching a curved edge
 	'&::after': {
 		content: '""',
@@ -102,7 +130,7 @@ export const glassSurfaceSx = (isDark: boolean, solid: string) => ({
 		borderRadius: 'inherit',
 		pointerEvents: 'none',
 		// The pointer's light on the surface, over the fixed glare
-		background: `${pointerLight(200, lightFor(isDark).sheen, lightFor(isDark).rgb)}, ${
+		background: `${pointerLight(200, lightFor(isDark).sheen, pointerLightRgb(isDark, accentRgb))}, ${
 			isDark
 				? 'linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 42%)'
 				: 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 42%)'
@@ -187,7 +215,8 @@ export const contentIn = keyframes`
  */
 export const glassBubbleSx = (
 	isDark: boolean,
-	glow = 'rgba(9, 193, 174, 0.2)'
+	accentRgb = LUMORA_TEAL_RGB,
+	glow = `rgba(${accentRgb}, 0.2)`
 ) => ({
 	background: isDark
 		? 'radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.12) 22%, rgba(255, 255, 255, 0.06) 55%, rgba(255, 255, 255, 0.03) 100%)'

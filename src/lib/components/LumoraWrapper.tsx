@@ -39,6 +39,7 @@ import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import GlassLayer from './GlassLayer';
+import { GlassAccentContext } from './liquidGlass';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
 import useHoverExpand from './useHoverExpand';
 
@@ -829,25 +830,28 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	if (isCheckingSession) {
 		return (
 			<ThemeProvider theme={muiTheme}>
-				<Box
-					sx={{
-						display: 'flex',
-						flexDirection: 'column',
-						alignItems: 'center',
-						justifyContent: 'center',
-						minHeight: '100vh',
-						backgroundColor: 'background.default'
-					}}
-				>
-					<CircularProgress
-						size={60}
-						thickness={4}
-						sx={{ color: resolvedAccentColor }}
-					/>
-					<Box sx={{ mt: 2, color: 'text.secondary' }}>
-						Checking session...
+				{/* The glass's pointer light and glow take the sidebar accent */}
+				<GlassAccentContext.Provider value={resolvedSidebarAccent}>
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							justifyContent: 'center',
+							minHeight: '100vh',
+							backgroundColor: 'background.default'
+						}}
+					>
+						<CircularProgress
+							size={60}
+							thickness={4}
+							sx={{ color: resolvedAccentColor }}
+						/>
+						<Box sx={{ mt: 2, color: 'text.secondary' }}>
+							Checking session...
+						</Box>
 					</Box>
-				</Box>
+				</GlassAccentContext.Provider>
 			</ThemeProvider>
 		);
 	}
@@ -1111,426 +1115,452 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 
 	return (
 		<ThemeProvider theme={muiTheme}>
-			<Box
-				sx={{
-					display: 'flex',
-					minHeight: '100vh',
-					...style
-				}}
-			>
-				<CssBaseline />
+			{/* The glass's pointer light and glow take the sidebar accent */}
+			<GlassAccentContext.Provider value={resolvedSidebarAccent}>
+				<Box
+					sx={{
+						display: 'flex',
+						minHeight: '100vh',
+						...style
+					}}
+				>
+					<CssBaseline />
 
-				{isMobile && (
-					<MobileTopBar
-						height={MOBILE_BAR_HEIGHT_PX}
-						// With the bottom bar, the drawer opens from its Menu item
-						onMenuClick={
-							showSidebar && !useBottomBar
-								? () => setMobileSidebarOpen(true)
-								: undefined
-						}
-						appName={appName}
-						logo={headerLogo}
-						onBrandClick={brandClick}
-						brandMenuOpen={brandMenuOpen}
-						background={resolvedSidebarHeaderBg}
-						color={sidebarHeaderFg}
-						brandColor={resolvedBrandColor}
-						endContent={
-							showNotifications ? (
-								<NotificationBell
-									count={bellCount}
-									onClick={openNotifications}
-									color={sidebarHeaderFg}
-									hoverColor={sidebarChromeHover}
-									tooltipPlacement='bottom'
-									testId='mobile-notifications'
-								/>
-							) : undefined
-						}
-					/>
-				)}
-
-				{/* Desktop Sidebar — rail-labeled variant: a fixed narrow rail
-				    with captions, rendered by CollapsibleSidebar. */}
-				{showSidebar && !isMobile && useRailLabeledSidebar && (
-					<Box
-						component='aside'
-						sx={{
-							width: desktopSidebarWidthPx,
-							minWidth: desktopSidebarWidthPx,
-							flexShrink: 0,
-							zIndex: 2,
-							position: 'sticky',
-							top: 0,
-							alignSelf: 'flex-start',
-							height: '100vh',
-							// Flex column so the rail shrinks inside the viewport.
-							display: 'flex',
-							flexDirection: 'column',
-							borderRight: '1px solid',
-							borderColor: 'divider',
-							...sidebarStyles
-						}}
-					>
-						{renderCollapsibleSidebar()}
-					</Box>
-				)}
-
-				{/* Desktop Sidebar — collapsible variant: the rail that opens
-				    over the page on hover. */}
-				{showSidebar &&
-					!isMobile &&
-					useCollapsibleSidebar &&
-					renderHoverSidebar(
-						<>
-							{renderCollapsibleSidebar()}
-							{alertProps?.show && !sidebarCollapsed && (
-								<CardAlert {...alertProps} />
-							)}
-						</>
+					{isMobile && (
+						<MobileTopBar
+							height={MOBILE_BAR_HEIGHT_PX}
+							// With the bottom bar, the drawer opens from its Menu item
+							onMenuClick={
+								showSidebar && !useBottomBar
+									? () => setMobileSidebarOpen(true)
+									: undefined
+							}
+							appName={appName}
+							logo={headerLogo}
+							onBrandClick={brandClick}
+							brandMenuOpen={brandMenuOpen}
+							background={resolvedSidebarHeaderBg}
+							color={sidebarHeaderFg}
+							brandColor={resolvedBrandColor}
+							endContent={
+								showNotifications ? (
+									<NotificationBell
+										count={bellCount}
+										onClick={openNotifications}
+										color={sidebarHeaderFg}
+										hoverColor={sidebarChromeHover}
+										tooltipPlacement='bottom'
+										testId='mobile-notifications'
+									/>
+								) : undefined
+							}
+						/>
 					)}
 
-				{/* Desktop Sidebar — panel variant: the collapsible variant with
+					{/* Desktop Sidebar — rail-labeled variant: a fixed narrow rail
+				    with captions, rendered by CollapsibleSidebar. */}
+					{showSidebar && !isMobile && useRailLabeledSidebar && (
+						<Box
+							component='aside'
+							sx={{
+								width: desktopSidebarWidthPx,
+								minWidth: desktopSidebarWidthPx,
+								flexShrink: 0,
+								zIndex: 2,
+								position: 'sticky',
+								top: 0,
+								alignSelf: 'flex-start',
+								height: '100vh',
+								// Flex column so the rail shrinks inside the viewport.
+								display: 'flex',
+								flexDirection: 'column',
+								borderRight: '1px solid',
+								borderColor: 'divider',
+								...sidebarStyles
+							}}
+						>
+							{renderCollapsibleSidebar()}
+						</Box>
+					)}
+
+					{/* Desktop Sidebar — collapsible variant: the rail that opens
+				    over the page on hover. */}
+					{showSidebar &&
+						!isMobile &&
+						useCollapsibleSidebar &&
+						renderHoverSidebar(
+							<>
+								{renderCollapsibleSidebar()}
+								{alertProps?.show && !sidebarCollapsed && (
+									<CardAlert {...alertProps} />
+								)}
+							</>
+						)}
+
+					{/* Desktop Sidebar — panel variant: the collapsible variant with
 				    the account menu (profile, host menu items). */}
-				{panelDesktop &&
-					renderHoverSidebar(
-						<>
-							<PanelSidebar
+					{panelDesktop &&
+						renderHoverSidebar(
+							<>
+								<PanelSidebar
+									mainLinks={sidebarLinks}
+									secondaryLinks={secondarySidebarLinks}
+									activePath={activePath}
+									onLinkClick={onLinkClick}
+									logo={headerLogo}
+									title={appName}
+									onBrandClick={brandClick}
+									brandMenuOpen={brandMenuOpen}
+									brandColor={resolvedBrandColor}
+									headerBackgroundColor={railHeaderBg}
+									headerForegroundColor={sidebarHeaderFg}
+									activeAccentColor={resolvedSidebarAccent}
+									groupAccentColor={groupAccentColor}
+									activeForegroundColor={
+										activeSidebarForegroundColor
+									}
+									foregroundColor={sidebarForegroundColor}
+									surfaceBackgroundColor={railSurface}
+									collapsed={sidebarCollapsed}
+									expandedWidth={
+										COLLAPSIBLE_EXPANDED_WIDTH_PX
+									}
+									collapsedWidth={railWidthPx}
+									topContent={renderTopContent(
+										sidebarCollapsed
+											? collapsedTopMode
+											: 'full'
+									)}
+									submenuMode={
+										useFlyoutSubmenu ? 'flyout' : 'inline'
+									}
+									// Footer + account menu
+									color={sidebarChromeFg}
+									hoverColor={sidebarChromeHover}
+									avatarColor={resolvedSidebarAccent}
+									showProfile={showProfile}
+									userName={userName}
+									userEmail={userEmail}
+									userRole={userRole}
+									userAvatar={userAvatar}
+									showNotifications={showNotifications}
+									notificationCount={notificationCount}
+									// The drawer wins when the host provides content;
+									// otherwise fall back to the plain callbacks.
+									onNotificationsClick={
+										hasUpdatesDrawer
+											? openNotifications
+											: onNotificationsClick
+									}
+									whatsNewCount={whatsNewCount}
+									onProfileClick={onProfileClick}
+									menuItems={userMenuItems}
+									onLogout={handleLogout}
+									theme={themeMode}
+									showThemeToggler={showThemeToggler}
+									onThemeToggle={onThemeToggle}
+								/>
+								{alertProps?.show && !sidebarCollapsed && (
+									<CardAlert {...alertProps} />
+								)}
+							</>
+						)}
+
+					{/* Desktop Sidebar — fixed rail variant */}
+					{showSidebar &&
+						!isMobile &&
+						!rendersCollapsibleComponent &&
+						!usePanelSidebar && (
+							<Drawer
+								variant='permanent'
+								sx={{
+									width: desktopSidebarWidthPx,
+									flexShrink: 0,
+									zIndex: 2,
+									'& .MuiDrawer-paper': {
+										width: desktopSidebarWidthPx,
+										boxSizing: 'border-box',
+										bgcolor: resolvedContentBg,
+										borderRight: 'none'
+									},
+									...sidebarStyles
+								}}
+							>
+								<Box
+									sx={{
+										height: '100%',
+										display: 'flex',
+										flexDirection: 'column',
+										pt: 2,
+										// Inset rail content from drawer edges (esp. left) so items do not sit flush
+										px: 1.5,
+										boxSizing: 'border-box'
+									}}
+								>
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'center',
+											mb: 1.5
+										}}
+									>
+										<Brand
+											logo={railLogo}
+											appName={appName}
+											onClick={brandClick}
+											menuOpen={brandMenuOpen}
+											color={
+												brandColor ?? sidebarChromeFg
+											}
+											testId='sidebar-header-brand'
+										/>
+									</Box>
+									{renderTopContent('popover')}
+									<Box
+										sx={{
+											flex: '1 1 auto',
+											minHeight: 0,
+											overflowY: 'auto',
+											display: 'flex',
+											flexDirection: 'column',
+											mt: 1
+										}}
+									>
+										<MenuContent
+											mainLinks={sidebarLinks}
+											secondaryLinks={
+												secondarySidebarLinks
+											}
+											activePath={activePath}
+											onLinkClick={onLinkClick}
+											accentColor={resolvedSidebarAccent}
+											surfaceBackgroundColor={
+												resolvedContentBg
+											}
+											railShowTitles={
+												showSidebarRailTitles
+											}
+										/>
+										{alertProps?.show && (
+											<CardAlert {...alertProps} />
+										)}
+									</Box>
+									<Box sx={{ py: 1.5 }}>
+										{renderFooter(true)}
+									</Box>
+								</Box>
+							</Drawer>
+						)}
+
+					{/* Mobile: the links, in the same sidebar as desktop (expanded).
+				    Bottom-bar mode: a sheet rising from the bottom, within thumb
+				    reach. Drawer mode: a left drawer that also holds Nexa, search
+				    and the user. */}
+					{showSidebar && isMobile && (
+						<SwipeableDrawer
+							anchor={useBottomBar ? 'bottom' : 'left'}
+							open={mobileSidebarOpen}
+							onOpen={() => setMobileSidebarOpen(true)}
+							onClose={() => setMobileSidebarOpen(false)}
+							disableSwipeToOpen
+							sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}
+							slotProps={{
+								paper: {
+									'aria-label': 'Navigation',
+									sx: {
+										bgcolor: resolvedSidebarSurface,
+										backgroundImage: 'none',
+										...(useBottomBar
+											? {
+													maxHeight:
+														'min(80vh, 640px)',
+													borderTopLeftRadius: '16px',
+													borderTopRightRadius:
+														'16px',
+													pb: 'env(safe-area-inset-bottom, 0px)'
+												}
+											: { maxWidth: '85vw' })
+									}
+								} as object
+							}}
+						>
+							{useBottomBar && (
+								// Grab handle: the sheet can be swiped down to close
+								<Box
+									aria-hidden='true'
+									sx={{
+										width: 36,
+										height: 4,
+										borderRadius: '2px',
+										bgcolor: 'divider',
+										mx: 'auto',
+										mt: 1,
+										mb: 0.5,
+										flexShrink: 0
+									}}
+								/>
+							)}
+							<CollapsibleSidebar
 								mainLinks={sidebarLinks}
 								secondaryLinks={secondarySidebarLinks}
 								activePath={activePath}
-								onLinkClick={onLinkClick}
-								logo={headerLogo}
-								title={appName}
-								onBrandClick={brandClick}
-								brandMenuOpen={brandMenuOpen}
-								brandColor={resolvedBrandColor}
-								headerBackgroundColor={railHeaderBg}
-								headerForegroundColor={sidebarHeaderFg}
+								onLinkClick={path => {
+									onLinkClick?.(path);
+									setMobileSidebarOpen(false);
+								}}
+								// A row action (e.g. a request popup) opens over the page
+								onLinkAction={() => setMobileSidebarOpen(false)}
+								collapsed={false}
+								expandedWidth={
+									useBottomBar
+										? '100%'
+										: MOBILE_DRAWER_WIDTH_PX
+								}
 								activeAccentColor={resolvedSidebarAccent}
 								groupAccentColor={groupAccentColor}
 								activeForegroundColor={
 									activeSidebarForegroundColor
 								}
 								foregroundColor={sidebarForegroundColor}
-								surfaceBackgroundColor={railSurface}
-								collapsed={sidebarCollapsed}
-								expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
-								collapsedWidth={railWidthPx}
-								topContent={renderTopContent(
-									sidebarCollapsed ? collapsedTopMode : 'full'
-								)}
-								submenuMode={
-									useFlyoutSubmenu ? 'flyout' : 'inline'
+								surfaceBackgroundColor={resolvedSidebarSurface}
+								topInsetPx={useBottomBar ? 8 : 0}
+								topContent={
+									useBottomBar
+										? undefined
+										: renderTopContent('full')
 								}
-								// Footer + account menu
-								color={sidebarChromeFg}
-								hoverColor={sidebarChromeHover}
-								avatarColor={resolvedSidebarAccent}
-								showProfile={showProfile}
-								userName={userName}
-								userEmail={userEmail}
-								userRole={userRole}
-								userAvatar={userAvatar}
-								showNotifications={showNotifications}
-								notificationCount={notificationCount}
-								// The drawer wins when the host provides content;
-								// otherwise fall back to the plain callbacks.
-								onNotificationsClick={
-									hasUpdatesDrawer
-										? openNotifications
-										: onNotificationsClick
+								footer={
+									useBottomBar
+										? undefined
+										: renderFooter(false)
 								}
-								whatsNewCount={whatsNewCount}
-								onProfileClick={onProfileClick}
-								menuItems={userMenuItems}
-								onLogout={handleLogout}
-								theme={themeMode}
-								showThemeToggler={showThemeToggler}
-								onThemeToggle={onThemeToggle}
 							/>
-							{alertProps?.show && !sidebarCollapsed && (
-								<CardAlert {...alertProps} />
-							)}
-						</>
+							{alertProps?.show && <CardAlert {...alertProps} />}
+						</SwipeableDrawer>
 					)}
 
-				{/* Desktop Sidebar — fixed rail variant */}
-				{showSidebar &&
-					!isMobile &&
-					!rendersCollapsibleComponent &&
-					!usePanelSidebar && (
-						<Drawer
-							variant='permanent'
-							sx={{
-								width: desktopSidebarWidthPx,
-								flexShrink: 0,
-								zIndex: 2,
-								'& .MuiDrawer-paper': {
-									width: desktopSidebarWidthPx,
-									boxSizing: 'border-box',
-									bgcolor: resolvedContentBg,
-									borderRight: 'none'
-								},
-								...sidebarStyles
-							}}
-						>
-							<Box
-								sx={{
-									height: '100%',
-									display: 'flex',
-									flexDirection: 'column',
-									pt: 2,
-									// Inset rail content from drawer edges (esp. left) so items do not sit flush
-									px: 1.5,
-									boxSizing: 'border-box'
-								}}
-							>
-								<Box
-									sx={{
-										display: 'flex',
-										justifyContent: 'center',
-										mb: 1.5
-									}}
-								>
-									<Brand
-										logo={railLogo}
-										appName={appName}
-										onClick={brandClick}
-										menuOpen={brandMenuOpen}
-										color={brandColor ?? sidebarChromeFg}
-										testId='sidebar-header-brand'
-									/>
-								</Box>
-								{renderTopContent('popover')}
-								<Box
-									sx={{
-										flex: '1 1 auto',
-										minHeight: 0,
-										overflowY: 'auto',
-										display: 'flex',
-										flexDirection: 'column',
-										mt: 1
-									}}
-								>
-									<MenuContent
-										mainLinks={sidebarLinks}
-										secondaryLinks={secondarySidebarLinks}
-										activePath={activePath}
-										onLinkClick={onLinkClick}
-										accentColor={resolvedSidebarAccent}
-										surfaceBackgroundColor={
-											resolvedContentBg
-										}
-										railShowTitles={showSidebarRailTitles}
-									/>
-									{alertProps?.show && (
-										<CardAlert {...alertProps} />
-									)}
-								</Box>
-								<Box sx={{ py: 1.5 }}>{renderFooter(true)}</Box>
-							</Box>
-						</Drawer>
+					{useBottomBar && searchNode && (
+						<MobileSearchSheet
+							open={mobileSearchOpen}
+							onClose={() => setMobileSearchOpen(false)}
+							search={searchNode}
+						/>
 					)}
 
-				{/* Mobile: the links, in the same sidebar as desktop (expanded).
-				    Bottom-bar mode: a sheet rising from the bottom, within thumb
-				    reach. Drawer mode: a left drawer that also holds Nexa, search
-				    and the user. */}
-				{showSidebar && isMobile && (
-					<SwipeableDrawer
-						anchor={useBottomBar ? 'bottom' : 'left'}
-						open={mobileSidebarOpen}
-						onOpen={() => setMobileSidebarOpen(true)}
-						onClose={() => setMobileSidebarOpen(false)}
-						disableSwipeToOpen
-						sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}
-						slotProps={{
-							paper: {
-								'aria-label': 'Navigation',
-								sx: {
-									bgcolor: resolvedSidebarSurface,
-									backgroundImage: 'none',
-									...(useBottomBar
-										? {
-												maxHeight: 'min(80vh, 640px)',
-												borderTopLeftRadius: '16px',
-												borderTopRightRadius: '16px',
-												pb: 'env(safe-area-inset-bottom, 0px)'
-											}
-										: { maxWidth: '85vw' })
-								}
-							} as object
+					{useBottomBar && (
+						<MobileBottomNav
+							{...footerProps}
+							pinnedLinks={mobileBottomBarLinks}
+							activePath={activePath}
+							onLinkClick={onLinkClick}
+							onMenuClick={
+								showSidebar
+									? () => setMobileSidebarOpen(true)
+									: undefined
+							}
+							menuOpen={mobileSidebarOpen}
+							onSearchClick={
+								searchNode
+									? () => setMobileSearchOpen(true)
+									: undefined
+							}
+							searchOpen={mobileSearchOpen}
+							showAssistant={showAssistant}
+							onAssistantClick={onAssistantClick}
+							assistantActive={assistantActive}
+							showProfile={showProfile}
+							background={resolvedSidebarSurface}
+							color={sidebarChromeFg}
+							activeColor={resolvedSidebarAccent}
+							activeBackground={sidebarChromeHover}
+						/>
+					)}
+
+					{/* Main Content Area */}
+					<Box
+						component='main'
+						sx={{
+							flexGrow: 1,
+							'--lumora-content-padding': resolvedContentPadding,
+							// Where sticky page elements should pin (below the mobile bar)
+							'--lumora-sticky-top': isMobile
+								? `${MOBILE_BAR_HEIGHT_PX}px`
+								: '0px',
+							p: 'var(--lumora-content-padding)',
+							width: desktopSidebarWidthPx
+								? `calc(100% - ${desktopSidebarWidthPx}px)`
+								: '100%',
+							mt: isMobile ? `${MOBILE_BAR_HEIGHT_PX}px` : 0,
+							// Keep the last content clear of the bottom bar
+							...(useBottomBar && {
+								pb: `calc(var(--lumora-content-padding) + ${bottomBarSpace})`
+							}),
+							backgroundColor: resolvedContentBg,
+							...contentStyles
 						}}
 					>
-						{useBottomBar && (
-							// Grab handle: the sheet can be swiped down to close
-							<Box
-								aria-hidden='true'
-								sx={{
-									width: 36,
-									height: 4,
-									borderRadius: '2px',
-									bgcolor: 'divider',
-									mx: 'auto',
-									mt: 1,
-									mb: 0.5,
-									flexShrink: 0
-								}}
+						{children}
+					</Box>
+
+					{GlobalChatSidebar && (
+						<ChatPanel
+							open={isChatOpen}
+							variant={chatVariant}
+							position={chatPanelPosition}
+							width={chatPanelWidth}
+							sidebarWidthPx={desktopSidebarWidthPx}
+							// Sits above the floating Nexa button when there is one
+							bottomOffsetPx={
+								showAssistant &&
+								assistantPlacement === 'floating'
+									? FLOATING_ASSISTANT_CLEARANCE_PX
+									: 0
+							}
+							fullScreen={isMobile}
+							fullScreenBottom={
+								useBottomBar ? bottomBarSpace : '0px'
+							}
+							onClose={onChatClose}
+						>
+							<GlobalChatSidebar />
+						</ChatPanel>
+					)}
+
+					{showAssistant &&
+						assistantPlacement === 'floating' &&
+						!useBottomBar && (
+							<AssistantButton
+								variant='floating'
+								// Moves left of the docked chat instead of hiding under it
+								rightOffsetPx={dockedChatOffsetPx}
+								shortcutKeys={shortcutKeys}
+								onClick={onAssistantClick}
+								active={assistantActive}
+								busy={assistantBusy}
 							/>
 						)}
-						<CollapsibleSidebar
-							mainLinks={sidebarLinks}
-							secondaryLinks={secondarySidebarLinks}
-							activePath={activePath}
-							onLinkClick={path => {
-								onLinkClick?.(path);
-								setMobileSidebarOpen(false);
-							}}
-							// A row action (e.g. a request popup) opens over the page
-							onLinkAction={() => setMobileSidebarOpen(false)}
-							collapsed={false}
-							expandedWidth={
-								useBottomBar ? '100%' : MOBILE_DRAWER_WIDTH_PX
-							}
-							activeAccentColor={resolvedSidebarAccent}
-							groupAccentColor={groupAccentColor}
-							activeForegroundColor={activeSidebarForegroundColor}
-							foregroundColor={sidebarForegroundColor}
-							surfaceBackgroundColor={resolvedSidebarSurface}
-							topInsetPx={useBottomBar ? 8 : 0}
-							topContent={
-								useBottomBar
-									? undefined
-									: renderTopContent('full')
-							}
-							footer={
-								useBottomBar ? undefined : renderFooter(false)
-							}
-						/>
-						{alertProps?.show && <CardAlert {...alertProps} />}
-					</SwipeableDrawer>
-				)}
 
-				{useBottomBar && searchNode && (
-					<MobileSearchSheet
-						open={mobileSearchOpen}
-						onClose={() => setMobileSearchOpen(false)}
-						search={searchNode}
-					/>
-				)}
-
-				{useBottomBar && (
-					<MobileBottomNav
-						{...footerProps}
-						pinnedLinks={mobileBottomBarLinks}
-						activePath={activePath}
-						onLinkClick={onLinkClick}
-						onMenuClick={
-							showSidebar
-								? () => setMobileSidebarOpen(true)
-								: undefined
-						}
-						menuOpen={mobileSidebarOpen}
-						onSearchClick={
-							searchNode
-								? () => setMobileSearchOpen(true)
-								: undefined
-						}
-						searchOpen={mobileSearchOpen}
-						showAssistant={showAssistant}
-						onAssistantClick={onAssistantClick}
-						assistantActive={assistantActive}
-						showProfile={showProfile}
-						background={resolvedSidebarSurface}
-						color={sidebarChromeFg}
-						activeColor={resolvedSidebarAccent}
-						activeBackground={sidebarChromeHover}
-					/>
-				)}
-
-				{/* Main Content Area */}
-				<Box
-					component='main'
-					sx={{
-						flexGrow: 1,
-						'--lumora-content-padding': resolvedContentPadding,
-						// Where sticky page elements should pin (below the mobile bar)
-						'--lumora-sticky-top': isMobile
-							? `${MOBILE_BAR_HEIGHT_PX}px`
-							: '0px',
-						p: 'var(--lumora-content-padding)',
-						width: desktopSidebarWidthPx
-							? `calc(100% - ${desktopSidebarWidthPx}px)`
-							: '100%',
-						mt: isMobile ? `${MOBILE_BAR_HEIGHT_PX}px` : 0,
-						// Keep the last content clear of the bottom bar
-						...(useBottomBar && {
-							pb: `calc(var(--lumora-content-padding) + ${bottomBarSpace})`
-						}),
-						backgroundColor: resolvedContentBg,
-						...contentStyles
-					}}
-				>
-					{children}
-				</Box>
-
-				{GlobalChatSidebar && (
-					<ChatPanel
-						open={isChatOpen}
-						variant={chatVariant}
-						position={chatPanelPosition}
-						width={chatPanelWidth}
-						sidebarWidthPx={desktopSidebarWidthPx}
-						// Sits above the floating Nexa button when there is one
-						bottomOffsetPx={
-							showAssistant && assistantPlacement === 'floating'
-								? FLOATING_ASSISTANT_CLEARANCE_PX
-								: 0
-						}
-						fullScreen={isMobile}
-						fullScreenBottom={useBottomBar ? bottomBarSpace : '0px'}
-						onClose={onChatClose}
-					>
-						<GlobalChatSidebar />
-					</ChatPanel>
-				)}
-
-				{showAssistant &&
-					assistantPlacement === 'floating' &&
-					!useBottomBar && (
-						<AssistantButton
-							variant='floating'
-							// Moves left of the docked chat instead of hiding under it
-							rightOffsetPx={dockedChatOffsetPx}
-							shortcutKeys={shortcutKeys}
-							onClick={onAssistantClick}
-							active={assistantActive}
-							busy={assistantBusy}
-						/>
-					)}
-
-				{/* Updates drawer (container only; content from host). `key`
+					{/* Updates drawer (container only; content from host). `key`
 				    remounts the content when a different tab is requested, so
 				    hosts that read `initialTab` once still switch. */}
-				{showNotifications && NotificationSidebarContent && (
-					<Drawer
-						anchor='right'
-						open={updatesDrawer.open}
-						onClose={closeUpdates}
-						slotProps={{
-							paper: { sx: { width: 380, maxWidth: '100vw' } }
-						}}
-					>
-						<NotificationSidebarContent
-							key={updatesDrawer.tab}
+					{showNotifications && NotificationSidebarContent && (
+						<Drawer
+							anchor='right'
+							open={updatesDrawer.open}
 							onClose={closeUpdates}
-							initialTab={updatesDrawer.tab}
-						/>
-					</Drawer>
-				)}
-			</Box>
+							slotProps={{
+								paper: { sx: { width: 380, maxWidth: '100vw' } }
+							}}
+						>
+							<NotificationSidebarContent
+								key={updatesDrawer.tab}
+								onClose={closeUpdates}
+								initialTab={updatesDrawer.tab}
+							/>
+						</Drawer>
+					)}
+				</Box>
+			</GlassAccentContext.Provider>
 		</ThemeProvider>
 	);
 };

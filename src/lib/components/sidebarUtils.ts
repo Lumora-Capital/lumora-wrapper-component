@@ -103,7 +103,9 @@ export const withAlpha = (color: string, alpha: number): string => {
 };
 
 /** Parse `#rgb` / `#rrggbb` (with or without leading `#`) into [r, g, b]. */
-const parseColorToRgb = (color: string): [number, number, number] | null => {
+export const parseColorToRgb = (
+	color: string
+): [number, number, number] | null => {
 	let hex = color.trim().replace(/^#/, '');
 	if (hex.length === 3) {
 		hex = hex

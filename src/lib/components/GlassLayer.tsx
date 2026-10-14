@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import * as React from 'react';
-import { glassSurfaceSx } from './liquidGlass';
+import { glassSurfaceSx, useGlassAccentRgb } from './liquidGlass';
 
 /** How far in from the edge the glass bends light, and how hard. */
 const EDGE_PX = 14;
@@ -197,6 +197,7 @@ const GlassLayer = React.forwardRef<HTMLDivElement, GlassLayerProps>(
 	) => {
 		const elRef = React.useRef<HTMLDivElement | null>(null);
 		useGlassLight(elRef, light, onLight);
+		const accentRgb = useGlassAccentRgb();
 		const filterId = `lumora-glass-${React.useId().replace(/[^a-zA-Z0-9-]/g, '')}`;
 		const [size, setSize] = React.useState<{
 			width: number;
@@ -298,7 +299,7 @@ const GlassLayer = React.forwardRef<HTMLDivElement, GlassLayerProps>(
 					data-testid={testId}
 					data-refract={refract ? 'true' : undefined}
 					sx={[
-						glassSurfaceSx(isDark, solid),
+						glassSurfaceSx(isDark, solid, accentRgb),
 						refract
 							? {
 									backdropFilter: `url(#${filterId}) ${REFRACT_BLUR}`,

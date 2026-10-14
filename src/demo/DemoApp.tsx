@@ -411,6 +411,16 @@ const DemoApp = () => {
 					{...(settings.brandColors && settings.mode === 'light'
 						? centraColorProps
 						: {})}
+					// Like the hosts, each platform keeps its own colour: the
+					// sidebar accent, the logo and the glass's light
+					{...(settings.platformSwitcher && platform.key !== 'centra'
+						? {
+								accentColor: platform.accentColor,
+								sidebarAccentColor: platform.accentColor,
+								brandColor: platform.accentColor,
+								groupAccentColor: undefined
+							}
+						: {})}
 				>
 					{settings.detailPage ? (
 						<DetailPage

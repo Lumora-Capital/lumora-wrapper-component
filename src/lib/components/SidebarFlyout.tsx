@@ -19,6 +19,8 @@ import {
 	REDUCED_MOTION,
 	glassBubbleSx,
 	POINTER_LIGHT,
+	pointerLightRgb,
+	useGlassAccentRgb,
 	glassLabelSx,
 	glassTintSx,
 	scrimColor,
@@ -654,6 +656,7 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 	const rimPathRef = React.useRef<SVGPathElement>(null);
 	const glintPathRef = React.useRef<SVGPathElement>(null);
 	const glintRef = React.useRef<SVGRadialGradientElement>(null);
+	const lightRgb = pointerLightRgb(isDark, useGlassAccentRgb());
 	// The rim's glint where the pointer is nearest, from the layer's light
 	const onLight = React.useCallback(
 		(x: number, y: number, i: number) => {
@@ -1078,12 +1081,12 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 					>
 						<stop
 							offset='0'
-							stopColor={`rgb(${isDark ? POINTER_LIGHT.dark.rgb : POINTER_LIGHT.light.rgb})`}
+							stopColor={`rgb(${lightRgb})`}
 							stopOpacity='1'
 						/>
 						<stop
 							offset='1'
-							stopColor={`rgb(${isDark ? POINTER_LIGHT.dark.rgb : POINTER_LIGHT.light.rgb})`}
+							stopColor={`rgb(${lightRgb})`}
 							stopOpacity='0'
 						/>
 					</radialGradient>
@@ -1146,6 +1149,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 		},
 		ref
 	) => {
+		const accentRgb = useGlassAccentRgb();
 		// The glow follows the pointer across the tile, as light from a
 		// fingertip; written to CSS variables so moving does not re-render.
 		const onPointerMove = (event: React.PointerEvent<HTMLElement>) => {
@@ -1183,7 +1187,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 			scale: 'calc(1 / var(--dock-scale, 1))'
 		};
 		const bubble = {
-			...glassBubbleSx(isDark),
+			...glassBubbleSx(isDark, accentRgb),
 			'&::before': { opacity: 1 },
 			'& [data-tile-name]': nameShown
 		};

@@ -21,7 +21,8 @@ import {
 	REDUCED_MOTION,
 	contentIn,
 	glassGrow,
-	glassBubbleSx
+	glassBubbleSx,
+	useGlassAccentRgb
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
 import GlassLayer from './GlassLayer';
@@ -70,6 +71,7 @@ const ThemeSegments: React.FC<{
 	glass?: boolean;
 }> = ({ mode, onToggle, accentColor, tint, glass = false }) => {
 	const isDark = useTheme().palette.mode === 'dark';
+	const accentRgb = useGlassAccentRgb();
 	const lightRef = React.useRef<HTMLButtonElement>(null);
 	const darkRef = React.useRef<HTMLButtonElement>(null);
 
@@ -133,7 +135,9 @@ const ThemeSegments: React.FC<{
 							: accentColor
 						: 'text.secondary',
 					bgcolor: selected ? tint : 'transparent',
-					...(glass && selected ? glassBubbleSx(isDark) : {}),
+					...(glass && selected
+						? glassBubbleSx(isDark, accentRgb)
+						: {}),
 					// On glass each mode answers the pointer itself, so the
 					// row's lens is not the only thing that moves
 					...(glass && {
