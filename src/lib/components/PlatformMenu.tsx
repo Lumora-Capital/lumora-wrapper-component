@@ -10,7 +10,12 @@ import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import GlassLayer from './GlassLayer';
 import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
-import { REDUCED_MOTION, contentIn, glassGrow } from './liquidGlass';
+import {
+	GLASS_RADIUS_PX,
+	REDUCED_MOTION,
+	contentIn,
+	glassGrow
+} from './liquidGlass';
 import { useGlassLens } from './RailLens';
 
 /** One entry of the platform switcher opened from the sidebar logo. */
@@ -31,7 +36,6 @@ export type LumoraPlatform = {
 
 const morph = springTiming(MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
-const GLASS_CARD_RADIUS_PX = 20;
 const MENU_MIN_WIDTH_PX = 260;
 
 /** Card chrome without glass; the Popover paper itself is transparent. */
@@ -78,7 +82,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 		enabled: glass,
 		isDark,
 		selector: '.MuiMenuItem-root',
-		radius: 12
+		radius: GLASS_RADIUS_PX
 	});
 
 	const rows = (
@@ -98,7 +102,9 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 						onClick={() => onSelect(platform)}
 						data-testid={`platform-item-${platform.key}`}
 						sx={{
-							borderRadius: glass ? '12px' : '8px',
+							borderRadius: glass
+								? `${GLASS_RADIUS_PX}px`
+								: '8px',
 							py: 1,
 							'&:focus, &:focus-visible': { outline: 'none' },
 							// Glass: the tick marks the current platform and the
@@ -182,7 +188,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 						? {
 								position: 'relative',
 								minWidth: MENU_MIN_WIDTH_PX,
-								borderRadius: `${GLASS_CARD_RADIUS_PX}px`
+								borderRadius: `${GLASS_RADIUS_PX}px`
 							}
 						: { ...cardSx, minWidth: MENU_MIN_WIDTH_PX }
 				}

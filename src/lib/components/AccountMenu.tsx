@@ -22,7 +22,8 @@ import {
 	contentIn,
 	glassGrow,
 	glassBubbleSx,
-	useGlassAccentRgb
+	useGlassAccentRgb,
+	GLASS_RADIUS_PX
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
 import GlassLayer from './GlassLayer';
@@ -46,7 +47,6 @@ const cardSx = {
 
 const morph = springTiming(MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
-const GLASS_CARD_RADIUS_PX = 20;
 /**
  * The rows the glass lens rests behind. The user header only when it is a
  * button (it opens the profile): a static header is not something to press,
@@ -127,7 +127,7 @@ const ThemeSegments: React.FC<{
 				sx={{
 					width: 36,
 					height: 26,
-					borderRadius: '999px',
+					borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '999px',
 					// White on dark: the accent is too dim against a dark surface
 					color: selected
 						? isDark
@@ -176,7 +176,7 @@ const ThemeSegments: React.FC<{
 			sx={{
 				p: '3px',
 				gap: '2px',
-				borderRadius: '999px',
+				borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '999px',
 				bgcolor: 'action.selected',
 				flexShrink: 0
 			}}
@@ -251,7 +251,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		enabled: glass,
 		isDark,
 		selector: GLASS_MENU_ITEMS,
-		radius: 10
+		radius: GLASS_RADIUS_PX
 	});
 	// State, not a ref: the Popover mounts its paper through a Portal one
 	// render after `open` flips, so an effect keyed on `open` would run before
@@ -289,7 +289,11 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		}
 	};
 
-	const itemSx = { borderRadius: '8px', py: 1, gap: 0.5 } as const;
+	const itemSx = {
+		borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '8px',
+		py: 1,
+		gap: 0.5
+	} as const;
 
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
@@ -391,7 +395,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 								position: 'relative',
 								width,
 								minWidth: width,
-								borderRadius: `${GLASS_CARD_RADIUS_PX}px`,
+								borderRadius: `${GLASS_RADIUS_PX}px`,
 								// The rows give up their own hover fill: one drop of glass
 								// (the lens) glides behind whichever is hovered
 								[`& :is(${GLASS_MENU_ITEMS}):is(:hover, .Mui-focusVisible)`]:

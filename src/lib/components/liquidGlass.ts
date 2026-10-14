@@ -39,6 +39,9 @@ export const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 const pointerLight = (radius: number, alpha: number, rgb: string) =>
 	`radial-gradient(${radius}px circle at var(--lx, -9999px) var(--ly, -9999px), rgba(${rgb}, calc(${alpha} * var(--li, 0))) 0%, rgba(${rgb}, 0) 70%)`;
 
+/** Every corner of the glass UI: rail, items, labels, cards and menus. */
+export const GLASS_RADIUS_PX = 6;
+
 /** The Lumora teal, the light's colour when the host sets no accent. */
 const LUMORA_TEAL_RGB = '9, 193, 174';
 
@@ -164,7 +167,7 @@ export const glassLabelSx = (isDark: boolean) => ({
 	boxShadow: isDark
 		? '0 8px 24px -6px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.16)'
 		: '0 8px 24px -6px rgba(15, 23, 42, 0.25), 0 0 0 0.5px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-	borderRadius: '10px',
+	borderRadius: `${GLASS_RADIUS_PX}px`,
 	px: 1.25,
 	py: 0.75,
 	fontSize: '0.8125rem',
@@ -273,7 +276,7 @@ export const glassWellSx = (isDark: boolean, ring: string) => {
 		rest: {
 			background: fill,
 			boxShadow: base,
-			borderRadius: '12px',
+			borderRadius: `${GLASS_RADIUS_PX}px`,
 			transition: 'box-shadow 180ms ease, background 180ms ease'
 		},
 		hover: {

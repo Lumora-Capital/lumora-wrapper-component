@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
-	GEL_SPRING,
+	GLIDE_SPRING,
 	MORPH_SPRING,
 	SETTLE_SPRING,
 	canAnimate,
@@ -24,7 +24,8 @@ import {
 	glassLabelSx,
 	glassTintSx,
 	scrimColor,
-	tileIn
+	tileIn,
+	GLASS_RADIUS_PX
 } from './liquidGlass';
 import GlassLayer from './GlassLayer';
 import { flattenLeaves, isSubLinkActive } from './sidebarUtils';
@@ -32,7 +33,7 @@ import { flattenLeaves, isSubLinkActive } from './sidebarUtils';
 /** Compact square tiles in one row; the name shows on hover. */
 const TILE_PX = 44;
 const TILE_GAP_PX = 4;
-const TILE_RADIUS_PX = 12;
+const TILE_RADIUS_PX = GLASS_RADIUS_PX;
 /** Dock magnification: the tile under the pointer grows to this, its
  * neighbours less the further away they are, up to this far from it. */
 const DOCK_MAX_SCALE = 1.4;
@@ -41,8 +42,8 @@ const DOCK_MAX_SCALE = 1.4;
 const DOCK_LEFT_ROOM_PX = 6;
 
 const PANEL_PADDING_PX = 6;
-/** Concentric with the tiles: their radius plus the padding around them. */
-const PANEL_RADIUS_PX = TILE_RADIUS_PX + PANEL_PADDING_PX;
+/** The same corner as every other glass surface. */
+const PANEL_RADIUS_PX = GLASS_RADIUS_PX;
 /** Space between the rail's edge and the panel. */
 const PANEL_GAP_PX = 10;
 /** The glass starts as a drop about the size of a rail icon, at the icon's
@@ -60,7 +61,7 @@ const SCRIM_Z_INDEX = 1190;
 const PANEL_Z_INDEX = 1195;
 
 const morph = springTiming(MORPH_SPRING);
-const gel = springTiming(GEL_SPRING);
+const glide = springTiming(GLIDE_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 
 export interface SidebarFlyoutProps {
@@ -293,7 +294,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			hovered !== null &&
 			hovered < tiles.length &&
 			!prefersReducedMotion();
-		const motion = `translate ${gel.duration}ms ${gel.easing}, scale ${gel.duration}ms ${gel.easing}`;
+		const motion = `translate ${glide.duration}ms ${glide.easing}, scale ${glide.duration}ms ${glide.easing}`;
 		const centers = tiles.map(tile => tile.offsetLeft + TILE_PX / 2);
 		const scales = tiles.map((_, i) =>
 			grow && i === hovered ? DOCK_MAX_SCALE : 1
@@ -385,7 +386,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				sx={{
 					zIndex: PANEL_Z_INDEX,
 					transition: settled
-						? `transform ${morph.duration}ms ${morph.easing}`
+						? `transform ${glide.duration}ms ${glide.easing}`
 						: 'none',
 					[REDUCED_MOTION]: { transition: 'none' }
 				}}
@@ -540,16 +541,14 @@ const liquidOutline = (width: number, height: number, tiles: TileBox[]) => {
 	// bar so the glass flows from the old tile to the new.
 	const bubbles: Blob[] = tiles
 		.filter(tile => tile.bottom - tile.top > TILE_PX * 1.02)
-		.map(tile => {
-			const scale = (tile.right - tile.left) / TILE_PX;
-			return {
-				cx: (tile.left + tile.right) / 2,
-				cy: (tile.top + tile.bottom) / 2 + LIQUID_ROOM_Y_PX,
-				hx: (tile.right - tile.left) / 2 + pad,
-				hy: (tile.bottom - tile.top) / 2 + pad,
-				r: TILE_RADIUS_PX * scale + pad
-			};
-		});
+		.map(tile => ({
+			cx: (tile.left + tile.right) / 2,
+			cy: (tile.top + tile.bottom) / 2 + LIQUID_ROOM_Y_PX,
+			hx: (tile.right - tile.left) / 2 + pad,
+			hy: (tile.bottom - tile.top) / 2 + pad,
+			// Grown or not, the glass keeps its one corner
+			r: PANEL_RADIUS_PX
+		}));
 	const field = (x: number, y: number) =>
 		bubbles.reduce(
 			(d, bubble) =>
@@ -892,7 +891,7 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 		}
 		// Another group while open: the same glass reshapes to fit its
 		// tiles from the size it had (a scale, so it stays composited),
-		// stretching as it travels, and springs back to rest.
+		// gliding to rest without a bounce.
 		const glass = glassRef.current;
 		if (
 			!inProp ||
@@ -910,10 +909,9 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 				{
 					transform: `scale(${previous.width / box.width}, ${previous.height / box.height})`
 				},
-				{ transform: 'scale(0.98, 1.04)', offset: 0.35 },
 				{ transform: 'none' }
 			],
-			{ duration: morph.duration, easing: morph.easing }
+			{ duration: glide.duration, easing: glide.easing }
 		);
 		// Only a change of group reshapes the glass
 	}, [groupKey]);
@@ -1216,7 +1214,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 					bgcolor: active ? accentColor : 'transparent',
 					// The current page is tinted glass, not a flat fill
 					...(active ? glassTintSx(accentColor, isDark) : {}),
-					transition: `translate ${gel.duration}ms ${gel.easing}, scale ${gel.duration}ms ${gel.easing}, background 160ms ease, box-shadow 160ms ease`,
+					transition: `translate ${glide.duration}ms ${glide.easing}, scale ${glide.duration}ms ${glide.easing}, background 160ms ease, box-shadow 160ms ease`,
 					// Wells up into place, each after the one before
 					animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
 					animationDelay: `${TILE_BASE_DELAY_MS + index * TILE_STAGGER_MS}ms`,
@@ -1272,7 +1270,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 						pointerEvents: 'none',
 						opacity: 0,
 						scale: 'calc(0.6 / var(--dock-scale, 1))',
-						transition: `opacity 140ms ease, scale ${gel.duration}ms ${gel.easing}`,
+						transition: `opacity 140ms ease, scale ${glide.duration}ms ${glide.easing}`,
 						zIndex: 1,
 						[REDUCED_MOTION]: { transition: 'opacity 140ms ease' }
 					}}

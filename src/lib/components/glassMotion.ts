@@ -14,6 +14,11 @@ export type SpringConfig = {
 export const MORPH_SPRING: SpringConfig = { stiffness: 320, damping: 24 };
 /** A gel response — a press or a swell that wobbles back. */
 export const GEL_SPRING: SpringConfig = { stiffness: 520, damping: 20 };
+/**
+ * Hover moving between items (the lens, the dock's tiles): near-critical
+ * damping, so it glides into place without bouncing.
+ */
+export const GLIDE_SPRING: SpringConfig = { stiffness: 380, damping: 36 };
 /** Content and highlights: quick, barely any overshoot. */
 export const SETTLE_SPRING: SpringConfig = { stiffness: 260, damping: 28 };
 

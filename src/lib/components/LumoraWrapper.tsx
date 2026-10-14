@@ -39,7 +39,7 @@ import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import GlassLayer from './GlassLayer';
-import { GlassAccentContext } from './liquidGlass';
+import { GLASS_RADIUS_PX, GlassAccentContext } from './liquidGlass';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
 import useHoverExpand from './useHoverExpand';
 
@@ -64,7 +64,7 @@ const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
  * off the window's edges; the page keeps the capsule plus both gutters. */
 const FLOATING_RAIL_WIDTH_PX = 68;
 const FLOATING_RAIL_GUTTER_PX = 8;
-const FLOATING_RAIL_RADIUS_PX = 24;
+const FLOATING_RAIL_RADIUS_PX = GLASS_RADIUS_PX;
 const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
 

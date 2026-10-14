@@ -13,7 +13,8 @@ import {
 	REDUCED_MOTION,
 	contentIn,
 	glassGrow,
-	glassWellSx
+	glassWellSx,
+	GLASS_RADIUS_PX
 } from './liquidGlass';
 import { withAlpha } from './sidebarUtils';
 
@@ -243,7 +244,12 @@ const HoverSearch: React.FC<{
 						pinned.current = true;
 						setOpen(true);
 					}}
-					sx={{ width: 44, height: 44, color, borderRadius: '12px' }}
+					sx={{
+						width: 44,
+						height: 44,
+						color,
+						borderRadius: `${GLASS_RADIUS_PX}px`
+					}}
 				>
 					<SearchRoundedIcon />
 				</IconButton>
@@ -267,7 +273,7 @@ const HoverSearch: React.FC<{
 						position: 'relative',
 						width: 360,
 						p: 1.25,
-						borderRadius: '18px'
+						borderRadius: `${GLASS_RADIUS_PX}px`
 					}}
 				>
 					<GlassLayer

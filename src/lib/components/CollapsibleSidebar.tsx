@@ -23,7 +23,7 @@ import {
 } from './RailLens';
 import SidebarFlyout from './SidebarFlyout';
 import { GEL_SPRING, springTiming } from './glassMotion';
-import { glassLabelSx } from './liquidGlass';
+import { GLASS_RADIUS_PX, glassLabelSx } from './liquidGlass';
 import {
 	deriveGroupTint,
 	flattenLeaves,
@@ -752,7 +752,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// tint of their own (the lens glides behind them), and a gel squish on
 	// press that springs back.
 	const glassRailIconSx = (active: boolean) => ({
-		borderRadius: '12px',
+		borderRadius: `${GLASS_RADIUS_PX}px`,
 		// The active item's glass is one drop that glides between items
 		// (useActiveGlass); the item itself stays clear
 		...(active ? { bgcolor: 'transparent' } : {}),

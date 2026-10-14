@@ -9,7 +9,7 @@ import Kbd from './Kbd';
 import NexaLogo from './NexaLogo';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { GEL_SPRING, springTiming } from './glassMotion';
-import { REDUCED_MOTION, glassTintSx } from './liquidGlass';
+import { GLASS_RADIUS_PX, REDUCED_MOTION, glassTintSx } from './liquidGlass';
 
 const gel = springTiming(GEL_SPRING);
 
@@ -51,12 +51,12 @@ const beamSx = (radiusPx: number, cover: string) => ({
  * stays a 2px line rather than showing through).
  */
 const glassBeamSx = (isDark: boolean) => ({
-	...beamSx(14, 'transparent'),
+	...beamSx(GLASS_RADIUS_PX, 'transparent'),
 	'&::after': {
 		content: '""',
 		position: 'absolute',
 		inset: '2px',
-		borderRadius: '12px',
+		borderRadius: `${GLASS_RADIUS_PX - 2}px`,
 		zIndex: 1,
 		background: `${glassTintSx(BEAM, isDark, 'clear').background}, ${isDark ? '#16202c' : '#f2fbfa'}`
 	}
@@ -160,7 +160,7 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 					sx={{
 						width: 44,
 						height: 44,
-						borderRadius: '14px',
+						borderRadius: `${GLASS_RADIUS_PX}px`,
 						...glassTintSx(BEAM, isDark, 'clear'),
 						backdropFilter: 'blur(8px) saturate(180%)',
 						WebkitBackdropFilter: 'blur(8px) saturate(180%)',

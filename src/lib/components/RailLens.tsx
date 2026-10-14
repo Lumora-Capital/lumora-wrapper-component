@@ -2,8 +2,7 @@ import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import {
-	GEL_SPRING,
-	MORPH_SPRING,
+	GLIDE_SPRING,
 	canAnimate,
 	prefersReducedMotion,
 	springTiming
@@ -13,7 +12,8 @@ import {
 	glassBubbleSx,
 	glassLabelSx,
 	glassTintSx,
-	useGlassAccentRgb
+	useGlassAccentRgb,
+	GLASS_RADIUS_PX
 } from './liquidGlass';
 
 /** Marks a rail icon the lens can rest on (any button in the rail is one). */
@@ -73,14 +73,13 @@ export type GlassLensOptions = {
 	lean?: number;
 };
 
-const morph = springTiming(MORPH_SPRING);
-const gel = springTiming(GEL_SPRING);
+const glide = springTiming(GLIDE_SPRING);
 
 /**
  * One drop of glass that rests behind whichever item the pointer (or the
  * keyboard focus) is on — the single hover state of a glass surface. It
- * wells up on a gel spring, glides from item to item squashing and
- * stretching as it travels, leans a little toward the pointer, and shrinks
+ * wells up, glides from item to item on a near-critical spring (a slight
+ * stretch, no bounce), leans a little toward the pointer, and shrinks
  * away when the pointer leaves. Used by the rail and the account menu.
  *
  * Spread `containerProps` on the container (it must be the lens's offset
@@ -195,31 +194,27 @@ export const useGlassLens = ({
 		if (!canAnimate(el) || prefersReducedMotion()) {
 			return;
 		}
-		// Wells up from a smaller drop and wobbles to rest
+		// Wells up from a slightly smaller drop, without a wobble
 		if (from === null || box.instant) {
-			el.animate([{ scale: '0.55' }, { scale: '1' }], {
-				duration: gel.duration,
-				easing: gel.easing
+			el.animate([{ scale: '0.85' }, { scale: '1' }], {
+				duration: glide.duration,
+				easing: glide.easing
 			});
 			return;
 		}
-		// Stretch along the way, in proportion to the distance travelled,
-		// squash a little as it lands, then settle round
-		const stretch = Math.min(Math.abs(box.top - from) / 220, 0.3);
+		// A slight stretch along the way, in proportion to the distance
+		// travelled, settling round as it lands (no squash, no bounce)
+		const stretch = Math.min(Math.abs(box.top - from) / 600, 0.08);
 		if (!stretch) {
 			return;
 		}
 		el.animate(
 			[
 				{ scale: '1 1' },
-				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.28 },
-				{
-					scale: `${1 + stretch / 4} ${1 - stretch / 3}`,
-					offset: 0.62
-				},
+				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.35 },
 				{ scale: '1 1' }
 			],
-			{ duration: morph.duration, easing: 'ease-out' }
+			{ duration: glide.duration, easing: 'ease-out' }
 		);
 	}, [box?.top, box?.visible, box?.instant]);
 
@@ -251,7 +246,7 @@ export const useGlassLens = ({
 					pointerEvents: 'none',
 					transition: box.instant
 						? 'opacity 160ms ease, scale 220ms ease, transform 260ms ease-out'
-						: `translate ${morph.duration}ms ${morph.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease, transform 260ms ease-out`,
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease, transform 260ms ease-out`,
 					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
 				}}
 			/>
@@ -280,7 +275,7 @@ export const useRailLens = (enabled: boolean, isDark: boolean) => {
 		isDark,
 		selector: RAIL_ITEM_SELECTOR,
 		size: 46,
-		radius: 18
+		radius: GLASS_RADIUS_PX
 	});
 	return {
 		...lens,
@@ -465,21 +460,17 @@ export const useActiveGlass = ({
 		) {
 			return;
 		}
-		const stretch = Math.min(Math.abs(box.top - from) / 200, 0.32);
+		const stretch = Math.min(Math.abs(box.top - from) / 600, 0.08);
 		if (!stretch) {
 			return;
 		}
 		el.animate(
 			[
 				{ scale: '1 1' },
-				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.28 },
-				{
-					scale: `${1 + stretch / 4} ${1 - stretch / 3}`,
-					offset: 0.62
-				},
+				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.35 },
 				{ scale: '1 1' }
 			],
-			{ duration: morph.duration, easing: 'ease-out' }
+			{ duration: glide.duration, easing: 'ease-out' }
 		);
 	}, [box?.top, box?.visible, box?.instant]);
 
@@ -493,7 +484,7 @@ export const useActiveGlass = ({
 				data-visible={box.visible ? 'true' : 'false'}
 				sx={{
 					...glassTintSx(color, isDark),
-					borderRadius: '12px',
+					borderRadius: `${GLASS_RADIUS_PX}px`,
 					position: 'absolute',
 					top: 0,
 					left: 0,
@@ -505,7 +496,7 @@ export const useActiveGlass = ({
 					pointerEvents: 'none',
 					transition: box.instant
 						? 'opacity 160ms ease, scale 220ms ease'
-						: `translate ${morph.duration}ms ${morph.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease`,
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease`,
 					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
 				}}
 			/>
