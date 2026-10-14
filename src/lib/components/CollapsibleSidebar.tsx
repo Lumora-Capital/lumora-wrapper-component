@@ -279,8 +279,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		enabled: useFlyout,
 		isDark,
 		color: activeAccent,
-		containerRef: navRef,
-		activeKey: activePath
+		containerRef: navRef
 	});
 	const { close: closeFlyout } = flyout;
 	// A navigation from anywhere (a tile, the browser's back) closes it

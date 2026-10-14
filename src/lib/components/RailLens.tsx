@@ -292,6 +292,52 @@ export const useRailLens = (enabled: boolean, isDark: boolean) => {
 	};
 };
 
+/**
+ * `item`'s box in `container`'s coordinates, from layout offsets rather than
+ * the painted rect: an item mid-press (scaled) or a rail mid-animation
+ * would otherwise skew the drop. Scrolled ancestors are taken into account.
+ * Falls back to the painted rect when `container` is not on the item's
+ * offset-parent chain (or there is no layout, as in tests).
+ */
+const layoutBoxWithin = (item: HTMLElement, container: HTMLElement) => {
+	let top = 0;
+	let left = 0;
+	let el: HTMLElement | null = item;
+	while (el && el !== container) {
+		top += el.offsetTop;
+		left += el.offsetLeft;
+		const parent = el.offsetParent as HTMLElement | null;
+		for (
+			let p: HTMLElement | null = el.parentElement;
+			p && p !== container;
+			p = p.parentElement
+		) {
+			top -= p.scrollTop;
+			left -= p.scrollLeft;
+			if (p === parent) {
+				break;
+			}
+		}
+		el = parent;
+	}
+	if (el === container && item.offsetWidth) {
+		return {
+			top: Math.round(top),
+			left: Math.round(left),
+			width: item.offsetWidth,
+			height: item.offsetHeight
+		};
+	}
+	const r = item.getBoundingClientRect();
+	const c = container.getBoundingClientRect();
+	return {
+		top: Math.round(r.top - c.top),
+		left: Math.round(r.left - c.left),
+		width: Math.round(r.width),
+		height: Math.round(r.height)
+	};
+};
+
 type ActiveBox = {
 	top: number;
 	left: number;
@@ -314,15 +360,12 @@ export const useActiveGlass = ({
 	enabled,
 	isDark,
 	color,
-	containerRef,
-	activeKey
+	containerRef
 }: {
 	enabled: boolean;
 	isDark: boolean;
 	color: string;
 	containerRef: React.RefObject<HTMLElement | null>;
-	/** Changes when the active page does (e.g. the path). */
-	activeKey?: string;
 }) => {
 	const glassRef = React.useRef<HTMLDivElement>(null);
 	const [box, setBox] = React.useState<ActiveBox | null>(null);
@@ -343,14 +386,7 @@ export const useActiveGlass = ({
 				);
 				return;
 			}
-			const r = item.getBoundingClientRect();
-			const c = container.getBoundingClientRect();
-			const next = {
-				top: Math.round(r.top - c.top),
-				left: Math.round(r.left - c.left),
-				width: Math.round(r.width),
-				height: Math.round(r.height)
-			};
+			const next = layoutBoxWithin(item as HTMLElement, container);
 			setBox(prev =>
 				prev &&
 				prev.visible &&
@@ -369,19 +405,47 @@ export const useActiveGlass = ({
 		[enabled, containerRef]
 	);
 
-	// Before paint, so a page change never shows the drop in its old place
+	// After every render of the rail, before paint: a page change never
+	// shows the drop in its old place, and neither does anything else that
+	// moves the items (links arriving late, a control above them appearing).
+	// Unchanged, the measure keeps the same box and costs no render.
 	React.useLayoutEffect(() => {
 		measure(false);
-	}, [measure, activeKey]);
+	});
 
+	// Changes the rail's own render does not see: the rail resizing, or its
+	// items moving or switching active from inside (a child's own state)
 	React.useEffect(() => {
 		const container = containerRef.current;
-		if (!enabled || !container || typeof ResizeObserver === 'undefined') {
+		if (!enabled || !container) {
 			return undefined;
 		}
-		const observer = new ResizeObserver(() => measure(true));
-		observer.observe(container);
-		return () => observer.disconnect();
+		let frame = 0;
+		const schedule = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => measure(false));
+		};
+		const resize =
+			typeof ResizeObserver === 'undefined'
+				? null
+				: new ResizeObserver(() => measure(true));
+		resize?.observe(container);
+		const mutation =
+			typeof MutationObserver === 'undefined'
+				? null
+				: new MutationObserver(schedule);
+		// Not `style`: the hover lens writes its lean there on every move
+		mutation?.observe(container, {
+			subtree: true,
+			childList: true,
+			attributes: true,
+			attributeFilter: ['data-active', 'class', 'hidden']
+		});
+		return () => {
+			cancelAnimationFrame(frame);
+			resize?.disconnect();
+			mutation?.disconnect();
+		};
 	}, [enabled, containerRef, measure]);
 
 	// Gliding to a new page: stretch along the way, squash as it lands

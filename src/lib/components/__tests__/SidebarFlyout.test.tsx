@@ -379,6 +379,32 @@ describe("LumoraWrapper sidebarSubmenu='flyout'", () => {
 		expect(trigger('Deals')).toHaveAttribute('data-active', 'true');
 	});
 
+	it('finds the current page when its link arrives after the path', () => {
+		// The host's links load late (e.g. after permissions); the path is
+		// already set, so nothing but the links changes
+		const { rerender } = render(
+			<CollapsibleSidebar
+				mainLinks={mainLinks.filter(link => link.text !== 'Deals')}
+				activePath='/deals'
+				collapsed
+				submenuMode='flyout'
+			/>
+		);
+		expect(screen.queryByTestId('sidebar-rail-active')).toBeNull();
+		rerender(
+			<CollapsibleSidebar
+				mainLinks={mainLinks}
+				activePath='/deals'
+				collapsed
+				submenuMode='flyout'
+			/>
+		);
+		expect(screen.getByTestId('sidebar-rail-active')).toHaveAttribute(
+			'data-visible',
+			'true'
+		);
+	});
+
 	it('opens search on hover and closes it again when left empty', () => {
 		renderWrapper('panel');
 		const icon = screen.getByRole('button', { name: /search/i });
