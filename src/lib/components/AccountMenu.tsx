@@ -46,9 +46,13 @@ const cardSx = {
 const morph = springTiming(MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 const GLASS_CARD_RADIUS_PX = 20;
-/** The rows the glass lens rests behind. */
+/**
+ * The rows the glass lens rests behind. The user header only when it is a
+ * button (it opens the profile): a static header is not something to press,
+ * and the lens would paint over its unpositioned text.
+ */
 const GLASS_MENU_ITEMS =
-	'.MuiMenuItem-root, [data-testid="account-menu-header"], [data-testid="menu-item-theme"]';
+	'.MuiMenuItem-root, button[data-testid="account-menu-header"], [data-testid="menu-item-theme"]';
 
 /**
  * Light/Dark toggle: a pill with a sun and a moon, the current mode raised in

@@ -72,7 +72,9 @@ export declare interface CollapsibleSidebarProps {
     /** App title wordmark (uppercased); shown in the header bar while expanded. */
     title?: string;
     /** Makes the header-bar brand (title + logo) a button. */
-    onBrandClick?: () => void;
+    onBrandClick?: (event: React_2.MouseEvent<HTMLElement>) => void;
+    /** Whether the brand's platform menu is open; left out, it has none. */
+    brandMenuOpen?: boolean;
     /** @deprecated Never rendered — the section header row was dropped. */
     sectionTitle?: string;
     /**
@@ -218,6 +220,22 @@ export declare const Kbd: React_2.FC<{
  */
 export declare const logAuthError: (error: Error | AuthError, context?: string) => void;
 
+/** One entry of the platform switcher opened from the sidebar logo. */
+export declare type LumoraPlatform = {
+    /** Stable id; `currentPlatformKey` matches against it. */
+    key: string;
+    name: string;
+    /** One line under the name, e.g. what the platform is for. */
+    description?: string;
+    /** The platform's colour, shown as its dot (and its tick when current). */
+    accentColor?: string;
+    /**
+     * Home page, opened in this tab when the platform is chosen and the host
+     * passes no `onPlatformSelect`.
+     */
+    url?: string;
+};
+
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -284,7 +302,7 @@ export declare interface LumoraWrapperProps {
      * Called when the brand block (app name + logo) is clicked. When omitted
      * the brand is static. Typical use: navigate to the app's landing page.
      */
-    onBrandClick?: () => void;
+    onBrandClick?: (event: default_2.MouseEvent<HTMLElement>) => void;
     /**
      * The app's global search, rendered in the sidebar under the brand and
      * above the links. When the sidebar is collapsed it becomes a search icon
@@ -375,6 +393,21 @@ export declare interface LumoraWrapperProps {
     onNotificationsClick?: () => void;
     /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onWhatsNewClick?: () => void;
+    /**
+     * Platforms the signed-in user may switch to. With more than one, the
+     * logo becomes a dropdown toggle (marked by a corner notch) listing them;
+     * it replaces `onBrandClick`. Pass only the ones the user can open. A
+     * Liquid Glass card with `sidebarSubmenu="flyout"`.
+     */
+    platforms?: LumoraPlatform[];
+    /** `key` of the platform in use, ticked in the dropdown. */
+    currentPlatformKey?: string;
+    /**
+     * Called when a platform is chosen, the current one included (e.g. to go
+     * to its home page). Omitted: another platform's `url` opens in this tab
+     * and the current one just closes the menu.
+     */
+    onPlatformSelect?: (platform: LumoraPlatform) => void;
     onVerify?: (userData: {
         name: string;
         email: string;

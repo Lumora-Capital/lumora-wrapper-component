@@ -168,7 +168,9 @@ export interface CollapsibleSidebarProps {
 	/** App title wordmark (uppercased); shown in the header bar while expanded. */
 	title?: string;
 	/** Makes the header-bar brand (title + logo) a button. */
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/** Whether the brand's platform menu is open; left out, it has none. */
+	brandMenuOpen?: boolean;
 	/** @deprecated Never rendered — the section header row was dropped. */
 	sectionTitle?: string;
 	/**
@@ -248,6 +250,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	logo,
 	title,
 	onBrandClick,
+	brandMenuOpen,
 	showHeaderBar = false,
 	headerBackgroundColor,
 	headerForegroundColor,
@@ -1075,6 +1078,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					title={collapsed ? undefined : title}
 					appName={title || 'App'}
 					onClick={onBrandClick}
+					menuOpen={brandMenuOpen}
 					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
@@ -1098,6 +1102,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					logo={logo}
 					appName={title || 'App'}
 					onClick={onBrandClick}
+					menuOpen={brandMenuOpen}
 					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>

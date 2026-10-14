@@ -34,6 +34,7 @@ import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
 import NotificationBell from './NotificationBell';
 import PanelSidebar from './PanelSidebar';
+import { PlatformSwitcherLogo, type LumoraPlatform } from './PlatformMenu';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
@@ -157,6 +158,8 @@ export type SettingsSection = {
 	defaultOpen?: boolean;
 };
 
+export type { LumoraPlatform };
+
 export interface LumoraWrapperProps {
 	children: React.ReactNode;
 	sidebarLinks?: SidebarLink[];
@@ -215,7 +218,7 @@ export interface LumoraWrapperProps {
 	 * Called when the brand block (app name + logo) is clicked. When omitted
 	 * the brand is static. Typical use: navigate to the app's landing page.
 	 */
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
 	/**
 	 * The app's global search, rendered in the sidebar under the brand and
 	 * above the links. When the sidebar is collapsed it becomes a search icon
@@ -311,6 +314,22 @@ export interface LumoraWrapperProps {
 	onNotificationsClick?: () => void;
 	/** @deprecated The `panel` account menu no longer has this entry; ignored. */
 	onWhatsNewClick?: () => void;
+	// Platform switcher (the sidebar logo)
+	/**
+	 * Platforms the signed-in user may switch to. With more than one, the
+	 * logo becomes a dropdown toggle (marked by a corner notch) listing them;
+	 * it replaces `onBrandClick`. Pass only the ones the user can open. A
+	 * Liquid Glass card with `sidebarSubmenu="flyout"`.
+	 */
+	platforms?: LumoraPlatform[];
+	/** `key` of the platform in use, ticked in the dropdown. */
+	currentPlatformKey?: string;
+	/**
+	 * Called when a platform is chosen, the current one included (e.g. to go
+	 * to its home page). Omitted: another platform's `url` opens in this tab
+	 * and the current one just closes the menu.
+	 */
+	onPlatformSelect?: (platform: LumoraPlatform) => void;
 	// User data callback
 	onVerify?: (userData: {
 		name: string;
@@ -490,6 +509,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	NotificationSidebarContent,
 	whatsNewCount = 0,
 	onNotificationsClick,
+	platforms,
+	currentPlatformKey,
+	onPlatformSelect,
 	onVerify,
 	alertProps,
 	style,
@@ -584,8 +606,52 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		/>
 	);
 	const resolvedBrandColor = brandColor ?? sidebarHeaderFg;
-	const headerLogo = logo ?? renderMaskLogo(resolvedBrandColor);
-	const railLogo = logo ?? renderMaskLogo(brandColor ?? sidebarChromeFg);
+	// Platform switcher: with more than one platform the logo is its toggle
+	const [platformAnchor, setPlatformAnchor] = useState<HTMLElement | null>(
+		null
+	);
+	const hasPlatformMenu = (platforms?.length ?? 0) > 1;
+	const closePlatformMenu = useCallback(() => setPlatformAnchor(null), []);
+	const selectPlatform = (platform: LumoraPlatform) => {
+		setPlatformAnchor(null);
+		if (onPlatformSelect) {
+			onPlatformSelect(platform);
+		} else if (platform.key !== currentPlatformKey && platform.url) {
+			window.location.assign(platform.url);
+		}
+	};
+	const withPlatformMenu = (mark: React.ReactNode) =>
+		hasPlatformMenu ? (
+			<PlatformSwitcherLogo
+				anchorEl={platformAnchor}
+				onClose={closePlatformMenu}
+				platforms={platforms!}
+				currentKey={currentPlatformKey}
+				onSelect={selectPlatform}
+				accentColor={resolvedAccentColor}
+				// The glass rail's dropdown is glass too
+				glass={
+					sidebarSubmenu === 'flyout' &&
+					(useCollapsibleSidebar || usePanelSidebar) &&
+					!isMobile
+				}
+			>
+				{mark}
+			</PlatformSwitcherLogo>
+		) : (
+			mark
+		);
+	const brandClick = hasPlatformMenu
+		? (event: React.MouseEvent<HTMLElement>) =>
+				setPlatformAnchor(event.currentTarget)
+		: onBrandClick;
+	const brandMenuOpen = hasPlatformMenu ? Boolean(platformAnchor) : undefined;
+	const headerLogo = withPlatformMenu(
+		logo ?? renderMaskLogo(resolvedBrandColor)
+	);
+	const railLogo = withPlatformMenu(
+		logo ?? renderMaskLogo(brandColor ?? sidebarChromeFg)
+	);
 	// The collapsible and panel sidebars are always a rail; hovering opens the
 	// full panel over the page, so the content never moves.
 	const hoverSidebar = useHoverExpand();
@@ -894,7 +960,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			showHeaderBar={useCollapsibleSidebar}
 			logo={headerLogo}
 			title={appName}
-			onBrandClick={onBrandClick}
+			onBrandClick={brandClick}
+			brandMenuOpen={brandMenuOpen}
 			brandColor={resolvedBrandColor}
 			headerBackgroundColor={
 				useCollapsibleSidebar ? railHeaderBg : undefined
@@ -1064,7 +1131,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						}
 						appName={appName}
 						logo={headerLogo}
-						onBrandClick={onBrandClick}
+						onBrandClick={brandClick}
+						brandMenuOpen={brandMenuOpen}
 						background={resolvedSidebarHeaderBg}
 						color={sidebarHeaderFg}
 						brandColor={resolvedBrandColor}
@@ -1135,7 +1203,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								onLinkClick={onLinkClick}
 								logo={headerLogo}
 								title={appName}
-								onBrandClick={onBrandClick}
+								onBrandClick={brandClick}
+								brandMenuOpen={brandMenuOpen}
 								brandColor={resolvedBrandColor}
 								headerBackgroundColor={railHeaderBg}
 								headerForegroundColor={sidebarHeaderFg}
@@ -1228,7 +1297,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									<Brand
 										logo={railLogo}
 										appName={appName}
-										onClick={onBrandClick}
+										onClick={brandClick}
+										menuOpen={brandMenuOpen}
 										color={brandColor ?? sidebarChromeFg}
 										testId='sidebar-header-brand'
 									/>

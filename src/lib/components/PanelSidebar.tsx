@@ -26,7 +26,9 @@ export interface PanelSidebarProps {
 	// Header bar (the brand) — forwarded to CollapsibleSidebar
 	logo?: React.ReactNode;
 	title?: string;
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/** Whether the brand's platform menu is open; left out, it has none. */
+	brandMenuOpen?: boolean;
 	brandColor?: string;
 	headerBackgroundColor?: string;
 	headerForegroundColor?: string;
@@ -90,6 +92,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	logo,
 	title,
 	onBrandClick,
+	brandMenuOpen,
 	brandColor,
 	headerBackgroundColor,
 	headerForegroundColor,
@@ -265,6 +268,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				logo={logo}
 				title={title}
 				onBrandClick={onBrandClick}
+				brandMenuOpen={brandMenuOpen}
 				brandColor={brandColor}
 				headerBackgroundColor={headerBackgroundColor}
 				headerForegroundColor={headerForegroundColor}

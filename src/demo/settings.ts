@@ -25,6 +25,7 @@ export type DemoSettings = {
 	floatingChat: boolean;
 	showAlert: boolean;
 	clickableBrand: boolean;
+	platformSwitcher: boolean;
 	enableRefreshToken: boolean;
 };
 
@@ -55,6 +56,8 @@ export const defaultSettings: DemoSettings = {
 	floatingChat: false,
 	showAlert: false,
 	clickableBrand: true,
+	// The logo as a dropdown toggle listing the platforms (sample data)
+	platformSwitcher: true,
 	enableRefreshToken: false
 };
 

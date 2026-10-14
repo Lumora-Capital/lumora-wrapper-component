@@ -47,6 +47,7 @@ const SWITCH_GROUPS: Array<{
 		title: 'Sidebar chrome',
 		items: [
 			{ key: 'clickableBrand', label: 'Clickable brand' },
+			{ key: 'platformSwitcher', label: 'Platform switcher (logo)' },
 			{ key: 'showSearch', label: 'Search component' },
 			{ key: 'showNotifications', label: 'Notifications' },
 			{ key: 'notificationDrawer', label: 'Notification drawer' },

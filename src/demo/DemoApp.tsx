@@ -17,6 +17,7 @@ import {
 	getDesignTokens,
 	isAuthenticated,
 	storeAuthTokens,
+	type LumoraPlatform,
 	type NotificationSidebarContentProps
 } from '../lib';
 import {
@@ -60,6 +61,34 @@ const centraColorProps = {
 	brandColor: '#4f8a80',
 	contentBackgroundColor: '#f2f6f4'
 };
+
+/**
+ * Sample platforms for the switcher on the sidebar logo. A host passes only
+ * the ones the signed-in user may open.
+ */
+const demoPlatforms: LumoraPlatform[] = [
+	{
+		key: 'centra',
+		name: 'Centra',
+		description: 'Deals, CRM and lending',
+		accentColor: '#09C1AE',
+		url: 'https://centra.lumora.capital'
+	},
+	{
+		key: 'xpdite',
+		name: 'XPdite',
+		description: 'Knowledge graph and agent training',
+		accentColor: '#2F6FD6',
+		url: 'https://xpdite.lumora.capital'
+	},
+	{
+		key: 'polymer',
+		name: 'Polymer',
+		description: 'Agents, prompts and models',
+		accentColor: '#1F6B5C',
+		url: 'https://polymer.lumora.capital'
+	}
+];
 
 /** Stand-in for the host app's own global search component. */
 const DemoSearch = () => (
@@ -213,6 +242,11 @@ const DemoApp = () => {
 	// no tokens and calls redirectToLogin (the flow a host app relies on)
 	const [sessionKey, setSessionKey] = useState(0);
 	const [activePath, setActivePath] = useState('/deals');
+	// The demo switches in place (renames the app, goes home) instead of
+	// following each platform's url
+	const [platformKey, setPlatformKey] = useState('centra');
+	const platform =
+		demoPlatforms.find(p => p.key === platformKey) ?? demoPlatforms[0];
 	const [chatOpen, setChatOpen] = useState(false);
 	const [requestOpen, setRequestOpen] = useState(false);
 	// Help & support opens the requests page; its + opens the request popup
@@ -265,7 +299,11 @@ const DemoApp = () => {
 					redirectToLogin={redirectToLogin}
 					onLogout={handleLogout}
 					enableRefreshToken={settings.enableRefreshToken}
-					appName='CENTRA'
+					appName={
+						settings.platformSwitcher
+							? platform.name.toUpperCase()
+							: 'CENTRA'
+					}
 					userName={demoUser.name}
 					userRole={demoUser.role}
 					userEmail={demoUser.email}
@@ -292,6 +330,14 @@ const DemoApp = () => {
 							? () => setActivePath('/dashboard')
 							: undefined
 					}
+					platforms={
+						settings.platformSwitcher ? demoPlatforms : undefined
+					}
+					currentPlatformKey={platform.key}
+					onPlatformSelect={next => {
+						setPlatformKey(next.key);
+						setActivePath('/dashboard');
+					}}
 					showSidebar={settings.showSidebar}
 					showSidebarRailTitles={settings.showSidebarRailTitles}
 					searchComponent={

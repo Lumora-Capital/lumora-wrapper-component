@@ -12,7 +12,9 @@ interface MobileTopBarProps {
 	onMenuClick?: () => void;
 	appName: string;
 	logo: React.ReactNode;
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/** Whether the brand's platform menu is open; left out, it has none. */
+	brandMenuOpen?: boolean;
 	background: string;
 	/** Menu button color. */
 	color: string;
@@ -29,6 +31,7 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 	appName,
 	logo,
 	onBrandClick,
+	brandMenuOpen,
 	background,
 	color,
 	brandColor = color,
@@ -60,6 +63,7 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 				appName={appName}
 				logo={logo}
 				onClick={onBrandClick}
+				menuOpen={brandMenuOpen}
 				color={brandColor}
 				testId='mobile-brand'
 			/>

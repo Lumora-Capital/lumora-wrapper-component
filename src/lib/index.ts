@@ -7,6 +7,7 @@ import FullBleedSection, {
 import Kbd from './components/Kbd';
 import LumoraWrapper, {
 	type ContentPadding,
+	type LumoraPlatform,
 	type LumoraWrapperProps,
 	type NotificationSidebarContentProps,
 	type SettingsItem,
@@ -26,6 +27,7 @@ export type {
 	CollapsibleSidebarProps,
 	ContentPadding,
 	FullBleedSectionProps,
+	LumoraPlatform,
 	LumoraWrapperProps,
 	NotificationSidebarContentProps,
 	SettingsItem,

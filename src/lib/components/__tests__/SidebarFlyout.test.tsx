@@ -343,6 +343,18 @@ describe("LumoraWrapper sidebarSubmenu='flyout'", () => {
 		expect(lens).toHaveAttribute('data-visible', 'true');
 	});
 
+	it('keeps the lens off a static (non-clickable) user header', () => {
+		renderWrapper('panel');
+		fireEvent.click(screen.getByTestId('panel-user-button'));
+		const menu = screen.getByTestId('account-menu');
+		const lens = menu.querySelector('[data-glass-lens]')!;
+		// Opening focuses the first row; clear the lens off it first
+		fireEvent.mouseLeave(lens.parentElement!);
+		expect(lens).toHaveAttribute('data-visible', 'false');
+		fireEvent.mouseOver(screen.getByTestId('account-menu-header'));
+		expect(lens).toHaveAttribute('data-visible', 'false');
+	});
+
 	it('makes Ask Nexa a drop of tinted glass on the rail', () => {
 		render(
 			<LumoraWrapper
