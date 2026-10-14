@@ -93,6 +93,15 @@ export const deriveGroupTint = (color: string): string => {
 	return `rgba(${r}, ${g}, ${b}, 0.14)`;
 };
 
+/**
+ * `color` at the given alpha, for layering a brand colour into glass. Only
+ * hex colours can be re-alpha'd; anything else comes back unchanged.
+ */
+export const withAlpha = (color: string, alpha: number): string => {
+	const rgb = parseColorToRgb(color);
+	return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
+};
+
 /** Parse `#rgb` / `#rrggbb` (with or without leading `#`) into [r, g, b]. */
 const parseColorToRgb = (color: string): [number, number, number] | null => {
 	let hex = color.trim().replace(/^#/, '');

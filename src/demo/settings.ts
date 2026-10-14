@@ -9,6 +9,7 @@ export type DemoSettings = {
 	noContentPadding: boolean;
 	floatingAssistant: boolean;
 	nestedLinks: boolean;
+	flyoutSubmenu: boolean;
 	showSidebar: boolean;
 	mobileDrawer: boolean;
 	pinDealsOnMobile: boolean;
@@ -37,6 +38,8 @@ export const defaultSettings: DemoSettings = {
 	noContentPadding: false,
 	floatingAssistant: false,
 	nestedLinks: true,
+	// Groups open as glass tiles beside a rail that never widens — Centra's layout
+	flyoutSubmenu: true,
 	showSidebar: true,
 	mobileDrawer: false,
 	pinDealsOnMobile: true,

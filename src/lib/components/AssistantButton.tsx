@@ -3,9 +3,15 @@ import ButtonBase from '@mui/material/ButtonBase';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import Kbd from './Kbd';
 import NexaLogo from './NexaLogo';
+import { RailGlassContext, useRailTooltipProps } from './RailLens';
+import { GEL_SPRING, springTiming } from './glassMotion';
+import { REDUCED_MOTION, glassTintSx } from './liquidGlass';
+
+const gel = springTiming(GEL_SPRING);
 
 const BEAM = '#09C1AE';
 
@@ -39,6 +45,23 @@ const beamSx = (radiusPx: number, cover: string) => ({
 	}
 });
 
+/**
+ * The beam for the glass Nexa: the same light travelling around the edge,
+ * over a glass interior (tint over an opaque base, so the beam's gradient
+ * stays a 2px line rather than showing through).
+ */
+const glassBeamSx = (isDark: boolean) => ({
+	...beamSx(14, 'transparent'),
+	'&::after': {
+		content: '""',
+		position: 'absolute',
+		inset: '2px',
+		borderRadius: '12px',
+		zIndex: 1,
+		background: `${glassTintSx(BEAM, isDark, 'clear').background}, ${isDark ? '#16202c' : '#f2fbfa'}`
+	}
+});
+
 interface AssistantButtonProps {
 	/**
 	 * `sidebar`: full-width "Ask Nexa" row under the brand. `sidebar-icon`: the
@@ -68,6 +91,9 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 	accentColor = '#01584f',
 	rightOffsetPx = 0
 }) => {
+	const railTooltip = useRailTooltipProps();
+	const onGlassRail = React.useContext(RailGlassContext);
+	const isDark = useTheme().palette.mode === 'dark';
 	const tooltip = shortcutKeys
 		? `Ask Nexa (${shortcutKeys.join('')})`
 		: 'Ask Nexa';
@@ -121,9 +147,51 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 		);
 	}
 
+	if (variant === 'sidebar-icon' && onGlassRail) {
+		// On the glass rail: a drop of teal-tinted glass. It keeps its own
+		// fill on hover (the rail's lens glides behind it), swells like a gel
+		// button, and rings with light while the chat is open.
+		return (
+			<Tooltip title={tooltip} placement='right' arrow {...railTooltip}>
+				<IconButton
+					{...common}
+					data-variant='sidebar-icon'
+					data-rail-keep-fill
+					sx={{
+						width: 44,
+						height: 44,
+						borderRadius: '14px',
+						...glassTintSx(BEAM, isDark, 'clear'),
+						backdropFilter: 'blur(8px) saturate(180%)',
+						WebkitBackdropFilter: 'blur(8px) saturate(180%)',
+						...(active && {
+							boxShadow: `${glassTintSx(BEAM, isDark, 'clear').boxShadow}, 0 0 0 3px rgba(13, 212, 191, 0.3), 0 0 18px rgba(13, 212, 191, 0.45)`
+						}),
+						transition: `transform ${gel.duration}ms ${gel.easing}, box-shadow 200ms ease`,
+						'& svg': {
+							filter: 'drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.25))'
+						},
+						'&:hover': { transform: 'scale(1.07)' },
+						'&:active': {
+							transform: 'scale(0.92)',
+							transitionDuration: '90ms'
+						},
+						[REDUCED_MOTION]: {
+							transition: 'none',
+							'&:hover, &:active': { transform: 'none' }
+						},
+						...(busy && glassBeamSx(isDark))
+					}}
+				>
+					<NexaLogo size={20} />
+				</IconButton>
+			</Tooltip>
+		);
+	}
+
 	if (variant === 'sidebar-icon') {
 		return (
-			<Tooltip title={tooltip} placement='right' arrow>
+			<Tooltip title={tooltip} placement='right' arrow {...railTooltip}>
 				<IconButton
 					{...common}
 					data-variant='sidebar-icon'

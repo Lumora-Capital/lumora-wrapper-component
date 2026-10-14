@@ -45,6 +45,8 @@ export interface PanelSidebarProps {
 	 * host's search, built by the wrapper for the current collapsed state.
 	 */
 	topContent?: React.ReactNode;
+	/** How the rail shows a group's pages; see CollapsibleSidebar. */
+	submenuMode?: 'inline' | 'flyout';
 	// User footer + account menu (see AccountMenu for item visibility rules)
 	/** Idle text/icon color of the footer; defaults to the nav's idle color. */
 	color?: string;
@@ -100,6 +102,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	expandedWidth,
 	collapsedWidth,
 	topContent,
+	submenuMode,
 	color,
 	hoverColor,
 	avatarColor,
@@ -275,6 +278,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				collapsedWidth={collapsedWidth}
 				topContent={topContent}
 				footer={footer}
+				submenuMode={submenuMode}
 			/>
 			{showProfile ? (
 				<AccountMenu
@@ -295,6 +299,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					onLinkClick={onLinkClick}
 					menuItems={menuItems}
 					onLogout={onLogout}
+					glass={submenuMode === 'flyout'}
 				/>
 			) : null}
 		</Box>

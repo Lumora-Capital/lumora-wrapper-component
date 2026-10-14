@@ -131,6 +131,14 @@ export declare interface CollapsibleSidebarProps {
     topContent?: React_2.ReactNode;
     /** Pinned below the links, outside the scroll area (e.g. notifications + user). */
     footer?: React_2.ReactNode;
+    /**
+     * How the collapsed icon rail shows a group's pages. `'inline'` (default)
+     * stacks their icons under the group's; `'flyout'` opens them on hover as a
+     * row of glass tiles beside the rail, over a dim of the page, and the rail
+     * labels become hover labels. Applies to the icon-only rail (`collapsed`
+     * without `showLabels`).
+     */
+    submenuMode?: 'inline' | 'flyout';
 }
 
 export declare type ContentPadding = SpacingValue | Partial<Record<Breakpoint, SpacingValue>>;
@@ -241,6 +249,21 @@ export declare interface LumoraWrapperProps {
      * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
      */
     sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
+    /**
+     * How the `collapsible` and `panel` sidebars show a group's pages.
+     * `'expand'` (default): hovering the rail opens the full panel over the
+     * page. `'flyout'`: the Liquid Glass sidebar — the rail is a glass capsule
+     * floating off the window's edges that never widens; a glass lens glides
+     * behind the hovered icon and its name shows beside it, and the current
+     * page is a drop of tinted glass that glides to the new item on a page
+     * change; hovering a group grows its pages out of the icon as a row of
+     * glass tiles (the hovered one magnified, the glass swelling around it)
+     * while everything but the rail dims; the glass catches the pointer's
+     * light. Search opens on hover in a glass card beside the rail, the
+     * account menu is glass, and `alertProps` is not shown (it needs the open
+     * panel).
+     */
+    sidebarSubmenu?: 'expand' | 'flyout';
     /**
      * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
      * with Menu (the links drawer), Search, Nexa and the user menu, so the main

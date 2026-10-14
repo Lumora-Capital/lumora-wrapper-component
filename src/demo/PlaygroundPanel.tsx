@@ -32,6 +32,10 @@ const SWITCH_GROUPS: Array<{
 			{ key: 'mobileDrawer', label: 'Mobile: drawer, no bottom bar' },
 			{ key: 'pinDealsOnMobile', label: 'Mobile: pin Deals in the bar' },
 			{ key: 'nestedLinks', label: 'Nested links (3 levels)' },
+			{
+				key: 'flyoutSubmenu',
+				label: 'Flyout submenus (collapsible, panel)'
+			},
 			{ key: 'showSidebarRailTitles', label: 'Rail titles (rail only)' },
 			{ key: 'showAlert', label: 'Alert card' },
 			{ key: 'brandColors', label: 'Centra colors (light mode)' },

@@ -3,6 +3,7 @@ import Badge from '@mui/material/Badge';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
+import { useRailTooltipProps } from './RailLens';
 
 interface NotificationBellProps {
 	count: number;
@@ -22,9 +23,15 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	tooltipPlacement,
 	testId
 }) => {
+	const railTooltip = useRailTooltipProps();
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
 	return (
-		<Tooltip title={label} placement={tooltipPlacement} arrow>
+		<Tooltip
+			title={label}
+			placement={tooltipPlacement}
+			arrow
+			{...railTooltip}
+		>
 			<IconButton
 				onClick={onClick}
 				aria-label={label}

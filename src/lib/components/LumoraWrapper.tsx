@@ -37,6 +37,7 @@ import PanelSidebar from './PanelSidebar';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
+import GlassLayer from './GlassLayer';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
 import useHoverExpand from './useHoverExpand';
 
@@ -57,6 +58,11 @@ const MOBILE_DRAWER_WIDTH_PX = 300;
  * over the page on hover. */
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
 const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
+/** With flyout submenus the rail is a floating glass capsule, held this far
+ * off the window's edges; the page keeps the capsule plus both gutters. */
+const FLOATING_RAIL_WIDTH_PX = 68;
+const FLOATING_RAIL_GUTTER_PX = 8;
+const FLOATING_RAIL_RADIUS_PX = 24;
 const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
 
@@ -174,6 +180,21 @@ export interface LumoraWrapperProps {
 	 * + user at the bottom. Mobile always uses a drawer behind a slim top bar.
 	 */
 	sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
+	/**
+	 * How the `collapsible` and `panel` sidebars show a group's pages.
+	 * `'expand'` (default): hovering the rail opens the full panel over the
+	 * page. `'flyout'`: the Liquid Glass sidebar — the rail is a glass capsule
+	 * floating off the window's edges that never widens; a glass lens glides
+	 * behind the hovered icon and its name shows beside it, and the current
+	 * page is a drop of tinted glass that glides to the new item on a page
+	 * change; hovering a group grows its pages out of the icon as a row of
+	 * glass tiles (the hovered one magnified, the glass swelling around it)
+	 * while everything but the rail dims; the glass catches the pointer's
+	 * light. Search opens on hover in a glass card beside the rail, the
+	 * account menu is glass, and `alertProps` is not shown (it needs the open
+	 * panel).
+	 */
+	sidebarSubmenu?: 'expand' | 'flyout';
 	/**
 	 * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
 	 * with Menu (the links drawer), Search, Nexa and the user menu, so the main
@@ -439,6 +460,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSidebar = true,
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
+	sidebarSubmenu = 'expand',
 	mobileNavigation = 'bottom-bar',
 	mobileBottomBarLinks,
 	logo,
@@ -567,7 +589,26 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// The collapsible and panel sidebars are always a rail; hovering opens the
 	// full panel over the page, so the content never moves.
 	const hoverSidebar = useHoverExpand();
-	const sidebarCollapsed = !hoverSidebar.expanded;
+	// Flyout submenus: the rail stays a rail, and groups open beside it
+	const useFlyoutSubmenu =
+		sidebarSubmenu === 'flyout' &&
+		(useCollapsibleSidebar || usePanelSidebar);
+	const sidebarCollapsed = useFlyoutSubmenu || !hoverSidebar.expanded;
+	// What the rail's top content (Nexa, search) looks like while collapsed:
+	// it expands the panel, or — with nothing to expand — opens a popover.
+	const collapsedTopMode = useFlyoutSubmenu ? 'popover' : 'expand';
+	// The floating glass rail: the capsule draws the surface, so the
+	// sidebar inside it is see-through (a set header colour still applies).
+	const railWidthPx = useFlyoutSubmenu
+		? FLOATING_RAIL_WIDTH_PX
+		: COLLAPSIBLE_COLLAPSED_WIDTH_PX;
+	const railSurface = useFlyoutSubmenu
+		? 'transparent'
+		: resolvedSidebarSurface;
+	const railHeaderBg =
+		useFlyoutSubmenu && !sidebarHeaderBackgroundColor
+			? 'transparent'
+			: resolvedSidebarHeaderBg;
 	// Set when the collapsed rail's search icon expands the sidebar, so the
 	// search field takes focus once it is rendered at full width.
 	const [focusSearch, setFocusSearch] = useState(false);
@@ -577,6 +618,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	if (showSidebar && !isMobile) {
 		if (useRailLabeledSidebar) {
 			desktopSidebarWidthPx = RAIL_LABELED_WIDTH_PX;
+		} else if (useFlyoutSubmenu) {
+			desktopSidebarWidthPx =
+				FLOATING_RAIL_WIDTH_PX + 2 * FLOATING_RAIL_GUTTER_PX;
 		} else if (useCollapsibleSidebar || usePanelSidebar) {
 			desktopSidebarWidthPx = COLLAPSIBLE_COLLAPSED_WIDTH_PX;
 		} else {
@@ -853,7 +897,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			onBrandClick={onBrandClick}
 			brandColor={resolvedBrandColor}
 			headerBackgroundColor={
-				useCollapsibleSidebar ? resolvedSidebarHeaderBg : undefined
+				useCollapsibleSidebar ? railHeaderBg : undefined
 			}
 			headerForegroundColor={
 				useCollapsibleSidebar ? sidebarHeaderFg : undefined
@@ -862,30 +906,92 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			groupAccentColor={groupAccentColor}
 			activeForegroundColor={activeSidebarForegroundColor}
 			foregroundColor={sidebarForegroundColor}
-			surfaceBackgroundColor={resolvedSidebarSurface}
+			surfaceBackgroundColor={railSurface}
 			collapsed={useRailLabeledSidebar || sidebarCollapsed}
 			showLabels={useRailLabeledSidebar}
 			expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
 			collapsedWidth={
-				useRailLabeledSidebar
-					? RAIL_LABELED_WIDTH_PX
-					: COLLAPSIBLE_COLLAPSED_WIDTH_PX
+				useRailLabeledSidebar ? RAIL_LABELED_WIDTH_PX : railWidthPx
 			}
 			topContent={renderTopContent(
 				useRailLabeledSidebar
 					? 'popover'
 					: sidebarCollapsed
-						? 'expand'
+						? collapsedTopMode
 						: 'full'
 			)}
 			footer={renderFooter(useRailLabeledSidebar || sidebarCollapsed)}
+			submenuMode={useFlyoutSubmenu ? 'flyout' : 'inline'}
 		/>
 	);
 	// The collapsible and panel variants: the page keeps the rail's width and
 	// the open panel lays over it, lifted by a shadow. The contents switch to
 	// their open (or rail) layout at once and the panel's clipped edge slides
 	// over them, so opening reveals finished rows instead of reflowing them.
-	const renderHoverSidebar = (content: React.ReactNode) => (
+	const renderHoverSidebar = (content: React.ReactNode) =>
+		useFlyoutSubmenu ? renderGlassRail(content) : renderHoverPanel(content);
+	// Flyout submenus: the rail is a capsule of liquid glass floating over
+	// the page background, inset from the window's edges. The glass is its
+	// own layer under the rail, so its highlight never washes over icons.
+	const renderGlassRail = (content: React.ReactNode) => (
+		<Box
+			component='aside'
+			sx={{
+				width: desktopSidebarWidthPx,
+				minWidth: desktopSidebarWidthPx,
+				flexShrink: 0,
+				// Above the page, including its sticky app bars
+				zIndex: theme => theme.zIndex.appBar + 1,
+				position: 'sticky',
+				top: 0,
+				alignSelf: 'flex-start',
+				height: '100vh',
+				bgcolor: resolvedContentBg
+			}}
+		>
+			<Box
+				data-testid='sidebar-hover-panel'
+				data-expanded='false'
+				data-glass='true'
+				data-rail-surface=''
+				sx={{
+					position: 'absolute',
+					top: FLOATING_RAIL_GUTTER_PX,
+					bottom: FLOATING_RAIL_GUTTER_PX,
+					left: FLOATING_RAIL_GUTTER_PX,
+					width: FLOATING_RAIL_WIDTH_PX,
+					borderRadius: `${FLOATING_RAIL_RADIUS_PX}px`,
+					display: 'flex',
+					flexDirection: 'column',
+					...sidebarStyles
+				}}
+			>
+				<GlassLayer
+					isDark={isDark}
+					solid={resolvedSidebarSurface}
+					sx={{
+						position: 'absolute',
+						inset: 0,
+						borderRadius: 'inherit'
+					}}
+				/>
+				<Box
+					sx={{
+						position: 'relative',
+						flex: '1 1 auto',
+						minHeight: 0,
+						display: 'flex',
+						flexDirection: 'column',
+						borderRadius: 'inherit',
+						overflow: 'hidden'
+					}}
+				>
+					{content}
+				</Box>
+			</Box>
+		</Box>
+	);
+	const renderHoverPanel = (content: React.ReactNode) => (
 		<Box
 			component='aside'
 			sx={{
@@ -901,7 +1007,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			}}
 		>
 			<Box
-				{...hoverSidebar.rootProps}
+				{...(useFlyoutSubmenu ? {} : hoverSidebar.rootProps)}
 				data-testid='sidebar-hover-panel'
 				data-expanded={sidebarCollapsed ? 'false' : 'true'}
 				sx={{
@@ -1031,7 +1137,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								title={appName}
 								onBrandClick={onBrandClick}
 								brandColor={resolvedBrandColor}
-								headerBackgroundColor={resolvedSidebarHeaderBg}
+								headerBackgroundColor={railHeaderBg}
 								headerForegroundColor={sidebarHeaderFg}
 								activeAccentColor={resolvedSidebarAccent}
 								groupAccentColor={groupAccentColor}
@@ -1039,13 +1145,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									activeSidebarForegroundColor
 								}
 								foregroundColor={sidebarForegroundColor}
-								surfaceBackgroundColor={resolvedSidebarSurface}
+								surfaceBackgroundColor={railSurface}
 								collapsed={sidebarCollapsed}
 								expandedWidth={COLLAPSIBLE_EXPANDED_WIDTH_PX}
-								collapsedWidth={COLLAPSIBLE_COLLAPSED_WIDTH_PX}
+								collapsedWidth={railWidthPx}
 								topContent={renderTopContent(
-									sidebarCollapsed ? 'expand' : 'full'
+									sidebarCollapsed ? collapsedTopMode : 'full'
 								)}
+								submenuMode={
+									useFlyoutSubmenu ? 'flyout' : 'inline'
+								}
 								// Footer + account menu
 								color={sidebarChromeFg}
 								hoverColor={sidebarChromeHover}

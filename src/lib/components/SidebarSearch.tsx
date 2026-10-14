@@ -2,8 +2,31 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Popover from '@mui/material/Popover';
+import Popper from '@mui/material/Popper';
 import Tooltip from '@mui/material/Tooltip';
+import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import GlassLayer from './GlassLayer';
+import { RailGlassContext, useRailTooltipProps } from './RailLens';
+import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
+import {
+	REDUCED_MOTION,
+	contentIn,
+	glassGrow,
+	glassWellSx
+} from './liquidGlass';
+import { withAlpha } from './sidebarUtils';
+
+/** Hover search on the glass rail: pause before opening, grace before
+ * closing (so the pointer can cross from the icon to the field). */
+const HOVER_OPEN_DELAY_MS = 120;
+const HOVER_CLOSE_DELAY_MS = 300;
+const morph = springTiming(MORPH_SPRING);
+const settle = springTiming(SETTLE_SPRING);
+
+/** The host field's current text, if it has one. */
+const fieldValue = (container: HTMLElement | null) =>
+	container?.querySelector<HTMLInputElement>('input, textarea')?.value ?? '';
 
 const FOCUSABLE = 'input, textarea, [contenteditable="true"]';
 
@@ -40,6 +63,8 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 	color,
 	hoverColor
 }) => {
+	const railTooltip = useRailTooltipProps();
+	const onGlassRail = React.useContext(RailGlassContext);
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const [popoverAnchor, setPopoverAnchor] =
 		React.useState<HTMLElement | null>(null);
@@ -63,12 +88,22 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 		);
 	}
 
+	if (mode === 'popover' && onGlassRail) {
+		return (
+			<HoverSearch
+				search={search}
+				color={color}
+				railTooltip={railTooltip}
+			/>
+		);
+	}
+
 	return (
 		<Box
 			data-testid='sidebar-search'
 			sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
 		>
-			<Tooltip title='Search' placement='right' arrow>
+			<Tooltip title='Search' placement='right' arrow {...railTooltip}>
 				<IconButton
 					aria-label='Search'
 					onClick={event =>
@@ -100,6 +135,185 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 			>
 				{search}
 			</Popover>
+		</Box>
+	);
+};
+
+/**
+ * Search on the glass rail: the field opens beside the icon on hover — a
+ * glass card growing out of it — and takes focus. Leaving closes it again,
+ * unless something has been typed: then it stays until a click outside or
+ * Escape. A click on the icon pins it open.
+ */
+const HoverSearch: React.FC<{
+	search: React.ReactNode;
+	color: string;
+	railTooltip: ReturnType<typeof useRailTooltipProps>;
+}> = ({ search, color, railTooltip }) => {
+	const isDark = useTheme().palette.mode === 'dark';
+	const well = glassWellSx(isDark, withAlpha(color, isDark ? 0.3 : 0.35));
+	const iconRef = React.useRef<HTMLButtonElement>(null);
+	const cardRef = React.useRef<HTMLDivElement>(null);
+	const [open, setOpen] = React.useState(false);
+	const pinned = React.useRef(false);
+	const openTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+	const closeTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+
+	const clearTimers = () => {
+		clearTimeout(openTimer.current);
+		clearTimeout(closeTimer.current);
+	};
+	const close = React.useCallback(() => {
+		clearTimers();
+		pinned.current = false;
+		setOpen(false);
+	}, []);
+	const enter = () => {
+		clearTimeout(closeTimer.current);
+		if (!open) {
+			clearTimeout(openTimer.current);
+			openTimer.current = setTimeout(
+				() => setOpen(true),
+				HOVER_OPEN_DELAY_MS
+			);
+		}
+	};
+	const leave = () => {
+		clearTimeout(openTimer.current);
+		clearTimeout(closeTimer.current);
+		closeTimer.current = setTimeout(() => {
+			// Typed into, or pinned by a click: it stays
+			if (!pinned.current && !fieldValue(cardRef.current)) {
+				setOpen(false);
+			}
+		}, HOVER_CLOSE_DELAY_MS);
+	};
+
+	React.useEffect(() => clearTimers, []);
+
+	// Open: the field takes focus. A press outside, or Escape, closes it.
+	React.useEffect(() => {
+		if (!open) {
+			return undefined;
+		}
+		const focus = setTimeout(() => focusFirstField(cardRef.current));
+		const onPointerDown = (event: PointerEvent) => {
+			const target = event.target as Node;
+			if (
+				!cardRef.current?.contains(target) &&
+				!iconRef.current?.contains(target)
+			) {
+				close();
+			}
+		};
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				close();
+				iconRef.current?.focus();
+			}
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			clearTimeout(focus);
+			document.removeEventListener('pointerdown', onPointerDown);
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [open, close]);
+
+	return (
+		<Box
+			data-testid='sidebar-search'
+			sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+		>
+			<Tooltip
+				title={open ? '' : 'Search'}
+				placement='right'
+				arrow
+				{...railTooltip}
+			>
+				<IconButton
+					ref={iconRef}
+					aria-label='Search'
+					aria-expanded={open}
+					onMouseEnter={enter}
+					onMouseLeave={leave}
+					onClick={() => {
+						clearTimers();
+						pinned.current = true;
+						setOpen(true);
+					}}
+					sx={{ width: 44, height: 44, color, borderRadius: '12px' }}
+				>
+					<SearchRoundedIcon />
+				</IconButton>
+			</Tooltip>
+			<Popper
+				open={open}
+				anchorEl={iconRef.current}
+				placement='right'
+				modifiers={[
+					{ name: 'offset', options: { offset: [0, 14] } },
+					{ name: 'preventOverflow', options: { padding: 8 } }
+				]}
+				sx={{ zIndex: 1300 }}
+			>
+				<Box
+					ref={cardRef}
+					data-testid='sidebar-search-card'
+					onMouseEnter={enter}
+					onMouseLeave={leave}
+					sx={{
+						position: 'relative',
+						width: 360,
+						p: 1.25,
+						borderRadius: '18px'
+					}}
+				>
+					<GlassLayer
+						isDark={isDark}
+						solid={isDark ? '#1e2430' : '#ffffff'}
+						sx={{
+							position: 'absolute',
+							inset: 0,
+							borderRadius: 'inherit',
+							transformOrigin: 'left center',
+							animation: `${glassGrow} ${morph.duration}ms ${morph.easing} both`,
+							[REDUCED_MOTION]: { animation: 'none' }
+						}}
+					/>
+					<Box
+						sx={{
+							position: 'relative',
+							// The host's field, set into the glass: an outlined
+							// input or button becomes a recessed glass well.
+							// Classes repeat to outrank the host's own styles.
+							'& .MuiInputBase-root.MuiInputBase-root.MuiInputBase-root':
+								{
+									...well.rest,
+									'&:hover': well.hover,
+									'&.Mui-focused': well.focus
+								},
+							'& .MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline':
+								{ border: 'none' },
+							'& .MuiButton-outlined.MuiButton-outlined.MuiButton-outlined':
+								{
+									...well.rest,
+									border: 'none',
+									'&:hover': {
+										...well.hover,
+										border: 'none'
+									},
+									'&.Mui-focusVisible': well.focus
+								},
+							animation: `${contentIn} ${settle.duration}ms ${settle.easing} 60ms both`,
+							[REDUCED_MOTION]: { animation: 'none' }
+						}}
+					>
+						{search}
+					</Box>
+				</Box>
+			</Popper>
 		</Box>
 	);
 };

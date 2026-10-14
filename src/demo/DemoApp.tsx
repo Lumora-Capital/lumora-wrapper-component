@@ -270,6 +270,9 @@ const DemoApp = () => {
 					userRole={demoUser.role}
 					userEmail={demoUser.email}
 					sidebarVariant={settings.sidebarVariant}
+					sidebarSubmenu={
+						settings.flyoutSubmenu ? 'flyout' : 'expand'
+					}
 					mobileNavigation={
 						settings.mobileDrawer ? 'drawer' : 'bottom-bar'
 					}
