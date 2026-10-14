@@ -38,6 +38,8 @@ export interface PanelSidebarProps {
 	activeForegroundColor?: string;
 	foregroundColor?: string;
 	surfaceBackgroundColor?: string;
+	/** Flyout panel surface; forwarded to CollapsibleSidebar. */
+	flyoutSurfaceColor?: string;
 	// Collapse / expand (the wrapper opens it on hover)
 	collapsed: boolean;
 	expandedWidth: number;
@@ -101,6 +103,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	activeForegroundColor,
 	foregroundColor,
 	surfaceBackgroundColor,
+	flyoutSurfaceColor,
 	collapsed,
 	expandedWidth,
 	collapsedWidth,
@@ -277,6 +280,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				activeForegroundColor={activeForegroundColor}
 				foregroundColor={foregroundColor}
 				surfaceBackgroundColor={surface}
+				flyoutSurfaceColor={flyoutSurfaceColor}
 				collapsed={collapsed}
 				expandedWidth={expandedWidth}
 				collapsedWidth={collapsedWidth}

@@ -25,7 +25,8 @@ import {
 	glassTintSx,
 	scrimColor,
 	tileIn,
-	GLASS_RADIUS_PX
+	GLASS_RADIUS_PX,
+	SidebarSurfaceContext
 } from './liquidGlass';
 import GlassLayer from './GlassLayer';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
@@ -1159,6 +1160,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 		ref
 	) => {
 		const accentRgb = useGlassAccentRgb();
+		const labelSurface = React.useContext(SidebarSurfaceContext);
 		// The glow follows the pointer across the tile, as light from a
 		// fingertip; written to CSS variables so moving does not re-render.
 		const onPointerMove = (event: React.PointerEvent<HTMLElement>) => {
@@ -1274,7 +1276,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 					component='span'
 					data-tile-name
 					sx={{
-						...glassLabelSx(isDark),
+						...glassLabelSx(isDark, labelSurface),
 						position: 'absolute',
 						top: '100%',
 						left: '50%',

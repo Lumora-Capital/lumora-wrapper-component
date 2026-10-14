@@ -111,6 +111,11 @@ export declare interface CollapsibleSidebarProps {
     foregroundColor?: string;
     /** Sidebar surface background (default '#ffffff'). */
     surfaceBackgroundColor?: string;
+    /**
+     * Flyout panel surface (`submenuMode="flyout"`); defaults to the sidebar
+     * surface. Set it when the rail's own surface is see-through.
+     */
+    flyoutSurfaceColor?: string;
     /** Icon rail when true; the owner decides when (e.g. on hover). */
     collapsed?: boolean;
     /** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */

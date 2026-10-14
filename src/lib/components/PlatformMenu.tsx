@@ -14,7 +14,8 @@ import {
 	GLASS_RADIUS_PX,
 	REDUCED_MOTION,
 	contentIn,
-	glassGrow
+	glassGrow,
+	useSidebarSurface
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
 
@@ -78,6 +79,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
 	const open = Boolean(anchorEl);
+	const surface = useSidebarSurface(theme.palette.background.paper);
 	const lens = useGlassLens({
 		enabled: glass,
 		isDark,
@@ -197,7 +199,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 					<>
 						<GlassLayer
 							isDark={isDark}
-							solid={theme.palette.background.paper}
+							solid={surface}
 							sx={{
 								position: 'absolute',
 								inset: 0,

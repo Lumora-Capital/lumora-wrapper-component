@@ -14,7 +14,8 @@ import {
 	glassLabelSx,
 	glassTintSx,
 	useGlassAccentRgb,
-	GLASS_RADIUS_PX
+	GLASS_RADIUS_PX,
+	SidebarSurfaceContext
 } from './liquidGlass';
 
 /** Marks a rail icon the lens can rest on (any button in the rail is one). */
@@ -35,13 +36,16 @@ export const RailGlassContext = React.createContext(false);
 export const useRailTooltipProps = () => {
 	const glass = React.useContext(RailGlassContext);
 	const theme = useTheme();
+	const surface = React.useContext(SidebarSurfaceContext);
 	if (!glass) {
 		return {};
 	}
 	return {
 		arrow: false,
 		slotProps: {
-			tooltip: { sx: glassLabelSx(theme.palette.mode === 'dark') },
+			tooltip: {
+				sx: glassLabelSx(theme.palette.mode === 'dark', surface)
+			},
 			popper: {
 				modifiers: [{ name: 'offset', options: { offset: [0, 6] } }]
 			}

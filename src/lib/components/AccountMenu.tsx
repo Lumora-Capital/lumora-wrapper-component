@@ -23,7 +23,8 @@ import {
 	glassGrow,
 	glassBubbleSx,
 	useGlassAccentRgb,
-	GLASS_RADIUS_PX
+	GLASS_RADIUS_PX,
+	useSidebarSurface
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
 import GlassLayer from './GlassLayer';
@@ -247,6 +248,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
 	const popoverActions = React.useRef<PopoverActions>(null);
+	const surface = useSidebarSurface(theme.palette.background.paper);
 	const menuLens = useGlassLens({
 		enabled: glass,
 		isDark,
@@ -407,7 +409,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 				{glass ? (
 					<GlassLayer
 						isDark={isDark}
-						solid={theme.palette.background.paper}
+						solid={surface}
 						sx={{
 							position: 'absolute',
 							inset: 0,

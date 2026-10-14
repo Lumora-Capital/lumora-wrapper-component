@@ -64,6 +64,20 @@ export const GlassAccentContext = React.createContext<string | undefined>(
 	undefined
 );
 
+/**
+ * The sidebar's surface colour, provided by the wrapper: the popups opened
+ * from the rail (flyout, menus, search card, labels) take it as their solid
+ * colour, so they read as part of the sidebar. A context because they render
+ * in portals.
+ */
+export const SidebarSurfaceContext = React.createContext<string | undefined>(
+	undefined
+);
+
+/** The sidebar surface, or `fallback` outside the wrapper. */
+export const useSidebarSurface = (fallback: string) =>
+	React.useContext(SidebarSurfaceContext) ?? fallback;
+
 /** The glass accent as `r, g, b` (teal when unset or not a hex colour). */
 export const useGlassAccentRgb = () => {
 	const accent = React.useContext(GlassAccentContext);
@@ -179,12 +193,12 @@ export const scrimColor = (isDark: boolean) =>
 	isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(15, 23, 42, 0.22)';
 
 /** The small frosted label shown beside a rail icon on hover. */
-export const glassLabelSx = (isDark: boolean) =>
+export const glassLabelSx = (isDark: boolean, surface?: string) =>
 	LIQUID_GLASS_ENABLED
 		? liquidLabelSx(isDark)
 		: {
 				color: isDark ? '#ffffff' : '#0b1f1c',
-				bgcolor: isDark ? 'rgb(30, 36, 48)' : '#ffffff',
+				bgcolor: surface ?? (isDark ? 'rgb(30, 36, 48)' : '#ffffff'),
 				border: '1px solid',
 				borderColor: solidEdge(isDark),
 				boxShadow: isDark

@@ -23,7 +23,11 @@ import {
 } from './RailLens';
 import SidebarFlyout from './SidebarFlyout';
 import { GEL_SPRING, springTiming } from './glassMotion';
-import { GLASS_RADIUS_PX, glassLabelSx } from './liquidGlass';
+import {
+	GLASS_RADIUS_PX,
+	glassLabelSx,
+	SidebarSurfaceContext
+} from './liquidGlass';
 import {
 	deriveGroupTint,
 	flattenLeaves,
@@ -208,6 +212,11 @@ export interface CollapsibleSidebarProps {
 	foregroundColor?: string;
 	/** Sidebar surface background (default '#ffffff'). */
 	surfaceBackgroundColor?: string;
+	/**
+	 * Flyout panel surface (`submenuMode="flyout"`); defaults to the sidebar
+	 * surface. Set it when the rail's own surface is see-through.
+	 */
+	flyoutSurfaceColor?: string;
 	// Collapse / expand
 	/** Icon rail when true; the owner decides when (e.g. on hover). */
 	collapsed?: boolean;
@@ -260,6 +269,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	activeForegroundColor,
 	foregroundColor,
 	surfaceBackgroundColor,
+	flyoutSurfaceColor,
 	collapsed = false,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
@@ -271,6 +281,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 }) => {
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
+	const labelSurface = React.useContext(SidebarSurfaceContext);
 	const useFlyout = submenuMode === 'flyout' && collapsed && !showLabels;
 	const flyout = useFlyoutIntent(useFlyout);
 	const navRef = React.useRef<HTMLElement>(null);
@@ -767,7 +778,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// The flyout rail's hover labels: frosted pills, no arrow.
 	const glassTooltipProps = {
 		slotProps: {
-			tooltip: { sx: glassLabelSx(isDark) },
+			tooltip: { sx: glassLabelSx(isDark, labelSurface) },
 			popper: {
 				modifiers: [{ name: 'offset', options: { offset: [0, 6] } }]
 			}
@@ -1052,7 +1063,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				panelProps={flyout.flyoutProps}
 				accentColor={activeAccent}
 				activeForegroundColor={activeFg}
-				solidSurface={surface}
+				solidSurface={flyoutSurfaceColor ?? surface}
 			/>
 		);
 	};

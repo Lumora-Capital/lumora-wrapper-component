@@ -16,7 +16,8 @@ import {
 	glassGrow,
 	glassWellSx,
 	GLASS_RADIUS_PX,
-	useGlassAccentRgb
+	useGlassAccentRgb,
+	useSidebarSurface
 } from './liquidGlass';
 import { withAlpha } from './sidebarUtils';
 
@@ -158,6 +159,7 @@ const HoverSearch: React.FC<{
 	// Solid (glass look off): the host's field with the glass corner and
 	// the sidebar accent as its focus border
 	const accent = `rgb(${useGlassAccentRgb()})`;
+	const surface = useSidebarSurface(isDark ? '#1e2430' : '#ffffff');
 	const solidField = {
 		'& .MuiInputBase-root.MuiInputBase-root.MuiInputBase-root': {
 			borderRadius: `${GLASS_RADIUS_PX}px`,
@@ -295,7 +297,7 @@ const HoverSearch: React.FC<{
 				>
 					<GlassLayer
 						isDark={isDark}
-						solid={isDark ? '#1e2430' : '#ffffff'}
+						solid={surface}
 						sx={{
 							position: 'absolute',
 							inset: 0,
