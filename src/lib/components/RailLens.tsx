@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import {
 	GLIDE_SPRING,
 	canAnimate,
@@ -227,8 +228,12 @@ export const useGlassLens = ({
 				data-visible={box.visible ? 'true' : 'false'}
 				sx={{
 					...glassBubbleSx(isDark, accentRgb),
-					backdropFilter: 'blur(8px) saturate(170%)',
-					WebkitBackdropFilter: 'blur(8px) saturate(170%)',
+					...(LIQUID_GLASS_ENABLED
+						? {
+								backdropFilter: 'blur(8px) saturate(170%)',
+								WebkitBackdropFilter: 'blur(8px) saturate(170%)'
+							}
+						: {}),
 					borderRadius: `${radius}px`,
 					position: 'absolute',
 					top: 0,

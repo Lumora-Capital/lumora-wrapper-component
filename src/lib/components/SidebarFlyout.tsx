@@ -28,6 +28,7 @@ import {
 	GLASS_RADIUS_PX
 } from './liquidGlass';
 import GlassLayer from './GlassLayer';
+import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { flattenLeaves, isSubLinkActive } from './sidebarUtils';
 
 /** Compact square tiles in one row; the name shows on hover. */
@@ -1065,8 +1066,15 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 					<path
 						ref={rimPathRef}
 						fill='none'
-						stroke={`url(#${uid}-rim)`}
-						strokeWidth='1.25'
+						// Solid while the glass look is off: a hairline edge
+						stroke={
+							LIQUID_GLASS_ENABLED
+								? `url(#${uid}-rim)`
+								: isDark
+									? 'rgba(255, 255, 255, 0.12)'
+									: 'rgba(15, 23, 42, 0.1)'
+						}
+						strokeWidth={LIQUID_GLASS_ENABLED ? '1.25' : '1'}
 					/>
 					{/* Where the pointer's light catches the rim */}
 					<radialGradient
@@ -1093,7 +1101,10 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 						fill='none'
 						stroke={`url(#${uid}-glint)`}
 						strokeWidth='1.5'
-						style={{ opacity: 0 }}
+						style={{
+							opacity: 0,
+							display: LIQUID_GLASS_ENABLED ? undefined : 'none'
+						}}
 					/>
 				</svg>
 			</Box>
@@ -1230,7 +1241,10 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 						pointerEvents: 'none',
 						opacity: 0,
 						transition: 'opacity 160ms ease',
-						background: `radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, ${isDark ? 0.18 : 0.7}), transparent 65%)`
+						// The pointer's glow on the tile (glass look only)
+						background: LIQUID_GLASS_ENABLED
+							? `radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, ${isDark ? 0.18 : 0.7}), transparent 65%)`
+							: 'none'
 					},
 					// The current page keeps its accent fill; it still glows
 					'&:hover': active

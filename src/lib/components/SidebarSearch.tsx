@@ -7,6 +7,7 @@ import Tooltip from '@mui/material/Tooltip';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import GlassLayer from './GlassLayer';
+import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
@@ -14,7 +15,8 @@ import {
 	contentIn,
 	glassGrow,
 	glassWellSx,
-	GLASS_RADIUS_PX
+	GLASS_RADIUS_PX,
+	useGlassAccentRgb
 } from './liquidGlass';
 import { withAlpha } from './sidebarUtils';
 
@@ -153,6 +155,21 @@ const HoverSearch: React.FC<{
 }> = ({ search, color, railTooltip }) => {
 	const isDark = useTheme().palette.mode === 'dark';
 	const well = glassWellSx(isDark, withAlpha(color, isDark ? 0.3 : 0.35));
+	// Solid (glass look off): the host's field with the glass corner and
+	// the sidebar accent as its focus border
+	const accent = `rgb(${useGlassAccentRgb()})`;
+	const solidField = {
+		'& .MuiInputBase-root.MuiInputBase-root.MuiInputBase-root': {
+			borderRadius: `${GLASS_RADIUS_PX}px`,
+			'&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+				borderColor: accent
+			}
+		},
+		'& .MuiButton-outlined.MuiButton-outlined.MuiButton-outlined': {
+			borderRadius: `${GLASS_RADIUS_PX}px`,
+			'&.Mui-focusVisible': { borderColor: accent }
+		}
+	};
 	const iconRef = React.useRef<HTMLButtonElement>(null);
 	const cardRef = React.useRef<HTMLDivElement>(null);
 	const [open, setOpen] = React.useState(false);
@@ -294,24 +311,28 @@ const HoverSearch: React.FC<{
 							// The host's field, set into the glass: an outlined
 							// input or button becomes a recessed glass well.
 							// Classes repeat to outrank the host's own styles.
-							'& .MuiInputBase-root.MuiInputBase-root.MuiInputBase-root':
-								{
-									...well.rest,
-									'&:hover': well.hover,
-									'&.Mui-focused': well.focus
-								},
-							'& .MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline':
-								{ border: 'none' },
-							'& .MuiButton-outlined.MuiButton-outlined.MuiButton-outlined':
-								{
-									...well.rest,
-									border: 'none',
-									'&:hover': {
-										...well.hover,
-										border: 'none'
-									},
-									'&.Mui-focusVisible': well.focus
-								},
+							...(LIQUID_GLASS_ENABLED
+								? {
+										'& .MuiInputBase-root.MuiInputBase-root.MuiInputBase-root':
+											{
+												...well.rest,
+												'&:hover': well.hover,
+												'&.Mui-focused': well.focus
+											},
+										'& .MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline.MuiOutlinedInput-notchedOutline':
+											{ border: 'none' },
+										'& .MuiButton-outlined.MuiButton-outlined.MuiButton-outlined':
+											{
+												...well.rest,
+												border: 'none',
+												'&:hover': {
+													...well.hover,
+													border: 'none'
+												},
+												'&.Mui-focusVisible': well.focus
+											}
+									}
+								: solidField),
 							animation: `${contentIn} ${settle.duration}ms ${settle.easing} 60ms both`,
 							[REDUCED_MOTION]: { animation: 'none' }
 						}}

@@ -5,6 +5,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import Kbd from './Kbd';
 import NexaLogo from './NexaLogo';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
@@ -162,8 +163,13 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 						height: 44,
 						borderRadius: `${GLASS_RADIUS_PX}px`,
 						...glassTintSx(BEAM, isDark, 'clear'),
-						backdropFilter: 'blur(8px) saturate(180%)',
-						WebkitBackdropFilter: 'blur(8px) saturate(180%)',
+						...(LIQUID_GLASS_ENABLED
+							? {
+									backdropFilter: 'blur(8px) saturate(180%)',
+									WebkitBackdropFilter:
+										'blur(8px) saturate(180%)'
+								}
+							: {}),
 						...(active && {
 							boxShadow: `${glassTintSx(BEAM, isDark, 'clear').boxShadow}, 0 0 0 3px rgba(13, 212, 191, 0.3), 0 0 18px rgba(13, 212, 191, 0.45)`
 						}),

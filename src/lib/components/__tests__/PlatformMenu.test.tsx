@@ -1,6 +1,5 @@
 import { Home } from '@mui/icons-material';
 import { useMediaQuery } from '@mui/material';
-import * as React from 'react';
 import LumoraWrapper, {
 	type LumoraPlatform,
 	type LumoraWrapperProps

@@ -6,7 +6,17 @@
  */
 import { keyframes } from '@emotion/react';
 import * as React from 'react';
+import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { parseColorToRgb, withAlpha } from './sidebarUtils';
+
+/** Hairline edge of a solid surface (the glass look switched off). */
+const solidEdge = (isDark: boolean) =>
+	isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.1)';
+/** Drop shadow of a solid floating surface. */
+const solidShadow = (isDark: boolean) =>
+	isDark
+		? '0 12px 32px -8px rgba(0, 0, 0, 0.6)'
+		: '0 12px 32px -8px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06)';
 
 /** How much light the glass bends: none at 0, the full material at 1. */
 const GLASS_BLUR_PX = 28;
@@ -113,6 +123,20 @@ export const glassSurfaceSx = (
 	isDark: boolean,
 	solid: string,
 	accentRgb = LUMORA_TEAL_RGB
+) =>
+	LIQUID_GLASS_ENABLED
+		? liquidSurfaceSx(isDark, solid, accentRgb)
+		: {
+				// Solid: the surface colour, a hairline edge and a shadow
+				position: 'relative' as const,
+				bgcolor: solid,
+				boxShadow: `${solidShadow(isDark)}, 0 0 0 1px ${solidEdge(isDark)}`
+			};
+
+const liquidSurfaceSx = (
+	isDark: boolean,
+	solid: string,
+	accentRgb: string
 ) => ({
 	position: 'relative' as const,
 	bgcolor: isDark ? 'rgba(30, 36, 48, 0.5)' : 'rgba(255, 255, 255, 0.55)',
@@ -155,7 +179,25 @@ export const scrimColor = (isDark: boolean) =>
 	isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(15, 23, 42, 0.22)';
 
 /** The small frosted label shown beside a rail icon on hover. */
-export const glassLabelSx = (isDark: boolean) => ({
+export const glassLabelSx = (isDark: boolean) =>
+	LIQUID_GLASS_ENABLED
+		? liquidLabelSx(isDark)
+		: {
+				color: isDark ? '#ffffff' : '#0b1f1c',
+				bgcolor: isDark ? 'rgb(30, 36, 48)' : '#ffffff',
+				border: '1px solid',
+				borderColor: solidEdge(isDark),
+				boxShadow: isDark
+					? '0 6px 16px -6px rgba(0, 0, 0, 0.6)'
+					: '0 6px 16px -6px rgba(15, 23, 42, 0.2)',
+				borderRadius: `${GLASS_RADIUS_PX}px`,
+				px: 1.25,
+				py: 0.75,
+				fontSize: '0.8125rem',
+				fontWeight: 600
+			};
+
+const liquidLabelSx = (isDark: boolean) => ({
 	color: isDark ? '#ffffff' : '#0b1f1c',
 	bgcolor: isDark ? 'rgba(30, 36, 48, 0.72)' : 'rgba(255, 255, 255, 0.78)',
 	backdropFilter: 'blur(20px) saturate(180%)',
@@ -220,7 +262,16 @@ export const glassBubbleSx = (
 	isDark: boolean,
 	accentRgb = LUMORA_TEAL_RGB,
 	glow = `rgba(${accentRgb}, 0.2)`
-) => ({
+) =>
+	LIQUID_GLASS_ENABLED
+		? liquidBubbleSx(isDark, glow)
+		: {
+				// Solid: a flat tint of the accent
+				background: `rgba(${accentRgb}, ${isDark ? 0.2 : 0.12})`,
+				boxShadow: 'none'
+			};
+
+const liquidBubbleSx = (isDark: boolean, glow: string) => ({
 	background: isDark
 		? 'radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.12) 22%, rgba(255, 255, 255, 0.06) 55%, rgba(255, 255, 255, 0.03) 100%)'
 		: 'radial-gradient(circle at 30% 24%, #ffffff 0, rgba(255, 255, 255, 0.92) 20%, rgba(255, 255, 255, 0.7) 55%, rgba(255, 255, 255, 0.5) 100%)',
@@ -241,6 +292,15 @@ export const glassTintSx = (
 	isDark: boolean,
 	strength: 'solid' | 'clear' = 'solid'
 ) => {
+	if (!LIQUID_GLASS_ENABLED) {
+		// Solid: the accent as a flat fill, or a light tint with an edge
+		return strength === 'solid'
+			? { background: color, boxShadow: 'none' }
+			: {
+					background: withAlpha(color, isDark ? 0.16 : 0.1),
+					boxShadow: `inset 0 0 0 1px ${withAlpha(color, 0.45)}`
+				};
+	}
 	const [top, middle, bottom] =
 		strength === 'solid' ? [0.95, 0.74, 0.9] : [0.34, 0.12, 0.24];
 	const sheen = isDark
@@ -266,6 +326,25 @@ export const glassTintSx = (
  * the bottom) instead of an outlined box, glowing with `ring` when focused.
  */
 export const glassWellSx = (isDark: boolean, ring: string) => {
+	if (!LIQUID_GLASS_ENABLED) {
+		// Solid: an outlined field
+		const edge = `inset 0 0 0 1px ${solidEdge(isDark)}`;
+		return {
+			rest: {
+				background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
+				boxShadow: edge,
+				borderRadius: `${GLASS_RADIUS_PX}px`,
+				transition: 'box-shadow 180ms ease, background 180ms ease'
+			},
+			hover: {
+				background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#ffffff'
+			},
+			focus: {
+				background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+				boxShadow: `${edge}, 0 0 0 3px ${ring}`
+			}
+		};
+	}
 	const base = isDark
 		? 'inset 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.08)'
 		: 'inset 0 1px 2px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(15, 23, 42, 0.05), 0 1px 0 #ffffff';
