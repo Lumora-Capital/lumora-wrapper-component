@@ -242,6 +242,25 @@ export declare type LumoraPlatform = {
 };
 
 /**
+ * The app shell in outline, sized like LumoraWrapper's sidebar and top bar so
+ * the layout does not jump when the app loads. The wrapper shows it while it
+ * checks the session; hosts can show it on their own pre-app screens (an OAuth
+ * callback, a redirect) by passing the props they give the wrapper.
+ */
+export declare const LumoraShellSkeleton: default_2.FC<LumoraShellSkeletonProps>;
+
+/** The LumoraWrapper layout props the skeleton needs; pass the same values. */
+export declare interface LumoraShellSkeletonProps {
+    theme?: 'dark' | 'light';
+    sidebarVariant?: SidebarVariant;
+    sidebarSubmenu?: SidebarSubmenu;
+    showSidebar?: boolean;
+    contentPadding?: ContentPadding;
+    sidebarBackgroundColor?: string;
+    contentBackgroundColor?: string;
+}
+
+/**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
  */
@@ -605,6 +624,10 @@ export declare type SidebarSubLink = {
     icon?: default_2.ReactNode;
     subitems?: SidebarSubLink[];
 };
+
+declare type SidebarSubmenu = 'expand' | 'flyout';
+
+declare type SidebarVariant = 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
 
 declare type SpacingValue = number | string;
 

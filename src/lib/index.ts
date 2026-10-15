@@ -5,6 +5,9 @@ import FullBleedSection, {
 	type FullBleedSectionProps
 } from './components/FullBleedSection';
 import Kbd from './components/Kbd';
+import LumoraShellSkeleton, {
+	type LumoraShellSkeletonProps
+} from './components/LumoraShellSkeleton';
 import LumoraWrapper, {
 	type ContentPadding,
 	type LumoraPlatform,
@@ -22,12 +25,19 @@ import type { UserMenuItem } from './components/UserMenu';
 export * from './authUtils';
 export { getDesignTokens } from './theme';
 
-export { CollapsibleSidebar, FullBleedSection, Kbd, LumoraWrapper };
+export {
+	CollapsibleSidebar,
+	FullBleedSection,
+	Kbd,
+	LumoraShellSkeleton,
+	LumoraWrapper
+};
 export type {
 	CollapsibleSidebarProps,
 	ContentPadding,
 	FullBleedSectionProps,
 	LumoraPlatform,
+	LumoraShellSkeletonProps,
 	LumoraWrapperProps,
 	NotificationSidebarContentProps,
 	SettingsItem,

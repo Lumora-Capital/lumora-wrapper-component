@@ -1,4 +1,4 @@
-import type { Breakpoint, SxProps, Theme } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
 import {
 	Box,
 	CssBaseline,
@@ -33,55 +33,43 @@ import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
 import NotificationBell from './NotificationBell';
 import PanelSidebar from './PanelSidebar';
-import SessionSkeleton from './SessionSkeleton';
+import LumoraShellSkeleton from './LumoraShellSkeleton';
+import {
+	COLLAPSIBLE_COLLAPSED_WIDTH_PX,
+	type ContentPadding,
+	DEFAULT_CONTENT_PADDING,
+	FLOATING_RAIL_GUTTER_PX,
+	FLOATING_RAIL_RADIUS_PX,
+	FLOATING_RAIL_WIDTH_PX,
+	getDesktopSidebarWidthPx,
+	MOBILE_BAR_HEIGHT_PX,
+	RAIL_LABELED_WIDTH_PX,
+	resolveContentBackground,
+	resolveContentPadding,
+	resolveSidebarSurface,
+	usesFlyoutSubmenu
+} from './shellLayout';
+
+export type { ContentPadding };
 import { PlatformSwitcherLogo, type LumoraPlatform } from './PlatformMenu';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import GlassLayer from './GlassLayer';
-import {
-	GLASS_RADIUS_PX,
-	GlassAccentContext,
-	SidebarSurfaceContext
-} from './liquidGlass';
+import { GlassAccentContext, SidebarSurfaceContext } from './liquidGlass';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
 import useHoverExpand from './useHoverExpand';
-
-/** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
-const DESKTOP_RAIL_WIDTH_PX = 100;
-
-/** Fixed width of the non-collapsible `rail-labeled` variant. Narrow rail with
- * labels stacked under the icons (captions/icons are sized down to fit 80px). */
-const RAIL_LABELED_WIDTH_PX = 80;
-
-/** Height of the mobile-only top bar; the content is offset by it on mobile. */
-const MOBILE_BAR_HEIGHT_PX = 56;
 
 /** Width of the drawer-mode links drawer (capped at 85% of the screen). */
 const MOBILE_DRAWER_WIDTH_PX = 300;
 
-/** Collapsible / panel sidebar widths: the rail, and the panel that opens
- * over the page on hover. */
+/** Width of the collapsible / panel sidebar that opens over the page on hover. */
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
-const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
-/** With flyout submenus the rail is a floating glass capsule, held this far
- * off the window's edges; the page keeps the capsule plus both gutters. */
-const FLOATING_RAIL_WIDTH_PX = 68;
-const FLOATING_RAIL_GUTTER_PX = 8;
-const FLOATING_RAIL_RADIUS_PX = GLASS_RADIUS_PX;
 const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
 
 /** Floating Nexa button (52px) plus a 16px gap, kept clear by the chat popup. */
 const FLOATING_ASSISTANT_CLEARANCE_PX = 68;
-
-/** Content padding: 16px (2 theme spacing units) on phones, 18px from `md`. */
-const DEFAULT_CONTENT_PADDING = { xs: 2, md: '18px' };
-
-type SpacingValue = number | string;
-export type ContentPadding =
-	| SpacingValue
-	| Partial<Record<Breakpoint, SpacingValue>>;
 
 /** Mac shows ⌘, everything else Ctrl. */
 const isApplePlatform = () =>
@@ -462,18 +450,6 @@ export interface LumoraWrapperProps {
 	sidebarSectionTitle?: string;
 }
 
-/** Theme spacing units -> px, per breakpoint; CSS strings pass through. */
-const resolveContentPadding = (padding: ContentPadding, theme: Theme) => {
-	const toCss = (value: SpacingValue) =>
-		typeof value === 'number' ? theme.spacing(value) : value;
-	if (typeof padding === 'object') {
-		return Object.fromEntries(
-			Object.entries(padding).map(([bp, value]) => [bp, toCss(value)])
-		);
-	}
-	return toCss(padding);
-};
-
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -558,8 +534,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const isDark = themeMode === 'dark';
 	const resolvedAccentColor = accentColor ?? '#01584f';
 	const resolvedSidebarAccent = sidebarAccentColor ?? resolvedAccentColor;
-	const resolvedContentBg =
-		contentBackgroundColor ?? (isDark ? 'hsl(220, 35%, 9%)' : '#f2f9fc');
+	const resolvedContentBg = resolveContentBackground(
+		contentBackgroundColor,
+		isDark
+	);
 	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
 	// The collapsible panel with the account menu (PanelSidebar) on desktop;
 	// phones get the standard mobile navigation.
@@ -573,8 +551,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Resolved sidebar surface — mirrors CollapsibleSidebar's own default
 	// (theme background.paper in dark mode, white in light) so wrapper-level
 	// chrome (aside strip, header fallback) can't drift from the component.
-	const resolvedSidebarSurface =
-		sidebarBackgroundColor ?? (isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const resolvedSidebarSurface = resolveSidebarSurface(
+		sidebarBackgroundColor,
+		isDark
+	);
 	const resolvedSidebarHeaderBg =
 		sidebarHeaderBackgroundColor ?? resolvedSidebarSurface;
 	// Idle chrome on the sidebar surface: search icon, notifications, user.
@@ -664,9 +644,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// full panel over the page, so the content never moves.
 	const hoverSidebar = useHoverExpand();
 	// Flyout submenus: the rail stays a rail, and groups open beside it
-	const useFlyoutSubmenu =
-		sidebarSubmenu === 'flyout' &&
-		(useCollapsibleSidebar || usePanelSidebar);
+	const useFlyoutSubmenu = usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant);
 	const sidebarCollapsed = useFlyoutSubmenu || !hoverSidebar.expanded;
 	// What the rail's top content (Nexa, search) looks like while collapsed:
 	// it expands the panel, or — with nothing to expand — opens a popover.
@@ -688,19 +666,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [focusSearch, setFocusSearch] = useState(false);
 	const clearFocusSearch = useCallback(() => setFocusSearch(false), []);
 	// Keep sidebar, drawer paper width and main `calc(100% - …)` in sync.
-	let desktopSidebarWidthPx = 0;
-	if (showSidebar && !isMobile) {
-		if (useRailLabeledSidebar) {
-			desktopSidebarWidthPx = RAIL_LABELED_WIDTH_PX;
-		} else if (useFlyoutSubmenu) {
-			desktopSidebarWidthPx =
-				FLOATING_RAIL_WIDTH_PX + 2 * FLOATING_RAIL_GUTTER_PX;
-		} else if (useCollapsibleSidebar || usePanelSidebar) {
-			desktopSidebarWidthPx = COLLAPSIBLE_COLLAPSED_WIDTH_PX;
-		} else {
-			desktopSidebarWidthPx = DESKTOP_RAIL_WIDTH_PX;
-		}
-	}
+	const desktopSidebarWidthPx = getDesktopSidebarWidthPx({
+		showSidebar,
+		isMobile,
+		sidebarVariant,
+		sidebarSubmenu
+	});
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 	const useBottomBar = isMobile && mobileNavigation === 'bottom-bar';
@@ -836,28 +807,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 
 	if (isCheckingSession || holdSessionSkeleton) {
 		return (
-			<ThemeProvider theme={muiTheme}>
-				<CssBaseline />
-				<SessionSkeleton
-					isMobile={isMobile}
-					sidebarWidthPx={desktopSidebarWidthPx}
-					floatingRail={
-						useFlyoutSubmenu
-							? {
-									gutterPx: FLOATING_RAIL_GUTTER_PX,
-									radiusPx: FLOATING_RAIL_RADIUS_PX
-								}
-							: undefined
-					}
-					mobileBarHeightPx={MOBILE_BAR_HEIGHT_PX}
-					sidebarSurface={resolvedSidebarSurface}
-					contentBackground={resolvedContentBg}
-					contentPadding={resolveContentPadding(
-						contentPadding,
-						muiNativeTheme
-					)}
-				/>
-			</ThemeProvider>
+			<LumoraShellSkeleton
+				theme={themeMode}
+				sidebarVariant={sidebarVariant}
+				sidebarSubmenu={sidebarSubmenu}
+				showSidebar={showSidebar}
+				contentPadding={contentPadding}
+				sidebarBackgroundColor={sidebarBackgroundColor}
+				contentBackgroundColor={contentBackgroundColor}
+			/>
 		);
 	}
 
