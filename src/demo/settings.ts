@@ -27,6 +27,7 @@ export type DemoSettings = {
 	clickableBrand: boolean;
 	platformSwitcher: boolean;
 	enableRefreshToken: boolean;
+	holdSessionSkeleton: boolean;
 };
 
 export const defaultSettings: DemoSettings = {
@@ -58,7 +59,8 @@ export const defaultSettings: DemoSettings = {
 	clickableBrand: true,
 	// The logo as a dropdown toggle listing the platforms (sample data)
 	platformSwitcher: true,
-	enableRefreshToken: false
+	enableRefreshToken: false,
+	holdSessionSkeleton: false
 };
 
 // Bumped (v2) when the default variant became `panel`, so settings saved by

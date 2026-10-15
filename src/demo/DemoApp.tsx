@@ -299,6 +299,7 @@ const DemoApp = () => {
 					redirectToLogin={redirectToLogin}
 					onLogout={handleLogout}
 					enableRefreshToken={settings.enableRefreshToken}
+					holdSessionSkeleton={settings.holdSessionSkeleton}
 					appName={
 						settings.platformSwitcher
 							? platform.name.toUpperCase()

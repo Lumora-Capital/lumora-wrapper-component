@@ -322,7 +322,7 @@ export declare interface LumoraWrapperProps {
     brandColor?: string;
     /**
      * Padding around the page content: theme spacing units, a single CSS
-     * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+     * length, or per breakpoint. Defaults to 16px on phones and 18px from `md`. Pass `0`
      * for pages that fill the whole content area. To take a single block (e.g.
      * a page header) edge to edge while keeping the padding, wrap it in
      * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
@@ -351,6 +351,8 @@ export declare interface LumoraWrapperProps {
      * to auto-contrast from the sidebar accent. */
     activeSidebarForegroundColor?: string;
     enableRefreshToken?: boolean;
+    /** Keep the session-check skeleton up instead of the app, to preview it. */
+    holdSessionSkeleton?: boolean;
     activePath?: string;
     onLinkClick?: (path: string) => void;
     /** Show the user row; clicking it opens settings, dark mode and logout. */

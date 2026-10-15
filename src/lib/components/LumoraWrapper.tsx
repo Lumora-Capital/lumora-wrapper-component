@@ -1,7 +1,6 @@
 import type { Breakpoint, SxProps, Theme } from '@mui/material';
 import {
 	Box,
-	CircularProgress,
 	CssBaseline,
 	Drawer,
 	Stack,
@@ -34,6 +33,7 @@ import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
 import NotificationBell from './NotificationBell';
 import PanelSidebar from './PanelSidebar';
+import SessionSkeleton from './SessionSkeleton';
 import { PlatformSwitcherLogo, type LumoraPlatform } from './PlatformMenu';
 import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
@@ -75,8 +75,8 @@ const HOVER_PANEL_TRANSITION =
 /** Floating Nexa button (52px) plus a 16px gap, kept clear by the chat popup. */
 const FLOATING_ASSISTANT_CLEARANCE_PX = 68;
 
-/** Content padding in theme spacing units: 16px on phones, 40px from `md`. */
-const DEFAULT_CONTENT_PADDING = { xs: 2, md: 5 };
+/** Content padding: 16px (2 theme spacing units) on phones, 18px from `md`. */
+const DEFAULT_CONTENT_PADDING = { xs: 2, md: '18px' };
 
 type SpacingValue = number | string;
 export type ContentPadding =
@@ -238,7 +238,7 @@ export interface LumoraWrapperProps {
 	brandColor?: string;
 	/**
 	 * Padding around the page content: theme spacing units, a single CSS
-	 * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+	 * length, or per breakpoint. Defaults to 16px on phones and 18px from `md`. Pass `0`
 	 * for pages that fill the whole content area. To take a single block (e.g.
 	 * a page header) edge to edge while keeping the padding, wrap it in
 	 * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
@@ -267,6 +267,8 @@ export interface LumoraWrapperProps {
 	 * to auto-contrast from the sidebar accent. */
 	activeSidebarForegroundColor?: string;
 	enableRefreshToken?: boolean;
+	/** Keep the session-check skeleton up instead of the app, to preview it. */
+	holdSessionSkeleton?: boolean;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	// User (bottom of the sidebar)
@@ -498,6 +500,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	groupAccentColor,
 	activeSidebarForegroundColor,
 	enableRefreshToken = false,
+	holdSessionSkeleton = false,
 	activePath,
 	onLinkClick,
 	showProfile = true,
@@ -831,35 +834,29 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		validateAndRefreshTokens(axiosClient, redirectToLogin);
 	}, [enableRefreshToken, axiosClient]);
 
-	if (isCheckingSession) {
+	if (isCheckingSession || holdSessionSkeleton) {
 		return (
 			<ThemeProvider theme={muiTheme}>
-				{/* The glass's pointer light and glow take the sidebar accent */}
-				<GlassAccentContext.Provider value={resolvedSidebarAccent}>
-					<SidebarSurfaceContext.Provider
-						value={resolvedSidebarSurface}
-					>
-						<Box
-							sx={{
-								display: 'flex',
-								flexDirection: 'column',
-								alignItems: 'center',
-								justifyContent: 'center',
-								minHeight: '100vh',
-								backgroundColor: 'background.default'
-							}}
-						>
-							<CircularProgress
-								size={60}
-								thickness={4}
-								sx={{ color: resolvedAccentColor }}
-							/>
-							<Box sx={{ mt: 2, color: 'text.secondary' }}>
-								Checking session...
-							</Box>
-						</Box>
-					</SidebarSurfaceContext.Provider>
-				</GlassAccentContext.Provider>
+				<CssBaseline />
+				<SessionSkeleton
+					isMobile={isMobile}
+					sidebarWidthPx={desktopSidebarWidthPx}
+					floatingRail={
+						useFlyoutSubmenu
+							? {
+									gutterPx: FLOATING_RAIL_GUTTER_PX,
+									radiusPx: FLOATING_RAIL_RADIUS_PX
+								}
+							: undefined
+					}
+					mobileBarHeightPx={MOBILE_BAR_HEIGHT_PX}
+					sidebarSurface={resolvedSidebarSurface}
+					contentBackground={resolvedContentBg}
+					contentPadding={resolveContentPadding(
+						contentPadding,
+						muiNativeTheme
+					)}
+				/>
 			</ThemeProvider>
 		);
 	}

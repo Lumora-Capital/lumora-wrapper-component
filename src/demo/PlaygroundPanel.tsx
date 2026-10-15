@@ -63,7 +63,8 @@ const SWITCH_GROUPS: Array<{
 			{ key: 'assistantBusy', label: 'Nexa busy' },
 			{ key: 'chatSidebar', label: 'Chat panel (via Nexa)' },
 			{ key: 'floatingChat', label: 'Chat as floating card' },
-			{ key: 'enableRefreshToken', label: 'Token check on mount' }
+			{ key: 'enableRefreshToken', label: 'Token check on mount' },
+			{ key: 'holdSessionSkeleton', label: 'Session check skeleton' }
 		]
 	}
 ];
