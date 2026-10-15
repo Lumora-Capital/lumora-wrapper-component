@@ -251,13 +251,20 @@ export declare const LumoraShellSkeleton: default_2.FC<LumoraShellSkeletonProps>
 
 /** The LumoraWrapper layout props the skeleton needs; pass the same values. */
 export declare interface LumoraShellSkeletonProps {
-    theme?: 'dark' | 'light';
+    theme?: ThemeMode;
+    /**
+     * CSS selector that matches an ancestor while the page is dark, e.g.
+     * `html[data-color-scheme="dark"]` set by a script before the first paint.
+     * With it the skeleton draws both modes and CSS shows the right one, so
+     * server-rendered HTML opens in the user's mode; `theme` is then ignored.
+     */
+    darkModeSelector?: string;
     sidebarVariant?: SidebarVariant;
     sidebarSubmenu?: SidebarSubmenu;
     showSidebar?: boolean;
     contentPadding?: ContentPadding;
-    sidebarBackgroundColor?: string;
-    contentBackgroundColor?: string;
+    sidebarBackgroundColor?: ShellColor;
+    contentBackgroundColor?: ShellColor;
 }
 
 /**
@@ -466,8 +473,15 @@ export declare interface LumoraWrapperProps {
      * light mode / white on a dark surface.
      */
     sidebarForegroundColor?: string;
-    contentBackgroundColor?: string;
+    /** One colour, or `{ light, dark }` so the session skeleton has both (see darkModeSelector). */
+    contentBackgroundColor?: ShellColor;
     theme?: 'dark' | 'light';
+    /**
+     * CSS selector that matches an ancestor while the page is dark, set before the
+     * first paint. The session skeleton then opens in the user's mode on
+     * server-rendered pages instead of flashing `theme`'s default.
+     */
+    darkModeSelector?: string;
     /** Show the Dark mode switch in the user menu. */
     showThemeToggler?: boolean;
     onThemeToggle?: () => void;
@@ -582,6 +596,12 @@ export declare type SettingsSection = {
     defaultOpen?: boolean;
 };
 
+/** One colour for both modes, or one per mode (for a skeleton drawn in both, see darkModeSelector) */
+export declare type ShellColor = string | {
+    light: string;
+    dark: string;
+};
+
 /** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export declare type SidebarLink = {
     text: string;
@@ -647,6 +667,8 @@ export declare interface StorageResult {
  * @returns Result of storage operation
  */
 export declare const storeAuthTokens: (accessToken: string | null, refreshToken: string | null, user?: UserData | null) => StorageResult;
+
+declare type ThemeMode = 'dark' | 'light';
 
 /** Tabs of the right-side updates drawer. */
 export declare type UpdatesTab = 'notifications' | 'whats-new';

@@ -33,7 +33,7 @@ import MobileSearchSheet from './MobileSearchSheet';
 import MobileTopBar from './MobileTopBar';
 import NotificationBell from './NotificationBell';
 import PanelSidebar from './PanelSidebar';
-import LumoraShellSkeleton from './LumoraShellSkeleton';
+import LumoraShellSkeleton, { type ShellColor } from './LumoraShellSkeleton';
 import {
 	COLLAPSIBLE_COLLAPSED_WIDTH_PX,
 	type ContentPadding,
@@ -360,9 +360,16 @@ export interface LumoraWrapperProps {
 	 * light mode / white on a dark surface.
 	 */
 	sidebarForegroundColor?: string;
-	contentBackgroundColor?: string;
+	/** One colour, or `{ light, dark }` so the session skeleton has both (see darkModeSelector). */
+	contentBackgroundColor?: ShellColor;
 	// Theme mode
 	theme?: 'dark' | 'light';
+	/**
+	 * CSS selector that matches an ancestor while the page is dark, set before the
+	 * first paint. The session skeleton then opens in the user's mode on
+	 * server-rendered pages instead of flashing `theme`'s default.
+	 */
+	darkModeSelector?: string;
 	/** Show the Dark mode switch in the user menu. */
 	showThemeToggler?: boolean;
 	onThemeToggle?: () => void;
@@ -506,6 +513,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	sidebarForegroundColor,
 	contentBackgroundColor,
 	theme: themeMode = 'light',
+	darkModeSelector,
 	showThemeToggler = false,
 	onThemeToggle,
 	GlobalChatSidebar,
@@ -535,7 +543,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const resolvedAccentColor = accentColor ?? '#01584f';
 	const resolvedSidebarAccent = sidebarAccentColor ?? resolvedAccentColor;
 	const resolvedContentBg = resolveContentBackground(
-		contentBackgroundColor,
+		typeof contentBackgroundColor === 'object'
+			? contentBackgroundColor[themeMode]
+			: contentBackgroundColor,
 		isDark
 	);
 	const useCollapsibleSidebar = sidebarVariant === 'collapsible';
@@ -809,6 +819,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		return (
 			<LumoraShellSkeleton
 				theme={themeMode}
+				darkModeSelector={darkModeSelector}
 				sidebarVariant={sidebarVariant}
 				sidebarSubmenu={sidebarSubmenu}
 				showSidebar={showSidebar}

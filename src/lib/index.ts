@@ -6,7 +6,8 @@ import FullBleedSection, {
 } from './components/FullBleedSection';
 import Kbd from './components/Kbd';
 import LumoraShellSkeleton, {
-	type LumoraShellSkeletonProps
+	type LumoraShellSkeletonProps,
+	type ShellColor
 } from './components/LumoraShellSkeleton';
 import LumoraWrapper, {
 	type ContentPadding,
@@ -38,6 +39,7 @@ export type {
 	FullBleedSectionProps,
 	LumoraPlatform,
 	LumoraShellSkeletonProps,
+	ShellColor,
 	LumoraWrapperProps,
 	NotificationSidebarContentProps,
 	SettingsItem,
