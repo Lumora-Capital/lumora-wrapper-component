@@ -12,6 +12,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React, {
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState
@@ -455,6 +456,10 @@ export interface LumoraWrapperProps {
 	sidebarSectionTitle?: string;
 }
 
+// Runs on the client only; useLayoutEffect warns during server rendering on React 18
+const useIsomorphicLayoutEffect =
+	typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -756,8 +761,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		}
 	};
 
-	// Session checking: validate that user has a refresh token and user data before rendering
-	useEffect(() => {
+	// Session checking: validate that user has a refresh token and user data before rendering.
+	// Before the first paint, so a wrapper mounted in the browser (a client navigation in from a
+	// login or callback page) never shows its skeleton for a frame between theirs and the app.
+	useIsomorphicLayoutEffect(() => {
 		const checkSession = () => {
 			try {
 				const { isAuthenticated: authenticated } = isAuthenticated();
