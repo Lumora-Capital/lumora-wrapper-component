@@ -400,8 +400,9 @@ type ActiveBox = {
  * the hover lens — instead of each item filling itself. It finds the item
  * by `data-active="true"` on a rail item, and keeps its place on resize.
  *
- * Render `glass` in the rail just after the hover lens (under the items);
- * the items drop their own active fill.
+ * Render `glass` as the first child of `containerRef` (positioned, under the
+ * items); the items drop their own active fill. Make that a box inside the links'
+ * scroll container, so the drop scrolls and clips with its item.
  */
 export const useActiveGlass = ({
 	enabled,

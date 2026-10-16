@@ -285,12 +285,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const useFlyout = submenuMode === 'flyout' && collapsed && !showLabels;
 	const flyout = useFlyoutIntent(useFlyout);
 	const navRef = React.useRef<HTMLElement>(null);
+	// The links, inside their scroll container. The active drop lives here, so
+	// it scrolls with its item and is clipped with the links instead of
+	// resting on the footer when a short window scrolls the rail.
+	const linksRef = React.useRef<HTMLDivElement>(null);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
 		isDark,
 		color: activeAccent,
-		containerRef: navRef
+		containerRef: linksRef
 	});
 	const { close: closeFlyout } = flyout;
 	// A navigation from anywhere (a tile, the browser's back) closes it
@@ -1149,7 +1153,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				}}
 			>
 				{railLens.lens}
-				{activeGlass.glass}
 				{headerBar ?? railBrand}
 				{topContent ? (
 					<Box
@@ -1210,19 +1213,33 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						pb: 2
 					}}
 				>
-					{renderLinkStack(mainLinks)}
-					{/* Bottom group, pinned to the bottom by mt:auto. With a footer
+					{/* Offset parent for the active drop, inside the scrollbar
+					    gutters so its offsets match the items'. Grows to fill,
+					    keeping the bottom group's mt:auto pinning. */}
+					<Box
+						ref={linksRef}
+						sx={{
+							flex: '1 0 auto',
+							display: 'flex',
+							flexDirection: 'column',
+							position: 'relative'
+						}}
+					>
+						{activeGlass.glass}
+						{renderLinkStack(mainLinks)}
+						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
 				    the divider moves below it, between the links and the user. */}
-					{secondaryLinks.length > 0 ? (
-						<Box sx={{ mt: 'auto', pt: 2 }}>
-							{footer ? null : (
-								<Divider
-									sx={{ mb: 1, borderColor: 'divider' }}
-								/>
-							)}
-							{renderLinkStack(secondaryLinks)}
-						</Box>
-					) : null}
+						{secondaryLinks.length > 0 ? (
+							<Box sx={{ mt: 'auto', pt: 2 }}>
+								{footer ? null : (
+									<Divider
+										sx={{ mb: 1, borderColor: 'divider' }}
+									/>
+								)}
+								{renderLinkStack(secondaryLinks)}
+							</Box>
+						) : null}
+					</Box>
 				</Box>
 				{footer ? (
 					<Box sx={{ flexShrink: 0, px: horizontalPadding, pb: 1.5 }}>
