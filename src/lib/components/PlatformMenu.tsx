@@ -9,7 +9,7 @@ import Popover from '@mui/material/Popover';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import GlassLayer from './GlassLayer';
-import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
+import { MENU_MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
 	GLASS_RADIUS_PX,
 	REDUCED_MOTION,
@@ -35,7 +35,7 @@ export type LumoraPlatform = {
 	url?: string;
 };
 
-const morph = springTiming(MORPH_SPRING);
+const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 const MENU_MIN_WIDTH_PX = 260;
 

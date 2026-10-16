@@ -285,7 +285,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const useFlyout = submenuMode === 'flyout' && collapsed && !showLabels;
 	const flyout = useFlyoutIntent(useFlyout);
 	const navRef = React.useRef<HTMLElement>(null);
-	const railLens = useRailLens(useFlyout, isDark);
+	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
 		isDark,
@@ -817,11 +817,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						width: 44,
 						height: 44,
 						color: groupActive ? activeFg : accentOnSurface,
-						bgcolor: groupActive
-							? activeAccent
-							: open
-								? groupTint
-								: 'transparent',
+						// Open, the rail's hover lens stays on it (useRailLens)
+						// rather than a fill of its own under the lens
+						bgcolor: groupActive ? activeAccent : 'transparent',
 						...glassRailIconSx(groupActive),
 						'&::after': {
 							content: '""',
@@ -1175,7 +1173,36 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						flexDirection: 'column',
 						overflowY: 'auto',
 						overflowX: 'hidden',
-						px: horizontalPadding,
+						// Scrollbar shows only while the pointer is inside (or a
+						// keyboard user tabs in). Not :focus-within, since a
+						// clicked link keeps focus and would pin it on. On the
+						// icon rail the gutter is reserved on both edges so the
+						// icons never shift and stay centred with the brand and
+						// footer.
+						...(useFlyout
+							? { scrollbarGutter: 'stable both-edges' }
+							: {}),
+						scrollbarWidth: 'thin',
+						scrollbarColor: 'transparent transparent',
+						// Safari only honours the thumb rule once the bar
+						// itself is styled.
+						'&::-webkit-scrollbar': { width: 8 },
+						'&::-webkit-scrollbar-thumb': {
+							backgroundColor: 'transparent',
+							borderRadius: 4
+						},
+						'&:hover, &:has(:focus-visible)': {
+							scrollbarColor: theme =>
+								`${theme.palette.divider} transparent`,
+							'&::-webkit-scrollbar-thumb': {
+								backgroundColor: theme => theme.palette.divider
+							}
+						},
+						// On the icon rail the two gutters stand in for the
+						// padding, leaving room for the 44px items. (The inline
+						// collapsed rail keeps it: its open groups tint the
+						// full row width.)
+						px: useFlyout ? 0 : horizontalPadding,
 						pt:
 							topInsetPx && !showHeaderBar
 								? `${topInsetPx}px`

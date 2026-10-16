@@ -76,6 +76,14 @@ export type GlassLensOptions = {
 	radius: number;
 	/** How far it leans toward the pointer within an item. */
 	lean?: number;
+	/**
+	 * An item the lens stays on while it matches, instead of shrinking away
+	 * (the rail: the group whose flyout is open, so its hover state holds
+	 * while the pointer is out on the flyout).
+	 */
+	pinSelector?: string;
+	/** Changes whenever what `pinSelector` matches may have changed. */
+	pinKey?: string | null;
 };
 
 const glide = springTiming(GLIDE_SPRING);
@@ -98,7 +106,9 @@ export const useGlassLens = ({
 	selector,
 	size,
 	radius,
-	lean = 3
+	lean = 3,
+	pinSelector,
+	pinKey = null
 }: GlassLensOptions) => {
 	const lensRef = React.useRef<HTMLDivElement>(null);
 	const accentRgb = useGlassAccentRgb();
@@ -170,13 +180,39 @@ export const useGlassLens = ({
 		el.style.transform = `translate(${toward(event.clientX - (r.left + r.width / 2), r.width)}px, ${toward(event.clientY - (r.top + r.height / 2), r.height)}px)`;
 	};
 
+	// The lens is the container's first child, so its parent is the container
+	const pinned = () => {
+		const container = lensRef.current?.parentElement;
+		const item = pinSelector && container?.querySelector(pinSelector);
+		return container && item ? { container, item } : null;
+	};
+
 	const hide = () => {
-		current.current = null;
 		if (lensRef.current) {
 			lensRef.current.style.transform = '';
 		}
+		const pin = pinned();
+		if (pin) {
+			placeOn(pin.container, pin.item);
+			return;
+		}
+		current.current = null;
 		setBox(prev => (prev?.visible ? { ...prev, visible: false } : prev));
 	};
+
+	// Settles on a newly pinned item; once nothing is pinned, goes unless
+	// the pointer is still over the container
+	React.useEffect(() => {
+		if (!enabled) {
+			return;
+		}
+		const pin = pinned();
+		if (pin) {
+			placeOn(pin.container, pin.item);
+		} else if (!lensRef.current?.parentElement?.matches(':hover')) {
+			hide();
+		}
+	}, [enabled, pinKey]);
 
 	const onBlur = (event: React.FocusEvent<HTMLElement>) => {
 		const next = event.relatedTarget as Node | null;
@@ -278,13 +314,20 @@ export const useGlassLens = ({
 };
 
 /** The rail's lens: one size for every control, centred on it. */
-export const useRailLens = (enabled: boolean, isDark: boolean) => {
+export const useRailLens = (
+	enabled: boolean,
+	isDark: boolean,
+	/** The open flyout's key: the lens stays on its group's icon. */
+	openKey: string | null = null
+) => {
 	const lens = useGlassLens({
 		enabled,
 		isDark,
 		selector: RAIL_ITEM_SELECTOR,
 		size: 46,
-		radius: GLASS_RADIUS_PX
+		radius: GLASS_RADIUS_PX,
+		pinSelector: `[${RAIL_ITEM_ATTR}][data-open="true"]`,
+		pinKey: openKey
 	});
 	return {
 		...lens,

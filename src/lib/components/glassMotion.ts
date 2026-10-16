@@ -12,6 +12,9 @@ export type SpringConfig = {
 
 /** The glass body: grows out of the icon, overshoots a little, settles. */
 export const MORPH_SPRING: SpringConfig = { stiffness: 320, damping: 24 };
+/** A menu's glass (platform, account): grows the same way with a much
+ * smaller overshoot, so a card full of text barely bounces. */
+export const MENU_MORPH_SPRING: SpringConfig = { stiffness: 320, damping: 28 };
 /** A gel response — a press or a swell that wobbles back. */
 export const GEL_SPRING: SpringConfig = { stiffness: 520, damping: 20 };
 /**

@@ -38,14 +38,17 @@ const TILE_GAP_PX = 4;
 const TILE_RADIUS_PX = GLASS_RADIUS_PX;
 /** Dock magnification: the tile under the pointer grows to this, its
  * neighbours less the further away they are, up to this far from it. */
-const DOCK_MAX_SCALE = 1.4;
-
-/** How far the row may grow leftward, into the panel's own padding. */
-const DOCK_LEFT_ROOM_PX = 6;
+const DOCK_MAX_SCALE = 1.12;
 
 const PANEL_PADDING_PX = 6;
+/** How far the row may grow either way, into the panel's own padding; the
+ * rest of the padding is left for the tile's bounce. */
+const DOCK_ROOM_PX = PANEL_PADDING_PX - 2;
 /** The same corner as every other glass surface. */
 const PANEL_RADIUS_PX = GLASS_RADIUS_PX;
+/** The group's name above the tiles. Fixed, so the panel can be shifted
+ * up by half of it and the tiles sit level with the rail icon. */
+const TITLE_HEIGHT_PX = 24;
 /** Space between the rail's edge and the panel. */
 const PANEL_GAP_PX = 10;
 /** The glass starts as a drop about the size of a rail icon, at the icon's
@@ -304,16 +307,16 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		const extra = grow ? (DOCK_MAX_SCALE - 1) * TILE_PX : 0;
 		const first = centers[0] - TILE_PX / 2;
 		const last = centers[centers.length - 1] + TILE_PX / 2;
+		// Where the growth is taken from, 0 (all rightward) to 1 (all
+		// leftward): follows the hovered tile, kept within the room on
+		// both sides so nothing leaves the panel.
 		const anchor = grow
 			? Math.min(
-					Math.min(
-						1,
-						Math.max(
-							0,
-							(centers[hovered!] - first) / (last - first)
-						)
+					Math.max(
+						(centers[hovered!] - first) / (last - first || 1),
+						Math.max(0, 1 - DOCK_ROOM_PX / extra)
 					),
-					DOCK_LEFT_ROOM_PX / extra
+					Math.min(1, DOCK_ROOM_PX / extra)
 				)
 			: 0;
 		let cursor = first - extra * anchor;
@@ -330,8 +333,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				tile.style.removeProperty('--dock-scale');
 			}
 		});
-		// The glass follows the tiles as they move (see GlassPanel)
-		shapeRef.current?.();
+		// The panel's glass stays put: the hovered tile bounces on its own
+		// rather than the outline swelling around it.
 	};
 	const dockedIndex = React.useRef<number | null>(null);
 	// A new group's row starts with nothing grown
@@ -381,7 +384,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				placement='right'
 				transition
 				modifiers={[
-					{ name: 'offset', options: { offset: [0, PANEL_GAP_PX] } },
+					// Up by half the title, so the tile row (not the whole
+					// panel) is centred on the rail icon
+					{
+						name: 'offset',
+						options: { offset: [-TITLE_HEIGHT_PX / 2, PANEL_GAP_PX] }
+					},
 					{ name: 'flip', enabled: false },
 					{ name: 'preventOverflow', options: { padding: 8 } }
 				]}
@@ -408,6 +416,27 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 					>
 						{shown ? (
 							<>
+								{/* The group's name heads the panel; kept on one
+								    line, it also sets the panel's minimum width.
+								    The menu already carries it as its label. */}
+								<Box
+									aria-hidden
+									data-testid='sidebar-flyout-title'
+									sx={{
+										px: `${PANEL_PADDING_PX}px`,
+										height: TITLE_HEIGHT_PX,
+										boxSizing: 'border-box',
+										pt: '2px',
+										fontSize: 12,
+										fontWeight: 600,
+										lineHeight: '16px',
+										letterSpacing: '0.02em',
+										color: 'text.secondary',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{shown.group.text}
+								</Box>
 								<Box
 									key={shown.key}
 									ref={rowRef}
@@ -418,8 +447,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										position: 'relative',
 										display: 'flex',
 										gap: `${TILE_GAP_PX}px`,
-										// No room kept for magnification: a grown tile rises out of
-										// the glass, as icons rise out of the Dock
+										// A grown tile fits in the panel's padding
+										// (see DOCK_ROOM_PX)
 										px: 0
 									}}
 								>
@@ -694,9 +723,14 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 			return false;
 		}
 		const box = container.getBoundingClientRect();
+		// A tile grown by the dock (hover / keyboard focus) stays inside the
+		// panel, so the glass keeps its shape rather than swelling around it
 		const tiles = Array.from(
-			container.querySelectorAll('[role="menuitem"]'),
+			container.querySelectorAll<HTMLElement>('[role="menuitem"]'),
 			el => {
+				if (el.style.scale) {
+					return null;
+				}
 				const r = el.getBoundingClientRect();
 				return {
 					left: r.left - box.left,
@@ -705,7 +739,7 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 					bottom: r.bottom - box.top
 				};
 			}
-		);
+		).filter((tile): tile is TileBox => tile !== null);
 		const d = liquidOutline(
 			container.offsetWidth,
 			container.offsetHeight,
@@ -957,9 +991,10 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 					left: -LIQUID_ROOM_LEFT_PX,
 					right: -LIQUID_ROOM_X_PX,
 					pointerEvents: 'none',
-					// The rail icon's centre: the panel is centred on it,
-					// one gap plus half the rail's padding to the left
-					transformOrigin: `${LIQUID_ROOM_LEFT_PX - SEED_ORIGIN_X_PX}px 50%`,
+					// The rail icon's centre: the tile row is level with it
+					// (half the title below the panel's middle), one gap
+					// plus half the rail's padding to the left
+					transformOrigin: `${LIQUID_ROOM_LEFT_PX - SEED_ORIGIN_X_PX}px calc(50% + ${TITLE_HEIGHT_PX / 2}px)`,
 					willChange: 'transform'
 				}}
 			>
@@ -1188,9 +1223,9 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 			el.animate(
 				[
 					{ transform: 'scale(1, 1)' },
-					{ transform: 'scale(1.1, 0.9)', offset: 0.22 },
-					{ transform: 'scale(0.95, 1.06)', offset: 0.5 },
-					{ transform: 'scale(1.02, 0.99)', offset: 0.75 },
+					{ transform: 'scale(1.04, 0.96)', offset: 0.22 },
+					{ transform: 'scale(0.98, 1.025)', offset: 0.5 },
+					{ transform: 'scale(1.01, 0.995)', offset: 0.75 },
 					{ transform: 'scale(1, 1)' }
 				],
 				{ duration: 560, easing: 'ease-out' }

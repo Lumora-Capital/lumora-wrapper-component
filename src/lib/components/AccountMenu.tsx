@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import { CountPill } from './UserMenu';
-import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
+import { MENU_MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
 	REDUCED_MOTION,
 	contentIn,
@@ -46,7 +46,7 @@ const cardSx = {
 	flexDirection: 'column'
 } as const;
 
-const morph = springTiming(MORPH_SPRING);
+const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 /**
  * The rows the glass lens rests behind. The user header only when it is a
