@@ -400,8 +400,6 @@ export declare interface LumoraWrapperProps {
      * a "View profile" hint on hover.
      */
     onProfileClick?: () => void;
-    /** @deprecated The `panel` account menu no longer has this entry; ignored. */
-    onSubmitRequestClick?: () => void;
     /**
      * @deprecated The `panel` account menu no longer has a Settings card;
      * ignored. Link to a settings page from `userMenuItems` instead.

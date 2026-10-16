@@ -608,6 +608,10 @@ const fadeBody = (
 ) => {
 	Array.from(body.children).forEach(part => {
 		if (canAnimate(part)) {
+			// Drop a fade-out still held at 0 (fill: forwards) from closing,
+			// or reopening mid-close leaves the glass invisible once the
+			// fade-in ends
+			cancelAnimations(part);
 			part.animate([{ opacity: from }, { opacity: to }], {
 				duration,
 				easing,
