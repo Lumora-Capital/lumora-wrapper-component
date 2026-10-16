@@ -11,7 +11,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { type Theme, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
@@ -167,6 +167,58 @@ const ROW_LABEL_WEIGHT = 600;
  * (brand, top content, links, bottom group, footer) takes it once in place of
  * its own padding. */
 const railGap = `${FLOATING_RAIL_GAP_PX}px`;
+
+/** The floating rail's side padding, matching its top content and footer. */
+const FLOATING_RAIL_INSET_PX = 6;
+
+/**
+ * The floating rail scroller's side padding for a bar `bar` px wide. The
+ * bar takes the right padding's place; up to the 6px inset the gaps either
+ * side of the column stay equal. A wider bar leaves less room than the
+ * column needs, so the left padding gives way by the same amount.
+ */
+const railScrollerPadding = (bar: number) => {
+	const overflow = Math.max(0, bar - FLOATING_RAIL_INSET_PX);
+	return {
+		pl: `${Math.max(0, FLOATING_RAIL_INSET_PX - overflow)}px`,
+		pr: `${Math.max(0, FLOATING_RAIL_INSET_PX - bar)}px`
+	};
+};
+
+/**
+ * Width the scroller's vertical bar actually takes from its content: 0 for
+ * overlay bars or while nothing overflows, the bar's width for a classic
+ * one. Re-measured as the scroller (or its content box, when a bar
+ * appears) changes size.
+ */
+function useScrollbarWidth(
+	scrollRef: React.RefObject<HTMLElement | null>,
+	enabled: boolean
+) {
+	const [width, setWidth] = React.useState(0);
+	React.useLayoutEffect(() => {
+		const el = scrollRef.current;
+		if (!enabled || !el) {
+			setWidth(0);
+			return;
+		}
+		const measure = () => {
+			const style = getComputedStyle(el);
+			const borders =
+				parseFloat(style.borderLeftWidth) +
+				parseFloat(style.borderRightWidth);
+			setWidth(Math.max(0, el.offsetWidth - el.clientWidth - borders));
+		};
+		measure();
+		if (typeof ResizeObserver === 'undefined') return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		// The bar appearing shrinks the content, not the scroller itself
+		if (el.firstElementChild) observer.observe(el.firstElementChild);
+		return () => observer.disconnect();
+	}, [scrollRef, enabled]);
+	return width;
+}
 
 /** Gap kept between the active item and the scroller's edge when revealing it. */
 const ACTIVE_SCROLL_MARGIN = 8;
@@ -355,6 +407,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const linksRef = React.useRef<HTMLDivElement>(null);
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	useKeepActiveInView(scrollRef, activePath, collapsed);
+	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
@@ -1261,34 +1314,58 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						overflowX: 'hidden',
 						// Scrollbar shows only while the pointer is inside (or a
 						// keyboard user tabs in). Not :focus-within, since a
-						// clicked link keeps focus and would pin it on. On the
-						// icon rail the gutter is reserved on both edges so the
-						// icons never shift and stay centred with the brand and
-						// footer.
+						// clicked link keeps focus and would pin it on.
 						...(useFlyout
-							? { scrollbarGutter: 'stable both-edges' }
-							: {}),
-						scrollbarWidth: 'thin',
-						scrollbarColor: 'transparent transparent',
+							? {
+									// Chrome lets `scrollbar-width`/`-color` override
+									// the ::-webkit-scrollbar rules, and its `thin` is
+									// 11px — too wide for the 52px rail. So only
+									// browsers without those rules (Firefox) get them;
+									// Chrome and Safari draw the 6px bar below.
+									'@supports not selector(::-webkit-scrollbar)':
+										{
+											scrollbarWidth: 'thin',
+											scrollbarColor:
+												'transparent transparent',
+											'&:hover, &:has(:focus-visible)': {
+												scrollbarColor: (
+													theme: Theme
+												) =>
+													`${theme.palette.divider} transparent`
+											}
+										}
+								}
+							: {
+									scrollbarWidth: 'thin',
+									scrollbarColor: 'transparent transparent',
+									'&:hover, &:has(:focus-visible)': {
+										scrollbarColor: (theme: Theme) =>
+											`${theme.palette.divider} transparent`
+									}
+								}),
 						// Safari only honours the thumb rule once the bar
 						// itself is styled.
-						'&::-webkit-scrollbar': { width: useFlyout ? 6 : 8 },
+						'&::-webkit-scrollbar': {
+							width: useFlyout ? FLOATING_RAIL_INSET_PX : 8
+						},
 						'&::-webkit-scrollbar-thumb': {
 							backgroundColor: 'transparent',
 							borderRadius: 4
 						},
-						'&:hover, &:has(:focus-visible)': {
-							scrollbarColor: theme =>
-								`${theme.palette.divider} transparent`,
-							'&::-webkit-scrollbar-thumb': {
-								backgroundColor: theme => theme.palette.divider
-							}
-						},
-						// On the icon rail the two gutters stand in for the
-						// padding, leaving room for the 44px items. (The inline
-						// collapsed rail keeps it: its open groups tint the
-						// full row width.)
-						px: useFlyout ? 0 : horizontalPadding,
+						'&:hover::-webkit-scrollbar-thumb, &:has(:focus-visible)::-webkit-scrollbar-thumb':
+							{
+								backgroundColor: (theme: Theme) =>
+									theme.palette.divider
+							},
+						// On the floating rail the bar (when it takes space at
+						// all) stands in for the right padding, and the left
+						// padding follows it, so the 40px column keeps equal
+						// gaps in the capsule whether the bar is classic,
+						// overlay or absent. (The inline collapsed rail keeps
+						// its padding: its open groups tint the full row width.)
+						...(useFlyout
+							? railScrollerPadding(railScrollbarPx)
+							: { px: horizontalPadding }),
 						pt:
 							topInsetPx && !showHeaderBar
 								? `${topInsetPx}px`
@@ -1298,8 +1375,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						pb: useFlyout ? railGap : 2
 					}}
 				>
-					{/* Offset parent for the active drop, inside the scrollbar
-					    gutters so its offsets match the items'. Grows to fill,
+					{/* Offset parent for the active drop, inside the padding
+					    so its offsets match the items'. Grows to fill,
 					    keeping the bottom group's mt:auto pinning. */}
 					<Box
 						ref={linksRef}
