@@ -11,6 +11,7 @@ import NexaLogo from './NexaLogo';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { GEL_SPRING, springTiming } from './glassMotion';
 import { GLASS_RADIUS_PX, REDUCED_MOTION, glassTintSx } from './liquidGlass';
+import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
 
 const gel = springTiming(GEL_SPRING);
 
@@ -159,8 +160,8 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 					data-variant='sidebar-icon'
 					data-rail-keep-fill
 					sx={{
-						width: 44,
-						height: 44,
+						width: FLOATING_RAIL_ITEM_PX,
+						height: FLOATING_RAIL_ITEM_PX,
 						borderRadius: `${GLASS_RADIUS_PX}px`,
 						...glassTintSx(BEAM, isDark, 'clear'),
 						...(LIQUID_GLASS_ENABLED
@@ -189,7 +190,7 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 						...(busy && glassBeamSx(isDark))
 					}}
 				>
-					<NexaLogo size={20} />
+					<NexaLogo size={18} />
 				</IconButton>
 			</Tooltip>
 		);

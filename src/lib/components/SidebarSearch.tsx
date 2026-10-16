@@ -9,6 +9,7 @@ import * as React from 'react';
 import GlassLayer from './GlassLayer';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
+import { FLOATING_RAIL_ICON_PX, FLOATING_RAIL_ITEM_PX } from './shellLayout';
 import { MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
 	REDUCED_MOTION,
@@ -264,13 +265,15 @@ const HoverSearch: React.FC<{
 						setOpen(true);
 					}}
 					sx={{
-						width: 44,
-						height: 44,
+						width: FLOATING_RAIL_ITEM_PX,
+						height: FLOATING_RAIL_ITEM_PX,
 						color,
 						borderRadius: `${GLASS_RADIUS_PX}px`
 					}}
 				>
-					<SearchRoundedIcon />
+					<SearchRoundedIcon
+						sx={{ fontSize: FLOATING_RAIL_ICON_PX }}
+					/>
 				</IconButton>
 			</Tooltip>
 			<Popper

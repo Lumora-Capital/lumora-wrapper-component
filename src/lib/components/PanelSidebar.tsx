@@ -188,7 +188,9 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				minWidth: 0,
 				justifyContent: 'flex-start',
 				gap: 1.25,
-				p: 0.75,
+				// On the flyout rail the 36px avatar fills a 40px button,
+				// matching the rail's icon buttons
+				p: railOnly ? '2px' : 0.75,
 				borderRadius: '10px',
 				bgcolor: menuOpen ? tint : 'transparent',
 				'&:hover': { bgcolor: tint },

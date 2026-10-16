@@ -39,6 +39,7 @@ import {
 	COLLAPSIBLE_COLLAPSED_WIDTH_PX,
 	type ContentPadding,
 	DEFAULT_CONTENT_PADDING,
+	FLOATING_RAIL_GAP_PX,
 	FLOATING_RAIL_GUTTER_PX,
 	FLOATING_RAIL_RADIUS_PX,
 	FLOATING_RAIL_WIDTH_PX,
@@ -924,10 +925,21 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		const search = renderSearch(mode);
 		return assistant || search ? (
 			<Stack
-				spacing={1.5}
+				spacing={useFlyoutSubmenu ? `${FLOATING_RAIL_GAP_PX}px` : 1.5}
 				sx={{ alignItems: mode === 'full' ? 'stretch' : 'center' }}
 			>
 				{assistant}
+				{/* On the glass rail a hairline sets Nexa apart from search, in
+				    the footer divider's tint */}
+				{useFlyoutSubmenu && assistant && search ? (
+					<Box
+						role='separator'
+						sx={{
+							width: '100%',
+							borderTop: `1px solid ${deriveGroupTint(sidebarChromeFg)}`
+						}}
+					/>
+				) : null}
 				{search}
 			</Stack>
 		) : undefined;

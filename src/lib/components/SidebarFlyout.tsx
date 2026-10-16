@@ -30,11 +30,18 @@ import {
 } from './liquidGlass';
 import GlassLayer from './GlassLayer';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
+import {
+	FLOATING_RAIL_GAP_PX,
+	FLOATING_RAIL_ICON_PX,
+	FLOATING_RAIL_ITEM_PX,
+	FLOATING_RAIL_WIDTH_PX
+} from './shellLayout';
 import { flattenLeaves, isSubLinkActive } from './sidebarUtils';
 
-/** Compact square tiles in one row; the name shows on hover. */
-const TILE_PX = 44;
-const TILE_GAP_PX = 4;
+/** Compact square tiles in one row; the name shows on hover. Sized and
+ * spaced like the rail's own buttons. */
+const TILE_PX = FLOATING_RAIL_ITEM_PX;
+const TILE_GAP_PX = FLOATING_RAIL_GAP_PX;
 const TILE_RADIUS_PX = GLASS_RADIUS_PX;
 /** Dock magnification: the tile under the pointer grows to this, its
  * neighbours less the further away they are, up to this far from it. */
@@ -56,7 +63,7 @@ const PANEL_GAP_PX = 10;
  * from there. */
 const SEED_SCALE_X = 0.12;
 const SEED_SCALE_Y = 0.75;
-const SEED_ORIGIN_X_PX = PANEL_GAP_PX + 32;
+const SEED_ORIGIN_X_PX = PANEL_GAP_PX + FLOATING_RAIL_WIDTH_PX / 2 - 2;
 /** The tiles wait for the glass to take shape, then follow one another. */
 const TILE_BASE_DELAY_MS = 90;
 const TILE_STAGGER_MS = 22;
@@ -388,7 +395,9 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 					// panel) is centred on the rail icon
 					{
 						name: 'offset',
-						options: { offset: [-TITLE_HEIGHT_PX / 2, PANEL_GAP_PX] }
+						options: {
+							offset: [-TITLE_HEIGHT_PX / 2, PANEL_GAP_PX]
+						}
 					},
 					{ name: 'flip', enabled: false },
 					{ name: 'preventOverflow', options: { padding: 8 } }
@@ -1271,7 +1280,7 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 					animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
 					animationDelay: `${TILE_BASE_DELAY_MS + index * TILE_STAGGER_MS}ms`,
 					'& .MuiSvgIcon-root': {
-						fontSize: 22,
+						fontSize: FLOATING_RAIL_ICON_PX,
 						color: active ? activeForegroundColor : iconColor
 					},
 					'&::before': {

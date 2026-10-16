@@ -37,6 +37,11 @@ import {
 	isSubLinkActive,
 	nodeKey
 } from './sidebarUtils';
+import {
+	FLOATING_RAIL_GAP_PX,
+	FLOATING_RAIL_ICON_PX,
+	FLOATING_RAIL_ITEM_PX
+} from './shellLayout';
 import useFlyoutIntent from './useFlyoutIntent';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
@@ -157,6 +162,11 @@ const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
 
 /** Page-link label weight in the expanded panel. */
 const ROW_LABEL_WEIGHT = 600;
+
+/** The floating rail spaces everything by one gap: each section boundary
+ * (brand, top content, links, bottom group, footer) takes it once in place of
+ * its own padding. */
+const railGap = `${FLOATING_RAIL_GAP_PX}px`;
 
 /** Gap kept between the active item and the scroller's edge when revealing it. */
 const ACTIVE_SCROLL_MARGIN = 8;
@@ -752,8 +762,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								// Icon-only collapsed rail (collapsible variant):
 								// original hover — accent when active, else a subtle
 								// tint; no foreground change.
-								width: 44,
-								height: 44,
+								width: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
+								height: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
 								color: active ? activeFg : accentOnSurface,
 								bgcolor: active ? activeAccent : 'transparent',
 								borderRadius: active ? '8px' : '50%',
@@ -824,6 +834,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// press that springs back.
 	const glassRailIconSx = (active: boolean) => ({
 		borderRadius: `${GLASS_RADIUS_PX}px`,
+		'& .MuiSvgIcon-root': { fontSize: FLOATING_RAIL_ICON_PX },
 		// The active item's glass is one drop that glides between items
 		// (useActiveGlass); the item itself stays clear
 		...(active ? { bgcolor: 'transparent' } : {}),
@@ -874,8 +885,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					{...{ [RAIL_ITEM_ATTR]: '' }}
 					sx={{
 						position: 'relative',
-						width: 44,
-						height: 44,
+						width: FLOATING_RAIL_ITEM_PX,
+						height: FLOATING_RAIL_ITEM_PX,
 						color: groupActive ? activeFg : accentOnSurface,
 						// Open, the rail's hover lens stays on it (useRailLens)
 						// rather than a fill of its own under the lens
@@ -1130,8 +1141,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		<Box
 			data-testid='sidebar-header'
 			sx={{
-				height: HEADER_HEIGHT_PX,
-				minHeight: HEADER_HEIGHT_PX,
+				// On the floating rail the logo sits 12px from the top and
+				// 12px above Nexa — a section apart, wider than the 4px
+				// between items
+				...(useFlyout
+					? { pt: '12px', pb: '12px' }
+					: {
+							height: HEADER_HEIGHT_PX,
+							minHeight: HEADER_HEIGHT_PX
+						}),
 				flexShrink: 0,
 				display: 'flex',
 				alignItems: 'center',
@@ -1163,7 +1181,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					justifyContent: 'center',
 					flexShrink: 0,
 					pt: 2,
-					pb: 1
+					pb: useFlyout ? railGap : 1
 				}}
 			>
 				<Brand
@@ -1177,7 +1195,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			</Box>
 		) : null;
 
-	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 1.5;
+	// The floating rail's 6px matches its scrollbar gutters, so the top
+	// content and footer line up with the links.
+	const horizontalPadding = showLabels
+		? 0.5
+		: useFlyout
+			? 0.75
+			: collapsed
+				? 1
+				: 1.5;
 
 	return (
 		<RailGlassContext.Provider value={useFlyout}>
@@ -1215,8 +1241,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						sx={{
 							flexShrink: 0,
 							px: horizontalPadding,
-							pt: 1,
-							pb: 1
+							pt: useFlyout ? 0 : 1,
+							pb: useFlyout ? 0 : 1
 						}}
 					>
 						{topContent}
@@ -1246,7 +1272,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						scrollbarColor: 'transparent transparent',
 						// Safari only honours the thumb rule once the bar
 						// itself is styled.
-						'&::-webkit-scrollbar': { width: 8 },
+						'&::-webkit-scrollbar': { width: useFlyout ? 6 : 8 },
 						'&::-webkit-scrollbar-thumb': {
 							backgroundColor: 'transparent',
 							borderRadius: 4
@@ -1266,8 +1292,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						pt:
 							topInsetPx && !showHeaderBar
 								? `${topInsetPx}px`
-								: 1,
-						pb: 2
+								: useFlyout
+									? railGap
+									: 1,
+						pb: useFlyout ? railGap : 2
 					}}
 				>
 					{/* Offset parent for the active drop, inside the scrollbar
@@ -1287,10 +1315,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
 				    the divider moves below it, between the links and the user. */}
 						{secondaryLinks.length > 0 ? (
-							<Box sx={{ mt: 'auto', pt: 2 }}>
+							<Box
+								sx={{ mt: 'auto', pt: useFlyout ? railGap : 2 }}
+							>
 								{footer ? null : (
 									<Divider
-										sx={{ mb: 1, borderColor: 'divider' }}
+										sx={{
+											mb: useFlyout ? railGap : 1,
+											borderColor: 'divider'
+										}}
 									/>
 								)}
 								{renderLinkStack(secondaryLinks)}
@@ -1299,11 +1332,25 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					</Box>
 				</Box>
 				{footer ? (
-					<Box sx={{ flexShrink: 0, px: horizontalPadding, pb: 1.5 }}>
+					<Box
+						sx={{
+							flexShrink: 0,
+							px: horizontalPadding,
+							pb: 1.5,
+							...(useFlyout
+								? {
+										'& .MuiIconButton-root .MuiSvgIcon-root':
+											{
+												fontSize: FLOATING_RAIL_ICON_PX
+											}
+									}
+								: {})
+						}}
+					>
 						<Box
 							sx={{
 								borderTop: `1px solid ${headerDivider}`,
-								pt: 1.5
+								pt: useFlyout ? railGap : 1.5
 							}}
 						>
 							{footer}

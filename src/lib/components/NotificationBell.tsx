@@ -3,7 +3,8 @@ import Badge from '@mui/material/Badge';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
-import { useRailTooltipProps } from './RailLens';
+import { RailGlassContext, useRailTooltipProps } from './RailLens';
+import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
 
 interface NotificationBellProps {
 	count: number;
@@ -24,6 +25,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	testId
 }) => {
 	const railTooltip = useRailTooltipProps();
+	// On the floating rail it matches the rail's icon buttons
+	const onGlassRail = React.useContext(RailGlassContext);
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
 	return (
 		<Tooltip
@@ -37,6 +40,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 				aria-label={label}
 				data-testid={testId}
 				sx={{
+					...(onGlassRail
+						? {
+								width: FLOATING_RAIL_ITEM_PX,
+								height: FLOATING_RAIL_ITEM_PX
+							}
+						: {}),
 					color,
 					flexShrink: 0,
 					borderRadius: '8px',

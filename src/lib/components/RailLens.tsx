@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
+import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
 import {
 	GLIDE_SPRING,
 	canAnimate,
@@ -74,8 +75,6 @@ export type GlassLensOptions = {
 	 */
 	size?: number;
 	radius: number;
-	/** How far it leans toward the pointer within an item. */
-	lean?: number;
 	/**
 	 * An item the lens stays on while it matches, instead of shrinking away
 	 * (the rail: the group whose flyout is open, so its hover state holds
@@ -92,8 +91,8 @@ const glide = springTiming(GLIDE_SPRING);
  * One drop of glass that rests behind whichever item the pointer (or the
  * keyboard focus) is on — the single hover state of a glass surface. It
  * wells up, glides from item to item on a near-critical spring (a slight
- * stretch, no bounce), leans a little toward the pointer, and shrinks
- * away when the pointer leaves. Used by the rail and the account menu.
+ * stretch, no bounce), stays centred on the item rather than following
+ * the pointer, and shrinks away when the pointer leaves. Used by the rail and the account menu.
  *
  * Spread `containerProps` on the container (it must be the lens's offset
  * parent and clip it, so the spring's overshoot never scrolls anything) and
@@ -106,7 +105,6 @@ export const useGlassLens = ({
 	selector,
 	size,
 	radius,
-	lean = 3,
 	pinSelector,
 	pinKey = null
 }: GlassLensOptions) => {
@@ -166,20 +164,6 @@ export const useGlassLens = ({
 		}
 	};
 
-	// Lean toward the pointer, like a drop drawn by a fingertip. Written
-	// straight to the element: no render per mouse move.
-	const onMouseMove = (event: React.MouseEvent<HTMLElement>) => {
-		const el = lensRef.current;
-		const item = current.current;
-		if (!enabled || !el || !item || !lean || prefersReducedMotion()) {
-			return;
-		}
-		const r = item.getBoundingClientRect();
-		const toward = (offset: number, extent: number) =>
-			Math.max(-1, Math.min(1, offset / (extent / 2))) * lean;
-		el.style.transform = `translate(${toward(event.clientX - (r.left + r.width / 2), r.width)}px, ${toward(event.clientY - (r.top + r.height / 2), r.height)}px)`;
-	};
-
 	// The lens is the container's first child, so its parent is the container
 	const pinned = () => {
 		const container = lensRef.current?.parentElement;
@@ -188,9 +172,6 @@ export const useGlassLens = ({
 	};
 
 	const hide = () => {
-		if (lensRef.current) {
-			lensRef.current.style.transform = '';
-		}
 		const pin = pinned();
 		if (pin) {
 			placeOn(pin.container, pin.item);
@@ -282,16 +263,15 @@ export const useGlassLens = ({
 					height: box.height,
 					// Placed with `translate`, which the browser applies before
 					// `scale`: the well-up and stretch then scale the drop in
-					// place instead of scaling its offset. `transform` carries
-					// only the lean.
+					// place instead of scaling its offset.
 					translate: `${box.left}px ${box.top}px`,
 					// Shrinks away as it fades; wells back up on return
 					scale: box.visible ? '1' : '0.7',
 					opacity: box.visible ? 1 : 0,
 					pointerEvents: 'none',
 					transition: box.instant
-						? 'opacity 160ms ease, scale 220ms ease, transform 260ms ease-out'
-						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease, transform 260ms ease-out`,
+						? 'opacity 160ms ease, scale 220ms ease'
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease`,
 					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
 				}}
 			/>
@@ -303,7 +283,6 @@ export const useGlassLens = ({
 		containerProps: enabled
 			? {
 					onMouseOver,
-					onMouseMove,
 					onMouseLeave: hide,
 					onFocus,
 					onBlur,
@@ -324,7 +303,8 @@ export const useRailLens = (
 		enabled,
 		isDark,
 		selector: RAIL_ITEM_SELECTOR,
-		size: 46,
+		// The rail's buttons exactly, so the hover sits on the item
+		size: FLOATING_RAIL_ITEM_PX,
 		radius: GLASS_RADIUS_PX,
 		pinSelector: `[${RAIL_ITEM_ATTR}][data-open="true"]`,
 		pinKey: openKey
@@ -482,7 +462,6 @@ export const useActiveGlass = ({
 			typeof MutationObserver === 'undefined'
 				? null
 				: new MutationObserver(schedule);
-		// Not `style`: the hover lens writes its lean there on every move
 		mutation?.observe(container, {
 			subtree: true,
 			childList: true,
