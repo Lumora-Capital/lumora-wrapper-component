@@ -158,6 +158,60 @@ const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
 /** Page-link label weight in the expanded panel. */
 const ROW_LABEL_WEIGHT = 600;
 
+/** Gap kept between the active item and the scroller's edge when revealing it. */
+const ACTIVE_SCROLL_MARGIN = 8;
+
+/**
+ * Keeps the active item inside the links' scroll container: on navigation,
+ * on collapse/expand, and whenever the scroller's own height changes (a
+ * shorter window). Only scrolls when the item is out of view, so a user who
+ * scrolled away isn't yanked back until something changes.
+ */
+function useKeepActiveInView(
+	scrollRef: React.RefObject<HTMLElement | null>,
+	activePath: string | undefined,
+	collapsed: boolean
+) {
+	React.useEffect(() => {
+		const scroller = scrollRef.current;
+		if (!scroller) return;
+
+		const reveal = (behavior: ScrollBehavior) => {
+			// The deepest visible active row: a group and its active child are
+			// both marked, and a closed group's children measure 0 tall.
+			const active = Array.from(
+				scroller.querySelectorAll<HTMLElement>('[data-active="true"]')
+			)
+				.filter(el => el.offsetHeight > 0)
+				.pop();
+			if (!active) return;
+			const view = scroller.getBoundingClientRect();
+			const item = active.getBoundingClientRect();
+			let delta = 0;
+			if (item.top < view.top + ACTIVE_SCROLL_MARGIN) {
+				delta = item.top - view.top - ACTIVE_SCROLL_MARGIN;
+			} else if (item.bottom > view.bottom - ACTIVE_SCROLL_MARGIN) {
+				delta = item.bottom - view.bottom + ACTIVE_SCROLL_MARGIN;
+			}
+			if (delta !== 0) scroller.scrollBy({ top: delta, behavior });
+		};
+
+		const frame = requestAnimationFrame(() => reveal('smooth'));
+		// Again once an opening group's Collapse has settled.
+		const settle = window.setTimeout(() => reveal('smooth'), 350);
+		const observer =
+			typeof ResizeObserver === 'undefined'
+				? null
+				: new ResizeObserver(() => reveal('auto'));
+		observer?.observe(scroller);
+		return () => {
+			cancelAnimationFrame(frame);
+			window.clearTimeout(settle);
+			observer?.disconnect();
+		};
+	}, [scrollRef, activePath, collapsed]);
+}
+
 export interface CollapsibleSidebarProps {
 	mainLinks: SidebarLink[];
 	/** Bottom group; rendered after a divider and pinned to the bottom. */
@@ -289,6 +343,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// it scrolls with its item and is clipped with the links instead of
 	// resting on the footer when a short window scrolls the rail.
 	const linksRef = React.useRef<HTMLDivElement>(null);
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
@@ -1169,6 +1225,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				{/* Scroll container; flex column keeps the bottom group's mt:auto
 			    pinning intact. */}
 				<Box
+					ref={scrollRef}
 					sx={{
 						flex: '1 1 auto',
 						minHeight: 0,
