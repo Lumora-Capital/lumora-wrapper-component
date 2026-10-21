@@ -149,7 +149,7 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 		);
 	}
 
-	if (variant === 'sidebar-icon' && onGlassRail) {
+	if (variant === 'sidebar-icon' && onGlassRail && LIQUID_GLASS_ENABLED) {
 		// On the glass rail: a drop of teal-tinted glass. It keeps its own
 		// fill on hover (the rail's lens glides behind it), swells like a gel
 		// button, and rings with light while the chat is open.
@@ -202,9 +202,10 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 				<IconButton
 					{...common}
 					data-variant='sidebar-icon'
+					data-rail-keep-fill={onGlassRail || undefined}
 					sx={{
-						width: 44,
-						height: 44,
+						width: onGlassRail ? FLOATING_RAIL_ITEM_PX : 44,
+						height: onGlassRail ? FLOATING_RAIL_ITEM_PX : 44,
 						borderRadius: '8px',
 						border: '1px solid',
 						borderColor: active ? BEAM : 'rgba(9, 193, 174, 0.45)',
@@ -213,7 +214,7 @@ const AssistantButton: React.FC<AssistantButtonProps> = ({
 						...(busy && beamSx(8, 'background.paper'))
 					}}
 				>
-					<NexaLogo size={20} />
+					<NexaLogo size={onGlassRail ? 18 : 20} />
 				</IconButton>
 			</Tooltip>
 		);

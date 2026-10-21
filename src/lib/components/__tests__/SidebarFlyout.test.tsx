@@ -355,7 +355,7 @@ describe("LumoraWrapper sidebarSubmenu='flyout'", () => {
 		expect(lens).toHaveAttribute('data-visible', 'false');
 	});
 
-	it('makes Ask Nexa a drop of tinted glass on the rail', () => {
+	it('keeps Ask Nexa its own fill on the rail', () => {
 		render(
 			<LumoraWrapper
 				{...lumoraTestRequiredProps}
