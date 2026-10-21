@@ -37,7 +37,7 @@ export type LumoraPlatform = {
 
 const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
-const MENU_MIN_WIDTH_PX = 260;
+const MENU_MIN_WIDTH_PX = 240;
 
 /** Card chrome without glass; the Popover paper itself is transparent. */
 const cardSx = {
@@ -92,7 +92,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 			autoFocusItem={open}
 			aria-label='Switch platform'
 			data-testid='platform-menu-list'
-			sx={{ position: 'relative', p: 1, outline: 'none' }}
+			sx={{ position: 'relative', p: 0.5, outline: 'none' }}
 		>
 			{platforms.map(platform => {
 				const current = platform.key === currentKey;
@@ -107,7 +107,10 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 							borderRadius: glass
 								? `${GLASS_RADIUS_PX}px`
 								: '8px',
-							py: 1,
+							// Compact: 14px name over a 12px description.
+							py: 0.75,
+							px: 1.5,
+							minHeight: 0,
 							'&:focus, &:focus-visible': { outline: 'none' },
 							// Glass: the tick marks the current platform and the
 							// lens is the only hover fill
@@ -117,12 +120,12 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 							})
 						}}
 					>
-						<ListItemIcon sx={{ minWidth: 32 }}>
+						<ListItemIcon sx={{ minWidth: 24 }}>
 							<Box
 								aria-hidden
 								sx={{
-									width: 12,
-									height: 12,
+									width: 10,
+									height: 10,
 									borderRadius: '50%',
 									bgcolor: color,
 									boxShadow: glass
@@ -134,15 +137,19 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 						<ListItemText
 							primary={platform.name}
 							secondary={platform.description}
+							sx={{ my: 0 }}
 							slotProps={{
-								primary: { sx: { fontWeight: 600 } }
+								primary: {
+									sx: { fontWeight: 600, fontSize: 14, lineHeight: '20px' }
+								},
+								secondary: { sx: { fontSize: 12, lineHeight: '18px' } }
 							}}
 						/>
 						{current ? (
 							<CheckRounded
 								fontSize='small'
 								data-testid='platform-current'
-								sx={{ ml: 1.5, color }}
+								sx={{ ml: 1.5, fontSize: 18, color }}
 							/>
 						) : null}
 					</MenuItem>

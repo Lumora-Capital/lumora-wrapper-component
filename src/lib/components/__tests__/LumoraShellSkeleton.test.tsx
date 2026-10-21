@@ -21,6 +21,20 @@ describe('LumoraShellSkeleton', () => {
 		expect(withSidebar).toBeGreaterThan(withoutSidebar);
 	});
 
+	it("draws the host's content outline in place of the generic one", () => {
+		const { container, rerender } = render(<LumoraShellSkeleton />);
+		const generic = container.querySelectorAll('.MuiSkeleton-root').length;
+
+		rerender(
+			<LumoraShellSkeleton content={<div data-testid='page-outline' />} />
+		);
+		expect(screen.getByTestId('page-outline')).toBeInTheDocument();
+		// Only the rail's placeholders remain around it
+		expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeLessThan(
+			generic
+		);
+	});
+
 	describe('with darkModeSelector', () => {
 		const SELECTOR = 'html[data-color-scheme="dark"]';
 		const statuses = () =>

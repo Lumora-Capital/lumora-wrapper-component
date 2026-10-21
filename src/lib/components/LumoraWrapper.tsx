@@ -259,6 +259,12 @@ export interface LumoraWrapperProps {
 	enableRefreshToken?: boolean;
 	/** Keep the session-check skeleton up instead of the app, to preview it. */
 	holdSessionSkeleton?: boolean;
+	/**
+	 * The page's loading outline for the session-check skeleton's content
+	 * area (see LumoraShellSkeleton `content`), so the page that loads next
+	 * opens on the same picture. Defaults to a generic outline.
+	 */
+	sessionSkeletonContent?: React.ReactNode;
 	activePath?: string;
 	onLinkClick?: (path: string) => void;
 	// User (bottom of the sidebar)
@@ -488,6 +494,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	activeSidebarForegroundColor,
 	enableRefreshToken = false,
 	holdSessionSkeleton = false,
+	sessionSkeletonContent,
 	activePath,
 	onLinkClick,
 	showProfile = true,
@@ -832,6 +839,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				contentPadding={contentPadding}
 				sidebarBackgroundColor={sidebarBackgroundColor}
 				contentBackgroundColor={contentBackgroundColor}
+				content={sessionSkeletonContent}
 			/>
 		);
 	}

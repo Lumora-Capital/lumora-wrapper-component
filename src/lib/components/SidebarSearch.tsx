@@ -136,7 +136,7 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 				TransitionProps={{
 					onEntered: node => focusFirstField(node as HTMLElement)
 				}}
-				slotProps={{ paper: { sx: { ml: 1, p: 1.5, width: 360 } } }}
+				slotProps={{ paper: { sx: { ml: 1, p: 1, width: 320 } } }}
 			>
 				{search}
 			</Popover>
@@ -293,8 +293,8 @@ const HoverSearch: React.FC<{
 					onMouseLeave={leave}
 					sx={{
 						position: 'relative',
-						width: 360,
-						p: 1.25,
+						width: 320,
+						p: 1,
 						borderRadius: `${GLASS_RADIUS_PX}px`
 					}}
 				>

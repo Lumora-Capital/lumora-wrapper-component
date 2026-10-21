@@ -265,6 +265,14 @@ export declare interface LumoraShellSkeletonProps {
     contentPadding?: ContentPadding;
     sidebarBackgroundColor?: ShellColor;
     contentBackgroundColor?: ShellColor;
+    /**
+     * The page's own loading outline, drawn in the content area instead of
+     * the generic one, so the page that loads next keeps the same picture
+     * rather than swapping one skeleton for another. It is drawn once per
+     * mode when `darkModeSelector` is set, so it should style itself with CSS
+     * that follows that selector (or not depend on the mode at all).
+     */
+    content?: default_2.ReactNode;
 }
 
 /**
@@ -379,6 +387,12 @@ export declare interface LumoraWrapperProps {
     enableRefreshToken?: boolean;
     /** Keep the session-check skeleton up instead of the app, to preview it. */
     holdSessionSkeleton?: boolean;
+    /**
+     * The page's loading outline for the session-check skeleton's content
+     * area (see LumoraShellSkeleton `content`), so the page that loads next
+     * opens on the same picture. Defaults to a generic outline.
+     */
+    sessionSkeletonContent?: default_2.ReactNode;
     activePath?: string;
     onLinkClick?: (path: string) => void;
     /** Show the user row; clicking it opens settings, dark mode and logout. */

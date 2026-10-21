@@ -13,7 +13,10 @@ import { getDesignTokens } from '../theme';
 import {
 	type ContentPadding,
 	DEFAULT_CONTENT_PADDING,
+	FLOATING_RAIL_GAP_PX,
 	FLOATING_RAIL_GUTTER_PX,
+	FLOATING_RAIL_ICON_PX,
+	FLOATING_RAIL_ITEM_PX,
 	FLOATING_RAIL_RADIUS_PX,
 	getDesktopSidebarWidthPx,
 	MOBILE_BAR_HEIGHT_PX,
@@ -46,9 +49,18 @@ export interface LumoraShellSkeletonProps {
 	contentPadding?: ContentPadding;
 	sidebarBackgroundColor?: ShellColor;
 	contentBackgroundColor?: ShellColor;
+	/**
+	 * The page's own loading outline, drawn in the content area instead of
+	 * the generic one, so the page that loads next keeps the same picture
+	 * rather than swapping one skeleton for another. It is drawn once per
+	 * mode when `darkModeSelector` is set, so it should style itself with CSS
+	 * that follows that selector (or not depend on the mode at all).
+	 */
+	content?: React.ReactNode;
 }
 
 const RAIL_ITEMS = 6;
+const FLOATING_RAIL_ITEMS = 8;
 
 const colorFor = (color: ShellColor | undefined, mode: ThemeMode) =>
 	typeof color === 'object' ? color[mode] : color;
@@ -73,7 +85,8 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 	showSidebar = true,
 	contentPadding = DEFAULT_CONTENT_PADDING,
 	sidebarBackgroundColor,
-	contentBackgroundColor
+	contentBackgroundColor,
+	content
 }) => {
 	const isMobile = useMediaQuery(hostTheme.breakpoints.down('md'));
 	const isDark = themeMode === 'dark';
@@ -103,7 +116,38 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 		hostTheme
 	);
 
-	const railIcons = (
+	// The floating rail's own geometry: a 36px brand 12px down, then 40px
+	// items 4px apart, each glyph 20px, so the icons land where the
+	// placeholders stood
+	const railIcons = floatingRail ? (
+		<Stack alignItems='center' sx={{ pt: '12px' }}>
+			<Skeleton variant='rounded' width={36} height={36} />
+			<Stack
+				alignItems='center'
+				spacing={`${FLOATING_RAIL_GAP_PX}px`}
+				sx={{ mt: 2 }}
+			>
+				{Array.from({ length: FLOATING_RAIL_ITEMS }, (_, i) => (
+					<Box
+						key={i}
+						sx={{
+							width: FLOATING_RAIL_ITEM_PX,
+							height: FLOATING_RAIL_ITEM_PX,
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center'
+						}}
+					>
+						<Skeleton
+							variant='rounded'
+							width={FLOATING_RAIL_ICON_PX}
+							height={FLOATING_RAIL_ICON_PX}
+						/>
+					</Box>
+				))}
+			</Stack>
+		</Stack>
+	) : (
 		<Stack alignItems='center' spacing={2} sx={{ pt: 2 }}>
 			<Skeleton variant='rounded' width={32} height={32} />
 			<Box sx={{ height: 8 }} />
@@ -189,23 +233,33 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 					sx={{
 						flexGrow: 1,
 						minWidth: 0,
-						p: resolvedPadding,
+						// The variables the wrapper's <main> sets, so a host's `content`
+						// that sizes itself from them measures as it will in the app
+						'--lumora-content-padding': resolvedPadding,
+						'--lumora-sticky-top': isMobile
+							? `${mobileBarHeightPx}px`
+							: '0px',
+						p: 'var(--lumora-content-padding)',
 						mt: isMobile ? `${mobileBarHeightPx}px` : 0
 					}}
 				>
-					<Skeleton variant='text' width={220} height={40} />
-					<Skeleton variant='text' width={320} sx={{ mb: 3 }} />
-					<Stack direction='row' spacing={2} sx={{ mb: 3 }}>
-						{Array.from({ length: isMobile ? 2 : 4 }, (_, i) => (
-							<Skeleton
-								key={i}
-								variant='rounded'
-								height={96}
-								sx={{ flex: 1 }}
-							/>
-						))}
-					</Stack>
-					<Skeleton variant='rounded' height={360} />
+					{content ?? (
+						<>
+							<Skeleton variant='text' width={220} height={40} />
+							<Skeleton variant='text' width={320} sx={{ mb: 3 }} />
+							<Stack direction='row' spacing={2} sx={{ mb: 3 }}>
+								{Array.from({ length: isMobile ? 2 : 4 }, (_, i) => (
+									<Skeleton
+										key={i}
+										variant='rounded'
+										height={96}
+										sx={{ flex: 1 }}
+									/>
+								))}
+							</Stack>
+							<Skeleton variant='rounded' height={360} />
+						</>
+					)}
 				</Box>
 			</Box>
 		</ThemeProvider>

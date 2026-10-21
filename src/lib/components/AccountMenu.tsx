@@ -126,8 +126,8 @@ const ThemeSegments: React.FC<{
 				onClick={() => select(value)}
 				data-testid={`theme-segment-${value}`}
 				sx={{
-					width: 36,
-					height: 26,
+					width: 32,
+					height: 24,
 					borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '999px',
 					// White on dark: the accent is too dim against a dark surface
 					color: selected
@@ -162,7 +162,7 @@ const ThemeSegments: React.FC<{
 					...FOCUS_OUTLINE_FIX
 				}}
 			>
-				<Icon sx={{ fontSize: 18 }} />
+				<Icon sx={{ fontSize: 16 }} />
 			</ButtonBase>
 		);
 	};
@@ -291,21 +291,28 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		}
 	};
 
+	// Compact rows: 32px, 14px text, a 32px icon column.
 	const itemSx = {
 		borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '8px',
-		py: 1,
-		gap: 0.5
+		py: 0.75,
+		px: 1.5,
+		minHeight: 32,
+		gap: 0.5,
+		fontSize: 14,
+		lineHeight: '20px',
+		'& .MuiListItemIcon-root': { minWidth: 32 },
+		'& .MuiTypography-root': { fontSize: 14, lineHeight: '20px' }
 	} as const;
 
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
 	// It sits outside the MenuList, so it's reached with Tab.
 	const userHeader = (
-		<Stack direction='row' sx={{ alignItems: 'center', gap: 1.5, p: 2 }}>
-			{renderAvatar(44)}
+		<Stack direction='row' sx={{ alignItems: 'center', gap: 1.25, p: 1.5 }}>
+			{renderAvatar(36)}
 			<Box sx={{ minWidth: 0, flex: 1 }}>
 				{/* name / email / role */}
-				<Typography noWrap sx={{ fontWeight: 600 }}>
+				<Typography noWrap sx={{ fontWeight: 600, fontSize: 14, lineHeight: '20px' }}>
 					{userName}
 				</Typography>
 				{userEmail ? (
@@ -313,7 +320,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 						noWrap
 						variant='body2'
 						data-testid='account-menu-email'
-						sx={{ color: 'text.secondary' }}
+						sx={{ color: 'text.secondary', fontSize: 12, lineHeight: '18px' }}
 					>
 						{userEmail}
 					</Typography>
@@ -473,9 +480,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 								...itemSx,
 								// Paints above the glass lens resting behind it
 								position: 'relative',
-								mx: 1,
+								mx: 0.5,
 								mt: 0.5,
-								px: 2,
+								px: 1.5,
 								// The 32px pill is taller than a text line; trim the
 								// vertical padding so the row is 40px like the rows
 								// with a count pill, not 48px.
@@ -483,7 +490,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 								display: 'flex',
 								alignItems: 'center',
 								// Icon column as wide as a MenuItem's.
-								'& .MuiListItemIcon-root': { minWidth: 36 }
+								'& .MuiListItemIcon-root': { minWidth: 32 }
 							}}
 						>
 							<ListItemIcon>
@@ -503,7 +510,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 				    without tabindex, which MenuList skips. */}
 					<MenuList
 						autoFocusItem={open}
-						sx={{ px: 1, pt: showThemeToggler ? 0 : 0.5, pb: 0.5 }}
+						sx={{ px: 0.5, pt: showThemeToggler ? 0 : 0.5, pb: 0.5 }}
 					>
 						{menuItems.map(item => (
 							<MenuItem
