@@ -26,7 +26,9 @@ export interface PanelSidebarProps {
 	// Header bar (the brand) — forwarded to CollapsibleSidebar
 	logo?: React.ReactNode;
 	title?: string;
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/** Whether the brand's platform menu is open; left out, it has none. */
+	brandMenuOpen?: boolean;
 	brandColor?: string;
 	headerBackgroundColor?: string;
 	headerForegroundColor?: string;
@@ -36,6 +38,8 @@ export interface PanelSidebarProps {
 	activeForegroundColor?: string;
 	foregroundColor?: string;
 	surfaceBackgroundColor?: string;
+	/** Flyout panel surface; forwarded to CollapsibleSidebar. */
+	flyoutSurfaceColor?: string;
 	// Collapse / expand (the wrapper opens it on hover)
 	collapsed: boolean;
 	expandedWidth: number;
@@ -45,6 +49,8 @@ export interface PanelSidebarProps {
 	 * host's search, built by the wrapper for the current collapsed state.
 	 */
 	topContent?: React.ReactNode;
+	/** How the rail shows a group's pages; see CollapsibleSidebar. */
+	submenuMode?: 'inline' | 'flyout';
 	// User footer + account menu (see AccountMenu for item visibility rules)
 	/** Idle text/icon color of the footer; defaults to the nav's idle color. */
 	color?: string;
@@ -88,6 +94,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	logo,
 	title,
 	onBrandClick,
+	brandMenuOpen,
 	brandColor,
 	headerBackgroundColor,
 	headerForegroundColor,
@@ -96,10 +103,12 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	activeForegroundColor,
 	foregroundColor,
 	surfaceBackgroundColor,
+	flyoutSurfaceColor,
 	collapsed,
 	expandedWidth,
 	collapsedWidth,
 	topContent,
+	submenuMode,
 	color,
 	hoverColor,
 	avatarColor,
@@ -152,6 +161,9 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	// the What's New tab, so its badge counts both. The account menu's entries
 	// show each count on its own.
 	const bellCount = notificationCount + whatsNewCount;
+	// The flyout rail never expands, so the bell cannot wait for the
+	// expanded footer: it stays on the rail, above the avatar
+	const railOnly = collapsed && submenuMode === 'flyout';
 	const bell = showNotifications ? (
 		<NotificationBell
 			count={bellCount}
@@ -176,14 +188,16 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				minWidth: 0,
 				justifyContent: 'flex-start',
 				gap: 1.25,
-				p: 0.75,
+				// On the flyout rail the 36px avatar fills a 40px button,
+				// matching the rail's icon buttons
+				p: railOnly ? '2px' : 0.75,
 				borderRadius: '10px',
 				bgcolor: menuOpen ? tint : 'transparent',
 				'&:hover': { bgcolor: tint },
 				...FOCUS_OUTLINE_FIX
 			}}
 		>
-			{collapsed && showNotifications ? (
+			{collapsed && !railOnly && showNotifications ? (
 				// Collapsed: no room for the bell, so unread shows as a dot
 				<Badge
 					color='error'
@@ -225,20 +239,22 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 		</ButtonBase>
 	) : null;
 
-	// Collapsed, the bell folds into the avatar's dot (unless there is no user row)
-	const showBell = Boolean(bell) && (!collapsed || !userButton);
+	// Collapsed, the bell folds into the avatar's dot (unless there is no user
+	// row); on the flyout rail it stacks above the avatar instead
+	const showBell = Boolean(bell) && (!collapsed || railOnly || !userButton);
 	const footer =
 		userButton || showBell ? (
 			<Stack
-				direction='row'
+				direction={railOnly ? 'column' : 'row'}
 				sx={{
 					alignItems: 'center',
 					gap: 0.5,
 					justifyContent: 'center'
 				}}
 			>
+				{railOnly && showBell ? bell : null}
 				{userButton}
-				{showBell ? bell : null}
+				{!railOnly && showBell ? bell : null}
 			</Stack>
 		) : undefined;
 
@@ -262,6 +278,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				logo={logo}
 				title={title}
 				onBrandClick={onBrandClick}
+				brandMenuOpen={brandMenuOpen}
 				brandColor={brandColor}
 				headerBackgroundColor={headerBackgroundColor}
 				headerForegroundColor={headerForegroundColor}
@@ -270,11 +287,13 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				activeForegroundColor={activeForegroundColor}
 				foregroundColor={foregroundColor}
 				surfaceBackgroundColor={surface}
+				flyoutSurfaceColor={flyoutSurfaceColor}
 				collapsed={collapsed}
 				expandedWidth={expandedWidth}
 				collapsedWidth={collapsedWidth}
 				topContent={topContent}
 				footer={footer}
+				submenuMode={submenuMode}
 			/>
 			{showProfile ? (
 				<AccountMenu
@@ -295,6 +314,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					onLinkClick={onLinkClick}
 					menuItems={menuItems}
 					onLogout={onLogout}
+					glass={submenuMode === 'flyout'}
 				/>
 			) : null}
 		</Box>

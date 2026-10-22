@@ -9,7 +9,7 @@ The shared app shell for Lumora apps (Centra, Nexa, Xpdite, Polymer): a full-hei
 │ [Search… ⌘K] │   Deals                  │ over the page    │
 │              │                          │                  │
 │ ☆ My Pins    │   your page (children)   │ (content keeps   │
-│ ▦ Dashboard  │   40px padding,          │ its width)       │
+│ ▦ Dashboard  │   18px padding,          │ its width)       │
 │ ▣ Deals      │   configurable           │                  │
 │ ⚇ CRM      › │                          │                  │
 │              │                          │                  │
@@ -422,13 +422,13 @@ Because `onClick` closes over state, build `secondaryLinks` inside your shell co
 
 ### 6. Content spacing and full-width pages
 
-Everything you render as `children` goes in the content area, which has 40px of padding from `md` up (16px on phones). Most Centra pages need nothing else. Two layouts come up:
+Everything you render as `children` goes in the content area, which has 18px of padding from `md` up (16px on phones). Most Centra pages need nothing else. Two layouts come up:
 
 **List pages** (Deals, CRM lists, dashboards): the title, toolbar, tabs card and grid all sit inside the padding. Render them as they are.
 
 ```
 ┌─ content area ──────────────────────────────┐
-│ ← 40px →  Deals              [toolbar] [+]  │
+│ ← 18px →  Deals              [toolbar] [+]  │
 │           ┌ tabs ──────────────────────────┐│
 │           └────────────────────────────────┘│
 │           [card] [card] [card]              │
@@ -566,7 +566,7 @@ In dark mode, leave them out and the wrapper uses its dark defaults. Fonts come 
 | Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`       |                                                                                                     |
 | User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                    | Not filled in automatically.                                                                        |
 | User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle` |                                                                                                     |
-| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `onSubmitRequestClick`, `settingsSections`                             | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
+| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `userMenuItems`                                                         | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
 | Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                            | Import `FullBleedSection` from the package.                                                         |
 | Look         | the [color props](#8-colors)                                                                                                        |                                                                                                     |
 
@@ -576,29 +576,30 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 
 ### Session
 
-| Prop                 | Type                                                    | Default | Description                                                                                               |
-| -------------------- | ------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `apiBaseUrl`         | `string`                                                | —       | **Required.** Base URL for the token refresh call.                                                        |
-| `redirectToLogin`    | `() => void`                                            | —       | **Required.** Called when there is no session. Keep it stable; the session check re-runs when it changes. |
-| `onLogout`           | `(error?: Error) => void \| Promise<void>`              | —       | **Required.** Called from the user menu. Call your logout API and clear tokens here.                      |
-| `onVerify`           | `(user: { name, email, profilePicture, role }) => void` | —       | Called once with the stored user after the session check.                                                 |
-| `enableRefreshToken` | `boolean`                                               | `false` | Token check / refresh on mount ([details](#session-and-tokens)).                                          |
+| Prop                  | Type                                                    | Default | Description                                                                                               |
+| --------------------- | ------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| `apiBaseUrl`          | `string`                                                | —       | **Required.** Base URL for the token refresh call.                                                        |
+| `redirectToLogin`     | `() => void`                                            | —       | **Required.** Called when there is no session. Keep it stable; the session check re-runs when it changes. |
+| `onLogout`            | `(error?: Error) => void \| Promise<void>`              | —       | **Required.** Called from the user menu. Call your logout API and clear tokens here.                      |
+| `onVerify`            | `(user: { name, email, profilePicture, role }) => void` | —       | Called once with the stored user after the session check.                                                 |
+| `enableRefreshToken`  | `boolean`                                               | `false` | Token check / refresh on mount ([details](#session-and-tokens)).                                          |
+| `holdSessionSkeleton` | `boolean`                                               | `false` | Show the session-check skeleton instead of the app ([details](#session-and-tokens)).                      |
 
 ### Layout and navigation
 
-| Prop                    | Type                                                   | Default            | Description                                                                                                                                                                                                                                                                                                                                   |
-| ----------------------- | ------------------------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sidebarVariant`        | `'rail' \| 'collapsible' \| 'rail-labeled' \| 'panel'` | `'rail'`           | `collapsible`: a 72px icon rail that opens to a 288px panel over the page while hovered (the page never moves; there is no toggle). `rail`: fixed 100px icon rail. `rail-labeled`: fixed 80px rail with captions. `panel`: the collapsible rail with the [account menu](#the-panel-variant-account-menu) in place of the user menu (desktop). |
-| `showSidebar`           | `boolean`                                              | `true`             | Hide the sidebar (desktop) / drawer (mobile).                                                                                                                                                                                                                                                                                                 |
-| `mobileNavigation`      | `'bottom-bar' \| 'drawer'`                             | `'bottom-bar'`     | Phones: bottom bar with Menu, pinned pages, Nexa, Search and Account (notifications in the top bar), or a hamburger drawer holding everything ([Mobile](#7-mobile)).                                                                                                                                                                          |
-| `mobileBottomBarLinks`  | `SidebarLink[]`                                        | —                  | Pages pinned in the mobile bottom bar between Menu and Nexa; one keeps the bar at five items. Max two.                                                                                                                                                                                                                                        |
-| `sidebarLinks`          | `SidebarLink[]`                                        | `[]`               | Main navigation.                                                                                                                                                                                                                                                                                                                              |
-| `secondarySidebarLinks` | `SidebarLink[]`                                        | `[]`               | Links pinned to the bottom, above the user.                                                                                                                                                                                                                                                                                                   |
-| `activePath`            | `string`                                               | —                  | Highlights the matching link and opens its parents.                                                                                                                                                                                                                                                                                           |
-| `onLinkClick`           | `(path: string) => void`                               | —                  | Called with the clicked link's path. Navigate here.                                                                                                                                                                                                                                                                                           |
-| `showSidebarRailTitles` | `boolean`                                              | `false`            | `rail` only: caption under each icon.                                                                                                                                                                                                                                                                                                         |
-| `alertProps`            | `{ show, title, message, buttonText, onButtonClick }`  | —                  | Card under the links (expanded panel, rail, drawer).                                                                                                                                                                                                                                                                                          |
-| `contentPadding`        | `number \| string \| { xs?, sm?, md?, lg?, xl? }`      | `{ xs: 2, md: 5 }` | Padding around the page; also exposed as `--lumora-content-padding`. `0` for full-bleed pages.                                                                                                                                                                                                                                                |
+| Prop                    | Type                                                   | Default                 | Description                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sidebarVariant`        | `'rail' \| 'collapsible' \| 'rail-labeled' \| 'panel'` | `'rail'`                | `collapsible`: a 72px icon rail that opens to a 288px panel over the page while hovered (the page never moves; there is no toggle). `rail`: fixed 100px icon rail. `rail-labeled`: fixed 80px rail with captions. `panel`: the collapsible rail with the [account menu](#the-panel-variant-account-menu) in place of the user menu (desktop). |
+| `showSidebar`           | `boolean`                                              | `true`                  | Hide the sidebar (desktop) / drawer (mobile).                                                                                                                                                                                                                                                                                                 |
+| `mobileNavigation`      | `'bottom-bar' \| 'drawer'`                             | `'bottom-bar'`          | Phones: bottom bar with Menu, pinned pages, Nexa, Search and Account (notifications in the top bar), or a hamburger drawer holding everything ([Mobile](#7-mobile)).                                                                                                                                                                          |
+| `mobileBottomBarLinks`  | `SidebarLink[]`                                        | —                       | Pages pinned in the mobile bottom bar between Menu and Nexa; one keeps the bar at five items. Max two.                                                                                                                                                                                                                                        |
+| `sidebarLinks`          | `SidebarLink[]`                                        | `[]`                    | Main navigation.                                                                                                                                                                                                                                                                                                                              |
+| `secondarySidebarLinks` | `SidebarLink[]`                                        | `[]`                    | Links pinned to the bottom, above the user.                                                                                                                                                                                                                                                                                                   |
+| `activePath`            | `string`                                               | —                       | Highlights the matching link and opens its parents.                                                                                                                                                                                                                                                                                           |
+| `onLinkClick`           | `(path: string) => void`                               | —                       | Called with the clicked link's path. Navigate here.                                                                                                                                                                                                                                                                                           |
+| `showSidebarRailTitles` | `boolean`                                              | `false`                 | `rail` only: caption under each icon.                                                                                                                                                                                                                                                                                                         |
+| `alertProps`            | `{ show, title, message, buttonText, onButtonClick }`  | —                       | Card under the links (expanded panel, rail, drawer).                                                                                                                                                                                                                                                                                          |
+| `contentPadding`        | `number \| string \| { xs?, sm?, md?, lg?, xl? }`      | `{ xs: 2, md: '18px' }` | Padding around the page; also exposed as `--lumora-content-padding`. `0` for full-bleed pages.                                                                                                                                                                                                                                                |
 
 ### Sidebar top
 
@@ -748,6 +749,8 @@ storeAuthTokens(accessToken, refreshToken, {
 
 With `enableRefreshToken`, the wrapper also checks tokens on mount: if only a refresh token is stored it calls `POST {apiBaseUrl}/auth/refresh` and stores the result, or clears the session and calls `redirectToLogin` if that fails. It does not attach tokens to your app's own API calls.
 
+While the session is checked, the wrapper shows a skeleton of the app shell: the sidebar rail (or the mobile top bar) at its real size and a placeholder page. Set `holdSessionSkeleton` to keep it on screen, for example to preview it.
+
 Other helpers: `clearAuthTokens`, `getAuthTokens`, `isAuthenticated`, `getCurrentUser`, `getAuthErrorMessage`, `logAuthError`, `AuthError`, `AUTH_ERROR_CODES`.
 
 ## Migrating from the header version
@@ -763,7 +766,7 @@ The navbar is gone. These props still compile but have moved or do nothing:
 | `userEmail`, `onProfileClick`                                         | Used by the `panel` variant's account menu; no effect elsewhere.        |
 | `pageName`, `onAccountClick`, `sidebarSectionTitle`                   | No effect.                                                              |
 
-Behavior changes: Nexa is a sidebar button (was in the navbar); the chat opens in a full-height panel pinned to the right, over the page (it used to be a column that narrowed the content; `chatPanelMode='inline'` now gives the pinned panel too); content padding is 40px (was 24px, set `contentPadding={3}` for the old spacing); phones get a bottom bar instead of the hamburger (`mobileNavigation='drawer'` for the old drawer).
+Behavior changes: Nexa is a sidebar button (was in the navbar); the chat opens in a full-height panel pinned to the right, over the page (it used to be a column that narrowed the content; `chatPanelMode='inline'` now gives the pinned panel too); phones get a bottom bar instead of the hamburger (`mobileNavigation='drawer'` for the old drawer).
 
 ## Development
 

@@ -1,6 +1,8 @@
 import { getCurrentUser, isAuthenticated } from '../../authUtils';
 import { createAxiosClient } from '../../axiosClient';
 import { validateAndRefreshTokens } from '../../tokenValidator';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
 	fireEvent,
@@ -37,6 +39,40 @@ describe('LumoraWrapper - session', () => {
 			expect(
 				lumoraTestRequiredProps.redirectToLogin
 			).not.toHaveBeenCalled();
+		});
+
+		it('checks the session before the first paint, so a client mount never draws the skeleton', () => {
+			// Outside act, which would flush passive effects too: only what the first commit and its
+			// layout effects leave in the DOM, i.e. what the browser would paint first
+			const container = document.createElement('div');
+			document.body.appendChild(container);
+			const root = createRoot(container);
+			const previousActEnvironment = (
+				globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+			).IS_REACT_ACT_ENVIRONMENT;
+			(
+				globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+			).IS_REACT_ACT_ENVIRONMENT = false;
+			try {
+				flushSync(() =>
+					root.render(
+						<LumoraWrapper {...lumoraTestRequiredProps}>
+							<div data-testid='first-paint-content' />
+						</LumoraWrapper>
+					)
+				);
+				expect(
+					container.querySelector(
+						'[data-testid="first-paint-content"]'
+					)
+				).not.toBeNull();
+			} finally {
+				flushSync(() => root.unmount());
+				container.remove();
+				(
+					globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+				).IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
+			}
 		});
 
 		it('redirects to login and renders nothing without a session', () => {

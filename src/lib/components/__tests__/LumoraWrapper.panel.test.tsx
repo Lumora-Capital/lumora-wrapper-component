@@ -92,8 +92,7 @@ describe("LumoraWrapper sidebarVariant='panel'", () => {
 		it("has no Notifications, What's New or Submit a request entries in the account menu", () => {
 			renderPanel({
 				NotificationSidebarContent: Content,
-				whatsNewCount: 1,
-				onSubmitRequestClick: jest.fn()
+				whatsNewCount: 1
 			});
 			openMenu();
 			expect(screen.queryByTestId('menu-item-notifications')).toBeNull();

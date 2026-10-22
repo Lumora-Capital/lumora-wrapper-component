@@ -72,7 +72,9 @@ export declare interface CollapsibleSidebarProps {
     /** App title wordmark (uppercased); shown in the header bar while expanded. */
     title?: string;
     /** Makes the header-bar brand (title + logo) a button. */
-    onBrandClick?: () => void;
+    onBrandClick?: (event: React_2.MouseEvent<HTMLElement>) => void;
+    /** Whether the brand's platform menu is open; left out, it has none. */
+    brandMenuOpen?: boolean;
     /** @deprecated Never rendered — the section header row was dropped. */
     sectionTitle?: string;
     /**
@@ -109,6 +111,11 @@ export declare interface CollapsibleSidebarProps {
     foregroundColor?: string;
     /** Sidebar surface background (default '#ffffff'). */
     surfaceBackgroundColor?: string;
+    /**
+     * Flyout panel surface (`submenuMode="flyout"`); defaults to the sidebar
+     * surface. Set it when the rail's own surface is see-through.
+     */
+    flyoutSurfaceColor?: string;
     /** Icon rail when true; the owner decides when (e.g. on hover). */
     collapsed?: boolean;
     /** Expanded width: px, or any CSS width (e.g. '100%' in a bottom sheet). */
@@ -131,6 +138,14 @@ export declare interface CollapsibleSidebarProps {
     topContent?: React_2.ReactNode;
     /** Pinned below the links, outside the scroll area (e.g. notifications + user). */
     footer?: React_2.ReactNode;
+    /**
+     * How the collapsed icon rail shows a group's pages. `'inline'` (default)
+     * stacks their icons under the group's; `'flyout'` opens them on hover as a
+     * row of glass tiles beside the rail, over a dim of the page, and the rail
+     * labels become hover labels. Applies to the icon-only rail (`collapsed`
+     * without `showLabels`).
+     */
+    submenuMode?: 'inline' | 'flyout';
 }
 
 export declare type ContentPadding = SpacingValue | Partial<Record<Breakpoint, SpacingValue>>;
@@ -210,6 +225,58 @@ export declare const Kbd: React_2.FC<{
  */
 export declare const logAuthError: (error: Error | AuthError, context?: string) => void;
 
+/** One entry of the platform switcher opened from the sidebar logo. */
+export declare type LumoraPlatform = {
+    /** Stable id; `currentPlatformKey` matches against it. */
+    key: string;
+    name: string;
+    /** One line under the name, e.g. what the platform is for. */
+    description?: string;
+    /** The platform's colour, shown as its dot (and its tick when current). */
+    accentColor?: string;
+    /**
+     * Home page, opened in this tab when the platform is chosen and the host
+     * passes no `onPlatformSelect`.
+     */
+    url?: string;
+};
+
+/**
+ * The app shell in outline, sized like LumoraWrapper's sidebar and top bar so
+ * the layout does not jump when the app loads. The wrapper shows it while it
+ * checks the session; hosts can show it on their own pre-app screens (an OAuth
+ * callback, a redirect) by passing the props they give the wrapper.
+ */
+export declare const LumoraShellSkeleton: default_2.FC<LumoraShellSkeletonProps>;
+
+/** The LumoraWrapper layout props the skeleton needs; pass the same values. */
+export declare interface LumoraShellSkeletonProps {
+    theme?: ThemeMode;
+    /**
+     * CSS selector that matches an ancestor while the page is dark, e.g.
+     * `html[data-color-scheme="dark"]` set by a script before the first paint.
+     * With it the skeleton draws both modes and CSS shows the right one, so
+     * server-rendered HTML opens in the user's mode; `theme` is then ignored.
+     */
+    darkModeSelector?: string;
+    sidebarVariant?: SidebarVariant;
+    sidebarSubmenu?: SidebarSubmenu;
+    /** As LumoraWrapper's: an auto-hidden rail draws no placeholder. */
+    sidebarAutoHide?: boolean;
+    showSidebar?: boolean;
+    contentPadding?: ContentPadding;
+    sidebarBackgroundColor?: ShellColor;
+    contentBackgroundColor?: ShellColor;
+    /**
+     * The page's own loading outline, drawn in the content area instead of
+     * the generic one, so the page that loads next keeps the same picture
+     * rather than swapping one skeleton for another. It is drawn once per
+     * mode when `darkModeSelector` is set, so it should style itself with CSS
+     * that follows that selector (or not depend on the mode at all).
+     */
+    content?: default_2.ReactNode;
+}
+
 /**
  * LumoraWrapper component provides a consistent layout structure for authenticated pages
  * and handles proactive token refresh to prevent session expiry during active use.
@@ -242,6 +309,29 @@ export declare interface LumoraWrapperProps {
      */
     sidebarVariant?: 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
     /**
+     * How the `collapsible` and `panel` sidebars show a group's pages.
+     * `'expand'` (default): hovering the rail opens the full panel over the
+     * page. `'flyout'`: the Liquid Glass sidebar — the rail is a glass capsule
+     * floating off the window's edges that never widens; a glass lens glides
+     * behind the hovered icon and its name shows beside it, and the current
+     * page is a drop of tinted glass that glides to the new item on a page
+     * change; hovering a group grows its pages out of the icon as a row of
+     * glass tiles (the hovered one magnified, the glass swelling around it)
+     * while everything but the rail dims; the glass catches the pointer's
+     * light. Search opens on hover in a glass card beside the rail, the
+     * account menu is glass, and `alertProps` is not shown (it needs the open
+     * panel).
+     */
+    sidebarSubmenu?: 'expand' | 'flyout';
+    /**
+     * With `sidebarSubmenu="flyout"` on desktop: hide the glass rail like the
+     * macOS Dock. The page takes the full width, and the rail slides in over it
+     * while the pointer is at the window's left edge or over the rail (its
+     * flyouts, search card and account menu included), or while keyboard focus
+     * is inside it. Default `false`.
+     */
+    sidebarAutoHide?: boolean;
+    /**
      * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
      * with Menu (the links drawer), Search, Nexa and the user menu, so the main
      * actions are one tap away; notifications sit at the top right. `drawer`: a hamburger in the
@@ -261,7 +351,7 @@ export declare interface LumoraWrapperProps {
      * Called when the brand block (app name + logo) is clicked. When omitted
      * the brand is static. Typical use: navigate to the app's landing page.
      */
-    onBrandClick?: () => void;
+    onBrandClick?: (event: default_2.MouseEvent<HTMLElement>) => void;
     /**
      * The app's global search, rendered in the sidebar under the brand and
      * above the links. When the sidebar is collapsed it becomes a search icon
@@ -276,7 +366,7 @@ export declare interface LumoraWrapperProps {
     brandColor?: string;
     /**
      * Padding around the page content: theme spacing units, a single CSS
-     * length, or per breakpoint. Defaults to 16px on phones and 40px from `md`. Pass `0`
+     * length, or per breakpoint. Defaults to 16px on phones and 18px from `md`. Pass `0`
      * for pages that fill the whole content area. To take a single block (e.g.
      * a page header) edge to edge while keeping the padding, wrap it in
      * `FullBleedSection`; the value is also exposed as `--lumora-content-padding`.
@@ -305,6 +395,14 @@ export declare interface LumoraWrapperProps {
      * to auto-contrast from the sidebar accent. */
     activeSidebarForegroundColor?: string;
     enableRefreshToken?: boolean;
+    /** Keep the session-check skeleton up instead of the app, to preview it. */
+    holdSessionSkeleton?: boolean;
+    /**
+     * The page's loading outline for the session-check skeleton's content
+     * area (see LumoraShellSkeleton `content`), so the page that loads next
+     * opens on the same picture. Defaults to a generic outline.
+     */
+    sessionSkeletonContent?: default_2.ReactNode;
     activePath?: string;
     onLinkClick?: (path: string) => void;
     /** Show the user row; clicking it opens settings, dark mode and logout. */
@@ -326,8 +424,6 @@ export declare interface LumoraWrapperProps {
      * a "View profile" hint on hover.
      */
     onProfileClick?: () => void;
-    /** @deprecated The `panel` account menu no longer has this entry; ignored. */
-    onSubmitRequestClick?: () => void;
     /**
      * @deprecated The `panel` account menu no longer has a Settings card;
      * ignored. Link to a settings page from `userMenuItems` instead.
@@ -352,6 +448,21 @@ export declare interface LumoraWrapperProps {
     onNotificationsClick?: () => void;
     /** @deprecated The `panel` account menu no longer has this entry; ignored. */
     onWhatsNewClick?: () => void;
+    /**
+     * Platforms the signed-in user may switch to. With more than one, the
+     * logo becomes a dropdown toggle (marked by a corner notch) listing them;
+     * it replaces `onBrandClick`. Pass only the ones the user can open. A
+     * Liquid Glass card with `sidebarSubmenu="flyout"`.
+     */
+    platforms?: LumoraPlatform[];
+    /** `key` of the platform in use, ticked in the dropdown. */
+    currentPlatformKey?: string;
+    /**
+     * Called when a platform is chosen, the current one included (e.g. to go
+     * to its home page). Omitted: another platform's `url` opens in this tab
+     * and the current one just closes the menu.
+     */
+    onPlatformSelect?: (platform: LumoraPlatform) => void;
     onVerify?: (userData: {
         name: string;
         email: string;
@@ -384,8 +495,15 @@ export declare interface LumoraWrapperProps {
      * light mode / white on a dark surface.
      */
     sidebarForegroundColor?: string;
-    contentBackgroundColor?: string;
+    /** One colour, or `{ light, dark }` so the session skeleton has both (see darkModeSelector). */
+    contentBackgroundColor?: ShellColor;
     theme?: 'dark' | 'light';
+    /**
+     * CSS selector that matches an ancestor while the page is dark, set before the
+     * first paint. The session skeleton then opens in the user's mode on
+     * server-rendered pages instead of flashing `theme`'s default.
+     */
+    darkModeSelector?: string;
     /** Show the Dark mode switch in the user menu. */
     showThemeToggler?: boolean;
     onThemeToggle?: () => void;
@@ -500,6 +618,12 @@ export declare type SettingsSection = {
     defaultOpen?: boolean;
 };
 
+/** One colour for both modes, or one per mode (for a skeleton drawn in both, see darkModeSelector) */
+export declare type ShellColor = string | {
+    light: string;
+    dark: string;
+};
+
 /** A top-level sidebar link. `path` is optional when it only groups `subitems`. */
 export declare type SidebarLink = {
     text: string;
@@ -543,6 +667,10 @@ export declare type SidebarSubLink = {
     subitems?: SidebarSubLink[];
 };
 
+declare type SidebarSubmenu = 'expand' | 'flyout';
+
+declare type SidebarVariant = 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
+
 declare type SpacingValue = number | string;
 
 /**
@@ -561,6 +689,8 @@ export declare interface StorageResult {
  * @returns Result of storage operation
  */
 export declare const storeAuthTokens: (accessToken: string | null, refreshToken: string | null, user?: UserData | null) => StorageResult;
+
+declare type ThemeMode = 'dark' | 'light';
 
 /** Tabs of the right-side updates drawer. */
 export declare type UpdatesTab = 'notifications' | 'whats-new';

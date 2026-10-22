@@ -10,7 +10,12 @@ interface BrandProps {
 	/** Name for the accessible label when the wordmark is not shown. */
 	appName: string;
 	/** Makes the whole block a button, e.g. to go to the landing page. */
-	onClick?: () => void;
+	onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/**
+	 * Set when the button opens a menu (the platform switcher): whether it
+	 * is open. Left out, the button leads home.
+	 */
+	menuOpen?: boolean;
 	color: string;
 	testId?: string;
 }
@@ -22,7 +27,8 @@ const Brand: React.FC<BrandProps> = ({
 	appName,
 	onClick,
 	color,
-	testId
+	testId,
+	menuOpen
 }) => {
 	const sx = {
 		alignItems: 'center',
@@ -64,7 +70,15 @@ const Brand: React.FC<BrandProps> = ({
 	return (
 		<ButtonBase
 			onClick={onClick}
-			aria-label={`${appName} home`}
+			aria-label={
+				menuOpen === undefined
+					? `${appName} home`
+					: `${appName}: switch platform`
+			}
+			{...(menuOpen !== undefined && {
+				'aria-haspopup': 'menu' as const,
+				'aria-expanded': menuOpen
+			})}
 			data-testid={testId}
 			focusRipple
 			sx={{

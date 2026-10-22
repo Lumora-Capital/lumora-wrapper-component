@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
 import NotificationBell from './NotificationBell';
+import { RailGlassContext } from './RailLens';
 import UserMenu, { Identity, type UserMenuOptions } from './UserMenu';
 
 export interface SidebarFooterProps extends UserMenuOptions {
@@ -59,6 +60,9 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		wasCompact.current = compact;
 	}, [compact]);
 
+	// On the floating rail the avatar's button matches the 40px icon buttons
+	const onGlassRail = React.useContext(RailGlassContext);
+
 	if (!showNotifications && !showProfile) {
 		return null;
 	}
@@ -92,7 +96,11 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 								flex: compact ? '0 0 auto' : '1 1 auto',
 								minWidth: 0,
 								gap: 1.25,
-								p: compact ? 0.5 : '6px 8px',
+								p: compact
+									? onGlassRail
+										? '2px'
+										: 0.5
+									: '6px 8px',
 								justifyContent: 'flex-start',
 								borderRadius: '8px',
 								color,

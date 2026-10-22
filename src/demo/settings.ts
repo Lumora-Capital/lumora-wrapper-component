@@ -9,6 +9,8 @@ export type DemoSettings = {
 	noContentPadding: boolean;
 	floatingAssistant: boolean;
 	nestedLinks: boolean;
+	flyoutSubmenu: boolean;
+	sidebarAutoHide: boolean;
 	showSidebar: boolean;
 	mobileDrawer: boolean;
 	pinDealsOnMobile: boolean;
@@ -24,7 +26,9 @@ export type DemoSettings = {
 	floatingChat: boolean;
 	showAlert: boolean;
 	clickableBrand: boolean;
+	platformSwitcher: boolean;
 	enableRefreshToken: boolean;
+	holdSessionSkeleton: boolean;
 };
 
 export const defaultSettings: DemoSettings = {
@@ -37,6 +41,9 @@ export const defaultSettings: DemoSettings = {
 	noContentPadding: false,
 	floatingAssistant: false,
 	nestedLinks: true,
+	// Groups open as glass tiles beside a rail that never widens — Centra's layout
+	flyoutSubmenu: true,
+	sidebarAutoHide: false,
 	showSidebar: true,
 	mobileDrawer: false,
 	pinDealsOnMobile: true,
@@ -52,7 +59,10 @@ export const defaultSettings: DemoSettings = {
 	floatingChat: false,
 	showAlert: false,
 	clickableBrand: true,
-	enableRefreshToken: false
+	// The logo as a dropdown toggle listing the platforms (sample data)
+	platformSwitcher: true,
+	enableRefreshToken: false,
+	holdSessionSkeleton: false
 };
 
 // Bumped (v2) when the default variant became `panel`, so settings saved by

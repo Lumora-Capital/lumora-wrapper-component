@@ -11,10 +11,23 @@ import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { type Theme, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
+import {
+	RAIL_ITEM_ATTR,
+	RailGlassContext,
+	useActiveGlass,
+	useRailLens
+} from './RailLens';
+import SidebarFlyout from './SidebarFlyout';
+import { GEL_SPRING, springTiming } from './glassMotion';
+import {
+	GLASS_RADIUS_PX,
+	glassLabelSx,
+	SidebarSurfaceContext
+} from './liquidGlass';
 import {
 	deriveGroupTint,
 	flattenLeaves,
@@ -24,6 +37,12 @@ import {
 	isSubLinkActive,
 	nodeKey
 } from './sidebarUtils';
+import {
+	FLOATING_RAIL_GAP_PX,
+	FLOATING_RAIL_ICON_PX,
+	FLOATING_RAIL_ITEM_PX
+} from './shellLayout';
+import useFlyoutIntent from './useFlyoutIntent';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
@@ -46,6 +65,7 @@ const CHILD_INDENT_STEP = 2.5;
  * like "Analytics" / "Knowledge" stay legible without overflowing. */
 const RAIL_LABEL_FONT_SIZE = '0.7rem';
 const RAIL_LABEL_ICON_SIZE_PX = 22;
+const railGel = springTiming(GEL_SPRING);
 
 /**
  * Row/caption label that ellipsizes when it overflows and reveals the full text
@@ -143,6 +163,117 @@ const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
 /** Page-link label weight in the expanded panel. */
 const ROW_LABEL_WEIGHT = 600;
 
+/** The floating rail spaces everything by one gap: each section boundary
+ * (brand, top content, links, bottom group, footer) takes it once in place of
+ * its own padding. */
+const railGap = `${FLOATING_RAIL_GAP_PX}px`;
+
+/** The floating rail's side padding, matching its top content and footer. */
+const FLOATING_RAIL_INSET_PX = 6;
+
+/**
+ * The floating rail scroller's side padding for a bar `bar` px wide. The
+ * bar takes the right padding's place; up to the 6px inset the gaps either
+ * side of the column stay equal. A wider bar leaves less room than the
+ * column needs, so the left padding gives way by the same amount.
+ */
+const railScrollerPadding = (bar: number) => {
+	const overflow = Math.max(0, bar - FLOATING_RAIL_INSET_PX);
+	return {
+		pl: `${Math.max(0, FLOATING_RAIL_INSET_PX - overflow)}px`,
+		pr: `${Math.max(0, FLOATING_RAIL_INSET_PX - bar)}px`
+	};
+};
+
+/**
+ * Width the scroller's vertical bar actually takes from its content: 0 for
+ * overlay bars or while nothing overflows, the bar's width for a classic
+ * one. Re-measured as the scroller (or its content box, when a bar
+ * appears) changes size.
+ */
+function useScrollbarWidth(
+	scrollRef: React.RefObject<HTMLElement | null>,
+	enabled: boolean
+) {
+	const [width, setWidth] = React.useState(0);
+	React.useLayoutEffect(() => {
+		const el = scrollRef.current;
+		if (!enabled || !el) {
+			setWidth(0);
+			return;
+		}
+		const measure = () => {
+			const style = getComputedStyle(el);
+			const borders =
+				parseFloat(style.borderLeftWidth) +
+				parseFloat(style.borderRightWidth);
+			setWidth(Math.max(0, el.offsetWidth - el.clientWidth - borders));
+		};
+		measure();
+		if (typeof ResizeObserver === 'undefined') return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		// The bar appearing shrinks the content, not the scroller itself
+		if (el.firstElementChild) observer.observe(el.firstElementChild);
+		return () => observer.disconnect();
+	}, [scrollRef, enabled]);
+	return width;
+}
+
+/** Gap kept between the active item and the scroller's edge when revealing it. */
+const ACTIVE_SCROLL_MARGIN = 8;
+
+/**
+ * Keeps the active item inside the links' scroll container: on navigation,
+ * on collapse/expand, and whenever the scroller's own height changes (a
+ * shorter window). Only scrolls when the item is out of view, so a user who
+ * scrolled away isn't yanked back until something changes.
+ */
+function useKeepActiveInView(
+	scrollRef: React.RefObject<HTMLElement | null>,
+	activePath: string | undefined,
+	collapsed: boolean
+) {
+	React.useEffect(() => {
+		const scroller = scrollRef.current;
+		if (!scroller) return;
+
+		const reveal = (behavior: ScrollBehavior) => {
+			// The deepest visible active row: a group and its active child are
+			// both marked, and a closed group's children measure 0 tall.
+			const active = Array.from(
+				scroller.querySelectorAll<HTMLElement>('[data-active="true"]')
+			)
+				.filter(el => el.offsetHeight > 0)
+				.pop();
+			if (!active) return;
+			const view = scroller.getBoundingClientRect();
+			const item = active.getBoundingClientRect();
+			let delta = 0;
+			if (item.top < view.top + ACTIVE_SCROLL_MARGIN) {
+				delta = item.top - view.top - ACTIVE_SCROLL_MARGIN;
+			} else if (item.bottom > view.bottom - ACTIVE_SCROLL_MARGIN) {
+				delta = item.bottom - view.bottom + ACTIVE_SCROLL_MARGIN;
+			}
+			if (delta !== 0) scroller.scrollBy({ top: delta, behavior });
+		};
+
+		const frame = requestAnimationFrame(() => reveal('smooth'));
+		// Again once an opening group's Collapse has settled.
+		const settle = window.setTimeout(() => reveal('smooth'), 350);
+		const observer =
+			typeof ResizeObserver === 'undefined'
+				? null
+				: new ResizeObserver(() => reveal('auto'));
+		observer?.observe(scroller);
+		return () => {
+			cancelAnimationFrame(frame);
+			window.clearTimeout(settle);
+			observer?.disconnect();
+		};
+	}, [scrollRef, activePath, collapsed]);
+}
+
 export interface CollapsibleSidebarProps {
 	mainLinks: SidebarLink[];
 	/** Bottom group; rendered after a divider and pinned to the bottom. */
@@ -157,7 +288,9 @@ export interface CollapsibleSidebarProps {
 	/** App title wordmark (uppercased); shown in the header bar while expanded. */
 	title?: string;
 	/** Makes the header-bar brand (title + logo) a button. */
-	onBrandClick?: () => void;
+	onBrandClick?: (event: React.MouseEvent<HTMLElement>) => void;
+	/** Whether the brand's platform menu is open; left out, it has none. */
+	brandMenuOpen?: boolean;
 	/** @deprecated Never rendered — the section header row was dropped. */
 	sectionTitle?: string;
 	/**
@@ -195,6 +328,11 @@ export interface CollapsibleSidebarProps {
 	foregroundColor?: string;
 	/** Sidebar surface background (default '#ffffff'). */
 	surfaceBackgroundColor?: string;
+	/**
+	 * Flyout panel surface (`submenuMode="flyout"`); defaults to the sidebar
+	 * surface. Set it when the rail's own surface is see-through.
+	 */
+	flyoutSurfaceColor?: string;
 	// Collapse / expand
 	/** Icon rail when true; the owner decides when (e.g. on hover). */
 	collapsed?: boolean;
@@ -218,6 +356,14 @@ export interface CollapsibleSidebarProps {
 	topContent?: React.ReactNode;
 	/** Pinned below the links, outside the scroll area (e.g. notifications + user). */
 	footer?: React.ReactNode;
+	/**
+	 * How the collapsed icon rail shows a group's pages. `'inline'` (default)
+	 * stacks their icons under the group's; `'flyout'` opens them on hover as a
+	 * row of glass tiles beside the rail, over a dim of the page, and the rail
+	 * labels become hover labels. Applies to the icon-only rail (`collapsed`
+	 * without `showLabels`).
+	 */
+	submenuMode?: 'inline' | 'flyout';
 }
 
 const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
@@ -229,6 +375,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	logo,
 	title,
 	onBrandClick,
+	brandMenuOpen,
 	showHeaderBar = false,
 	headerBackgroundColor,
 	headerForegroundColor,
@@ -238,16 +385,41 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	activeForegroundColor,
 	foregroundColor,
 	surfaceBackgroundColor,
+	flyoutSurfaceColor,
 	collapsed = false,
 	expandedWidth = DEFAULT_EXPANDED_WIDTH_PX,
 	collapsedWidth = DEFAULT_COLLAPSED_WIDTH_PX,
 	showLabels = false,
 	topInsetPx = 0,
 	topContent,
-	footer
+	footer,
+	submenuMode = 'inline'
 }) => {
 	const theme = useTheme();
 	const isDark = theme.palette.mode === 'dark';
+	const labelSurface = React.useContext(SidebarSurfaceContext);
+	const useFlyout = submenuMode === 'flyout' && collapsed && !showLabels;
+	const flyout = useFlyoutIntent(useFlyout);
+	const navRef = React.useRef<HTMLElement>(null);
+	// The links, inside their scroll container. The active drop lives here, so
+	// it scrolls with its item and is clipped with the links instead of
+	// resting on the footer when a short window scrolls the rail.
+	const linksRef = React.useRef<HTMLDivElement>(null);
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	useKeepActiveInView(scrollRef, activePath, collapsed);
+	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
+	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
+	const activeGlass = useActiveGlass({
+		enabled: useFlyout,
+		isDark,
+		color: activeAccent,
+		containerRef: linksRef
+	});
+	const { close: closeFlyout } = flyout;
+	// A navigation from anywhere (a tile, the browser's back) closes it
+	React.useEffect(() => {
+		closeFlyout();
+	}, [activePath, closeFlyout]);
 
 	// User-toggled open state per group, keyed by `nodeKey`; groups the user
 	// hasn't touched follow the active path (see `isGroupOpen`).
@@ -615,6 +787,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				aria-label={label}
 				disabled={disabled}
 				onClick={onClick}
+				onMouseEnter={useFlyout ? flyout.onRailLeafEnter : undefined}
+				{...(useFlyout ? { [RAIL_ITEM_ATTR]: '' } : {})}
 				data-testid={options?.testId ?? `sidebar-item-${label}`}
 				data-active={active ? 'true' : 'false'}
 				sx={
@@ -641,8 +815,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								// Icon-only collapsed rail (collapsible variant):
 								// original hover — accent when active, else a subtle
 								// tint; no foreground change.
-								width: 44,
-								height: 44,
+								width: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
+								height: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
 								color: active ? activeFg : accentOnSurface,
 								bgcolor: active ? activeAccent : 'transparent',
 								borderRadius: active ? '8px' : '50%',
@@ -654,7 +828,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 											: groupTint,
 									borderRadius: '8px'
 								},
-								...FOCUS_OUTLINE_FIX
+								...FOCUS_OUTLINE_FIX,
+								...(useFlyout ? glassRailIconSx(active) : {})
 							}
 				}
 			>
@@ -679,9 +854,114 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			);
 		}
 		return (
-			<Tooltip key={key} title={label} placement='right' arrow>
+			<Tooltip
+				key={key}
+				title={label}
+				placement='right'
+				arrow={!useFlyout}
+				{...(useFlyout ? glassTooltipProps : {})}
+			>
 				{disabled ? <span>{button}</span> : button}
 			</Tooltip>
+		);
+	};
+
+	// --- Flyout rail -------------------------------------------------------
+	// The glass rail holds the lens, so every control on it — links, Ask
+	// Nexa, search, notifications, the account — hovers the same way: no
+	// tint of its own, the lens gliding behind it. An active or highlighted
+	// control keeps its fill.
+	const glassRailSx = {
+		position: 'relative' as const,
+		'& :is(button, [role="button"]):not([data-active="true"]):not([data-rail-keep-fill]):hover':
+			{
+				bgcolor: 'transparent'
+			},
+		// The rail's content paints above the lens, which is its first layer
+		'& > :not([data-glass-lens], [data-active-glass])': {
+			position: 'relative'
+		}
+	};
+	// Icons on the glass rail: one rounded shape for every state, no hover
+	// tint of their own (the lens glides behind them), and a gel squish on
+	// press that springs back.
+	const glassRailIconSx = (active: boolean) => ({
+		borderRadius: `${GLASS_RADIUS_PX}px`,
+		'& .MuiSvgIcon-root': { fontSize: FLOATING_RAIL_ICON_PX },
+		// The active item's glass is one drop that glides between items
+		// (useActiveGlass); the item itself stays clear
+		...(active ? { bgcolor: 'transparent' } : {}),
+		transition: `transform ${railGel.duration}ms ${railGel.easing}, background-color 160ms ease`,
+		'&:hover': { bgcolor: 'transparent' },
+		'&:active': { transform: 'scale(0.88)', transitionDuration: '90ms' },
+		'@media (prefers-reduced-motion: reduce)': {
+			transition: 'none',
+			'&:active': { transform: 'none' }
+		}
+	});
+	// The flyout rail's hover labels: frosted pills, no arrow.
+	const glassTooltipProps = {
+		slotProps: {
+			tooltip: { sx: glassLabelSx(isDark, labelSurface) },
+			popper: {
+				modifiers: [{ name: 'offset', options: { offset: [0, 6] } }]
+			}
+		}
+	};
+
+	// A group on the flyout rail: its icon alone, with a small corner notch
+	// marking that it holds pages. Hovering (or clicking) opens the flyout;
+	// the icon stays highlighted while it is open, and takes the accent when
+	// the current page is one of its pages.
+	const renderFlyoutGroup = (link: SidebarLink) => {
+		const groupActive = isSidebarLinkActive(link, activePath);
+		const key = nodeKey('', link);
+		const open = flyout.state?.key === key;
+		return (
+			<Box
+				key={link.text}
+				data-testid={`sidebar-group-${link.text}`}
+				sx={{
+					width: '100%',
+					display: 'flex',
+					justifyContent: 'center'
+				}}
+			>
+				<IconButton
+					{...flyout.triggerProps(key)}
+					aria-label={link.text}
+					aria-haspopup='menu'
+					aria-expanded={open}
+					data-testid={`sidebar-item-${link.text}`}
+					data-active={groupActive ? 'true' : 'false'}
+					data-open={open ? 'true' : 'false'}
+					{...{ [RAIL_ITEM_ATTR]: '' }}
+					sx={{
+						position: 'relative',
+						width: FLOATING_RAIL_ITEM_PX,
+						height: FLOATING_RAIL_ITEM_PX,
+						color: groupActive ? activeFg : accentOnSurface,
+						// Open, the rail's hover lens stays on it (useRailLens)
+						// rather than a fill of its own under the lens
+						bgcolor: groupActive ? activeAccent : 'transparent',
+						...glassRailIconSx(groupActive),
+						'&::after': {
+							content: '""',
+							position: 'absolute',
+							right: 5,
+							bottom: 5,
+							borderStyle: 'solid',
+							borderWidth: '0 0 5px 5px',
+							borderColor:
+								'transparent transparent currentColor transparent',
+							opacity: 0.55
+						},
+						...FOCUS_OUTLINE_FIX
+					}}
+				>
+					{link.icon}
+				</IconButton>
+			</Box>
 		);
 	};
 
@@ -834,6 +1114,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// --- Item dispatch -----------------------------------------------------
 	const renderItem = (link: SidebarLink) => {
 		if (hasChildren(link)) {
+			if (useFlyout) {
+				return renderFlyoutGroup(link);
+			}
 			return collapsed
 				? renderCollapsedGroup(link)
 				: renderExpandedGroup(link);
@@ -855,12 +1138,71 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
 	const width = collapsed ? collapsedWidth : expandedWidth;
 
+	const renderFlyout = () => {
+		const { state } = flyout;
+		const group = state
+			? ([...mainLinks, ...secondaryLinks].find(
+					link => hasChildren(link) && nodeKey('', link) === state.key
+				) ?? null)
+			: null;
+		// Measured while open only, when the rail has long been mounted. The
+		// rail's surface is the owner's (`data-rail-surface`, e.g. the
+		// wrapper's floating glass capsule), else the nav itself.
+		const railEdge = group
+			? (navRef.current?.getBoundingClientRect().right ?? collapsedWidth)
+			: collapsedWidth;
+		const surfaceEl = group
+			? ((navRef.current?.closest('[data-rail-surface]') as
+					| HTMLElement
+					| null
+					| undefined) ?? navRef.current)
+			: null;
+		const surfaceRect = surfaceEl?.getBoundingClientRect();
+		const railShape =
+			surfaceEl && surfaceRect
+				? {
+						left: surfaceRect.left,
+						top: surfaceRect.top,
+						width: surfaceRect.width,
+						height: surfaceRect.height,
+						radius:
+							parseFloat(
+								getComputedStyle(surfaceEl).borderTopRightRadius
+							) || 0
+					}
+				: null;
+		return (
+			<SidebarFlyout
+				group={group}
+				groupKey={group ? state!.key : null}
+				anchor={group ? flyout.getTrigger(state!.key) : null}
+				railEdge={railEdge}
+				railShape={railShape}
+				activePath={activePath}
+				focusFirst={state?.focusFirst}
+				onNavigate={handleClick}
+				onClose={flyout.close}
+				panelProps={flyout.flyoutProps}
+				accentColor={activeAccent}
+				activeForegroundColor={activeFg}
+				solidSurface={flyoutSurfaceColor ?? surface}
+			/>
+		);
+	};
+
 	const headerBar = showHeaderBar ? (
 		<Box
 			data-testid='sidebar-header'
 			sx={{
-				height: HEADER_HEIGHT_PX,
-				minHeight: HEADER_HEIGHT_PX,
+				// On the floating rail the logo sits 12px from the top and
+				// 12px above Nexa — a section apart, wider than the 4px
+				// between items
+				...(useFlyout
+					? { pt: '12px', pb: '12px' }
+					: {
+							height: HEADER_HEIGHT_PX,
+							minHeight: HEADER_HEIGHT_PX
+						}),
 				flexShrink: 0,
 				display: 'flex',
 				alignItems: 'center',
@@ -875,6 +1217,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					title={collapsed ? undefined : title}
 					appName={title || 'App'}
 					onClick={onBrandClick}
+					menuOpen={brandMenuOpen}
 					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
@@ -891,94 +1234,209 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					justifyContent: 'center',
 					flexShrink: 0,
 					pt: 2,
-					pb: 1
+					pb: useFlyout ? railGap : 1
 				}}
 			>
 				<Brand
 					logo={logo}
 					appName={title || 'App'}
 					onClick={onBrandClick}
+					menuOpen={brandMenuOpen}
 					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
 			</Box>
 		) : null;
 
-	const horizontalPadding = showLabels ? 0.5 : collapsed ? 1 : 1.5;
+	// The floating rail's 6px matches its scrollbar gutters, so the top
+	// content and footer line up with the links.
+	const horizontalPadding = showLabels
+		? 0.5
+		: useFlyout
+			? 0.75
+			: collapsed
+				? 1
+				: 1.5;
 
 	return (
-		<Box
-			component='nav'
-			aria-label='Main sidebar'
-			data-testid='collapsible-sidebar'
-			data-collapsed={collapsed ? 'true' : 'false'}
-			data-labeled={showLabels ? 'true' : 'false'}
-			sx={{
-				width,
-				minWidth: width,
-				height: '100%',
-				boxSizing: 'border-box',
-				bgcolor: surface,
-				display: 'flex',
-				flexDirection: 'column',
-				// Lets the sidebar shrink inside a flex-column host so siblings
-				// (e.g. an alert card below it) stay within the viewport.
-				flex: '1 1 auto',
-				minHeight: 0,
-				// Snaps to its width; an owner that animates the switch (the
-				// wrapper's hover panel) clips it from a container, so the
-				// rows never reflow mid-animation.
-				overflow: 'hidden'
-			}}
-		>
-			{headerBar ?? railBrand}
-			{topContent ? (
-				<Box
-					sx={{ flexShrink: 0, px: horizontalPadding, pt: 1, pb: 1 }}
-				>
-					{topContent}
-				</Box>
-			) : null}
-			{/* Scroll container; flex column keeps the bottom group's mt:auto
-			    pinning intact. */}
+		<RailGlassContext.Provider value={useFlyout}>
 			<Box
+				ref={navRef}
+				{...railLens.containerProps}
+				component='nav'
+				aria-label='Main sidebar'
+				data-testid='collapsible-sidebar'
+				data-collapsed={collapsed ? 'true' : 'false'}
+				data-labeled={showLabels ? 'true' : 'false'}
 				sx={{
-					flex: '1 1 auto',
-					minHeight: 0,
+					width,
+					minWidth: width,
+					height: '100%',
+					boxSizing: 'border-box',
+					bgcolor: surface,
 					display: 'flex',
 					flexDirection: 'column',
-					overflowY: 'auto',
-					overflowX: 'hidden',
-					px: horizontalPadding,
-					pt: topInsetPx && !showHeaderBar ? `${topInsetPx}px` : 1,
-					pb: 2
+					// Lets the sidebar shrink inside a flex-column host so siblings
+					// (e.g. an alert card below it) stay within the viewport.
+					flex: '1 1 auto',
+					minHeight: 0,
+					// Snaps to its width; an owner that animates the switch (the
+					// wrapper's hover panel) clips it from a container, so the
+					// rows never reflow mid-animation.
+					overflow: 'hidden',
+					...(useFlyout ? glassRailSx : {})
 				}}
 			>
-				{renderLinkStack(mainLinks)}
-				{/* Bottom group, pinned to the bottom by mt:auto. With a footer
-				    the divider moves below it, between the links and the user. */}
-				{secondaryLinks.length > 0 ? (
-					<Box sx={{ mt: 'auto', pt: 2 }}>
-						{footer ? null : (
-							<Divider sx={{ mb: 1, borderColor: 'divider' }} />
-						)}
-						{renderLinkStack(secondaryLinks)}
-					</Box>
-				) : null}
-			</Box>
-			{footer ? (
-				<Box sx={{ flexShrink: 0, px: horizontalPadding, pb: 1.5 }}>
+				{railLens.lens}
+				{headerBar ?? railBrand}
+				{topContent ? (
 					<Box
 						sx={{
-							borderTop: `1px solid ${headerDivider}`,
-							pt: 1.5
+							flexShrink: 0,
+							px: horizontalPadding,
+							pt: useFlyout ? 0 : 1,
+							pb: useFlyout ? 0 : 1
 						}}
 					>
-						{footer}
+						{topContent}
+					</Box>
+				) : null}
+				{/* Scroll container; flex column keeps the bottom group's mt:auto
+			    pinning intact. */}
+				<Box
+					ref={scrollRef}
+					sx={{
+						flex: '1 1 auto',
+						minHeight: 0,
+						display: 'flex',
+						flexDirection: 'column',
+						overflowY: 'auto',
+						overflowX: 'hidden',
+						// Scrollbar shows only while the pointer is inside (or a
+						// keyboard user tabs in). Not :focus-within, since a
+						// clicked link keeps focus and would pin it on.
+						...(useFlyout
+							? {
+									// Chrome lets `scrollbar-width`/`-color` override
+									// the ::-webkit-scrollbar rules, and its `thin` is
+									// 11px — too wide for the 52px rail. So only
+									// browsers without those rules (Firefox) get them;
+									// Chrome and Safari draw the 6px bar below.
+									'@supports not selector(::-webkit-scrollbar)':
+										{
+											scrollbarWidth: 'thin',
+											scrollbarColor:
+												'transparent transparent',
+											'&:hover, &:has(:focus-visible)': {
+												scrollbarColor: (
+													theme: Theme
+												) =>
+													`${theme.palette.divider} transparent`
+											}
+										}
+								}
+							: {
+									scrollbarWidth: 'thin',
+									scrollbarColor: 'transparent transparent',
+									'&:hover, &:has(:focus-visible)': {
+										scrollbarColor: (theme: Theme) =>
+											`${theme.palette.divider} transparent`
+									}
+								}),
+						// Safari only honours the thumb rule once the bar
+						// itself is styled.
+						'&::-webkit-scrollbar': {
+							width: useFlyout ? FLOATING_RAIL_INSET_PX : 8
+						},
+						'&::-webkit-scrollbar-thumb': {
+							backgroundColor: 'transparent',
+							borderRadius: 4
+						},
+						'&:hover::-webkit-scrollbar-thumb, &:has(:focus-visible)::-webkit-scrollbar-thumb':
+							{
+								backgroundColor: (theme: Theme) =>
+									theme.palette.divider
+							},
+						// On the floating rail the bar (when it takes space at
+						// all) stands in for the right padding, and the left
+						// padding follows it, so the 40px column keeps equal
+						// gaps in the capsule whether the bar is classic,
+						// overlay or absent. (The inline collapsed rail keeps
+						// its padding: its open groups tint the full row width.)
+						...(useFlyout
+							? railScrollerPadding(railScrollbarPx)
+							: { px: horizontalPadding }),
+						pt:
+							topInsetPx && !showHeaderBar
+								? `${topInsetPx}px`
+								: useFlyout
+									? railGap
+									: 1,
+						pb: useFlyout ? railGap : 2
+					}}
+				>
+					{/* Offset parent for the active drop, inside the padding
+					    so its offsets match the items'. Grows to fill,
+					    keeping the bottom group's mt:auto pinning. */}
+					<Box
+						ref={linksRef}
+						sx={{
+							flex: '1 0 auto',
+							display: 'flex',
+							flexDirection: 'column',
+							position: 'relative'
+						}}
+					>
+						{activeGlass.glass}
+						{renderLinkStack(mainLinks)}
+						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
+				    the divider moves below it, between the links and the user. */}
+						{secondaryLinks.length > 0 ? (
+							<Box
+								sx={{ mt: 'auto', pt: useFlyout ? railGap : 2 }}
+							>
+								{footer ? null : (
+									<Divider
+										sx={{
+											mb: useFlyout ? railGap : 1,
+											borderColor: 'divider'
+										}}
+									/>
+								)}
+								{renderLinkStack(secondaryLinks)}
+							</Box>
+						) : null}
 					</Box>
 				</Box>
-			) : null}
-		</Box>
+				{footer ? (
+					<Box
+						sx={{
+							flexShrink: 0,
+							px: horizontalPadding,
+							pb: 1.5,
+							...(useFlyout
+								? {
+										'& .MuiIconButton-root .MuiSvgIcon-root':
+											{
+												fontSize: FLOATING_RAIL_ICON_PX
+											}
+									}
+								: {})
+						}}
+					>
+						<Box
+							sx={{
+								borderTop: `1px solid ${headerDivider}`,
+								pt: useFlyout ? railGap : 1.5
+							}}
+						>
+							{footer}
+						</Box>
+					</Box>
+				) : null}
+				{useFlyout ? renderFlyout() : null}
+			</Box>
+		</RailGlassContext.Provider>
 	);
 };
 

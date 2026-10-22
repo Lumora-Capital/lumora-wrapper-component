@@ -120,7 +120,7 @@ describe('LumoraWrapper', () => {
 	});
 
 	describe('Content padding', () => {
-		it('defaults to the 40px layout spacing from md up', () => {
+		it('defaults to the 18px layout spacing from md up', () => {
 			renderWrapper();
 			expect(screen.getByRole('main')).toHaveStyle({
 				padding: 'var(--lumora-content-padding)'

@@ -2,6 +2,11 @@ import {
 	AccountBalanceOutlined as DealsIcon,
 	BusinessOutlined as CompaniesIcon,
 	CampaignOutlined as CampaignIcon,
+	ContentCopyOutlined as DuplicatesIcon,
+	DashboardOutlined as OverviewIcon,
+	GroupWorkOutlined as GroupsIcon,
+	HandshakeOutlined as FundingIcon,
+	ViewKanbanOutlined as PipelineIcon,
 	HeadsetMicOutlined as SupportIcon,
 	InsertChartOutlined as DashboardIcon,
 	PeopleOutline as PeopleIcon,
@@ -27,11 +32,28 @@ export const nestedLinks: SidebarLink[] = [
 		text: 'CRM',
 		icon: <PeopleIcon />,
 		subitems: [
+			{ text: 'Overview', path: '/crm/overview', icon: <OverviewIcon /> },
 			{ text: 'People', path: '/crm/people' },
 			{
 				text: 'Companies',
 				path: '/crm/companies',
 				icon: <CompaniesIcon />
+			},
+			{
+				text: 'Duplicates',
+				path: '/crm/duplicates',
+				icon: <DuplicatesIcon />
+			},
+			{ text: 'Groups', path: '/crm/groups', icon: <GroupsIcon /> },
+			{
+				text: 'Pipeline',
+				path: '/crm/pipeline',
+				icon: <PipelineIcon />
+			},
+			{
+				text: 'Funding Lines',
+				path: '/crm/funding-lines',
+				icon: <FundingIcon />
 			},
 			{
 				text: 'Marketing',

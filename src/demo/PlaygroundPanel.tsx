@@ -32,6 +32,11 @@ const SWITCH_GROUPS: Array<{
 			{ key: 'mobileDrawer', label: 'Mobile: drawer, no bottom bar' },
 			{ key: 'pinDealsOnMobile', label: 'Mobile: pin Deals in the bar' },
 			{ key: 'nestedLinks', label: 'Nested links (3 levels)' },
+			{
+				key: 'flyoutSubmenu',
+				label: 'Flyout submenus (collapsible, panel)'
+			},
+			{ key: 'sidebarAutoHide', label: 'Auto-hide rail (flyout)' },
 			{ key: 'showSidebarRailTitles', label: 'Rail titles (rail only)' },
 			{ key: 'showAlert', label: 'Alert card' },
 			{ key: 'brandColors', label: 'Centra colors (light mode)' },
@@ -43,6 +48,7 @@ const SWITCH_GROUPS: Array<{
 		title: 'Sidebar chrome',
 		items: [
 			{ key: 'clickableBrand', label: 'Clickable brand' },
+			{ key: 'platformSwitcher', label: 'Platform switcher (logo)' },
 			{ key: 'showSearch', label: 'Search component' },
 			{ key: 'showNotifications', label: 'Notifications' },
 			{ key: 'notificationDrawer', label: 'Notification drawer' },
@@ -58,7 +64,8 @@ const SWITCH_GROUPS: Array<{
 			{ key: 'assistantBusy', label: 'Nexa busy' },
 			{ key: 'chatSidebar', label: 'Chat panel (via Nexa)' },
 			{ key: 'floatingChat', label: 'Chat as floating card' },
-			{ key: 'enableRefreshToken', label: 'Token check on mount' }
+			{ key: 'enableRefreshToken', label: 'Token check on mount' },
+			{ key: 'holdSessionSkeleton', label: 'Session check skeleton' }
 		]
 	}
 ];
