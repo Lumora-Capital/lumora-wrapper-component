@@ -261,6 +261,8 @@ export declare interface LumoraShellSkeletonProps {
     darkModeSelector?: string;
     sidebarVariant?: SidebarVariant;
     sidebarSubmenu?: SidebarSubmenu;
+    /** As LumoraWrapper's: an auto-hidden rail draws no placeholder. */
+    sidebarAutoHide?: boolean;
     showSidebar?: boolean;
     contentPadding?: ContentPadding;
     sidebarBackgroundColor?: ShellColor;
@@ -321,6 +323,14 @@ export declare interface LumoraWrapperProps {
      * panel).
      */
     sidebarSubmenu?: 'expand' | 'flyout';
+    /**
+     * With `sidebarSubmenu="flyout"` on desktop: hide the glass rail like the
+     * macOS Dock. The page takes the full width, and the rail slides in over it
+     * while the pointer is at the window's left edge or over the rail (its
+     * flyouts, search card and account menu included), or while keyboard focus
+     * is inside it. Default `false`.
+     */
+    sidebarAutoHide?: boolean;
     /**
      * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
      * with Menu (the links drawer), Search, Nexa and the user menu, so the main

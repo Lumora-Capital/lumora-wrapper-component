@@ -312,6 +312,7 @@ const DemoApp = () => {
 					sidebarSubmenu={
 						settings.flyoutSubmenu ? 'flyout' : 'expand'
 					}
+					sidebarAutoHide={settings.sidebarAutoHide}
 					mobileNavigation={
 						settings.mobileDrawer ? 'drawer' : 'bottom-bar'
 					}

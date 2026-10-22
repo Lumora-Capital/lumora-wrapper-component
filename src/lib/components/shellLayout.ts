@@ -61,17 +61,27 @@ export const usesFlyoutSubmenu = (
 	sidebarSubmenu === 'flyout' &&
 	(sidebarVariant === 'collapsible' || sidebarVariant === 'panel');
 
-/** Width the desktop sidebar takes from the page; 0 on phones or without one. */
+/** Whether the floating glass rail hides at the window's edge (`sidebarAutoHide`). */
+export const usesAutoHideRail = (
+	sidebarAutoHide: boolean,
+	sidebarSubmenu: SidebarSubmenu,
+	sidebarVariant: SidebarVariant
+) => sidebarAutoHide && usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant);
+
+/** Width the desktop sidebar takes from the page; 0 on phones, without one,
+ * or when the rail auto-hides over the page. */
 export const getDesktopSidebarWidthPx = ({
 	showSidebar,
 	isMobile,
 	sidebarVariant,
-	sidebarSubmenu
+	sidebarSubmenu,
+	sidebarAutoHide = false
 }: {
 	showSidebar: boolean;
 	isMobile: boolean;
 	sidebarVariant: SidebarVariant;
 	sidebarSubmenu: SidebarSubmenu;
+	sidebarAutoHide?: boolean;
 }) => {
 	if (!showSidebar || isMobile) {
 		return 0;
@@ -80,7 +90,9 @@ export const getDesktopSidebarWidthPx = ({
 		return RAIL_LABELED_WIDTH_PX;
 	}
 	if (usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant)) {
-		return FLOATING_RAIL_WIDTH_PX + 2 * FLOATING_RAIL_GUTTER_PX;
+		return sidebarAutoHide
+			? 0
+			: FLOATING_RAIL_WIDTH_PX + 2 * FLOATING_RAIL_GUTTER_PX;
 	}
 	if (sidebarVariant === 'collapsible' || sidebarVariant === 'panel') {
 		return COLLAPSIBLE_COLLAPSED_WIDTH_PX;

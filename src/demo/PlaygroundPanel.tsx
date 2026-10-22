@@ -36,6 +36,7 @@ const SWITCH_GROUPS: Array<{
 				key: 'flyoutSubmenu',
 				label: 'Flyout submenus (collapsible, panel)'
 			},
+			{ key: 'sidebarAutoHide', label: 'Auto-hide rail (flyout)' },
 			{ key: 'showSidebarRailTitles', label: 'Rail titles (rail only)' },
 			{ key: 'showAlert', label: 'Alert card' },
 			{ key: 'brandColors', label: 'Centra colors (light mode)' },

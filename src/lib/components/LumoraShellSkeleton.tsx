@@ -45,6 +45,8 @@ export interface LumoraShellSkeletonProps {
 	darkModeSelector?: string;
 	sidebarVariant?: SidebarVariant;
 	sidebarSubmenu?: SidebarSubmenu;
+	/** As LumoraWrapper's: an auto-hidden rail draws no placeholder. */
+	sidebarAutoHide?: boolean;
 	showSidebar?: boolean;
 	contentPadding?: ContentPadding;
 	sidebarBackgroundColor?: ShellColor;
@@ -82,6 +84,7 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 	hostTheme,
 	sidebarVariant = 'rail',
 	sidebarSubmenu = 'expand',
+	sidebarAutoHide = false,
 	showSidebar = true,
 	contentPadding = DEFAULT_CONTENT_PADDING,
 	sidebarBackgroundColor,
@@ -94,7 +97,8 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 		showSidebar,
 		isMobile,
 		sidebarVariant,
-		sidebarSubmenu
+		sidebarSubmenu,
+		sidebarAutoHide
 	});
 	const floatingRail = usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant)
 		? {

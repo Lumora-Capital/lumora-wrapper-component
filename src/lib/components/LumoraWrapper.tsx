@@ -49,6 +49,7 @@ import {
 	resolveContentBackground,
 	resolveContentPadding,
 	resolveSidebarSurface,
+	usesAutoHideRail,
 	usesFlyoutSubmenu
 } from './shellLayout';
 
@@ -60,6 +61,7 @@ import SidebarSearch from './SidebarSearch';
 import GlassLayer from './GlassLayer';
 import { GlassAccentContext, SidebarSurfaceContext } from './liquidGlass';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
+import useEdgeReveal from './useEdgeReveal';
 import useHoverExpand from './useHoverExpand';
 
 /** Width of the drawer-mode links drawer (capped at 85% of the screen). */
@@ -69,6 +71,10 @@ const MOBILE_DRAWER_WIDTH_PX = 300;
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
 const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
+/** The strip at the window's left edge that brings an auto-hidden rail in. */
+const AUTO_HIDE_EDGE_PX = 6;
+const AUTO_HIDE_TRANSITION =
+	'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease';
 
 /** Floating Nexa button (52px) plus a 16px gap, kept clear by the chat popup. */
 const FLOATING_ASSISTANT_CLEARANCE_PX = 68;
@@ -193,6 +199,14 @@ export interface LumoraWrapperProps {
 	 * panel).
 	 */
 	sidebarSubmenu?: 'expand' | 'flyout';
+	/**
+	 * With `sidebarSubmenu="flyout"` on desktop: hide the glass rail like the
+	 * macOS Dock. The page takes the full width, and the rail slides in over it
+	 * while the pointer is at the window's left edge or over the rail (its
+	 * flyouts, search card and account menu included), or while keyboard focus
+	 * is inside it. Default `false`.
+	 */
+	sidebarAutoHide?: boolean;
 	/**
 	 * Phones (below `md`). `bottom-bar` (default): a bar pinned to the bottom
 	 * with Menu (the links drawer), Search, Nexa and the user menu, so the main
@@ -480,6 +494,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	showSidebarRailTitles = false,
 	sidebarVariant = 'rail',
 	sidebarSubmenu = 'expand',
+	sidebarAutoHide = false,
 	mobileNavigation = 'bottom-bar',
 	mobileBottomBarLinks,
 	logo,
@@ -667,6 +682,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Flyout submenus: the rail stays a rail, and groups open beside it
 	const useFlyoutSubmenu = usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant);
 	const sidebarCollapsed = useFlyoutSubmenu || !hoverSidebar.expanded;
+	const autoHideRail =
+		showSidebar &&
+		!isMobile &&
+		usesAutoHideRail(sidebarAutoHide, sidebarSubmenu, sidebarVariant);
+	const edgeReveal = useEdgeReveal(autoHideRail);
 	// What the rail's top content (Nexa, search) looks like while collapsed:
 	// it expands the panel, or — with nothing to expand — opens a popover.
 	const collapsedTopMode = useFlyoutSubmenu ? 'popover' : 'expand';
@@ -691,7 +711,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		showSidebar,
 		isMobile,
 		sidebarVariant,
-		sidebarSubmenu
+		sidebarSubmenu,
+		sidebarAutoHide
 	});
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -835,6 +856,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				darkModeSelector={darkModeSelector}
 				sidebarVariant={sidebarVariant}
 				sidebarSubmenu={sidebarSubmenu}
+				sidebarAutoHide={sidebarAutoHide}
 				showSidebar={showSidebar}
 				contentPadding={contentPadding}
 				sidebarBackgroundColor={sidebarBackgroundColor}
@@ -1005,22 +1027,52 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Flyout submenus: the rail is a capsule of liquid glass floating over
 	// the page background, inset from the window's edges. The glass is its
 	// own layer under the rail, so its highlight never washes over icons.
+	// Auto-hide: the aside floats over the page and lets the pointer through,
+	// except on the edge strip and the shown rail.
 	const renderGlassRail = (content: React.ReactNode) => (
 		<Box
 			component='aside'
+			{...(autoHideRail ? edgeReveal.rootProps : {})}
+			data-auto-hide={autoHideRail ? 'true' : undefined}
+			data-shown={autoHideRail ? String(edgeReveal.shown) : undefined}
 			sx={{
-				width: desktopSidebarWidthPx,
-				minWidth: desktopSidebarWidthPx,
-				flexShrink: 0,
 				// Above the page, including its sticky app bars
 				zIndex: theme => theme.zIndex.appBar + 1,
-				position: 'sticky',
 				top: 0,
-				alignSelf: 'flex-start',
 				height: '100vh',
-				bgcolor: resolvedContentBg
+				...(autoHideRail
+					? {
+							position: 'fixed',
+							left: 0,
+							width:
+								FLOATING_RAIL_WIDTH_PX +
+								2 * FLOATING_RAIL_GUTTER_PX,
+							pointerEvents: 'none'
+						}
+					: {
+							width: desktopSidebarWidthPx,
+							minWidth: desktopSidebarWidthPx,
+							flexShrink: 0,
+							position: 'sticky',
+							alignSelf: 'flex-start',
+							bgcolor: resolvedContentBg
+						})
 			}}
 		>
+			{autoHideRail && (
+				<Box
+					data-testid='sidebar-edge-reveal'
+					aria-hidden='true'
+					sx={{
+						position: 'absolute',
+						top: 0,
+						bottom: 0,
+						left: 0,
+						width: AUTO_HIDE_EDGE_PX,
+						pointerEvents: 'auto'
+					}}
+				/>
+			)}
 			<Box
 				data-testid='sidebar-hover-panel'
 				data-expanded='false'
@@ -1035,6 +1087,17 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					borderRadius: `${FLOATING_RAIL_RADIUS_PX}px`,
 					display: 'flex',
 					flexDirection: 'column',
+					...(autoHideRail && {
+						pointerEvents: edgeReveal.shown ? 'auto' : 'none',
+						opacity: edgeReveal.shown ? 1 : 0,
+						transform: edgeReveal.shown
+							? 'none'
+							: `translateX(calc(-100% - ${2 * FLOATING_RAIL_GUTTER_PX}px))`,
+						transition: AUTO_HIDE_TRANSITION,
+						'@media (prefers-reduced-motion: reduce)': {
+							transition: 'opacity 120ms ease'
+						}
+					}),
 					...sidebarStyles
 				}}
 			>
