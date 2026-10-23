@@ -8,7 +8,7 @@ import {
 	useMediaQuery,
 	useTheme
 } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, alpha, createTheme } from '@mui/material/styles';
 import React, {
 	useCallback,
 	useEffect,
@@ -73,6 +73,10 @@ const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
 /** The strip at the window's left edge that brings an auto-hidden rail in. */
 const AUTO_HIDE_EDGE_PX = 6;
+/** Reach of the glow at the edge that hints the hidden rail comes in there. */
+const AUTO_HIDE_GLOW_PX = 72;
+/** Half the height of the glow, centred on the pointer. */
+const AUTO_HIDE_GLOW_HALF_HEIGHT_PX = 90;
 const AUTO_HIDE_TRANSITION =
 	'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease';
 
@@ -1070,6 +1074,37 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						left: 0,
 						width: AUTO_HIDE_EDGE_PX,
 						pointerEvents: 'auto'
+					}}
+				/>
+			)}
+			{autoHideRail && (
+				<Box
+					ref={edgeReveal.glowRef}
+					data-testid='sidebar-edge-glow'
+					data-visible={String(edgeReveal.nearEdge)}
+					aria-hidden='true'
+					sx={{
+						'--edge-glow-y': '50%',
+						position: 'absolute',
+						top: 0,
+						bottom: 0,
+						left: 0,
+						width: AUTO_HIDE_GLOW_PX,
+						pointerEvents: 'none',
+						// A pool of light at the edge, where the pointer is
+						background: `radial-gradient(${AUTO_HIDE_GLOW_PX}px ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px at 0 var(--edge-glow-y), ${alpha(sidebarChromeFg, isDark ? 0.5 : 0.4)}, ${alpha(sidebarChromeFg, 0)})`,
+						opacity: edgeReveal.nearEdge ? 1 : 0,
+						transition: 'opacity 200ms ease',
+						// And a bright line along the edge beside it
+						'&::before': {
+							content: '""',
+							position: 'absolute',
+							top: 0,
+							bottom: 0,
+							left: 0,
+							width: 3,
+							background: `linear-gradient(180deg, transparent calc(var(--edge-glow-y) - ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px), ${alpha(sidebarChromeFg, isDark ? 0.95 : 0.85)} var(--edge-glow-y), transparent calc(var(--edge-glow-y) + ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px))`
+						}
 					}}
 				/>
 			)}

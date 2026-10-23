@@ -5,6 +5,9 @@ import * as React from 'react';
 const REVEAL_DELAY_MS = 80;
 /** Grace after the pointer leaves, so overshooting the rail doesn't hide it. */
 const HIDE_DELAY_MS = 300;
+/** How close to the window's left edge the pointer is before the edge glows,
+ * hinting that the hidden rail comes in there. */
+const NEAR_EDGE_PX = 32;
 
 /**
  * Shown state of the auto-hiding rail (`sidebarAutoHide`), like the macOS
@@ -23,6 +26,10 @@ const useEdgeReveal = (enabled: boolean) => {
 	const hideTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
 	const [hovered, setHovered] = React.useState(false);
 	const [keyboardFocused, setKeyboardFocused] = React.useState(false);
+	const [nearEdge, setNearEdge] = React.useState(false);
+	/** The edge glow, centred on the pointer's height through `--edge-glow-y`
+	 * (set directly, so following the pointer doesn't re-render the shell). */
+	const glowRef = React.useRef<HTMLElement>(null);
 
 	const clearTimers = () => {
 		clearTimeout(revealTimer.current);
@@ -36,8 +43,23 @@ const useEdgeReveal = (enabled: boolean) => {
 			clearTimers();
 			setHovered(false);
 			setKeyboardFocused(false);
+			setNearEdge(false);
 			return undefined;
 		}
+		const trackNearEdge = (event: PointerEvent) => {
+			if (event.pointerType !== 'mouse') {
+				return;
+			}
+			const near = event.clientX <= NEAR_EDGE_PX;
+			if (near) {
+				glowRef.current?.style.setProperty(
+					'--edge-glow-y',
+					`${event.clientY}px`
+				);
+			}
+			setNearEdge(near);
+		};
+		const leaveWindow = () => setNearEdge(false);
 		const scheduleHide = () => {
 			clearTimeout(revealTimer.current);
 			revealTimer.current = undefined;
@@ -58,13 +80,22 @@ const useEdgeReveal = (enabled: boolean) => {
 			}
 		};
 		document.addEventListener('mouseover', hideOutside);
+		document.addEventListener('pointermove', trackNearEdge, {
+			passive: true
+		});
 		document.documentElement.addEventListener('mouseleave', scheduleHide);
+		document.documentElement.addEventListener('mouseleave', leaveWindow);
 		return () => {
 			clearTimers();
 			document.removeEventListener('mouseover', hideOutside);
+			document.removeEventListener('pointermove', trackNearEdge);
 			document.documentElement.removeEventListener(
 				'mouseleave',
 				scheduleHide
+			);
+			document.documentElement.removeEventListener(
+				'mouseleave',
+				leaveWindow
 			);
 		};
 	}, [enabled]);
@@ -100,7 +131,14 @@ const useEdgeReveal = (enabled: boolean) => {
 		}
 	};
 
-	return { shown: enabled && (hovered || keyboardFocused), rootProps };
+	const shown = enabled && (hovered || keyboardFocused);
+	// The edge glows while the pointer nears it, until the rail is in
+	return {
+		shown,
+		nearEdge: enabled && nearEdge && !shown,
+		glowRef,
+		rootProps
+	};
 };
 
 const matchesFocusVisible = (element: Element) => {
