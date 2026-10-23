@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import type { SidebarLink } from './LumoraWrapper';
 import NexaLogo from './NexaLogo';
-import { isSidebarLinkActive } from './sidebarUtils';
+import { isInAppClick, isSidebarLinkActive } from './sidebarUtils';
 import UserMenu, { UserAvatar, type UserMenuOptions } from './UserMenu';
 
 /** Bar height above the safe-area inset; the content is padded by it. */
@@ -52,6 +52,8 @@ const Item: React.FC<{
 	haspopup?: 'menu' | 'dialog';
 	/** A page link: marks the current page for screen readers. */
 	isPage?: boolean;
+	/** The page's path: the item is then a real link, so it opens in a new tab too. */
+	href?: string;
 	testId: string;
 }> = ({
 	label,
@@ -64,9 +66,11 @@ const Item: React.FC<{
 	ariaLabel,
 	haspopup,
 	isPage = false,
+	href,
 	testId
 }) => (
 	<ButtonBase
+		{...(href && { component: 'a', href })}
 		onClick={onClick}
 		aria-label={ariaLabel ?? label}
 		aria-haspopup={haspopup}
@@ -187,7 +191,13 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 					key={link.path}
 					label={link.text}
 					icon={link.icon}
-					onClick={() => onLinkClick?.(link.path!)}
+					href={link.path}
+					onClick={event => {
+						if (isInAppClick(event)) {
+							event.preventDefault();
+							onLinkClick?.(link.path!);
+						}
+					}}
 					active={isSidebarLinkActive(link, activePath)}
 					isPage
 					testId={`mobile-nav-link-${link.text}`}

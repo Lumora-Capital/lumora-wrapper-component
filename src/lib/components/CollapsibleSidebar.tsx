@@ -34,6 +34,7 @@ import {
 	getContrastText,
 	hasChildren,
 	isSidebarLinkActive,
+	isInAppClick,
 	isSubLinkActive,
 	nodeKey
 } from './sidebarUtils';
@@ -481,6 +482,21 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		onLinkClick?.(path);
 	};
 
+	// A page row is a real link, so it can be opened in a new tab (isInAppClick)
+	const pageLinkProps = (path: string | undefined) =>
+		path
+			? {
+					component: 'a' as const,
+					href: path,
+					onClick: (event: React.MouseEvent) => {
+						if (isInAppClick(event)) {
+							event.preventDefault();
+							handleClick(path);
+						}
+					}
+				}
+			: {};
+
 	// Explicit toggle: pass the group's current open state so an auto-opened
 	// active group can also be collapsed by the user.
 	const toggleGroup = (key: string, open: boolean) => {
@@ -524,7 +540,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				key={link.text}
 				disabled={!link.path}
 				selected={active}
-				onClick={() => link.path && handleClick(link.path)}
+				{...pageLinkProps(link.path)}
 				data-testid={`sidebar-item-${link.text}`}
 				data-active={active ? 'true' : 'false'}
 				sx={{
@@ -746,7 +762,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				key={key}
 				selected={active}
 				disabled={!sub.path}
-				onClick={() => sub.path && handleClick(sub.path)}
+				{...pageLinkProps(sub.path)}
 				data-testid={`sidebar-subitem-${sub.text}`}
 				data-active={active ? 'true' : 'false'}
 				sx={{
@@ -778,15 +794,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		label: string,
 		icon: React.ReactNode,
 		active: boolean,
-		onClick: (() => void) | undefined,
+		path: string | undefined,
 		options?: { insideGroup?: boolean; testId?: string }
 	) => {
-		const disabled = !onClick;
+		const disabled = !path;
 		const button = (
 			<IconButton
 				aria-label={label}
 				disabled={disabled}
-				onClick={onClick}
+				{...pageLinkProps(path)}
 				onMouseEnter={useFlyout ? flyout.onRailLeafEnter : undefined}
 				{...(useFlyout ? { [RAIL_ITEM_ATTR]: '' } : {})}
 				data-testid={options?.testId ?? `sidebar-item-${label}`}
@@ -873,7 +889,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// control keeps its fill.
 	const glassRailSx = {
 		position: 'relative' as const,
-		'& :is(button, [role="button"]):not([data-active="true"]):not([data-rail-keep-fill]):hover':
+		'& :is(button, a, [role="button"]):not([data-active="true"]):not([data-rail-keep-fill]):hover':
 			{
 				bgcolor: 'transparent'
 			},
@@ -1075,7 +1091,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 									sub.text,
 									icon,
 									isSubLinkActive(sub, activePath),
-									() => handleClick(sub.path!),
+									sub.path,
 									{
 										insideGroup: true,
 										testId: `sidebar-subitem-${sub.text}`
@@ -1105,7 +1121,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				link.subtitle ? `${link.text} · ${link.subtitle}` : link.text,
 				link.icon,
 				isSubLinkActive(link, activePath),
-				link.path ? () => handleClick(link.path!) : undefined,
+				link.path,
 				{ testId: `sidebar-item-${link.text}` }
 			)}
 		</Box>

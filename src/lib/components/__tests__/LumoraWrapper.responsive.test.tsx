@@ -553,9 +553,9 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				name: 'Mobile navigation'
 			});
 			expect(
-				within(bar)
-					.getAllByRole('button')
-					.map(b => b.getAttribute('aria-label'))
+				Array.from(bar.querySelectorAll('button, a')).map(b =>
+					b.getAttribute('aria-label')
+				)
 			).toEqual([
 				'Menu',
 				'Home',
@@ -564,14 +564,20 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				'Account menu for User'
 			]);
 
-			const home = within(bar).getByRole('button', { name: 'Home' });
-			const settings = within(bar).getByRole('button', {
+			// The pages are links, so they also open in a new tab
+			const home = within(bar).getByRole('link', { name: 'Home' });
+			const settings = within(bar).getByRole('link', {
 				name: 'Settings'
 			});
+			expect(settings).toHaveAttribute('href', '/settings');
 			expect(home).toHaveAttribute('aria-current', 'page');
 			expect(settings).not.toHaveAttribute('aria-current');
 			fireEvent.click(settings);
 			expect(onLinkClick).toHaveBeenCalledWith('/settings');
+			// ⌘-click is the browser's (a new tab), not an in-app move
+			onLinkClick.mockClear();
+			fireEvent.click(settings, { metaKey: true });
+			expect(onLinkClick).not.toHaveBeenCalled();
 		});
 
 		it('opens the notifications drawer from the top-bar bell', async () => {

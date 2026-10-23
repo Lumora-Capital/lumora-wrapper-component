@@ -16,6 +16,7 @@ import * as React from 'react';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	hasChildren,
+	isInAppClick,
 	isSidebarLinkActive,
 	isSubLinkActive,
 	nodeKey
@@ -308,8 +309,12 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 				}
 			}}
 			onClick={(e: React.MouseEvent) => {
-				e.preventDefault();
 				e.stopPropagation();
+				// Anything but a plain click is the browser's: a new tab
+				if (link.path && !isInAppClick(e)) {
+					return;
+				}
+				e.preventDefault();
 				if (link.path) {
 					onLinkClick?.(link.path);
 				}
@@ -435,7 +440,11 @@ const RailSubmenuRow: React.FC<RailSubmenuProps> = ({
 					title={sub.text}
 					disabled={!sub.path}
 					selected={isSubLinkActive(sub, activePath)}
+					{...(sub.path && { component: 'a', href: sub.path })}
 					onClick={e => {
+						if (sub.path && !isInAppClick(e)) {
+							return;
+						}
 						e.preventDefault();
 						if (sub.path) {
 							onLinkClick?.(sub.path);
@@ -529,8 +538,12 @@ const RailLeafRow: React.FC<RailLeafProps> = ({
 			href={link.path || undefined}
 			aria-label={link.text}
 			onClick={(e: React.MouseEvent) => {
-				e.preventDefault();
 				e.stopPropagation();
+				// Anything but a plain click is the browser's: a new tab
+				if (link.path && !isInAppClick(e)) {
+					return;
+				}
+				e.preventDefault();
 				if (link.path) {
 					onLinkClick?.(link.path);
 				}

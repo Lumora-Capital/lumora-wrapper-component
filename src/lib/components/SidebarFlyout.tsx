@@ -36,7 +36,7 @@ import {
 	FLOATING_RAIL_ITEM_PX,
 	FLOATING_RAIL_WIDTH_PX
 } from './shellLayout';
-import { flattenLeaves, isSubLinkActive } from './sidebarUtils';
+import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Compact square tiles in one row; the name shows on hover. Sized and
  * spaced like the rail's own buttons. */
@@ -235,7 +235,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	const shapeRef = React.useRef<(() => void) | null>(null);
 
 	// Roving focus: one tile in the tab order, arrows move between them
-	const tileRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
+	const tileRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
 	const activeIndex = leaves.findIndex(({ sub }) =>
 		isSubLinkActive(sub, activePath)
 	);
@@ -272,6 +272,10 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				}
 				break;
 
+			case ' ':
+				// A link answers Enter only; a menu item answers Space too
+				tileRefs.current[index]?.click();
+				break;
 			case 'Home':
 				moveFocus(0);
 				break;
@@ -298,7 +302,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	const applyDock = (hovered: number | null) => {
 		const tiles = tileRefs.current
 			.slice(0, leaves.length)
-			.filter((t): t is HTMLButtonElement => Boolean(t));
+			.filter((t): t is HTMLAnchorElement => Boolean(t));
 		if (!tiles.length) {
 			return;
 		}
@@ -477,7 +481,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 											tabIndex={
 												index === focusIndex ? 0 : -1
 											}
-											onClick={() => {
+											onClick={event => {
+												// Anything but a plain click is the browser's: a new tab
+												if (!isInAppClick(event)) {
+													return;
+												}
+												event.preventDefault();
 												onNavigate(sub.path!);
 												onClose();
 											}}
@@ -1170,9 +1179,9 @@ interface FlyoutTileProps {
 	index: number;
 	active: boolean;
 	tabIndex: number;
-	onClick: () => void;
+	onClick: (event: React.MouseEvent) => void;
 	onKeyDown: (event: React.KeyboardEvent) => void;
-	onFocus: (event: React.FocusEvent<HTMLButtonElement>) => void;
+	onFocus: (event: React.FocusEvent<HTMLAnchorElement>) => void;
 	/** The pointer arrived on the tile. */
 	onHoverStart: (pointerType: string) => void;
 	accentColor: string;
@@ -1185,9 +1194,9 @@ interface FlyoutTileProps {
 /**
  * One compact square tile: the page's icon, its name in a glass pill that
  * pops up beneath it on hover or focus. Hovered, it becomes a glass bubble
- * and wobbles as it lands.
+ * and wobbles as it lands. A link to the page, so it opens in a new tab too.
  */
-const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
+const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 	(
 		{
 			sub,
@@ -1253,6 +1262,8 @@ const FlyoutTile = React.forwardRef<HTMLButtonElement, FlyoutTileProps>(
 		return (
 			<ButtonBase
 				ref={ref}
+				component='a'
+				href={sub.path}
 				role='menuitem'
 				tabIndex={tabIndex}
 				aria-current={active ? 'page' : undefined}

@@ -166,6 +166,31 @@ describe('flyout submenus', () => {
 		expect(isOpen('CRM')).toBe(false);
 	});
 
+	it('makes its leaves and tiles links, which ⌘-click leaves to the browser', () => {
+		const onLinkClick = jest.fn();
+		renderRail({ onLinkClick });
+		// A page on the rail; the groups only open their flyout
+		expect(trigger('Deals')).toHaveAttribute('href', '/deals');
+		expect(trigger('CRM')).not.toHaveAttribute('href');
+		hoverOpen('CRM');
+		const tile = screen.getByTestId('sidebar-subitem-Companies');
+		expect(tile).toHaveAttribute('href', '/crm/companies');
+		fireEvent.click(tile, { metaKey: true });
+		fireEvent.click(trigger('Deals'), { ctrlKey: true });
+		expect(onLinkClick).not.toHaveBeenCalled();
+		expect(isOpen('CRM')).toBe(true);
+	});
+
+	it('navigates from a tile on Space, as a menu item', () => {
+		const onLinkClick = jest.fn();
+		renderRail({ onLinkClick });
+		hoverOpen('CRM');
+		fireEvent.keyDown(screen.getByTestId('sidebar-subitem-People'), {
+			key: ' '
+		});
+		expect(onLinkClick).toHaveBeenCalledWith('/crm/people');
+	});
+
 	it('closes on a click on the dimmed page', () => {
 		renderRail();
 		pointerClick(trigger('CRM'));

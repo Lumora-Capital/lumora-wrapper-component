@@ -60,6 +60,45 @@ describe('CollapsibleSidebar', () => {
 		});
 	});
 
+	describe('page rows are links', () => {
+		it('gives every page an href, in both widths', () => {
+			const { rerender } = renderSidebar();
+			expect(
+				screen.getByTestId('sidebar-item-Dashboard')
+			).toHaveAttribute('href', '/dashboard');
+			expect(
+				screen.getByTestId('sidebar-subitem-People')
+			).toHaveAttribute('href', '/crm/people');
+			rerender(
+				<CollapsibleSidebar
+					mainLinks={mainLinks}
+					activePath='/crm'
+					collapsed
+				/>
+			);
+			expect(
+				screen.getByTestId('sidebar-item-Dashboard')
+			).toHaveAttribute('href', '/dashboard');
+		});
+
+		it('navigates in the app on a plain click and leaves modified clicks to the browser', () => {
+			const onLinkClick = jest.fn();
+			renderSidebar({ onLinkClick });
+			const dashboard = screen.getByTestId('sidebar-item-Dashboard');
+			for (const modifier of [
+				'metaKey',
+				'ctrlKey',
+				'shiftKey',
+				'altKey'
+			]) {
+				fireEvent.click(dashboard, { [modifier]: true });
+			}
+			expect(onLinkClick).not.toHaveBeenCalled();
+			fireEvent.click(dashboard);
+			expect(onLinkClick).toHaveBeenCalledWith('/dashboard');
+		});
+	});
+
 	describe('tooltips only in collapsed mode', () => {
 		it('renders labels inline (no tooltip) when expanded', () => {
 			renderSidebar({ collapsed: false });

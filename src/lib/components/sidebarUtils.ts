@@ -8,6 +8,19 @@ import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 /** Any node of the sidebar tree: a top-level link or a child at any depth. */
 export type SidebarNode = SidebarLink | SidebarSubLink;
 
+/**
+ * Page rows are real links (`<a href>`), so the browser offers "Open link in
+ * new tab" on them. A plain left click stays in the app (the host's
+ * `onLinkClick`); ⌘/Ctrl/Shift/Alt-click and the middle button are left to
+ * the browser, which opens the page in a new tab or window.
+ */
+export const isInAppClick = (event: React.MouseEvent): boolean =>
+	event.button === 0 &&
+	!event.metaKey &&
+	!event.ctrlKey &&
+	!event.shiftKey &&
+	!event.altKey;
+
 /** A node with children is a group; the rest are pages (or path-less labels). */
 export const hasChildren = (node: SidebarNode): boolean =>
 	Boolean(node.subitems?.length);
