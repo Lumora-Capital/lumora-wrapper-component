@@ -212,6 +212,46 @@ describe('flyout submenus', () => {
 		expect(isOpen('CRM')).toBe(false);
 	});
 
+	it('lays a small group out in one row, names under their tiles', () => {
+		renderRail();
+		hoverOpen('CRM');
+		const tops = screen
+			.getAllByRole('menuitem')
+			.map(item => [
+				getComputedStyle(item.querySelector('[data-flyout-tile]')!).top,
+				getComputedStyle(item.querySelector('[data-flyout-slot]')!).top
+			]);
+		expect(new Set(tops.map(([tile]) => tile))).toEqual(new Set(['0px']));
+		expect(tops.every(([tile, name]) => tile !== name)).toBe(true);
+	});
+
+	it('zigzags a larger group over two rows', () => {
+		renderRail({
+			mainLinks: [
+				{
+					text: 'Many',
+					icon: <Business />,
+					subitems: ['A', 'B', 'C', 'D', 'E'].map(text => ({
+						text,
+						path: `/many/${text}`,
+						icon: <People />
+					}))
+				}
+			]
+		});
+		hoverOpen('Many');
+		const tileTops = screen
+			.getAllByRole('menuitem')
+			.map(
+				item =>
+					getComputedStyle(item.querySelector('[data-flyout-tile]')!)
+						.top
+			);
+		expect(tileTops[0]).toBe('0px');
+		expect(tileTops[1]).not.toBe('0px');
+		expect(tileTops[2]).toBe('0px');
+	});
+
 	it('marks the group and the current page', () => {
 		renderRail({ activePath: '/crm/companies' });
 		expect(trigger('CRM')).toHaveAttribute('data-active', 'true');

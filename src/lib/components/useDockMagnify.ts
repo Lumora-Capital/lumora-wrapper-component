@@ -42,7 +42,8 @@ export type DockMagnifyOptions = {
 	 * its growth, so the gaps along the row hold and its start stays put.
 	 * Each item moves
 	 * with the nearest ancestor matching this (the flyout: a page's link,
-	 * carrying its name with its tile). Omitted: nothing moves.
+	 * carrying its name with its tile). Omitted: nothing moves. The
+	 * container's `--dock-spread` holds how much longer the row has grown.
 	 */
 	carrierSelector?: string;
 };
@@ -73,8 +74,10 @@ export const useDockMagnify = (
 	}: DockMagnifyOptions
 ) => {
 	const frame = React.useRef(0);
-	/** Each glyph's unscaled width, measured the first time it is reached. */
-	const baseWidths = React.useRef(new WeakMap<Element, number>());
+	/** Each glyph's unscaled size, measured the first time it is reached. */
+	const baseSizes = React.useRef(
+		new WeakMap<Element, { width: number; height: number }>()
+	);
 	const grown = React.useRef(new Set<HTMLElement>());
 	const moved = React.useRef(new Set<HTMLElement>());
 	const extra = transition ? `, ${transition}` : '';
@@ -131,14 +134,23 @@ export const useDockMagnify = (
 		if (glyph === item) {
 			return maxScale;
 		}
-		let base = baseWidths.current.get(glyph);
+		let base = baseSizes.current.get(glyph);
 		if (base === undefined) {
 			const current = Number(glyph.style.scale) || 1;
-			base = glyph.getBoundingClientRect().width / current;
-			baseWidths.current.set(glyph, base);
+			const r = glyph.getBoundingClientRect();
+			base = { width: r.width / current, height: r.height / current };
+			baseSizes.current.set(glyph, base);
 		}
-		const room = item.getBoundingClientRect().width;
-		return base > 0 ? Math.max(1, Math.min(room / base, maxScale)) : 1;
+		if (!(base.width > 0 && base.height > 0)) {
+			return 1;
+		}
+		// Within the item both ways (the brand's button is wider than tall)
+		const room = item.getBoundingClientRect();
+		const fit = Math.min(
+			room.width / base.width,
+			room.height / base.height
+		);
+		return Math.max(1, Math.min(fit, maxScale));
 	};
 
 	const settle = () => {
@@ -153,6 +165,7 @@ export const useDockMagnify = (
 			carrier.style.translate = '';
 		});
 		moved.current.clear();
+		containerRef.current?.style.removeProperty('--dock-spread');
 	};
 
 	const swell = (container: HTMLElement, x: number, y: number) => {
@@ -176,6 +189,9 @@ export const useDockMagnify = (
 		if (!carrierSelector) {
 			return;
 		}
+		// How much longer the row is now, for a shelf that stretches with it
+		const spread = row.reduce((sum, { growth }) => sum + growth, 0);
+		container.style.setProperty('--dock-spread', `${spread.toFixed(1)}px`);
 		// Anchored at the row's start (the flyout hangs off the rail): each
 		// item moves on by the growth of everything before it, plus half its
 		// own, which it grows by either side — so every gap holds

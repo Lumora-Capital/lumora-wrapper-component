@@ -420,8 +420,10 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		enabled: useFlyout,
 		axis: 'y',
 		itemSelector: RAIL_ITEM_SELECTOR,
-		// The glyph alone: a count badge keeps its size and place
-		glyphSelector: '.MuiAvatar-root, .MuiSvgIcon-root'
+		// The glyph alone, whatever draws it (an icon, an avatar, the brand's
+		// logo image, Ask Nexa's own SVG): a count badge keeps its size and
+		// place
+		glyphSelector: '.MuiAvatar-root, [role="img"], svg'
 	});
 	// Both settle when the rail scrolls its items out from under them
 	const railContainerProps = {
@@ -919,10 +921,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			{
 				bgcolor: 'transparent'
 			},
-		// The rail's content paints above the lens, which is its first layer
-		'& > :not([data-glass-lens], [data-active-glass])': {
-			position: 'relative'
-		}
+		// The rail's content paints above the lens, which is its first layer.
+		// Not the flyout's backdrop: it is fixed over the whole window, and
+		// made relative it collapses to nothing at the rail's foot.
+		'& > :not([data-glass-lens], [data-active-glass], [data-flyout-scrim])':
+			{
+				position: 'relative'
+			}
 	};
 	// Icons on the glass rail: one rounded shape for every state, no hover
 	// tint of their own (the lens glides behind them), and a gel squish on

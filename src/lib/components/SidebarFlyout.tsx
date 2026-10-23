@@ -18,7 +18,6 @@ import {
 import {
 	REDUCED_MOTION,
 	glassLabelSx,
-	scrimColor,
 	tileIn,
 	GLASS_RADIUS_PX
 } from './liquidGlass';
@@ -35,11 +34,15 @@ const TILE_SELECTOR = '[data-flyout-tile]';
 const ROW_GAP_PX = 4;
 /** The space between neighbours along each row. */
 const ITEM_GAP_PX = 6;
+/** Up to this many pages sit in one row; more zigzag over two. */
+const SINGLE_ROW_MAX = 4;
 /** Everything else a tile animates, kept while the dock drives its scale. */
 const TILE_TRANSITION =
 	'background 160ms ease, color 160ms ease, transform 120ms ease';
-/** Space between the rail's edge and the tiles. */
+/** Space between the rail's edge and the tiles' frosted panel. */
 const PANEL_GAP_PX = 10;
+/** The frosted panel's padding around the tiles. */
+const STAGE_PADDING_PX = 10;
 /** The tiles well up one after another. */
 const TILE_STAGGER_MS = 18;
 /** Above the page, its sticky bars and the docked chat (1140); below the
@@ -92,13 +95,18 @@ export type RailShape = {
 };
 
 /** A clip path for the whole window less a rounded rectangle (even-odd). */
+/** The window's side of that clip path. Big enough for any screen, small
+ * enough for Chrome: from 16384px up it drops the cut-out without a word,
+ * and the rail is dimmed with the page. */
+const WINDOW_EXTENT_PX = 8192;
+
 const windowLessShape = ({ left, top, width, height, radius }: RailShape) => {
 	const r = Math.min(radius, width / 2, height / 2);
 	const right = left + width;
 	const bottom = top + height;
 	const arc = `A ${r} ${r} 0 0 1`;
 	return (
-		`path(evenodd, 'M 0 0 H 100000 V 100000 H 0 Z ` +
+		`path(evenodd, 'M 0 0 H ${WINDOW_EXTENT_PX} V ${WINDOW_EXTENT_PX} H 0 Z ` +
 		`M ${left + r} ${top} H ${right - r} ${arc} ${right} ${top + r} ` +
 		`V ${bottom - r} ${arc} ${right - r} ${bottom} H ${left + r} ` +
 		`${arc} ${left} ${bottom - r} V ${top + r} ${arc} ${left + r} ${top} Z')`
@@ -314,6 +322,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			<Fade in={open} timeout={{ enter: 220, exit: 200 }} unmountOnExit>
 				<Box
 					data-testid='sidebar-flyout-scrim'
+					data-flyout-scrim=''
 					aria-hidden
 					onClick={() => onClose()}
 					sx={{
@@ -327,7 +336,9 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 							? { clipPath: windowLessShape(railShape) }
 							: {}),
 						zIndex: SCRIM_Z_INDEX,
-						bgcolor: scrimColor(isDark)
+						// Clear: it is only there to close the flyout on a click
+						// outside it; the page stays as it is
+						bgcolor: 'transparent'
 					}}
 				/>
 			</Fade>
@@ -360,6 +371,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 						onExited={TransitionProps?.onExited}
 						panelProps={panelProps}
 						groupText={shown?.group.text}
+						isDark={isDark}
 					>
 						{shown ? (
 							<Box
@@ -380,7 +392,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 								sx={{
 									position: 'relative',
 									width: layout.width,
-									height: TILE_PX * 2 + ROW_GAP_PX
+									height: TILE_PX * 2 + ROW_GAP_PX,
+									// The panel stretches as the dock pushes
+									// the pages along, as the Dock's shelf does
+									mr: 'var(--dock-spread, 0px)',
+									transition: `margin-right ${glide.duration}ms ${glide.easing}`,
+									[REDUCED_MOTION]: { transition: 'none' }
 								}}
 							>
 								{leaves.map(({ sub, icon }, index) => (
@@ -397,6 +414,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										sub={sub}
 										icon={icon}
 										index={index}
+										count={leaves.length}
 										active={isSubLinkActive(
 											sub,
 											activePath
@@ -456,6 +474,7 @@ interface FlyoutStageProps {
 	onExited?: () => void;
 	panelProps: SidebarFlyoutProps['panelProps'];
 	groupText?: string;
+	isDark: boolean;
 	children: React.ReactNode;
 }
 
@@ -470,6 +489,7 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	onExited,
 	panelProps,
 	groupText,
+	isDark,
 	children
 }) => {
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -525,6 +545,22 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 			data-group={groupText}
 			sx={{
 				position: 'relative',
+				// Frosted glass behind the tiles alone, so they read clearly
+				// over whatever the page has there; the rest of the page is
+				// left untouched. A tile the dock grows pops out past it.
+				p: `${STAGE_PADDING_PX}px`,
+				borderRadius: `${TILE_RADIUS_PX + STAGE_PADDING_PX}px`,
+				// Mostly see-through: the blur does the separating, the tint
+				// only a little
+				bgcolor: isDark
+					? 'rgba(24, 30, 40, 0.45)'
+					: 'rgba(236, 239, 243, 0.45)',
+				backdropFilter: 'blur(16px) saturate(160%)',
+				WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+				// A deep, soft shadow lifts it off the page
+				boxShadow: isDark
+					? '0 24px 56px -12px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.35)'
+					: '0 24px 56px -12px rgba(15, 23, 42, 0.38), 0 4px 12px rgba(15, 23, 42, 0.08)',
 				// Fills the gap to the rail so the pointer can cross it
 				// without leaving the flyout
 				'&::before': {
@@ -543,9 +579,17 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 };
 
 /**
- * Where each page's tile and name sit, as left edges in the row. The rows
- * zigzag (even pages: tile on top, name below; odd pages the other way), and
- * a page's tile and name share one centre. Each page sits as close to the
+ * Whether a page's name sits above its tile. A small group is one row —
+ * every tile on top, its name beneath — and a larger one zigzags (odd pages
+ * flip) to stay short.
+ */
+const nameOnTopAt = (index: number, count: number) =>
+	count > SINGLE_ROW_MAX && index % 2 === 1;
+
+/**
+ * Where each page's tile and name sit, as left edges in the row (tiles in
+ * one row, names in the other; see `nameOnTopAt`). A page's tile and name
+ * share one centre. Each page sits as close to the
  * one before as both rows allow, so the tighter row keeps the gap and the
  * other row takes up the difference.
  */
@@ -556,7 +600,7 @@ const zigzagLayout = (widths: number[], count: number) => {
 	let bottomEnd = -ITEM_GAP_PX;
 	for (let i = 0; i < count; i += 1) {
 		const name = widths[i] || TILE_PX;
-		const tileOnTop = i % 2 === 0;
+		const tileOnTop = !nameOnTopAt(i, count);
 		const topWidth = tileOnTop ? TILE_PX : name;
 		const bottomWidth = tileOnTop ? name : TILE_PX;
 		const centre = Math.max(
@@ -580,6 +624,8 @@ interface FlyoutTileProps {
 	sub: SidebarSubLink;
 	icon: React.ReactNode;
 	index: number;
+	/** How many pages the group has (a small one is a single row). */
+	count: number;
 	active: boolean;
 	tabIndex: number;
 	onClick: (event: React.MouseEvent) => void;
@@ -609,6 +655,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			sub,
 			icon,
 			index,
+			count,
 			active,
 			tabIndex,
 			onClick,
@@ -623,7 +670,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		},
 		ref
 	) => {
-		const nameOnTop = index % 2 === 1;
+		const nameOnTop = nameOnTopAt(index, count);
 		const card = glassLabelSx(isDark, surface);
 		const enter = {
 			animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
@@ -647,7 +694,15 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			'& [data-flyout-tile], & [data-flyout-name]': active ? {} : hover
 		};
 		// Cards of their own: a surface and a soft shadow, no edge
-		const cardSx = { ...card, border: 'none' };
+		const cardSx = {
+			...card,
+			border: 'none',
+			// Lifted a little more than a resting label: they float over
+			// the page
+			boxShadow: isDark
+				? '0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -6px rgba(0, 0, 0, 0.7)'
+				: '0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 20px -6px rgba(15, 23, 42, 0.28)'
+		};
 		return (
 			<ButtonBase
 				ref={ref}
