@@ -15,10 +15,10 @@ export const MOBILE_BAR_HEIGHT_PX = 56;
 export const COLLAPSIBLE_COLLAPSED_WIDTH_PX = 72;
 /** With flyout submenus the rail is a floating glass capsule, held this far
  * off the window's edges; the page keeps the capsule plus both gutters. */
-export const FLOATING_RAIL_WIDTH_PX = 52;
-/** Icon buttons on the floating rail: the 52px capsule less a 6px scrollbar
+export const FLOATING_RAIL_WIDTH_PX = 60;
+/** Icon buttons on the floating rail: the 60px capsule less an 8px scrollbar
  * gutter on each edge. */
-export const FLOATING_RAIL_ITEM_PX = 40;
+export const FLOATING_RAIL_ITEM_PX = 44;
 /** Glyphs inside those buttons, scaled down from MUI's 24px with them. */
 export const FLOATING_RAIL_ICON_PX = 20;
 /** One gap between every pair of items down the floating rail — brand, top

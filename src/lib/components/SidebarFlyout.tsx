@@ -17,56 +17,31 @@ import {
 } from './glassMotion';
 import {
 	REDUCED_MOTION,
-	glassBubbleSx,
-	POINTER_LIGHT,
-	pointerLightRgb,
-	useGlassAccentRgb,
 	glassLabelSx,
-	glassTintSx,
 	scrimColor,
 	tileIn,
-	GLASS_RADIUS_PX,
-	SidebarSurfaceContext
+	GLASS_RADIUS_PX
 } from './liquidGlass';
-import GlassLayer from './GlassLayer';
-import { LIQUID_GLASS_ENABLED } from './featureFlags';
-import {
-	FLOATING_RAIL_GAP_PX,
-	FLOATING_RAIL_ICON_PX,
-	FLOATING_RAIL_ITEM_PX,
-	FLOATING_RAIL_WIDTH_PX
-} from './shellLayout';
+import { useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
-/** Compact square tiles in one row; the name shows on hover. Sized and
- * spaced like the rail's own buttons. */
-const TILE_PX = FLOATING_RAIL_ITEM_PX;
-const TILE_GAP_PX = FLOATING_RAIL_GAP_PX;
+/** Each page's icon tile: compact, a step below the rail's buttons. */
+const TILE_PX = 36;
+/** The same glyph size as the rail, so both magnify to the same size. */
+const TILE_ICON_PX = 20;
 const TILE_RADIUS_PX = GLASS_RADIUS_PX;
-/** Dock magnification: the tile under the pointer grows to this, its
- * neighbours less the further away they are, up to this far from it. */
-const DOCK_MAX_SCALE = 1.12;
-
-const PANEL_PADDING_PX = 6;
-/** How far the row may grow either way, into the panel's own padding; the
- * rest of the padding is left for the tile's bounce. */
-const DOCK_ROOM_PX = PANEL_PADDING_PX - 2;
-/** The same corner as every other glass surface. */
-const PANEL_RADIUS_PX = GLASS_RADIUS_PX;
-/** The group's name above the tiles. Fixed, so the panel can be shifted
- * up by half of it and the tiles sit level with the rail icon. */
-const TITLE_HEIGHT_PX = 24;
-/** Space between the rail's edge and the panel. */
+const TILE_SELECTOR = '[data-flyout-tile]';
+/** A page's column: its tile and its name, one above the other. */
+const ROW_GAP_PX = 4;
+/** The space between neighbours along each row. */
+const ITEM_GAP_PX = 6;
+/** Everything else a tile animates, kept while the dock drives its scale. */
+const TILE_TRANSITION =
+	'background 160ms ease, color 160ms ease, transform 120ms ease';
+/** Space between the rail's edge and the tiles. */
 const PANEL_GAP_PX = 10;
-/** The glass starts as a drop about the size of a rail icon, at the icon's
- * centre (left of the panel by the gap and half a rail button), and grows
- * from there. */
-const SEED_SCALE_X = 0.12;
-const SEED_SCALE_Y = 0.75;
-const SEED_ORIGIN_X_PX = PANEL_GAP_PX + FLOATING_RAIL_WIDTH_PX / 2 - 2;
-/** The tiles wait for the glass to take shape, then follow one another. */
-const TILE_BASE_DELAY_MS = 90;
-const TILE_STAGGER_MS = 22;
+/** The tiles well up one after another. */
+const TILE_STAGGER_MS = 18;
 /** Above the page, its sticky bars and the docked chat (1140); below the
  * MUI drawers and menus, which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
@@ -102,8 +77,9 @@ export interface SidebarFlyoutProps {
 		onMouseLeave: () => void;
 	};
 	accentColor: string;
+	/** Icons and text on the accent fill. */
 	activeForegroundColor: string;
-	/** Surface the glass falls back to where it cannot blur. */
+	/** The tiles' and names' surface. */
 	solidSurface: string;
 }
 
@@ -229,10 +205,46 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		[shown]
 	);
 	const rowRef = React.useRef<HTMLDivElement>(null);
-	const glassRef = React.useRef<HTMLDivElement>(null);
-	const dockFrame = React.useRef(0);
-	/** Set by GlassPanel: re-trace the liquid glass around the tiles. */
-	const shapeRef = React.useRef<(() => void) | null>(null);
+	// The Dock's magnification along the row, as strong as the rail's: the
+	// tiles themselves swell around the pointer, icon and all, growing away
+	// from their names, and the pages beside them slide aside
+	const magnify = useDockMagnify(rowRef, {
+		enabled: open,
+		axis: 'x',
+		itemSelector: TILE_SELECTOR,
+		transition: TILE_TRANSITION,
+		// Grown as far as the rail's icons, so the neighbours make room
+		carrierSelector: '[role="menuitem"]'
+	});
+
+	// The rows are packed by their names' widths (see `zigzagLayout`). Measured
+	// before paint, and again if the names change size (a web font
+	// arriving).
+	const nameRefs = React.useRef<Array<HTMLElement | null>>([]);
+	const [nameWidths, setNameWidths] = React.useState<number[]>([]);
+	React.useLayoutEffect(() => {
+		const measure = () => {
+			const next = leaves.map(
+				(_, i) => nameRefs.current[i]?.offsetWidth ?? 0
+			);
+			setNameWidths(prev =>
+				prev.length === next.length &&
+				prev.every((w, i) => w === next[i])
+					? prev
+					: next
+			);
+		};
+		measure();
+		if (typeof ResizeObserver === 'undefined') {
+			return undefined;
+		}
+		const observer = new ResizeObserver(measure);
+		nameRefs.current
+			.slice(0, leaves.length)
+			.forEach(el => el && observer.observe(el));
+		return () => observer.disconnect();
+	}, [leaves]);
+	const layout = zigzagLayout(nameWidths, leaves.length);
 
 	// Roving focus: one tile in the tab order, arrows move between them
 	const tileRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
@@ -292,76 +304,6 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		event.preventDefault();
 	};
 
-	// Per-item magnification: the hovered (or keyboard-focused) tile grows,
-	// the others keep their size and slide aside to make room — anchored on
-	// the grown tile, though the panel hangs off the rail, so the row may
-	// only spill left into its own padding. Moving to another tile springs
-	// the old one back as the new one grows, and the glass flows between
-	// them. All of it is `translate` / `scale`, written straight to the
-	// elements — no re-render, nothing the compositor cannot do alone.
-	const applyDock = (hovered: number | null) => {
-		const tiles = tileRefs.current
-			.slice(0, leaves.length)
-			.filter((t): t is HTMLAnchorElement => Boolean(t));
-		if (!tiles.length) {
-			return;
-		}
-		const grow =
-			hovered !== null &&
-			hovered < tiles.length &&
-			!prefersReducedMotion();
-		const motion = `translate ${glide.duration}ms ${glide.easing}, scale ${glide.duration}ms ${glide.easing}`;
-		const centers = tiles.map(tile => tile.offsetLeft + TILE_PX / 2);
-		const scales = tiles.map((_, i) =>
-			grow && i === hovered ? DOCK_MAX_SCALE : 1
-		);
-		const extra = grow ? (DOCK_MAX_SCALE - 1) * TILE_PX : 0;
-		const first = centers[0] - TILE_PX / 2;
-		const last = centers[centers.length - 1] + TILE_PX / 2;
-		// Where the growth is taken from, 0 (all rightward) to 1 (all
-		// leftward): follows the hovered tile, kept within the room on
-		// both sides so nothing leaves the panel.
-		const anchor = grow
-			? Math.min(
-					Math.max(
-						(centers[hovered!] - first) / (last - first || 1),
-						Math.max(0, 1 - DOCK_ROOM_PX / extra)
-					),
-					Math.min(1, DOCK_ROOM_PX / extra)
-				)
-			: 0;
-		let cursor = first - extra * anchor;
-		tiles.forEach((tile, i) => {
-			const width = TILE_PX * scales[i];
-			const center = cursor + width / 2;
-			cursor += width + TILE_GAP_PX;
-			tile.style.transition = `${motion}, background 160ms ease, box-shadow 160ms ease`;
-			tile.style.translate = grow ? `${center - centers[i]}px 0` : '';
-			tile.style.scale = grow ? String(scales[i]) : '';
-			if (grow) {
-				tile.style.setProperty('--dock-scale', String(scales[i]));
-			} else {
-				tile.style.removeProperty('--dock-scale');
-			}
-		});
-		// The panel's glass stays put: the hovered tile bounces on its own
-		// rather than the outline swelling around it.
-	};
-	const dockedIndex = React.useRef<number | null>(null);
-	// A new group's row starts with nothing grown
-	React.useEffect(() => {
-		dockedIndex.current = null;
-	}, [groupKey]);
-	const dock = (hovered: number | null) => {
-		if (dockedIndex.current === hovered) {
-			return;
-		}
-		dockedIndex.current = hovered;
-		cancelAnimationFrame(dockFrame.current);
-		dockFrame.current = requestAnimationFrame(() => applyDock(hovered));
-	};
-	React.useEffect(() => () => cancelAnimationFrame(dockFrame.current), []);
-
 	// On glass the labels need the theme's text colour to stay legible; the
 	// icons keep the accent in light mode, as on the rail.
 	const labelColor = theme.palette.text.primary;
@@ -395,13 +337,10 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				placement='right'
 				transition
 				modifiers={[
-					// Up by half the title, so the tile row (not the whole
-					// panel) is centred on the rail icon
+					// Both rows centred on the rail icon, a gap from the rail
 					{
 						name: 'offset',
-						options: {
-							offset: [-TITLE_HEIGHT_PX / 2, PANEL_GAP_PX]
-						}
+						options: { offset: [0, PANEL_GAP_PX] }
 					},
 					{ name: 'flip', enabled: false },
 					{ name: 'preventOverflow', options: { padding: 8 } }
@@ -415,394 +354,125 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 				}}
 			>
 				{({ TransitionProps }) => (
-					<GlassPanel
+					<FlyoutStage
 						in={TransitionProps?.in ?? open}
 						onEnter={TransitionProps?.onEnter}
 						onExited={TransitionProps?.onExited}
-						groupKey={shown?.key ?? null}
 						panelProps={panelProps}
-						isDark={isDark}
-						solidSurface={solidSurface}
 						groupText={shown?.group.text}
-						glassRef={glassRef}
-						shapeRef={shapeRef}
 					>
 						{shown ? (
-							<>
-								{/* The group's name heads the panel; kept on one
-								    line, it also sets the panel's minimum width.
-								    The menu already carries it as its label. */}
-								<Box
-									aria-hidden
-									data-testid='sidebar-flyout-title'
-									sx={{
-										px: `${PANEL_PADDING_PX}px`,
-										height: TITLE_HEIGHT_PX,
-										boxSizing: 'border-box',
-										pt: '2px',
-										fontSize: 12,
-										fontWeight: 600,
-										lineHeight: '16px',
-										letterSpacing: '0.02em',
-										color: 'text.secondary',
-										whiteSpace: 'nowrap'
-									}}
-								>
-									{shown.group.text}
-								</Box>
-								<Box
-									key={shown.key}
-									ref={rowRef}
-									role='menu'
-									aria-label={shown.group.text}
-									onPointerLeave={() => dock(null)}
-									sx={{
-										position: 'relative',
-										display: 'flex',
-										gap: `${TILE_GAP_PX}px`,
-										// A grown tile fits in the panel's padding
-										// (see DOCK_ROOM_PX)
-										px: 0
-									}}
-								>
-									{leaves.map(({ sub, icon }, index) => (
-										<FlyoutTile
-											key={sub.path}
-											ref={el => {
-												tileRefs.current[index] = el;
-											}}
-											sub={sub}
-											icon={icon}
-											index={index}
-											active={isSubLinkActive(
-												sub,
-												activePath
-											)}
-											tabIndex={
-												index === focusIndex ? 0 : -1
+							<Box
+								key={shown.key}
+								ref={rowRef}
+								role='menu'
+								aria-label={shown.group.text}
+								{...magnify.containerProps}
+								onBlur={event => {
+									if (
+										!event.currentTarget.contains(
+											event.relatedTarget as Node | null
+										)
+									) {
+										magnify.settle();
+									}
+								}}
+								sx={{
+									position: 'relative',
+									width: layout.width,
+									height: TILE_PX * 2 + ROW_GAP_PX
+								}}
+							>
+								{leaves.map(({ sub, icon }, index) => (
+									<FlyoutTile
+										key={sub.path}
+										ref={el => {
+											tileRefs.current[index] = el;
+										}}
+										nameRef={el => {
+											nameRefs.current[index] = el;
+										}}
+										tileLeft={layout.tiles[index]}
+										nameLeft={layout.names[index]}
+										sub={sub}
+										icon={icon}
+										index={index}
+										active={isSubLinkActive(
+											sub,
+											activePath
+										)}
+										tabIndex={index === focusIndex ? 0 : -1}
+										onClick={event => {
+											// Anything but a plain click is the browser's: a new tab
+											if (!isInAppClick(event)) {
+												return;
 											}
-											onClick={event => {
-												// Anything but a plain click is the browser's: a new tab
-												if (!isInAppClick(event)) {
-													return;
-												}
-												event.preventDefault();
-												onNavigate(sub.path!);
-												onClose();
-											}}
-											onKeyDown={event =>
-												onTileKeyDown(event, index)
+											event.preventDefault();
+											onNavigate(sub.path!);
+											onClose();
+										}}
+										onKeyDown={event =>
+											onTileKeyDown(event, index)
+										}
+										onFocus={event => {
+											setFocusIndex(index);
+											// A keyboard focus magnifies as a
+											// pointer resting on the tile would
+											const tile =
+												event.currentTarget.querySelector(
+													TILE_SELECTOR
+												);
+											if (
+												tile &&
+												event.currentTarget.matches(
+													':focus-visible'
+												)
+											) {
+												magnify.swellOn(tile);
 											}
-											onFocus={event => {
-												setFocusIndex(index);
-												// A keyboard focus magnifies
-												// as a pointer would
-												if (
-													event.currentTarget.matches(
-														':focus-visible'
-													)
-												) {
-													dock(index);
-												}
-											}}
-											onHoverStart={pointerType => {
-												if (pointerType !== 'touch') {
-													dock(index);
-												}
-											}}
-											accentColor={accentColor}
-											activeForegroundColor={
-												activeForegroundColor
-											}
-											labelColor={labelColor}
-											iconColor={iconColor}
-											isDark={isDark}
-										/>
-									))}
-								</Box>
-							</>
+										}}
+										accentColor={accentColor}
+										activeForegroundColor={
+											activeForegroundColor
+										}
+										labelColor={labelColor}
+										iconColor={iconColor}
+										surface={solidSurface}
+										isDark={isDark}
+									/>
+								))}
+							</Box>
 						) : null}
-					</GlassPanel>
+					</FlyoutStage>
 				)}
 			</Popper>
 		</>
 	);
 };
 
-/** Room around the panel for the liquid outline to bulge and stretch into. */
-const LIQUID_ROOM_Y_PX = 18;
-const LIQUID_ROOM_X_PX = 160;
-/** Room to the left of the panel, for a bubble at the row's start. */
-const LIQUID_ROOM_LEFT_PX = 14;
-/** How far apart two shapes may be and still melt into one; also how
- * round the neck where a bubble joins the bar is. */
-const LIQUID_GOO_PX = 22;
-/** Sampling along the outline: fine across the rounded ends, coarser
- * along the long edges. */
-const LIQUID_STEP_PX = 2.5;
-const LIQUID_END_STEP_PX = 1;
-
-type TileBox = { left: number; right: number; top: number; bottom: number };
-type Blob = { cx: number; cy: number; hx: number; hy: number; r: number };
-
-/** Signed distance from (x, y) to a rounded rectangle: negative inside. */
-const roundRectDistance = (x: number, y: number, b: Blob) => {
-	const qx = Math.abs(x - b.cx) - b.hx + b.r;
-	const qy = Math.abs(y - b.cy) - b.hy + b.r;
-	return (
-		Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) +
-		Math.min(Math.max(qx, qy), 0) -
-		b.r
-	);
-};
-
-/** Smooth union of two distances: shapes closer than `k` melt together,
- * joined by a neck whose curvature, too, is continuous (the cubic form —
- * the quadratic one leaves a faint crease where the neck meets the bar). */
-const smoothUnion = (a: number, b: number, k: number) => {
-	const h = Math.max(k - Math.abs(a - b), 0) / k;
-	return Math.min(a, b) - (h * h * h * k) / 6;
-};
-
-/**
- * The liquid outline of the panel, as an SVG path in the glass body's
- * coordinates. The panel's bar and a bubble around every tile that has
- * grown past it are melted together like metaballs (a smooth union of
- * their distance fields): the bar stays straight where nothing has grown,
- * each grown tile is held in a bubble of glass, and neighbouring bubbles
- * and the bar flow into one another through rounded necks. The outline is
- * traced column by column from the field, so it has no seam anywhere.
- */
-const liquidOutline = (width: number, height: number, tiles: TileBox[]) => {
-	const pad = PANEL_PADDING_PX;
-	const top = LIQUID_ROOM_Y_PX;
-	const mid = LIQUID_ROOM_Y_PX + height / 2;
-	const right = Math.max(width, ...tiles.map(tile => tile.right + pad));
-	const bar: Blob = {
-		cx: right / 2,
-		cy: mid,
-		hx: right / 2,
-		hy: height / 2,
-		r: PANEL_RADIUS_PX
-	};
-	// A bubble around each tile grown past the bar: one at rest, two while
-	// one springs back and the next grows, melting into each other and the
-	// bar so the glass flows from the old tile to the new.
-	const bubbles: Blob[] = tiles
-		.filter(tile => tile.bottom - tile.top > TILE_PX * 1.02)
-		.map(tile => ({
-			cx: (tile.left + tile.right) / 2,
-			cy: (tile.top + tile.bottom) / 2 + LIQUID_ROOM_Y_PX,
-			hx: (tile.right - tile.left) / 2 + pad,
-			hy: (tile.bottom - tile.top) / 2 + pad,
-			// Grown or not, the glass keeps its one corner
-			r: PANEL_RADIUS_PX
-		}));
-	const field = (x: number, y: number) =>
-		bubbles.reduce(
-			(d, bubble) =>
-				smoothUnion(d, roundRectDistance(x, y, bubble), LIQUID_GOO_PX),
-			roundRectDistance(x, y, bar)
-		);
-	// The outline's top (dir -1) or bottom (dir 1) at x: bisect from the
-	// middle of the bar (inside) to the edge of the room (outside)
-	const edgeAt = (x: number, dir: -1 | 1) => {
-		let inside = mid;
-		let outside = mid + dir * (height / 2 + top);
-		if (field(x, inside) > 0) {
-			return null;
-		}
-		for (let i = 0; i < 12; i += 1) {
-			const probe = (inside + outside) / 2;
-			if (field(x, probe) <= 0) {
-				inside = probe;
-			} else {
-				outside = probe;
-			}
-		}
-		return inside;
-	};
-	const minX = Math.min(0, ...bubbles.map(b => b.cx - b.hx)) - 2;
-	const maxX = Math.max(right, ...bubbles.map(b => b.cx + b.hx)) + 2;
-	const tops: Array<[number, number]> = [];
-	const bottoms: Array<[number, number]> = [];
-	for (let x = minX; x <= maxX; ) {
-		const t = edgeAt(x, -1);
-		const b = edgeAt(x, 1);
-		if (t !== null && b !== null) {
-			const px = +(x + LIQUID_ROOM_LEFT_PX).toFixed(1);
-			tops.push([px, +t.toFixed(1)]);
-			bottoms.push([px, +b.toFixed(1)]);
-		}
-		const nearEnd =
-			x - minX < PANEL_RADIUS_PX + 4 || maxX - x < PANEL_RADIUS_PX + 4;
-		x += nearEnd ? LIQUID_END_STEP_PX : LIQUID_STEP_PX;
-	}
-	if (!tops.length) {
-		return '';
-	}
-	const points = [...tops, ...bottoms.reverse()];
-	return `M ${points.map(([x, y]) => `${x} ${y}`).join(' L ')} Z`;
-};
-
-/** Fade the glass body's parts, never the body: opacity on an ancestor of
- * a backdrop-filter cuts the blur off from the page behind it. */
-const fadeBody = (
-	body: HTMLElement,
-	[from, to]: [number, number],
-	duration: number,
-	easing: string
-) => {
-	Array.from(body.children).forEach(part => {
-		if (canAnimate(part)) {
-			// Drop a fade-out still held at 0 (fill: forwards) from closing,
-			// or reopening mid-close leaves the glass invisible once the
-			// fade-in ends
-			cancelAnimations(part);
-			part.animate([{ opacity: from }, { opacity: to }], {
-				duration,
-				easing,
-				fill: to === 0 ? 'forwards' : 'none'
-			});
-		}
-	});
-};
-
-interface GlassPanelProps {
+interface FlyoutStageProps {
 	in: boolean;
 	onEnter?: () => void;
 	onExited?: () => void;
-	groupKey: string | null;
 	panelProps: SidebarFlyoutProps['panelProps'];
-	isDark: boolean;
-	solidSurface: string;
 	groupText?: string;
-	/** The glass body (layer, rim and shadow), which the motion moves. */
-	glassRef: React.RefObject<HTMLDivElement | null>;
-	/** Filled with the function that re-traces the glass around the tiles. */
-	shapeRef: React.MutableRefObject<(() => void) | null>;
 	children: React.ReactNode;
 }
 
 /**
- * The panel: a glass body (its own layer, so its shape can morph without
- * distorting the tiles) under the content. Runs the materialize, reshape and
- * dematerialize motion with the Web Animations API; with no motion support
- * (or reduced motion) it simply appears.
+ * Holds the tiles beside the rail — no surface of its own, each tile and
+ * name carries its own. Slides in as the tiles well up one after another,
+ * fades out on close, then lets Popper unmount.
  */
-const GlassPanel: React.FC<GlassPanelProps> = ({
+const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	in: inProp,
 	onEnter,
 	onExited,
-	groupKey,
 	panelProps,
-	isDark,
-	solidSurface,
 	groupText,
-	glassRef,
-	shapeRef,
 	children
 }) => {
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
-	const layerRef = React.useRef<HTMLDivElement>(null);
-	const rimPathRef = React.useRef<SVGPathElement>(null);
-	const glintPathRef = React.useRef<SVGPathElement>(null);
-	const glintRef = React.useRef<SVGRadialGradientElement>(null);
-	const lightRgb = pointerLightRgb(isDark, useGlassAccentRgb());
-	// The rim's glint where the pointer is nearest, from the layer's light
-	const onLight = React.useCallback(
-		(x: number, y: number, i: number) => {
-			glintRef.current?.setAttribute('cx', String(x));
-			glintRef.current?.setAttribute('cy', String(y));
-			if (glintPathRef.current) {
-				glintPathRef.current.style.opacity = String(
-					i *
-						(isDark
-							? POINTER_LIGHT.dark.rim
-							: POINTER_LIGHT.light.rim)
-				);
-			}
-		},
-		[isDark]
-	);
-	const shadowPathRef = React.useRef<SVGPathElement>(null);
-	const maskPathRef = React.useRef<SVGPathElement>(null);
-	const uid = `lumora-flyout-${React.useId().replace(/[^a-zA-Z0-9-]/g, '')}`;
-
-	// The liquid outline: re-traced from where the tiles really are, every
-	// frame while they move, until it has been still for a few frames.
-	const shapeFrame = React.useRef(0);
-	const stillFrames = React.useRef(0);
-	const lastShape = React.useRef('');
-	const reshape = () => {
-		const container = containerRef.current;
-		const layer = layerRef.current;
-		if (!container || !layer) {
-			return false;
-		}
-		const box = container.getBoundingClientRect();
-		// A tile grown by the dock (hover / keyboard focus) stays inside the
-		// panel, so the glass keeps its shape rather than swelling around it
-		const tiles = Array.from(
-			container.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-			el => {
-				if (el.style.scale) {
-					return null;
-				}
-				const r = el.getBoundingClientRect();
-				return {
-					left: r.left - box.left,
-					right: r.right - box.left,
-					top: r.top - box.top,
-					bottom: r.bottom - box.top
-				};
-			}
-		).filter((tile): tile is TileBox => tile !== null);
-		const d = liquidOutline(
-			container.offsetWidth,
-			container.offsetHeight,
-			tiles
-		);
-		if (d === lastShape.current) {
-			return false;
-		}
-		lastShape.current = d;
-		layer.style.clipPath = `path('${d}')`;
-		rimPathRef.current?.setAttribute('d', d);
-		glintPathRef.current?.setAttribute('d', d);
-		shadowPathRef.current?.setAttribute('d', d);
-		maskPathRef.current?.setAttribute('d', d);
-		return true;
-	};
-	const follow = () => {
-		stillFrames.current = 0;
-		if (shapeFrame.current) {
-			return;
-		}
-		const tick = () => {
-			stillFrames.current = reshape() ? 0 : stillFrames.current + 1;
-			if (stillFrames.current > 8) {
-				shapeFrame.current = 0;
-				return;
-			}
-			shapeFrame.current = requestAnimationFrame(tick);
-		};
-		shapeFrame.current = requestAnimationFrame(tick);
-	};
-	shapeRef.current = follow;
-	React.useLayoutEffect(() => {
-		reshape();
-		follow();
-		return () => {
-			cancelAnimationFrame(shapeFrame.current);
-			shapeFrame.current = 0;
-		};
-		// A new group's tiles need a new outline
-	}, [groupKey]);
-
-	const contentRef = React.useRef<HTMLDivElement>(null);
-	const size = React.useRef<{ width: number; height: number } | null>(null);
-	const mounted = React.useRef(false);
 
 	const setContainerRef = (el: HTMLDivElement | null) => {
 		containerRef.current = el;
@@ -814,165 +484,37 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 		}
 	};
 
-	const stopAll = () => {
-		cancelAnimations(glassRef.current);
-		cancelAnimations(contentRef.current);
-		cancelAnimations(containerRef.current);
-	};
-
-	// Grow out of the rail icon. Only transform and opacity move, so the
-	// browser composites every frame; the glass bends light at full strength
-	// from the first frame (animating the blur itself re-renders the page
-	// behind it each frame, which is what stutters). The panel is centred on
-	// the icon, so the glass grows from a point at the icon's centre.
-	const materialize = () => {
+	// Opening, and reopening while it was still fading out
+	React.useLayoutEffect(() => {
 		const container = containerRef.current;
-		const glass = glassRef.current;
-		const content = contentRef.current;
-		if (!canAnimate(container) || !glass || !content) {
-			return;
-		}
-		stopAll();
-		if (prefersReducedMotion()) {
-			container.animate([{ opacity: 0 }, { opacity: 1 }], {
-				duration: 160,
-				easing: 'ease-out'
-			});
-			return;
-		}
-		size.current = null;
-		glass.animate(
-			[
-				{ transform: `scale(${SEED_SCALE_X}, ${SEED_SCALE_Y})` },
-				{ transform: 'none' }
-			],
-			{ duration: morph.duration, easing: morph.easing }
-		);
-		fadeBody(glass, [0, 1], 160, 'ease-out');
-		// The light catches the new edge and sweeps across it
-		try {
-			layerRef.current?.animate(
-				[
-					{ opacity: 0, transform: 'translate(-35%, -35%)' },
-					{ opacity: 1, transform: 'none' }
-				],
-				{
-					pseudoElement: '::after',
-					duration: 760,
-					delay: 60,
-					easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-					fill: 'backwards'
-				}
-			);
-		} catch {
-			// No pseudo-element animation: the highlight is simply there
-		}
-		content.animate(
-			[
-				{ opacity: 0, transform: 'translateX(-10px) scale(0.98)' },
-				{ opacity: 1, transform: 'none' }
-			],
-			{
-				duration: settle.duration,
-				delay: 60,
-				easing: settle.easing,
-				fill: 'backwards'
+		cancelAnimations(container);
+		if (inProp) {
+			onEnter?.();
+			if (canAnimate(container) && !prefersReducedMotion()) {
+				container.animate(
+					[
+						{ opacity: 0, transform: 'translateX(-8px)' },
+						{ opacity: 1, transform: 'none' }
+					],
+					{ duration: settle.duration, easing: settle.easing }
+				);
 			}
-		);
-	};
-
-	// Draw back into the rail icon, then let Popper unmount
-	const dematerialize = () => {
-		const container = containerRef.current;
-		const glass = glassRef.current;
-		const content = contentRef.current;
-		if (!canAnimate(container) || !glass || !content) {
+			return;
+		}
+		if (!canAnimate(container)) {
 			onExited?.();
 			return;
 		}
-		stopAll();
-		if (prefersReducedMotion()) {
-			container
-				.animate([{ opacity: 1 }, { opacity: 0 }], {
-					duration: 120,
-					fill: 'forwards'
-				})
-				.finished.then(() => onExited?.())
-				.catch(() => undefined);
-			return;
-		}
-		content.animate([{ opacity: 1 }, { opacity: 0 }], {
-			duration: 90,
-			easing: 'ease-in',
-			fill: 'forwards'
-		});
-		fadeBody(glass, [1, 0], 200, 'ease-in');
-		glass
-			.animate(
-				[
-					{ transform: 'none' },
-					{ transform: `scale(${SEED_SCALE_X}, ${SEED_SCALE_Y})` }
-				],
-				{
-					duration: 220,
-					easing: 'cubic-bezier(0.5, 0, 0.75, 0)',
-					fill: 'forwards'
-				}
-			)
+		container
+			.animate([{ opacity: 1 }, { opacity: 0 }], {
+				duration: 120,
+				easing: 'ease-in',
+				fill: 'forwards'
+			})
 			.finished.then(() => onExited?.())
 			.catch(() => undefined);
-	};
-
-	// Opening, and reopening while it was still drawing back in
-	React.useLayoutEffect(() => {
-		if (!inProp) {
-			dematerialize();
-			return;
-		}
-		onEnter?.();
-		materialize();
 		// The motion runs per open/close, not per render
 	}, [inProp]);
-
-	// Remember the glass's size, so a change of group can reshape from it
-	React.useLayoutEffect(() => {
-		const container = containerRef.current;
-		if (!container) {
-			return;
-		}
-		const box = container.getBoundingClientRect();
-		const previous = size.current;
-		size.current = { width: box.width, height: box.height };
-		if (!mounted.current) {
-			mounted.current = true;
-			return;
-		}
-		// Another group while open: the same glass reshapes to fit its
-		// tiles from the size it had (a scale, so it stays composited),
-		// gliding to rest without a bounce.
-		const glass = glassRef.current;
-		if (
-			!inProp ||
-			!previous ||
-			!canAnimate(glass) ||
-			!box.width ||
-			!box.height ||
-			prefersReducedMotion()
-		) {
-			return;
-		}
-		cancelAnimations(glass);
-		glass.animate(
-			[
-				{
-					transform: `scale(${previous.width / box.width}, ${previous.height / box.height})`
-				},
-				{ transform: 'none' }
-			],
-			{ duration: glide.duration, easing: glide.easing }
-		);
-		// Only a change of group reshapes the glass
-	}, [groupKey]);
 
 	return (
 		<Box
@@ -983,8 +525,6 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 			data-group={groupText}
 			sx={{
 				position: 'relative',
-				borderRadius: `${PANEL_RADIUS_PX}px`,
-				p: `${PANEL_PADDING_PX}px`,
 				// Fills the gap to the rail so the pointer can cross it
 				// without leaving the flyout
 				'&::before': {
@@ -997,183 +537,46 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
 				}
 			}}
 		>
-			{/* The glass body: room around the panel for the liquid outline to
-			    bulge into, the outline traced by GlassPanel's shape */}
-			<Box
-				ref={glassRef}
-				aria-hidden
-				sx={{
-					position: 'absolute',
-					top: -LIQUID_ROOM_Y_PX,
-					bottom: -LIQUID_ROOM_Y_PX,
-					left: -LIQUID_ROOM_LEFT_PX,
-					right: -LIQUID_ROOM_X_PX,
-					pointerEvents: 'none',
-					// The rail icon's centre: the tile row is level with it
-					// (half the title below the panel's middle), one gap
-					// plus half the rail's padding to the left
-					transformOrigin: `${LIQUID_ROOM_LEFT_PX - SEED_ORIGIN_X_PX}px calc(50% + ${TITLE_HEIGHT_PX / 2}px)`,
-					willChange: 'transform'
-				}}
-			>
-				<svg
-					width='100%'
-					height='100%'
-					style={{
-						position: 'absolute',
-						inset: 0,
-						overflow: 'visible'
-					}}
-				>
-					<defs>
-						<filter
-							id={`${uid}-shadow`}
-							x='-20%'
-							y='-50%'
-							width='140%'
-							height='200%'
-						>
-							<feGaussianBlur stdDeviation='14' />
-						</filter>
-						{/* The shadow only outside the glass, as a box-shadow */}
-						<mask
-							id={`${uid}-outside`}
-							maskUnits='userSpaceOnUse'
-							x='-200'
-							y='-200'
-							width='4000'
-							height='1000'
-						>
-							<rect
-								x='-200'
-								y='-200'
-								width='4000'
-								height='1000'
-								fill='white'
-							/>
-							<path ref={maskPathRef} fill='black' />
-						</mask>
-					</defs>
-					<g mask={`url(#${uid}-outside)`}>
-						<path
-							ref={shadowPathRef}
-							transform='translate(0 12)'
-							fill={
-								isDark
-									? 'rgba(0, 0, 0, 0.6)'
-									: 'rgba(15, 23, 42, 0.28)'
-							}
-							filter={`url(#${uid}-shadow)`}
-						/>
-					</g>
-				</svg>
-				<GlassLayer
-					ref={layerRef}
-					isDark={isDark}
-					solid={solidSurface}
-					refract={false}
-					onLight={onLight}
-					data-testid='sidebar-flyout-glass'
-					sx={{
-						position: 'absolute',
-						inset: 0,
-						borderRadius: 0,
-						boxShadow: 'none',
-						'&::before': { display: 'none' }
-					}}
-				/>
-				<svg
-					width='100%'
-					height='100%'
-					style={{
-						position: 'absolute',
-						inset: 0,
-						overflow: 'visible'
-					}}
-				>
-					<defs>
-						<linearGradient
-							id={`${uid}-rim`}
-							x1='0'
-							y1='0'
-							x2='1'
-							y2='1'
-						>
-							<stop
-								offset='0'
-								stopColor='#ffffff'
-								stopOpacity={isDark ? 0.5 : 1}
-							/>
-							<stop
-								offset='0.25'
-								stopColor='#ffffff'
-								stopOpacity={isDark ? 0.1 : 0.5}
-							/>
-							<stop
-								offset='0.55'
-								stopColor='#ffffff'
-								stopOpacity={isDark ? 0.04 : 0.2}
-							/>
-							<stop
-								offset='1'
-								stopColor='#ffffff'
-								stopOpacity={isDark ? 0.3 : 0.9}
-							/>
-						</linearGradient>
-					</defs>
-					<path
-						ref={rimPathRef}
-						fill='none'
-						// Solid while the glass look is off: a hairline edge
-						stroke={
-							LIQUID_GLASS_ENABLED
-								? `url(#${uid}-rim)`
-								: isDark
-									? 'rgba(255, 255, 255, 0.12)'
-									: 'rgba(15, 23, 42, 0.1)'
-						}
-						strokeWidth={LIQUID_GLASS_ENABLED ? '1.25' : '1'}
-					/>
-					{/* Where the pointer's light catches the rim */}
-					<radialGradient
-						ref={glintRef}
-						id={`${uid}-glint`}
-						gradientUnits='userSpaceOnUse'
-						cx='-9999'
-						cy='-9999'
-						r='140'
-					>
-						<stop
-							offset='0'
-							stopColor={`rgb(${lightRgb})`}
-							stopOpacity='1'
-						/>
-						<stop
-							offset='1'
-							stopColor={`rgb(${lightRgb})`}
-							stopOpacity='0'
-						/>
-					</radialGradient>
-					<path
-						ref={glintPathRef}
-						fill='none'
-						stroke={`url(#${uid}-glint)`}
-						strokeWidth='1.5'
-						style={{
-							opacity: 0,
-							display: LIQUID_GLASS_ENABLED ? undefined : 'none'
-						}}
-					/>
-				</svg>
-			</Box>
-			<Box ref={contentRef} sx={{ position: 'relative' }}>
-				{children}
-			</Box>
+			{children}
 		</Box>
 	);
 };
 
+/**
+ * Where each page's tile and name sit, as left edges in the row. The rows
+ * zigzag (even pages: tile on top, name below; odd pages the other way), and
+ * a page's tile and name share one centre. Each page sits as close to the
+ * one before as both rows allow, so the tighter row keeps the gap and the
+ * other row takes up the difference.
+ */
+const zigzagLayout = (widths: number[], count: number) => {
+	const tiles: number[] = [];
+	const names: number[] = [];
+	let topEnd = -ITEM_GAP_PX;
+	let bottomEnd = -ITEM_GAP_PX;
+	for (let i = 0; i < count; i += 1) {
+		const name = widths[i] || TILE_PX;
+		const tileOnTop = i % 2 === 0;
+		const topWidth = tileOnTop ? TILE_PX : name;
+		const bottomWidth = tileOnTop ? name : TILE_PX;
+		const centre = Math.max(
+			topEnd + ITEM_GAP_PX + topWidth / 2,
+			bottomEnd + ITEM_GAP_PX + bottomWidth / 2
+		);
+		topEnd = centre + topWidth / 2;
+		bottomEnd = centre + bottomWidth / 2;
+		tiles.push(Math.round(centre - TILE_PX / 2));
+		names.push(Math.round(centre - name / 2));
+	}
+	return { tiles, names, width: Math.round(Math.max(topEnd, bottomEnd, 0)) };
+};
+
 interface FlyoutTileProps {
+	/** The name's pill, measured to pack the rows. */
+	nameRef: React.Ref<HTMLSpanElement>;
+	/** Left edges of the tile and the name in the row (`zigzagLayout`). */
+	tileLeft: number;
+	nameLeft: number;
 	sub: SidebarSubLink;
 	icon: React.ReactNode;
 	index: number;
@@ -1182,23 +585,27 @@ interface FlyoutTileProps {
 	onClick: (event: React.MouseEvent) => void;
 	onKeyDown: (event: React.KeyboardEvent) => void;
 	onFocus: (event: React.FocusEvent<HTMLAnchorElement>) => void;
-	/** The pointer arrived on the tile. */
-	onHoverStart: (pointerType: string) => void;
 	accentColor: string;
 	activeForegroundColor: string;
 	labelColor: string;
 	iconColor: string;
+	/** The flyout's surface, for the tile and its name. */
+	surface: string;
 	isDark: boolean;
 }
 
 /**
- * One compact square tile: the page's icon, its name in a glass pill that
- * pops up beneath it on hover or focus. Hovered, it becomes a glass bubble
- * and wobbles as it lands. A link to the page, so it opens in a new tab too.
+ * One page: its icon on a tile and its name on a pill, each its own card,
+ * one over the other, placed by `zigzagLayout`. The link spans the row but
+ * only its tile and name take the pointer, so neighbours never steal each
+ * other's hover. A link to the page, so it opens in a new tab too.
  */
 const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 	(
 		{
+			nameRef,
+			tileLeft,
+			nameLeft,
 			sub,
 			icon,
 			index,
@@ -1207,58 +614,40 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			onClick,
 			onKeyDown,
 			onFocus,
-			onHoverStart,
 			accentColor,
 			activeForegroundColor,
 			labelColor,
 			iconColor,
+			surface,
 			isDark
 		},
 		ref
 	) => {
-		const accentRgb = useGlassAccentRgb();
-		const labelSurface = React.useContext(SidebarSurfaceContext);
-		// The glow follows the pointer across the tile, as light from a
-		// fingertip; written to CSS variables so moving does not re-render.
-		const onPointerMove = (event: React.PointerEvent<HTMLElement>) => {
-			const rect = event.currentTarget.getBoundingClientRect();
-			event.currentTarget.style.setProperty(
-				'--mx',
-				`${((event.clientX - rect.left) / rect.width) * 100}%`
-			);
-			event.currentTarget.style.setProperty(
-				'--my',
-				`${((event.clientY - rect.top) / rect.height) * 100}%`
-			);
+		const nameOnTop = index % 2 === 1;
+		const card = glassLabelSx(isDark, surface);
+		const enter = {
+			animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
+			animationDelay: `${index * TILE_STAGGER_MS}ms`,
+			[REDUCED_MOTION]: { animation: 'none' }
 		};
-		// A bubble landing: squash, stretch, settle. On `transform`, which
-		// the browser applies inside the dock's `scale`, so the two compose.
-		const onMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
-			const el = event.currentTarget;
-			if (!canAnimate(el) || prefersReducedMotion()) {
-				return;
-			}
-			el.animate(
-				[
-					{ transform: 'scale(1, 1)' },
-					{ transform: 'scale(1.04, 0.96)', offset: 0.22 },
-					{ transform: 'scale(0.98, 1.025)', offset: 0.5 },
-					{ transform: 'scale(1.01, 0.995)', offset: 0.75 },
-					{ transform: 'scale(1, 1)' }
-				],
-				{ duration: 560, easing: 'ease-out' }
-			);
+		// The current page: the accent, solid, its icon and text in the
+		// accent's foreground — as the current page on the rail
+		const fill = {
+			background: accentColor,
+			color: activeForegroundColor,
+			'& .MuiSvgIcon-root': { color: activeForegroundColor }
 		};
-		// The name at a constant size, however much the dock has grown the tile
-		const nameShown = {
-			opacity: 1,
-			scale: 'calc(1 / var(--dock-scale, 1))'
+		// Hovered or focused, the tile and its name take the rail's hover
+		// colour — a tint of the accent, whatever the accent is — mixed into
+		// the surface so it is solid rather than see-through
+		const hover = {
+			background: `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`
 		};
-		const bubble = {
-			...glassBubbleSx(isDark, accentRgb),
-			'&::before': { opacity: 1 },
-			'& [data-tile-name]': nameShown
+		const lit = {
+			'& [data-flyout-tile], & [data-flyout-name]': active ? {} : hover
 		};
+		// Cards of their own: a surface and a soft shadow, no edge
+		const cardSx = { ...card, border: 'none' };
 		return (
 			<ButtonBase
 				ref={ref}
@@ -1272,85 +661,96 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				onClick={onClick}
 				onKeyDown={onKeyDown}
 				onFocus={onFocus}
-				onPointerMove={onPointerMove}
-				onMouseEnter={onMouseEnter}
-				onPointerEnter={event => onHoverStart(event.pointerType)}
 				disableRipple
 				sx={{
-					position: 'relative',
-					flexShrink: 0,
-					width: TILE_PX,
-					height: TILE_PX,
-					borderRadius: `${TILE_RADIUS_PX}px`,
-					color: active ? activeForegroundColor : labelColor,
-					bgcolor: active ? accentColor : 'transparent',
-					// The current page is tinted glass, not a flat fill
-					...(active ? glassTintSx(accentColor, isDark) : {}),
-					transition: `translate ${glide.duration}ms ${glide.easing}, scale ${glide.duration}ms ${glide.easing}, background 160ms ease, box-shadow 160ms ease`,
-					// Wells up into place, each after the one before
-					animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
-					animationDelay: `${TILE_BASE_DELAY_MS + index * TILE_STAGGER_MS}ms`,
-					'& .MuiSvgIcon-root': {
-						fontSize: FLOATING_RAIL_ICON_PX,
-						color: active ? activeForegroundColor : iconColor
-					},
-					'&::before': {
-						content: '""',
+					position: 'absolute',
+					inset: 0,
+					display: 'block',
+					pointerEvents: 'none',
+					'& [data-flyout-tile], & [data-flyout-slot]': {
 						position: 'absolute',
-						inset: 0,
-						borderRadius: 'inherit',
-						pointerEvents: 'none',
-						opacity: 0,
-						transition: 'opacity 160ms ease',
-						// The pointer's glow on the tile (glass look only)
-						background: LIQUID_GLASS_ENABLED
-							? `radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, ${isDark ? 0.18 : 0.7}), transparent 65%)`
-							: 'none'
+						pointerEvents: 'auto'
 					},
-					// The current page keeps its accent fill; it still glows
-					'&:hover': active
-						? {
-								'&::before': { opacity: 1 },
-								'& [data-tile-name]': nameShown
-							}
-						: bubble,
-					'&:active': { transform: 'scale(0.9)' },
+					color: labelColor,
+					textDecoration: 'none',
+					'&:hover': lit,
 					'&.Mui-focusVisible': {
-						...(active ? {} : bubble),
-						'& [data-tile-name]': nameShown,
-						outline: '2px solid',
-						outlineColor: accentColor,
-						outlineOffset: 2
+						...lit,
+						'& [data-flyout-tile]': {
+							...(active ? {} : hover),
+							outline: '2px solid',
+							outlineColor: accentColor,
+							outlineOffset: 2
+						}
 					},
+					'&:active [data-flyout-tile]': { transform: 'scale(0.94)' },
 					[REDUCED_MOTION]: {
-						animation: 'none',
-						transition: 'none',
-						'&:active': { transform: 'none' }
+						'&:active [data-flyout-tile]': { transform: 'none' }
 					}
 				}}
 			>
-				<Box sx={{ position: 'relative', display: 'flex' }}>{icon}</Box>
-				{/* The name: a glass pill beneath the tile on hover or focus */}
 				<Box
-					component='span'
-					data-tile-name
+					data-flyout-tile=''
 					sx={{
-						...glassLabelSx(isDark, labelSurface),
-						position: 'absolute',
-						top: '100%',
-						left: '50%',
-						translate: '-50% 8px',
-						transformOrigin: 'top center',
-						whiteSpace: 'nowrap',
-						pointerEvents: 'none',
-						opacity: 0,
-						scale: 'calc(0.6 / var(--dock-scale, 1))',
-						transition: `opacity 140ms ease, scale ${glide.duration}ms ${glide.easing}`,
-						zIndex: 1,
-						[REDUCED_MOTION]: { transition: 'opacity 140ms ease' }
+						...cardSx,
+						left: tileLeft,
+						top: nameOnTop ? TILE_PX + ROW_GAP_PX : 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						boxSizing: 'border-box',
+						width: TILE_PX,
+						height: TILE_PX,
+						p: 0,
+						borderRadius: `${TILE_RADIUS_PX}px`,
+						// Grows out of the row, away from its name
+						transformOrigin: nameOnTop
+							? 'center top'
+							: 'center bottom',
+						transition: `scale ${glide.duration}ms ${glide.easing}, ${TILE_TRANSITION}`,
+						'& .MuiSvgIcon-root': {
+							fontSize: TILE_ICON_PX,
+							color: iconColor,
+							transition: 'color 160ms ease'
+						},
+						...(active ? fill : {}),
+						...enter
 					}}
 				>
-					{sub.text}
+					{icon}
+				</Box>
+				{/* The name, centred in a row as tall as a tile */}
+				<Box
+					data-flyout-slot=''
+					sx={{
+						left: nameLeft,
+						top: nameOnTop ? 0 : TILE_PX + ROW_GAP_PX,
+						height: TILE_PX,
+						display: 'flex',
+						alignItems: 'center'
+					}}
+				>
+					<Box
+						component='span'
+						ref={nameRef}
+						data-flyout-name=''
+						sx={{
+							...cardSx,
+							px: 1,
+							py: '3px',
+							fontSize: '0.75rem',
+							lineHeight: '18px',
+							borderRadius: '6px',
+							whiteSpace: 'nowrap',
+							fontWeight: active ? 600 : 500,
+							...(active ? fill : {}),
+							transition:
+								'background 160ms ease, color 160ms ease',
+							...enter
+						}}
+					>
+						{sub.text}
+					</Box>
 				</Box>
 			</ButtonBase>
 		);

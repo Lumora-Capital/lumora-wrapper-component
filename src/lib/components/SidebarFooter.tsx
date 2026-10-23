@@ -60,7 +60,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		wasCompact.current = compact;
 	}, [compact]);
 
-	// On the floating rail the avatar's button matches the 40px icon buttons
+	// On the floating rail the avatar's button matches the 44px icon buttons
 	const onGlassRail = React.useContext(RailGlassContext);
 
 	if (!showNotifications && !showProfile) {
@@ -98,7 +98,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 								gap: 1.25,
 								p: compact
 									? onGlassRail
-										? '2px'
+										? '4px'
 										: 0.5
 									: '6px 8px',
 								justifyContent: 'flex-start',

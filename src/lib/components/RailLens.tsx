@@ -21,7 +21,7 @@ import {
 
 /** Marks a rail icon the lens can rest on (any button in the rail is one). */
 export const RAIL_ITEM_ATTR = 'data-rail-item';
-const RAIL_ITEM_SELECTOR = `[${RAIL_ITEM_ATTR}], button, [role="button"]`;
+export const RAIL_ITEM_SELECTOR = `[${RAIL_ITEM_ATTR}], button, [role="button"]`;
 
 /**
  * True inside the glass rail. Controls that live in it but are built

@@ -115,12 +115,9 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 		colorFor(contentBackgroundColor, themeMode),
 		isDark
 	);
-	const resolvedPadding = resolveContentPadding(
-		contentPadding,
-		hostTheme
-	);
+	const resolvedPadding = resolveContentPadding(contentPadding, hostTheme);
 
-	// The floating rail's own geometry: a 36px brand 12px down, then 40px
+	// The floating rail's own geometry: a 36px brand 12px down, then 44px
 	// items 4px apart, each glyph 20px, so the icons land where the
 	// placeholders stood
 	const railIcons = floatingRail ? (
@@ -250,16 +247,23 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 					{content ?? (
 						<>
 							<Skeleton variant='text' width={220} height={40} />
-							<Skeleton variant='text' width={320} sx={{ mb: 3 }} />
+							<Skeleton
+								variant='text'
+								width={320}
+								sx={{ mb: 3 }}
+							/>
 							<Stack direction='row' spacing={2} sx={{ mb: 3 }}>
-								{Array.from({ length: isMobile ? 2 : 4 }, (_, i) => (
-									<Skeleton
-										key={i}
-										variant='rounded'
-										height={96}
-										sx={{ flex: 1 }}
-									/>
-								))}
+								{Array.from(
+									{ length: isMobile ? 2 : 4 },
+									(_, i) => (
+										<Skeleton
+											key={i}
+											variant='rounded'
+											height={96}
+											sx={{ flex: 1 }}
+										/>
+									)
+								)}
 							</Stack>
 							<Skeleton variant='rounded' height={360} />
 						</>

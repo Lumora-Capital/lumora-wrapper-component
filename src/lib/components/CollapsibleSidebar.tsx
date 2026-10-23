@@ -17,6 +17,7 @@ import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	RAIL_ITEM_ATTR,
+	RAIL_ITEM_SELECTOR,
 	RailGlassContext,
 	useActiveGlass,
 	useRailLens
@@ -41,9 +42,11 @@ import {
 import {
 	FLOATING_RAIL_GAP_PX,
 	FLOATING_RAIL_ICON_PX,
-	FLOATING_RAIL_ITEM_PX
+	FLOATING_RAIL_ITEM_PX,
+	FLOATING_RAIL_WIDTH_PX
 } from './shellLayout';
 import useFlyoutIntent from './useFlyoutIntent';
+import { useDockMagnify } from './useDockMagnify';
 
 const DEFAULT_EXPANDED_WIDTH_PX = 264;
 const DEFAULT_COLLAPSED_WIDTH_PX = 72;
@@ -170,11 +173,12 @@ const ROW_LABEL_WEIGHT = 600;
 const railGap = `${FLOATING_RAIL_GAP_PX}px`;
 
 /** The floating rail's side padding, matching its top content and footer. */
-const FLOATING_RAIL_INSET_PX = 6;
+const FLOATING_RAIL_INSET_PX =
+	(FLOATING_RAIL_WIDTH_PX - FLOATING_RAIL_ITEM_PX) / 2;
 
 /**
  * The floating rail scroller's side padding for a bar `bar` px wide. The
- * bar takes the right padding's place; up to the 6px inset the gaps either
+ * bar takes the right padding's place; up to the inset the gaps either
  * side of the column stay equal. A wider bar leaves less room than the
  * column needs, so the left padding gives way by the same amount.
  */
@@ -410,6 +414,28 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
+	// The Dock's magnification down the rail: the glyphs swell around the
+	// pointer, inside buttons that keep their size
+	const railMagnify = useDockMagnify(navRef, {
+		enabled: useFlyout,
+		axis: 'y',
+		itemSelector: RAIL_ITEM_SELECTOR,
+		// The glyph alone: a count badge keeps its size and place
+		glyphSelector: '.MuiAvatar-root, .MuiSvgIcon-root'
+	});
+	// Both settle when the rail scrolls its items out from under them
+	const railContainerProps = {
+		...railLens.containerProps,
+		...railMagnify.containerProps,
+		...(useFlyout
+			? {
+					onScrollCapture: () => {
+						railLens.containerProps.onScrollCapture?.();
+						railMagnify.settle();
+					}
+				}
+			: {})
+	};
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
 		isDark,
@@ -961,14 +987,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						// rather than a fill of its own under the lens
 						bgcolor: groupActive ? activeAccent : 'transparent',
 						...glassRailIconSx(groupActive),
-						// The icon sits 4px left of centre so the arrow keeps
-						// a gap to it and to the hover edge
-						pl: '4px',
-						pr: '12px',
+						// The icon stays centred, in line with every other
+						// icon down the rail; the arrow sits in the room
+						// beside it
 						'&::after': {
 							content: '""',
 							position: 'absolute',
-							right: 4,
+							right: 3,
 							top: '50%',
 							transform: 'translateY(-50%)',
 							borderStyle: 'solid',
@@ -1283,7 +1308,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		<RailGlassContext.Provider value={useFlyout}>
 			<Box
 				ref={navRef}
-				{...railLens.containerProps}
+				{...railContainerProps}
 				component='nav'
 				aria-label='Main sidebar'
 				data-testid='collapsible-sidebar'
@@ -1380,7 +1405,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							},
 						// On the floating rail the bar (when it takes space at
 						// all) stands in for the right padding, and the left
-						// padding follows it, so the 40px column keeps equal
+						// padding follows it, so the 44px column keeps equal
 						// gaps in the capsule whether the bar is classic,
 						// overlay or absent. (The inline collapsed rail keeps
 						// its padding: its open groups tint the full row width.)

@@ -1,8 +1,9 @@
 import * as React from 'react';
 
-/** Pause before a hover opens a flyout, so sweeping the pointer down the
- * rail doesn't flash one open for every group it crosses. */
-export const FLYOUT_OPEN_DELAY_MS = 100;
+/** Pause before a hover opens a flyout: long enough that sweeping the
+ * pointer down the rail doesn't flash one open for every group it crosses,
+ * short enough that resting on a group opens it at once. */
+export const FLYOUT_OPEN_DELAY_MS = 50;
 /** Grace after the pointer leaves the icon or the flyout before it closes,
  * so a diagonal path from the icon to a tile doesn't drop it. */
 export const FLYOUT_CLOSE_DELAY_MS = 250;
