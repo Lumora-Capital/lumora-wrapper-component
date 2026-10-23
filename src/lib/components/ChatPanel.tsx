@@ -57,6 +57,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 	fullScreenBottom = '0px',
 	onClose
 }) => {
+	// Opened before the first paint (the host keeps the chat open on this page, and it is loading):
+	// it stands in place at once, where the host's loading skeleton kept room for it, rather than
+	// sliding in over a page that has already appeared. Opened later, it slides in as ever.
+	const paintedRef = React.useRef(false);
+	React.useEffect(() => {
+		const frame = requestAnimationFrame(() => {
+			paintedRef.current = true;
+		});
+		return () => cancelAnimationFrame(frame);
+	}, []);
+
 	React.useEffect(() => {
 		if (!open || !onClose) {
 			return undefined;
@@ -128,7 +139,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
 	// Slides in from the right edge when docked; grows from its corner when floating
 	return docked ? (
-		<Slide direction='left' in={open} mountOnEnter>
+		<Slide
+			direction='left'
+			in={open}
+			mountOnEnter
+			{...(paintedRef.current ? {} : { timeout: { enter: 0 } })}
+		>
 			{panel}
 		</Slide>
 	) : (
