@@ -925,8 +925,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		}
 	};
 
-	// A group on the flyout rail: its icon alone, with a small corner notch
-	// marking that it holds pages. Hovering (or clicking) opens the flyout;
+	// A group on the flyout rail: its icon alone, with a small arrow on its
+	// right edge pointing to where its pages open. Hovering (or clicking) opens the flyout;
 	// the icon stays highlighted while it is open, and takes the accent when
 	// the current page is one of its pages.
 	const renderFlyoutGroup = (link: SidebarLink) => {
@@ -961,15 +961,20 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						// rather than a fill of its own under the lens
 						bgcolor: groupActive ? activeAccent : 'transparent',
 						...glassRailIconSx(groupActive),
+						// The icon sits 4px left of centre so the arrow keeps
+						// a gap to it and to the hover edge
+						pl: '4px',
+						pr: '12px',
 						'&::after': {
 							content: '""',
 							position: 'absolute',
-							right: 5,
-							bottom: 5,
+							right: 4,
+							top: '50%',
+							transform: 'translateY(-50%)',
 							borderStyle: 'solid',
-							borderWidth: '0 0 5px 5px',
+							borderWidth: '4px 0 4px 5px',
 							borderColor:
-								'transparent transparent currentColor transparent',
+								'transparent transparent transparent currentColor',
 							opacity: 0.55
 						},
 						...FOCUS_OUTLINE_FIX

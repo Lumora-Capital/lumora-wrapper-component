@@ -242,8 +242,7 @@ export default PlatformMenu;
 
 /**
  * The logo as the platform dropdown's toggle: a small corner notch on the
- * mark — the notch the rail puts on a group that holds pages — and the
- * dropdown itself. The hover sidebar counts anything in its React tree as
+ * mark, and the dropdown itself. The hover sidebar counts anything in its React tree as
  * inside it, so a menu rendered from here keeps the sidebar open under it.
  * The wrapper can draw the logo in more than one place (sidebar, phone top
  * bar); each copy opens the menu only for a click on its own brand.
