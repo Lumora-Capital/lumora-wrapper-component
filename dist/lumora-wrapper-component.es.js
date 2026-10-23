@@ -943,7 +943,7 @@ const xo = ({
         // dock grows pops out past it.
         p: `${rn}px`,
         borderRadius: `${Qn + rn}px`,
-        bgcolor: i ? "rgba(24, 30, 40, 0.45)" : "rgba(236, 239, 243, 0.45)",
+        bgcolor: i ? "rgba(24, 30, 40, 0.65)" : "rgba(236, 239, 243, 0.65)",
         // A deep, soft shadow lifts it off the page
         boxShadow: i ? "0 24px 56px -12px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.35)" : "0 24px 56px -12px rgba(15, 23, 42, 0.38), 0 4px 12px rgba(15, 23, 42, 0.08)",
         // Fills the gap to the rail so the pointer can cross it

@@ -548,8 +548,8 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 				p: `${STAGE_PADDING_PX}px`,
 				borderRadius: `${TILE_RADIUS_PX + STAGE_PADDING_PX}px`,
 				bgcolor: isDark
-					? 'rgba(24, 30, 40, 0.45)'
-					: 'rgba(236, 239, 243, 0.45)',
+					? 'rgba(24, 30, 40, 0.65)'
+					: 'rgba(236, 239, 243, 0.65)',
 				// A deep, soft shadow lifts it off the page
 				boxShadow: isDark
 					? '0 24px 56px -12px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.35)'
