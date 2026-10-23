@@ -32,6 +32,8 @@ const TILE_RADIUS_PX = GLASS_RADIUS_PX;
 const TILE_SELECTOR = '[data-flyout-tile]';
 /** A page's column: its tile and its name, one above the other. */
 const ROW_GAP_PX = 4;
+/** A name wider than this wraps onto two lines (two at most). */
+const NAME_MAX_PX = 104;
 /** The space between neighbours along each row. */
 const ITEM_GAP_PX = 6;
 /** Everything else a tile animates, kept while the dock drives its scale. */
@@ -780,9 +782,17 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 							px: 1,
 							py: '3px',
 							fontSize: '0.75rem',
-							lineHeight: '18px',
+							lineHeight: '16px',
 							borderRadius: '6px',
-							whiteSpace: 'nowrap',
+							// A long name wraps onto a second line, split
+							// evenly, so it stays as compact as its tile
+							maxWidth: NAME_MAX_PX,
+							textAlign: 'center',
+							textWrap: 'balance',
+							display: '-webkit-box',
+							WebkitBoxOrient: 'vertical',
+							WebkitLineClamp: 2,
+							overflow: 'hidden',
 							fontWeight: active ? 600 : 500,
 							...(active ? fill : {}),
 							transition:
