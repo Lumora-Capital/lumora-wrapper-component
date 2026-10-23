@@ -542,18 +542,14 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 			data-group={groupText}
 			sx={{
 				position: 'relative',
-				// Frosted glass behind the tiles alone, so they read clearly
-				// over whatever the page has there; the rest of the page is
-				// left untouched. A tile the dock grows pops out past it.
+				// A light, see-through panel behind the tiles alone (not
+				// frosted); the rest of the page is left untouched. A tile the
+				// dock grows pops out past it.
 				p: `${STAGE_PADDING_PX}px`,
 				borderRadius: `${TILE_RADIUS_PX + STAGE_PADDING_PX}px`,
-				// Mostly see-through: the blur does the separating, the tint
-				// only a little
 				bgcolor: isDark
 					? 'rgba(24, 30, 40, 0.45)'
 					: 'rgba(236, 239, 243, 0.45)',
-				backdropFilter: 'blur(16px) saturate(160%)',
-				WebkitBackdropFilter: 'blur(16px) saturate(160%)',
 				// A deep, soft shadow lifts it off the page
 				boxShadow: isDark
 					? '0 24px 56px -12px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.35)'
