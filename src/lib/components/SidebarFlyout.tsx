@@ -34,8 +34,6 @@ const TILE_SELECTOR = '[data-flyout-tile]';
 const ROW_GAP_PX = 4;
 /** The space between neighbours along each row. */
 const ITEM_GAP_PX = 6;
-/** Up to this many pages sit in one row; more zigzag over two. */
-const SINGLE_ROW_MAX = 4;
 /** Everything else a tile animates, kept while the dock drives its scale. */
 const TILE_TRANSITION =
 	'background 160ms ease, color 160ms ease, transform 120ms ease';
@@ -414,7 +412,6 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										sub={sub}
 										icon={icon}
 										index={index}
-										count={leaves.length}
 										active={isSubLinkActive(
 											sub,
 											activePath
@@ -578,13 +575,9 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	);
 };
 
-/**
- * Whether a page's name sits above its tile. A small group is one row —
- * every tile on top, its name beneath — and a larger one zigzags (odd pages
- * flip) to stay short.
- */
-const nameOnTopAt = (index: number, count: number) =>
-	count > SINGLE_ROW_MAX && index % 2 === 1;
+/** Whether a page's name sits above its tile: every other page's, so the
+ * rows zigzag. */
+const nameOnTopAt = (index: number) => index % 2 === 1;
 
 /**
  * Where each page's tile and name sit, as left edges in the row (tiles in
@@ -600,7 +593,7 @@ const zigzagLayout = (widths: number[], count: number) => {
 	let bottomEnd = -ITEM_GAP_PX;
 	for (let i = 0; i < count; i += 1) {
 		const name = widths[i] || TILE_PX;
-		const tileOnTop = !nameOnTopAt(i, count);
+		const tileOnTop = !nameOnTopAt(i);
 		const topWidth = tileOnTop ? TILE_PX : name;
 		const bottomWidth = tileOnTop ? name : TILE_PX;
 		const centre = Math.max(
@@ -624,8 +617,6 @@ interface FlyoutTileProps {
 	sub: SidebarSubLink;
 	icon: React.ReactNode;
 	index: number;
-	/** How many pages the group has (a small one is a single row). */
-	count: number;
 	active: boolean;
 	tabIndex: number;
 	onClick: (event: React.MouseEvent) => void;
@@ -655,7 +646,6 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			sub,
 			icon,
 			index,
-			count,
 			active,
 			tabIndex,
 			onClick,
@@ -670,7 +660,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		},
 		ref
 	) => {
-		const nameOnTop = nameOnTopAt(index, count);
+		const nameOnTop = nameOnTopAt(index);
 		const card = glassLabelSx(isDark, surface);
 		const enter = {
 			animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,

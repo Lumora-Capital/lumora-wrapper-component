@@ -212,7 +212,7 @@ describe('flyout submenus', () => {
 		expect(isOpen('CRM')).toBe(false);
 	});
 
-	it('lays a small group out in one row, names under their tiles', () => {
+	it('zigzags even a small group, each name centred on its tile', () => {
 		renderRail();
 		hoverOpen('CRM');
 		const tops = screen
@@ -221,7 +221,11 @@ describe('flyout submenus', () => {
 				getComputedStyle(item.querySelector('[data-flyout-tile]')!).top,
 				getComputedStyle(item.querySelector('[data-flyout-slot]')!).top
 			]);
-		expect(new Set(tops.map(([tile]) => tile))).toEqual(new Set(['0px']));
+		expect(tops.map(([tile]) => tile === '0px')).toEqual([
+			true,
+			false,
+			true
+		]);
 		expect(tops.every(([tile, name]) => tile !== name)).toBe(true);
 	});
 
