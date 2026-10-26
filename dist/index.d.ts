@@ -434,6 +434,11 @@ export declare interface LumoraWrapperProps {
      */
     onProfileClick?: () => void;
     /**
+     * `panel` account menu: a "My AI usage" link beside "View profile", for
+     * the signed-in user's own AI usage page.
+     */
+    onAiUsageClick?: () => void;
+    /**
      * @deprecated The `panel` account menu no longer has a Settings card;
      * ignored. Link to a settings page from `userMenuItems` instead.
      */

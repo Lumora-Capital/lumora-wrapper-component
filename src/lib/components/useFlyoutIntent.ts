@@ -11,7 +11,7 @@ export const FLYOUT_CLOSE_DELAY_MS = 250;
 export type FlyoutState = {
 	/** `nodeKey` of the group whose flyout is open. */
 	key: string;
-	/** Opened by a click or the keyboard: stays open when the pointer leaves. */
+	/** Opened by the keyboard: stays open when the pointer leaves. */
 	pinned: boolean;
 	/** Opened by the keyboard: the first tile takes focus. */
 	focusFirst: boolean;
@@ -20,8 +20,9 @@ export type FlyoutState = {
 /**
  * Open state of the rail's submenu flyouts. A hover opens the group's flyout
  * after a short pause; once one is open, hovering another group switches to
- * it at once, like a menu bar. A click (or Enter / Space / →) pins it open
- * until a tile is chosen, a click lands outside, or Escape.
+ * it at once, like a menu bar. A pointer click on the icon changes nothing;
+ * the keyboard (Enter / Space / →) pins it open until a tile is chosen, a
+ * click lands outside, or Escape.
  */
 const useFlyoutIntent = (enabled: boolean) => {
 	const [state, setState] = React.useState<FlyoutState | null>(null);
@@ -147,17 +148,17 @@ const useFlyoutIntent = (enabled: boolean) => {
 		onMouseLeave: scheduleClose,
 		onClick: (event: React.MouseEvent) => {
 			// Enter / Space arrive as a click with no pointer (`detail` 0):
-			// open and move into the tiles. A pointer click pins the flyout,
-			// or closes it when it is already pinned.
+			// open and move into the tiles, pinned for the keyboard.
 			if (event.detail === 0) {
 				open(key, true, true);
 				return;
 			}
-			const current = stateRef.current;
-			if (current?.key === key && current.pinned) {
-				close();
-			} else {
-				open(key, true);
+			// A pointer click is not an action of its own: hover has the
+			// flyout already, and pinning it kept it from closing. Only one
+			// that beats the hover's pause (or a tap, with no hover) opens it,
+			// unpinned, as the hover would have.
+			if (stateRef.current?.key !== key) {
+				open(key, false);
 			}
 		},
 		onKeyDown: (event: React.KeyboardEvent) => {

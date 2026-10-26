@@ -74,6 +74,8 @@ export interface PanelSidebarProps {
 	whatsNewCount?: number;
 	/** Makes the account menu's user header open the profile. */
 	onProfileClick?: () => void;
+	/** Adds a "My AI usage" link beside "View profile" in the account menu. */
+	onAiUsageClick?: () => void;
 	/** Host rows in the account menu (Settings, help…), below Theme. */
 	menuItems?: UserMenuItem[];
 	onLogout?: () => void;
@@ -126,6 +128,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	onNotificationsClick,
 	whatsNewCount = 0,
 	onProfileClick,
+	onAiUsageClick,
 	menuItems,
 	onLogout,
 	theme: themeMode = 'light',
@@ -317,6 +320,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					theme={themeMode}
 					onThemeToggle={onThemeToggle}
 					onProfileClick={onProfileClick}
+					onAiUsageClick={onAiUsageClick}
 					onLinkClick={onLinkClick}
 					menuItems={menuItems}
 					onLogout={onLogout}

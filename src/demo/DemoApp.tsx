@@ -350,6 +350,7 @@ const DemoApp = () => {
 					// `panel` variant: the profile header; its other rows come
 					// from userMenuItems
 					onProfileClick={() => setActivePath('/profile')}
+					onAiUsageClick={() => setActivePath('/profile/ai-usage')}
 					whatsNewCount={1}
 					showNotifications={settings.showNotifications}
 					notificationCount={26}

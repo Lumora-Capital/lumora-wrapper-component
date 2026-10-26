@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
+import { DOCK_FOLLOW_MS } from './useDockMagnify';
 import {
 	GLIDE_SPRING,
 	canAnimate,
@@ -216,12 +217,9 @@ export const useGlassLens = ({
 		if (!canAnimate(el) || prefersReducedMotion()) {
 			return;
 		}
-		// Wells up from a slightly smaller drop, without a wobble
+		// Arriving, it only fades in, at the size of the item under it: a
+		// well-up of its own would pop against the item's swell
 		if (from === null || box.instant) {
-			el.animate([{ scale: '0.85' }, { scale: '1' }], {
-				duration: glide.duration,
-				easing: glide.easing
-			});
 			return;
 		}
 		// A slight stretch along the way, in proportion to the distance
@@ -231,10 +229,15 @@ export const useGlassLens = ({
 			return;
 		}
 		el.animate(
+			// On `transform`, which composes with the swell's `scale` rather
+			// than overriding it (that snapped the drop back to 1 mid-swell)
 			[
-				{ scale: '1 1' },
-				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.35 },
-				{ scale: '1 1' }
+				{ transform: 'scale(1, 1)' },
+				{
+					transform: `scale(${1 - stretch / 2}, ${1 + stretch})`,
+					offset: 0.35
+				},
+				{ transform: 'scale(1, 1)' }
 			],
 			{ duration: glide.duration, easing: 'ease-out' }
 		);
@@ -267,12 +270,15 @@ export const useGlassLens = ({
 					translate: `${box.left}px ${box.top}px`,
 					// Shrinks away as it fades; wells back up on return. Swells
 					// with the item under it (useDockMagnify)
-					scale: box.visible ? 'var(--dock-max-scale, 1)' : '0.7',
+					// Fades in and out at its item's size, never popping from smaller
+					scale: 'var(--dock-max-scale, 1)',
 					opacity: box.visible ? 1 : 0,
 					pointerEvents: 'none',
+					// Its scale on the item's own timing, swelling and settling
+					// (useDockMagnify), so the two move as one
 					transition: box.instant
-						? 'opacity 160ms ease, scale 220ms ease'
-						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease`,
+						? `opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`,
 					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
 				}}
 			/>
@@ -498,10 +504,15 @@ export const useActiveGlass = ({
 			return;
 		}
 		el.animate(
+			// On `transform`, which composes with the swell's `scale` rather
+			// than overriding it (that snapped the drop back to 1 mid-swell)
 			[
-				{ scale: '1 1' },
-				{ scale: `${1 - stretch / 2} ${1 + stretch}`, offset: 0.35 },
-				{ scale: '1 1' }
+				{ transform: 'scale(1, 1)' },
+				{
+					transform: `scale(${1 - stretch / 2}, ${1 + stretch})`,
+					offset: 0.35
+				},
+				{ transform: 'scale(1, 1)' }
 			],
 			{ duration: glide.duration, easing: 'ease-out' }
 		);
@@ -525,12 +536,15 @@ export const useActiveGlass = ({
 					height: box.height,
 					translate: `${box.left}px ${box.top}px`,
 					// Swells with its item (useDockMagnify)
-					scale: box.visible ? 'var(--dock-active-scale, 1)' : '0.7',
+					// Fades in and out at its item's size, never popping from smaller
+					scale: 'var(--dock-active-scale, 1)',
 					opacity: box.visible ? 1 : 0,
 					pointerEvents: 'none',
+					// Its scale on the item's own timing, swelling and settling
+					// (useDockMagnify), so the two move as one
 					transition: box.instant
-						? 'opacity 160ms ease, scale 220ms ease'
-						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale 220ms ease`,
+						? `opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`,
 					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
 				}}
 			/>

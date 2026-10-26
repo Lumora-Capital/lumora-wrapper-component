@@ -127,6 +127,41 @@ describe('PanelSidebar account menu', () => {
 			).toBeNull();
 		});
 
+		it('with onAiUsageClick, shows "View profile · My AI usage" as two links in a static header', async () => {
+			const onProfileClick = jest.fn();
+			const onAiUsageClick = jest.fn();
+			renderPanel({ onProfileClick, onAiUsageClick });
+			openMenu();
+			const header = screen.getByTestId('account-menu-header');
+			expect(header.tagName).not.toBe('BUTTON');
+			const links = within(header).getByTestId('account-menu-links');
+			expect(
+				within(links).getByTestId('account-menu-view-profile')
+			).toHaveTextContent('View profile');
+			fireEvent.click(within(links).getByTestId('account-menu-ai-usage'));
+			expect(onAiUsageClick).toHaveBeenCalledTimes(1);
+			expect(onProfileClick).not.toHaveBeenCalled();
+			await expectMenuClosed();
+		});
+
+		it('with onAiUsageClick, the View profile link still opens the profile', async () => {
+			const onProfileClick = jest.fn();
+			renderPanel({ onProfileClick, onAiUsageClick: jest.fn() });
+			openMenu();
+			fireEvent.click(screen.getByTestId('account-menu-view-profile'));
+			expect(onProfileClick).toHaveBeenCalledTimes(1);
+			await expectMenuClosed();
+		});
+
+		it('shows My AI usage alone without onProfileClick', () => {
+			renderPanel({ onProfileClick: undefined, onAiUsageClick: jest.fn() });
+			openMenu();
+			expect(screen.getByTestId('account-menu-ai-usage')).toBeInTheDocument();
+			expect(
+				screen.queryByTestId('account-menu-view-profile')
+			).toBeNull();
+		});
+
 		it('omits the header email line when no email is given', () => {
 			renderPanel({ userEmail: undefined });
 			openMenu();

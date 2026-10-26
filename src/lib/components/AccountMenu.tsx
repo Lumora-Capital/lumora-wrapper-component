@@ -208,6 +208,11 @@ export interface AccountMenuProps {
 	onThemeToggle?: () => void;
 	/** Makes the user header a link, with a "View profile" hint on hover. */
 	onProfileClick?: () => void;
+	/**
+	 * Adds a "My AI usage" link beside "View profile". The header then holds
+	 * the two as separate links, always shown, instead of being one button.
+	 */
+	onAiUsageClick?: () => void;
 	/** Navigates menu items that carry a `path` and no `onClick`. */
 	onLinkClick?: (path: string) => void;
 	/** Host rows between Theme and Log out, in the given order. */
@@ -240,6 +245,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	theme: themeMode,
 	onThemeToggle,
 	onProfileClick,
+	onAiUsageClick,
 	onLinkClick,
 	menuItems = [],
 	onLogout,
@@ -304,6 +310,59 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 		'& .MuiTypography-root': { fontSize: 14, lineHeight: '20px' }
 	} as const;
 
+	// "View profile · My AI usage": with onAiUsageClick the header has two
+	// destinations, so each is its own link and the header itself is static.
+	const linkSx = {
+		fontSize: 12,
+		lineHeight: '18px',
+		letterSpacing: '0.02em',
+		fontWeight: 600,
+		// White on dark: the accent is too dim against a dark surface
+		color: isDark ? '#ffffff' : accentColor,
+		borderRadius: '4px',
+		'&:hover': {
+			textDecoration: 'underline',
+			textUnderlineOffset: '2px'
+		},
+		'&.Mui-focusVisible': {
+			boxShadow: `0 0 0 2px ${alpha(accentColor, 0.6)}`
+		},
+		...FOCUS_OUTLINE_FIX
+	} as const;
+	const headerLinks = onAiUsageClick ? (
+		<Stack
+			direction='row'
+			data-testid='account-menu-links'
+			sx={{ alignItems: 'center', gap: 0.75, mt: 0.25 }}
+		>
+			{onProfileClick ? (
+				<>
+					<ButtonBase
+						onClick={() => closeMenuThen(onProfileClick)}
+						data-testid='account-menu-view-profile'
+						sx={linkSx}
+					>
+						View profile
+					</ButtonBase>
+					<Box
+						component='span'
+						aria-hidden
+						sx={{ color: 'text.disabled', fontSize: 12 }}
+					>
+						·
+					</Box>
+				</>
+			) : null}
+			<ButtonBase
+				onClick={() => closeMenuThen(onAiUsageClick)}
+				data-testid='account-menu-ai-usage'
+				sx={linkSx}
+			>
+				My AI usage
+			</ButtonBase>
+		</Stack>
+	) : null;
+
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
 	// It sits outside the MenuList, so it's reached with Tab.
@@ -340,7 +399,8 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 						{roleLabel}
 					</Typography>
 				) : null}
-				{onProfileClick ? (
+				{headerLinks}
+				{onProfileClick && !onAiUsageClick ? (
 					<Typography
 						noWrap
 						variant='caption'
@@ -444,7 +504,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					}
 				>
 					{menuLens.lens}
-					{onProfileClick ? (
+					{onProfileClick && !onAiUsageClick ? (
 						<ButtonBase
 							onClick={() => closeMenuThen(onProfileClick)}
 							data-testid='account-menu-header'

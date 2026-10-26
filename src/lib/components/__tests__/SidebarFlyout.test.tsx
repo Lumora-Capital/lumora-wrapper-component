@@ -146,14 +146,25 @@ describe('flyout submenus', () => {
 		expect(isOpen('CRM')).toBe(false);
 	});
 
-	it('pins on click until clicked again', () => {
+	it('does nothing on a click of an open group’s icon: no pin, no close', () => {
+		renderRail();
+		hoverOpen('CRM');
+		pointerClick(trigger('CRM'));
+		expect(isOpen('CRM')).toBe(true);
+		pointerClick(trigger('CRM'));
+		expect(isOpen('CRM')).toBe(true);
+		// Still closes as the pointer leaves, as a hovered flyout does
+		fireEvent.mouseLeave(trigger('CRM'));
+		advance(FLYOUT_CLOSE_DELAY_MS);
+		expect(isOpen('CRM')).toBe(false);
+	});
+
+	it('opens unpinned on a click that beats the hover (or a tap)', () => {
 		renderRail();
 		pointerClick(trigger('CRM'));
 		expect(isOpen('CRM')).toBe(true);
 		fireEvent.mouseLeave(trigger('CRM'));
-		advance(FLYOUT_CLOSE_DELAY_MS * 2);
-		expect(isOpen('CRM')).toBe(true);
-		pointerClick(trigger('CRM'));
+		advance(FLYOUT_CLOSE_DELAY_MS);
 		expect(isOpen('CRM')).toBe(false);
 	});
 

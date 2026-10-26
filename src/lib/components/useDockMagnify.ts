@@ -172,6 +172,12 @@ export const useDockMagnify = (
 			carrier.style.translate = '';
 		});
 		moved.current.clear();
+		// What is drawn behind the items settles on their timing too. Kept
+		// after the settle: the next swell sets its own
+		containerRef.current?.style.setProperty(
+			'--dock-scale-timing',
+			`${glide.duration}ms ${glide.easing}`
+		);
 		containerRef.current?.style.removeProperty('--dock-spread');
 		containerRef.current?.style.removeProperty('--dock-max-scale');
 		containerRef.current?.style.removeProperty('--dock-active-scale');
@@ -199,6 +205,10 @@ export const useDockMagnify = (
 		// For what is drawn behind the items rather than in them (the rail's
 		// hover lens, on the item under the pointer, and its current page's
 		// fill), so it swells with them
+		container.style.setProperty(
+			'--dock-scale-timing',
+			`${DOCK_FOLLOW_MS}ms ease-out`
+		);
 		container.style.setProperty(
 			'--dock-max-scale',
 			Math.max(1, ...row.map(({ scale }) => scale)).toFixed(3)

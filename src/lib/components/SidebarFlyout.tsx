@@ -59,6 +59,8 @@ const ANCHOR_SWELL_SCALE = 1.08;
  * MUI drawers and menus, which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
 const PANEL_Z_INDEX = 1195;
+/** The tiles' fade as the flyout closes. */
+const EXIT_FADE_MS = 120;
 
 const morph = springTiming(MORPH_SPRING);
 const glide = springTiming(GLIDE_SPRING);
@@ -606,6 +608,11 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 		}
 	};
 
+	// Whether it is meant to be open now: a close that ends late or is
+	// cancelled still unmounts, unless it has been reopened since
+	const inRef = React.useRef(inProp);
+	inRef.current = inProp;
+
 	// Opening, and reopening while it was still fading out
 	React.useLayoutEffect(() => {
 		const container = containerRef.current;
@@ -627,14 +634,26 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 			onExited?.();
 			return;
 		}
+		// Popper unmounts the tiles only on onExited, so it must come: not only
+		// when the fade finishes, but when it is cancelled or never reports
+		// back (a navigation or a hidden tab mid-fade), else the tiles stayed
+		// on the page with the dim already gone
+		let exited = false;
+		const exit = () => {
+			if (!exited && !inRef.current) {
+				exited = true;
+				onExited?.();
+			}
+		};
+		const fallback = setTimeout(exit, EXIT_FADE_MS + 100);
 		container
 			.animate([{ opacity: 1 }, { opacity: 0 }], {
-				duration: 120,
+				duration: EXIT_FADE_MS,
 				easing: 'ease-in',
 				fill: 'forwards'
 			})
-			.finished.then(() => onExited?.())
-			.catch(() => undefined);
+			.finished.then(exit, exit);
+		return () => clearTimeout(fallback);
 		// The motion runs per open/close, not per render
 	}, [inProp]);
 
