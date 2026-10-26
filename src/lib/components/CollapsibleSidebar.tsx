@@ -147,6 +147,10 @@ const GROUP_ARROW_MASK = `url("data:image/svg+xml,${encodeURIComponent(
 	"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 8'><path d='M0.5 0.9L4.1 4L0.5 7.1Z' stroke='black' stroke-width='1' stroke-linejoin='round'/></svg>"
 )}")`;
 
+/** How far the group arrow sits past its button's right edge: within the
+ * floating rail's 10px gutter. */
+const GROUP_ARROW_OUTSET_PX = 4;
+
 /** Small up/down chevron marking a parent on the narrow rails. */
 const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 	open,
@@ -177,6 +181,9 @@ const ROW_LABEL_WEIGHT = 600;
  * (brand, top content, links, bottom group, footer) takes it once in place of
  * its own padding. */
 const railGap = `${FLOATING_RAIL_GAP_PX}px`;
+/** How far the rail's button under the pointer swells (the flyout's tiles
+ * go further: there is room around them). */
+const RAIL_MAX_SCALE = 1.4;
 
 /** The floating rail's side padding, matching its top content and footer. */
 const FLOATING_RAIL_INSET_PX =
@@ -427,16 +434,19 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
-	// The Dock's magnification down the rail: the glyphs swell around the
-	// pointer, inside buttons that keep their size
+	// The Dock's magnification down the rail, as the flyout's tiles have it:
+	// each button swells whole around the pointer, its hover lens and
+	// current-page fill with it (RailLens). Less than the tiles, and in
+	// place: nothing slides, so the rail's groups never run into each other
 	const railMagnify = useDockMagnify(navRef, {
 		enabled: useFlyout,
 		axis: 'y',
 		itemSelector: RAIL_ITEM_SELECTOR,
-		// The glyph alone, whatever draws it (an icon, an avatar, the brand's
-		// logo image, Ask Nexa's own SVG): a count badge keeps its size and
-		// place
-		glyphSelector: '.MuiAvatar-root, [role="img"], svg'
+		maxScale: RAIL_MAX_SCALE,
+		// One button's pitch: the one under the pointer swells, its
+		// neighbours only as the pointer crosses over to them
+		reach: FLOATING_RAIL_ITEM_PX + FLOATING_RAIL_GAP_PX,
+		transition: `transform ${railGel.duration}ms ${railGel.easing}, background-color 160ms ease`
 	});
 	// Both settle when the rail scrolls its items out from under them
 	const railContainerProps = {
@@ -1012,14 +1022,22 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						'&::after': {
 							content: '""',
 							position: 'absolute',
-							right: 3,
+							// Just past the button, in the rail's side gutter,
+							// clear of the icon
+							right: -GROUP_ARROW_OUTSET_PX,
 							top: '50%',
 							transform: 'translateY(-50%)',
 							width: 5,
 							height: 8,
 							bgcolor: groupArrowColor ?? 'currentColor',
 							mask: `${GROUP_ARROW_MASK} center / contain no-repeat`,
-							opacity: groupArrowColor ? 1 : 0.55
+							opacity: groupArrowColor ? 1 : 0.55,
+							transition: 'opacity 160ms ease'
+						},
+						// Pointed at, or its pages already out: the arrow has
+						// said its piece
+						'&:hover::after, &[data-open="true"]::after': {
+							opacity: 0
 						},
 						...FOCUS_OUTLINE_FIX
 					}}

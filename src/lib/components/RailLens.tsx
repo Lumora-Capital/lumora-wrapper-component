@@ -265,8 +265,9 @@ export const useGlassLens = ({
 					// `scale`: the well-up and stretch then scale the drop in
 					// place instead of scaling its offset.
 					translate: `${box.left}px ${box.top}px`,
-					// Shrinks away as it fades; wells back up on return
-					scale: box.visible ? '1' : '0.7',
+					// Shrinks away as it fades; wells back up on return. Swells
+					// with the item under it (useDockMagnify)
+					scale: box.visible ? 'var(--dock-max-scale, 1)' : '0.7',
 					opacity: box.visible ? 1 : 0,
 					pointerEvents: 'none',
 					transition: box.instant
@@ -523,7 +524,8 @@ export const useActiveGlass = ({
 					width: box.width,
 					height: box.height,
 					translate: `${box.left}px ${box.top}px`,
-					scale: box.visible ? '1' : '0.7',
+					// Swells with its item (useDockMagnify)
+					scale: box.visible ? 'var(--dock-active-scale, 1)' : '0.7',
 					opacity: box.visible ? 1 : 0,
 					pointerEvents: 'none',
 					transition: box.instant

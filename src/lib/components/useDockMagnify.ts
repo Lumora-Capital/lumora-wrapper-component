@@ -5,22 +5,20 @@ import {
 	springTiming
 } from './glassMotion';
 
-/** The item nearest the pointer grows to this (a 20px rail glyph to 32px). */
+/** The item nearest the pointer grows to this, within its button on the rail. */
 export const DOCK_MAX_SCALE = 1.6;
 /** How far the swell reaches either side of the pointer: about two and a
  * half rail items. */
 export const DOCK_REACH_PX = 110;
 /** Short enough to track the pointer, long enough to smooth each frame. */
-const FOLLOW_MS = 110;
+export const DOCK_FOLLOW_MS = 110;
 
 const glide = springTiming(GLIDE_SPRING);
 
-/** 1 at the pointer, easing to 0 at `DOCK_REACH_PX`: a cosine bell, so the
- * swell has no corner at its peak or its edges. */
-export const dockFalloff = (distance: number) =>
-	distance >= DOCK_REACH_PX
-		? 0
-		: (1 + Math.cos((Math.PI * distance) / DOCK_REACH_PX)) / 2;
+/** 1 at the pointer, easing to 0 at `reach`: a cosine bell, so the swell
+ * has no corner at its peak or its edges. */
+export const dockFalloff = (distance: number, reach = DOCK_REACH_PX) =>
+	distance >= reach ? 0 : (1 + Math.cos((Math.PI * distance) / reach)) / 2;
 
 export type DockMagnifyOptions = {
 	enabled: boolean;
@@ -37,6 +35,9 @@ export type DockMagnifyOptions = {
 	transition?: string;
 	/** The most the nearest item grows; `DOCK_MAX_SCALE` by default. */
 	maxScale?: number;
+	/** How far the swell reaches from the pointer; `DOCK_REACH_PX` by
+	 * default. One item's pitch keeps it to the item under the pointer. */
+	reach?: number;
 	/**
 	 * Make room as the Dock does: the items after a grown one slide on by
 	 * its growth, so the gaps along the row hold and its start stays put.
@@ -70,6 +71,7 @@ export const useDockMagnify = (
 		glyphSelector,
 		transition,
 		maxScale = DOCK_MAX_SCALE,
+		reach = DOCK_REACH_PX,
 		carrierSelector
 	}: DockMagnifyOptions
 ) => {
@@ -105,6 +107,11 @@ export const useDockMagnify = (
 		const c = container.getBoundingClientRect();
 		return Array.from(container.querySelectorAll<HTMLElement>(itemSelector))
 			.filter(item => {
+				// The outermost item only: one inside another grows with it
+				const outer = item.parentElement?.closest(itemSelector);
+				if (outer && container.contains(outer)) {
+					return false;
+				}
 				const r = item.getBoundingClientRect();
 				const along = centreOf(item);
 				const centreX = axis === 'x' ? along : r.left + r.width / 2;
@@ -166,6 +173,8 @@ export const useDockMagnify = (
 		});
 		moved.current.clear();
 		containerRef.current?.style.removeProperty('--dock-spread');
+		containerRef.current?.style.removeProperty('--dock-max-scale');
+		containerRef.current?.style.removeProperty('--dock-active-scale');
 	};
 
 	const swell = (container: HTMLElement, x: number, y: number) => {
@@ -174,8 +183,9 @@ export const useDockMagnify = (
 			const centre = centreOf(item);
 			const scale =
 				1 +
-				(capOf(item, glyph) - 1) * dockFalloff(Math.abs(at - centre));
-			glyph.style.transition = `scale ${FOLLOW_MS}ms ease-out${extra}`;
+				(capOf(item, glyph) - 1) *
+					dockFalloff(Math.abs(at - centre), reach);
+			glyph.style.transition = `scale ${DOCK_FOLLOW_MS}ms ease-out${extra}`;
 			if (scale > 1.001) {
 				glyph.style.scale = scale.toFixed(3);
 				grown.current.add(glyph);
@@ -184,8 +194,20 @@ export const useDockMagnify = (
 				grown.current.delete(glyph);
 			}
 			const size = axis === 'x' ? item.offsetWidth : item.offsetHeight;
-			return { item, centre, growth: (scale - 1) * size };
+			return { item, centre, scale, growth: (scale - 1) * size };
 		});
+		// For what is drawn behind the items rather than in them (the rail's
+		// hover lens, on the item under the pointer, and its current page's
+		// fill), so it swells with them
+		container.style.setProperty(
+			'--dock-max-scale',
+			Math.max(1, ...row.map(({ scale }) => scale)).toFixed(3)
+		);
+		const current = row.find(({ item }) => item.dataset.active === 'true');
+		container.style.setProperty(
+			'--dock-active-scale',
+			(current?.scale ?? 1).toFixed(3)
+		);
 		if (!carrierSelector) {
 			return;
 		}
@@ -205,7 +227,7 @@ export const useDockMagnify = (
 					other.centre < centre ? sum + other.growth : sum,
 				growth / 2
 			);
-			carrier.style.transition = `translate ${FOLLOW_MS}ms ease-out`;
+			carrier.style.transition = `translate ${DOCK_FOLLOW_MS}ms ease-out`;
 			if (Math.abs(slide) > 0.1) {
 				carrier.style.translate =
 					axis === 'x'

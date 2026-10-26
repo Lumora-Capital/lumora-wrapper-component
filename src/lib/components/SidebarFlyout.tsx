@@ -21,13 +21,15 @@ import {
 	glassLabelSx,
 	tileIn
 } from './liquidGlass';
-import { useDockMagnify } from './useDockMagnify';
+import { DOCK_FOLLOW_MS, useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Each page's icon tile: a step up from the rail's buttons, room for its
  * larger glyph. */
 const TILE_PX = 52;
 const TILE_ICON_PX = 36;
+/** How far the tile under the pointer swells. */
+const TILE_MAX_SCALE = 1.8;
 /** Round tiles: a circle as wide as the tile. */
 const TILE_RADIUS_PX = TILE_PX / 2;
 const TILE_SELECTOR = '[data-flyout-tile]';
@@ -35,10 +37,10 @@ const TILE_SELECTOR = '[data-flyout-tile]';
 const ROW_GAP_PX = 4;
 /** One line of a name: the names' row is never shorter. */
 const NAME_LINE_PX = 16;
-/** A name wider than this wraps onto two lines (two at most). */
+/** A name wider than this wraps onto further lines. */
 const NAME_MAX_PX = 104;
 /** The space between neighbours along each row. */
-const ITEM_GAP_PX = 6;
+const ITEM_GAP_PX = 24;
 /** Everything else a tile animates, kept while the dock drives its scale. */
 const TILE_TRANSITION =
 	'background 160ms ease, color 160ms ease, transform 120ms ease';
@@ -46,6 +48,8 @@ const TILE_TRANSITION =
 const PANEL_GAP_PX = 10;
 /** The frosted panel's padding around the tiles. */
 const STAGE_PADDING_PX = 10;
+/** The group's name, this far above the tiles' row. */
+const HEADING_GAP_PX = STAGE_PADDING_PX + 2;
 /** The tiles well up one after another. */
 const TILE_STAGGER_MS = 18;
 /** How far the group's rail icon swells as its tiles open: a gentler gel
@@ -230,9 +234,60 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		axis: 'x',
 		itemSelector: TILE_SELECTOR,
 		transition: TILE_TRANSITION,
-		// Grown as far as the rail's icons, so the neighbours make room
+		// A bigger swell than the rail's: the tiles are the destination
+		maxScale: TILE_MAX_SCALE,
+		// The neighbours make room as it grows
 		carrierSelector: '[role="menuitem"]'
 	});
+
+	// The heading moves only when a tile would reach it: one that grows up
+	// out of the row (its name below it) and, slid along by the dock, still
+	// sits under the heading's span. It follows the scales the dock writes,
+	// watched from the moment it mounts (Popper mounts the row after this
+	// component's effects have run, so a ref callback rather than an effect).
+	const stopFollowing = React.useRef<() => void>(undefined);
+	const headingRef = React.useCallback((heading: HTMLElement | null) => {
+		stopFollowing.current?.();
+		stopFollowing.current = undefined;
+		const row = heading?.parentElement;
+		if (!heading || !row || typeof MutationObserver === 'undefined') {
+			return;
+		}
+		const follow = () => {
+			let rise = 0;
+			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
+				if (tile.offsetTop > 0) {
+					return;
+				}
+				const scale = parseFloat(tile.style.scale) || 1;
+				const slide =
+					parseFloat(
+						tile.closest<HTMLElement>('[role="menuitem"]')?.style
+							.translate ?? ''
+					) || 0;
+				const left =
+					tile.offsetLeft + slide - ((scale - 1) * TILE_PX) / 2;
+				if (left < heading.offsetWidth) {
+					rise = Math.max(
+						rise,
+						(scale - 1) * TILE_PX - HEADING_GAP_PX
+					);
+				}
+			});
+			const next = rise > 0 ? `0 ${(-rise).toFixed(1)}px` : '';
+			// It is inside the row it watches: write only a change
+			if (heading.style.translate !== next) {
+				heading.style.translate = next;
+			}
+		};
+		const observer = new MutationObserver(follow);
+		observer.observe(row, {
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['style']
+		});
+		stopFollowing.current = () => observer.disconnect();
+	}, []);
 
 	// The rows are packed by their names' widths (see `zigzagLayout`). Measured
 	// before paint, and again if the names change size (a web font
@@ -266,7 +321,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		nameSizes.map(([w]) => w),
 		leaves.length
 	);
-	// The names' row: as tall as the tallest name (two lines when one wraps)
+	// The names' row: as tall as the tallest name, however many lines
 	const nameRowPx = Math.max(NAME_LINE_PX, ...nameSizes.map(([, h]) => h));
 
 	// Roving focus: one tile in the tab order, arrows move between them
@@ -391,31 +446,6 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 					>
 						{shown ? (
 							<Box
-								key={`${shown.key}-heading`}
-								aria-hidden
-								data-testid='sidebar-flyout-heading'
-								sx={{
-									// Above the tiles, so they stay centred on the
-									// rail icon; the row's name already labels it
-									position: 'absolute',
-									bottom: '100%',
-									left: STAGE_PADDING_PX,
-									mb: '2px',
-									whiteSpace: 'nowrap',
-									pointerEvents: 'none',
-									fontSize: '0.75rem',
-									fontWeight: 600,
-									letterSpacing: '0.08em',
-									textTransform: 'uppercase',
-									// The pages' own name colour
-									color: glassLabelSx(isDark).color
-								}}
-							>
-								{shown.group.text}
-							</Box>
-						) : null}
-						{shown ? (
-							<Box
 								key={shown.key}
 								ref={rowRef}
 								role='menu'
@@ -441,6 +471,36 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 									[REDUCED_MOTION]: { transition: 'none' }
 								}}
 							>
+								<Box
+									component='span'
+									ref={headingRef}
+									aria-hidden
+									data-testid='sidebar-flyout-heading'
+									sx={{
+										// Above the tiles, so they stay centred on the
+										// rail icon; the row's name already labels it.
+										// It rises only when a swelling tile would
+										// reach it (see the effect on `headingRef`)
+										position: 'absolute',
+										bottom: '100%',
+										left: 0,
+										mb: `${HEADING_GAP_PX}px`,
+										transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
+										[REDUCED_MOTION]: {
+											transition: 'none'
+										},
+										whiteSpace: 'nowrap',
+										pointerEvents: 'none',
+										fontSize: '0.75rem',
+										fontWeight: 600,
+										letterSpacing: '0.08em',
+										textTransform: 'uppercase',
+										// The pages' own name colour
+										color: glassLabelSx(isDark).color
+									}}
+								>
+									{shown.group.text}
+								</Box>
 								{leaves.map(({ sub, icon }, index) => (
 									<FlyoutTile
 										key={sub.path}
@@ -854,15 +914,12 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 							py: 0,
 							fontSize: '0.75rem',
 							lineHeight: '16px',
-							// A long name wraps onto a second line, split
-							// evenly, so it stays as compact as its tile
+							// A long name wraps, split evenly, so it stays as
+							// compact as its tile; never cut short
 							maxWidth: NAME_MAX_PX,
 							textAlign: 'center',
 							textWrap: 'balance',
-							display: '-webkit-box',
-							WebkitBoxOrient: 'vertical',
-							WebkitLineClamp: 2,
-							overflow: 'hidden',
+							display: 'block',
 							fontWeight: active ? 600 : 500,
 							// Room for the bold it turns on hover, held from
 							// the start, so the measured width (and with it
