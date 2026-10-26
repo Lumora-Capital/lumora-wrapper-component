@@ -35,8 +35,12 @@ const TILE_RADIUS_PX = TILE_PX / 2;
 const TILE_SELECTOR = '[data-flyout-tile]';
 /** A page's column: its tile and its name, one above the other. */
 const ROW_GAP_PX = 4;
-/** One line of a name: the names' row is never shorter. */
-const NAME_LINE_PX = 16;
+/** The names' bands above and below the tiles: two lines each, the same
+ * either side so the tiles stay level with the rail icon. A longer name
+ * bleeds past its band rather than moving the tiles. */
+const NAME_BAND_PX = 32;
+/** The tiles' row, below the names above them. */
+const TILE_TOP_PX = NAME_BAND_PX + ROW_GAP_PX;
 /** A name wider than this wraps onto further lines. */
 const NAME_MAX_PX = 104;
 /** The space between neighbours along each row. */
@@ -256,9 +260,13 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			return;
 		}
 		const follow = () => {
+			// Centred on the row: its left edge is half its width before the
+			// point it is placed at
+			const headingLeft = heading.offsetLeft - heading.offsetWidth / 2;
+			const headingRight = headingLeft + heading.offsetWidth;
 			let rise = 0;
 			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
-				if (tile.offsetTop > 0) {
+				if (tile.dataset.flyoutGrows !== 'up') {
 					return;
 				}
 				const scale = parseFloat(tile.style.scale) || 1;
@@ -269,10 +277,13 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 					) || 0;
 				const left =
 					tile.offsetLeft + slide - ((scale - 1) * TILE_PX) / 2;
-				if (left < heading.offsetWidth) {
+				if (
+					left < headingRight &&
+					left + scale * TILE_PX > headingLeft
+				) {
 					rise = Math.max(
 						rise,
-						(scale - 1) * TILE_PX - HEADING_GAP_PX
+						(scale - 1) * TILE_PX - tile.offsetTop - HEADING_GAP_PX
 					);
 				}
 			});
@@ -291,20 +302,19 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		stopFollowing.current = () => observer.disconnect();
 	}, []);
 
-	// The rows are packed by their names' widths (see `zigzagLayout`). Measured
-	// before paint, and again if the names change size (a web font
+	// The pages are spaced by their names' widths (see `alternatingLayout`).
+	// Measured before paint, and again if the names change size (a web font
 	// arriving).
 	const nameRefs = React.useRef<Array<HTMLElement | null>>([]);
-	const [nameSizes, setNameSizes] = React.useState<number[][]>([]);
+	const [nameWidths, setNameWidths] = React.useState<number[]>([]);
 	React.useLayoutEffect(() => {
 		const measure = () => {
-			const next = leaves.map((_, i) => [
-				nameRefs.current[i]?.offsetWidth ?? 0,
-				nameRefs.current[i]?.offsetHeight ?? 0
-			]);
-			setNameSizes(prev =>
+			const next = leaves.map(
+				(_, i) => nameRefs.current[i]?.offsetWidth ?? 0
+			);
+			setNameWidths(prev =>
 				prev.length === next.length &&
-				prev.every(([w, h], i) => w === next[i][0] && h === next[i][1])
+				prev.every((w, i) => w === next[i])
 					? prev
 					: next
 			);
@@ -319,12 +329,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			.forEach(el => el && observer.observe(el));
 		return () => observer.disconnect();
 	}, [leaves]);
-	const layout = zigzagLayout(
-		nameSizes.map(([w]) => w),
-		leaves.length
-	);
-	// The names' row: as tall as the tallest name, however many lines
-	const nameRowPx = Math.max(NAME_LINE_PX, ...nameSizes.map(([, h]) => h));
+	const layout = alternatingLayout(nameWidths, leaves.length);
 
 	// Roving focus: one tile in the tab order, arrows move between them
 	const tileRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
@@ -465,7 +470,11 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 								sx={{
 									position: 'relative',
 									width: layout.width,
-									height: TILE_PX + ROW_GAP_PX + nameRowPx,
+									height:
+										TILE_TOP_PX +
+										TILE_PX +
+										ROW_GAP_PX +
+										NAME_BAND_PX,
 									// The panel stretches as the dock pushes
 									// the pages along, as the Dock's shelf does
 									mr: 'var(--dock-spread, 0px)',
@@ -479,13 +488,15 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 									aria-hidden
 									data-testid='sidebar-flyout-heading'
 									sx={{
-										// Above the tiles, so they stay centred on the
-										// rail icon; the row's name already labels it.
-										// It rises only when a swelling tile would
-										// reach it (see the effect on `headingRef`)
+										// Above the tiles and centred over them, so
+										// they stay centred on the rail icon; the
+										// row's name already labels it. It rises only
+										// when a swelling tile would reach it (see the
+										// effect on `headingRef`)
 										position: 'absolute',
 										bottom: '100%',
-										left: 0,
+										left: '50%',
+										transform: 'translateX(-50%)',
 										mb: `${HEADING_GAP_PX}px`,
 										transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
 										[REDUCED_MOTION]: {
@@ -493,8 +504,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										},
 										whiteSpace: 'nowrap',
 										pointerEvents: 'none',
-										fontSize: '0.75rem',
-										fontWeight: 600,
+										fontSize: '1.125rem',
+										fontWeight: 700,
 										letterSpacing: '0.08em',
 										textTransform: 'uppercase',
 										// The pages' own name colour
@@ -514,7 +525,6 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										}}
 										tileLeft={layout.tiles[index]}
 										nameLeft={layout.names[index]}
-										nameRowPx={nameRowPx}
 										sub={sub}
 										icon={icon}
 										index={index}
@@ -687,51 +697,52 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 };
 
 /** Whether a page's name sits above its tile: every other page's, so the
- * rows zigzag. */
+ * names alternate above and below one level row of tiles. */
 const nameOnTopAt = (index: number) => index % 2 === 1;
 
 /**
  * Where each page's tile and name sit, as left edges in the row (tiles in
- * one row, names in the other; see `nameOnTopAt`). A page's tile and name
- * share one centre. Each page sits as close to the
- * one before as both rows allow, so the tighter row keeps the gap and the
- * other row takes up the difference.
+ * one row, names alternating above and below it; see `nameOnTopAt`). A
+ * page's tile and name share one centre. Each page sits as close to the one
+ * before as its tile and its band of names allow: a long name reaches over
+ * its neighbours' columns, whose names are in the other band.
  */
-const zigzagLayout = (widths: number[], count: number) => {
+const alternatingLayout = (widths: number[], count: number) => {
 	const tiles: number[] = [];
 	const names: number[] = [];
+	let tileEnd = -ITEM_GAP_PX;
 	let topEnd = -ITEM_GAP_PX;
 	let bottomEnd = -ITEM_GAP_PX;
-	// The rows interlock (a tile reaches into the other row's band), so
-	// neighbouring tiles keep the gap between them too
-	let tileEnd = -ITEM_GAP_PX;
 	for (let i = 0; i < count; i += 1) {
 		const name = widths[i] || TILE_PX;
-		const tileOnTop = !nameOnTopAt(i);
-		const topWidth = tileOnTop ? TILE_PX : name;
-		const bottomWidth = tileOnTop ? name : TILE_PX;
+		const onTop = nameOnTopAt(i);
+		const bandEnd = onTop ? topEnd : bottomEnd;
 		const centre = Math.max(
-			topEnd + ITEM_GAP_PX + topWidth / 2,
-			bottomEnd + ITEM_GAP_PX + bottomWidth / 2,
-			tileEnd + ITEM_GAP_PX + TILE_PX / 2
+			tileEnd + ITEM_GAP_PX + TILE_PX / 2,
+			bandEnd + ITEM_GAP_PX + name / 2
 		);
-		topEnd = centre + topWidth / 2;
-		bottomEnd = centre + bottomWidth / 2;
 		tileEnd = centre + TILE_PX / 2;
+		if (onTop) {
+			topEnd = centre + name / 2;
+		} else {
+			bottomEnd = centre + name / 2;
+		}
 		tiles.push(Math.round(centre - TILE_PX / 2));
 		names.push(Math.round(centre - name / 2));
 	}
-	return { tiles, names, width: Math.round(Math.max(topEnd, bottomEnd, 0)) };
+	return {
+		tiles,
+		names,
+		width: Math.round(Math.max(tileEnd, topEnd, bottomEnd, 0))
+	};
 };
 
 interface FlyoutTileProps {
 	/** The name's pill, measured to pack the rows. */
 	nameRef: React.Ref<HTMLSpanElement>;
-	/** Left edges of the tile and the name in the row (`zigzagLayout`). */
+	/** Left edges of the tile and the name in the row (`alternatingLayout`). */
 	tileLeft: number;
 	nameLeft: number;
-	/** The height of the names' row: the rows interlock by it. */
-	nameRowPx: number;
 	sub: SidebarSubLink;
 	icon: React.ReactNode;
 	index: number;
@@ -752,7 +763,7 @@ interface FlyoutTileProps {
 
 /**
  * One page: its icon on a tile and its name on a pill, each its own card,
- * one over the other, placed by `zigzagLayout`. The link spans the row but
+ * one over the other, placed by `alternatingLayout`. The link spans the row but
  * only its tile and name take the pointer, so neighbours never steal each
  * other's hover. A link to the page, so it opens in a new tab too.
  */
@@ -762,7 +773,6 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			nameRef,
 			tileLeft,
 			nameLeft,
-			nameRowPx,
 			sub,
 			icon,
 			index,
@@ -875,10 +885,11 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				/>
 				<Box
 					data-flyout-tile=''
+					data-flyout-grows={nameOnTop ? 'down' : 'up'}
 					sx={{
 						...cardSx,
 						left: tileLeft,
-						top: nameOnTop ? nameRowPx + ROW_GAP_PX : 0,
+						top: TILE_TOP_PX,
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
@@ -909,15 +920,16 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				>
 					{icon}
 				</Box>
-				{/* The name, centred in a row as tall as a tile */}
+				{/* The name, in its band above or below the tiles */}
 				<Box
 					data-flyout-slot=''
 					sx={{
 						left: nameLeft,
-						top: nameOnTop ? 0 : TILE_PX + ROW_GAP_PX,
-						height: nameRowPx,
+						top: nameOnTop ? 0 : TILE_TOP_PX + TILE_PX + ROW_GAP_PX,
+						height: NAME_BAND_PX,
 						display: 'flex',
-						// Held against its own tile, not floating mid-row
+						// Held against its own tile, not floating mid-band; a
+						// name too long for the band bleeds away from the tile
 						alignItems: nameOnTop ? 'flex-end' : 'flex-start'
 					}}
 				>

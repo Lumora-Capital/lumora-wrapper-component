@@ -223,24 +223,29 @@ describe('flyout submenus', () => {
 		expect(isOpen('CRM')).toBe(false);
 	});
 
-	it('zigzags even a small group, each name centred on its tile', () => {
+	const tops = () =>
+		screen.getAllByRole('menuitem').map(item => ({
+			tile: getComputedStyle(item.querySelector('[data-flyout-tile]')!)
+				.top,
+			name: parseFloat(
+				getComputedStyle(item.querySelector('[data-flyout-slot]')!).top
+			)
+		}));
+
+	it('keeps the tiles level and alternates the names above and below', () => {
 		renderRail();
 		hoverOpen('CRM');
-		const tops = screen
-			.getAllByRole('menuitem')
-			.map(item => [
-				getComputedStyle(item.querySelector('[data-flyout-tile]')!).top,
-				getComputedStyle(item.querySelector('[data-flyout-slot]')!).top
-			]);
-		expect(tops.map(([tile]) => tile === '0px')).toEqual([
-			true,
+		const rows = tops();
+		expect(new Set(rows.map(({ tile }) => tile)).size).toBe(1);
+		const tile = parseFloat(rows[0].tile);
+		expect(rows.map(({ name }) => name < tile)).toEqual([
 			false,
-			true
+			true,
+			false
 		]);
-		expect(tops.every(([tile, name]) => tile !== name)).toBe(true);
 	});
 
-	it('zigzags a larger group over two rows', () => {
+	it('keeps a larger group on one level row', () => {
 		renderRail({
 			mainLinks: [
 				{
@@ -255,16 +260,16 @@ describe('flyout submenus', () => {
 			]
 		});
 		hoverOpen('Many');
-		const tileTops = screen
-			.getAllByRole('menuitem')
-			.map(
-				item =>
-					getComputedStyle(item.querySelector('[data-flyout-tile]')!)
-						.top
-			);
-		expect(tileTops[0]).toBe('0px');
-		expect(tileTops[1]).not.toBe('0px');
-		expect(tileTops[2]).toBe('0px');
+		const rows = tops();
+		expect(new Set(rows.map(({ tile }) => tile)).size).toBe(1);
+		const tile = parseFloat(rows[0].tile);
+		expect(rows.map(({ name }) => name < tile)).toEqual([
+			false,
+			true,
+			false,
+			true,
+			false
+		]);
 	});
 
 	it('marks the group and the current page', () => {
