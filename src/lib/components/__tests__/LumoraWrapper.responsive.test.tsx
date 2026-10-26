@@ -747,4 +747,111 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		).toBeInTheDocument();
 		expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 	});
+
+	describe('updates drawer placement', () => {
+		let rectSpy: jest.SpyInstance | undefined;
+
+		afterEach(() => {
+			rectSpy?.mockRestore();
+			rectSpy = undefined;
+		});
+
+		const mockSidebarRects = () => {
+			rectSpy = jest
+				.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+				.mockImplementation(function (this: HTMLElement) {
+					if (this.tagName === 'ASIDE')
+						return {
+							top: 6,
+							left: 0,
+							right: 80,
+							bottom: 800,
+							width: 80,
+							height: 794
+						} as DOMRect;
+					if (this.hasAttribute('data-rail-surface'))
+						return {
+							top: 14,
+							left: 8,
+							right: 72,
+							bottom: 792,
+							width: 64,
+							height: 778
+						} as DOMRect;
+					return {
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						width: 0,
+						height: 0
+					} as DOMRect;
+				});
+		};
+
+		it('returns to the right when the viewport turns mobile while open', () => {
+			mockSidebarRects();
+			mockUseMediaQuery.mockReturnValue(false);
+			// A fresh element each time, so React does not bail out of the rerender
+			const ui = () => (
+				<LumoraWrapper
+					{...lumoraTestRequiredProps}
+					sidebarVariant='panel'
+					sidebarSubmenu='flyout'
+					showNotifications
+					notificationCount={2}
+					NotificationSidebarContent={() => (
+						<div>notification list</div>
+					)}
+				>
+					<div>Test Content</div>
+				</LumoraWrapper>
+			);
+			const { rerender } = render(ui());
+
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+			const paperOf = () =>
+				screen
+					.getByText('notification list')
+					.closest('.MuiDrawer-paper') as HTMLElement;
+			expect(paperOf()).toHaveClass('MuiDrawer-paperAnchorLeft');
+
+			mockUseMediaQuery.mockReturnValue(true);
+			rerender(ui());
+
+			expect(paperOf()).toHaveClass('MuiDrawer-paperAnchorRight');
+		});
+
+		it('opens at the left gutter when the rail auto-hides', () => {
+			mockSidebarRects();
+			mockUseMediaQuery.mockReturnValue(false);
+			render(
+				<LumoraWrapper
+					{...lumoraTestRequiredProps}
+					sidebarVariant='panel'
+					sidebarSubmenu='flyout'
+					sidebarAutoHide
+					showNotifications
+					notificationCount={2}
+					NotificationSidebarContent={() => (
+						<div>notification list</div>
+					)}
+				>
+					<div>Test Content</div>
+				</LumoraWrapper>
+			);
+
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+
+			const paper = screen
+				.getByText('notification list')
+				.closest('.MuiDrawer-paper') as HTMLElement;
+			expect(paper).toHaveClass('MuiDrawer-paperAnchorLeft');
+			expect(paper).toHaveStyle({
+				left: '8px',
+				top: '14px',
+				height: '778px'
+			});
+		});
+	});
 });

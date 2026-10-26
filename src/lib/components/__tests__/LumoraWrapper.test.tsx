@@ -433,5 +433,86 @@ describe('LumoraWrapper', () => {
 			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 			expect(screen.getByText('close notifications')).toBeInTheDocument();
 		});
+
+		describe('placement', () => {
+			const Panel = () => <div>notification list</div>;
+			let rectSpy: jest.SpyInstance | undefined;
+
+			afterEach(() => {
+				rectSpy?.mockRestore();
+				rectSpy = undefined;
+			});
+
+			const paperOf = (text: string) =>
+				screen
+					.getByText(text)
+					.closest('.MuiDrawer-paper') as HTMLElement;
+
+			it('opens on the left, beside and as tall as the sidebar', () => {
+				rectSpy = jest
+					.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+					.mockImplementation(function (this: HTMLElement) {
+						if (this.tagName === 'ASIDE')
+							return {
+								top: 6,
+								left: 0,
+								right: 80,
+								bottom: 800,
+								width: 80,
+								height: 794
+							} as DOMRect;
+						if (this.hasAttribute('data-rail-surface'))
+							return {
+								top: 14,
+								left: 8,
+								right: 72,
+								bottom: 792,
+								width: 64,
+								height: 778
+							} as DOMRect;
+						return {
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							width: 0,
+							height: 0
+						} as DOMRect;
+					});
+				// Nexa's layout: the floating glass rail (its capsule is the surface)
+				renderWrapper({
+					sidebarVariant: 'panel',
+					sidebarSubmenu: 'flyout',
+					showNotifications: true,
+					notificationCount: 2,
+					NotificationSidebarContent: Panel
+				});
+
+				fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+
+				const paper = paperOf('notification list');
+				expect(paper).toHaveClass('MuiDrawer-paperAnchorLeft');
+				expect(paper).toHaveStyle({
+					left: '80px',
+					top: '14px',
+					height: '778px',
+					width: '380px'
+				});
+			});
+
+			it('keeps the right-hand drawer when there is no aside sidebar', () => {
+				renderWrapper({
+					showNotifications: true,
+					notificationCount: 2,
+					NotificationSidebarContent: Panel
+				});
+
+				fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+
+				expect(paperOf('notification list')).toHaveClass(
+					'MuiDrawer-paperAnchorRight'
+				);
+			});
+		});
 	});
 });
