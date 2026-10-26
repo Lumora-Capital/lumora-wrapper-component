@@ -769,9 +769,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [updatesPlacement, setUpdatesPlacement] =
 		useState<UpdatesDrawerPlacement | null>(null);
 	const measureUpdatesPlacement = useCallback(() => {
-		const next = isMobile
+		const measured = isMobile
 			? null
 			: measureUpdatesDrawerPlacement(shellRef.current);
+		// The auto-hiding rail slides away once the pointer leaves it for the
+		// drawer, so the drawer takes the rail's place instead of leaving a gap
+		const next =
+			measured && autoHideRail
+				? { ...measured, left: FLOATING_RAIL_GUTTER_PX }
+				: measured;
 		// Resize fires often; keep the old object when nothing moved
 		setUpdatesPlacement(prev =>
 			prev &&
@@ -782,7 +788,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				? prev
 				: next
 		);
-	}, [isMobile]);
+	}, [isMobile, autoHideRail]);
 	// The sidebar's box changes with the window, so follow it while open.
 	// Re-measure on every change of layout too (the sidebar may have just
 	// mounted or unmounted when the breakpoint flipped).

@@ -756,7 +756,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			rectSpy = undefined;
 		});
 
-		it('returns to the right when the viewport turns mobile while open', () => {
+		const mockSidebarRects = () => {
 			rectSpy = jest
 				.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
 				.mockImplementation(function (this: HTMLElement) {
@@ -787,6 +787,10 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 						height: 0
 					} as DOMRect;
 				});
+		};
+
+		it('returns to the right when the viewport turns mobile while open', () => {
+			mockSidebarRects();
 			mockUseMediaQuery.mockReturnValue(false);
 			// A fresh element each time, so React does not bail out of the rerender
 			const ui = () => (
@@ -816,6 +820,38 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			rerender(ui());
 
 			expect(paperOf()).toHaveClass('MuiDrawer-paperAnchorRight');
+		});
+
+		it('opens at the left gutter when the rail auto-hides', () => {
+			mockSidebarRects();
+			mockUseMediaQuery.mockReturnValue(false);
+			render(
+				<LumoraWrapper
+					{...lumoraTestRequiredProps}
+					sidebarVariant='panel'
+					sidebarSubmenu='flyout'
+					sidebarAutoHide
+					showNotifications
+					notificationCount={2}
+					NotificationSidebarContent={() => (
+						<div>notification list</div>
+					)}
+				>
+					<div>Test Content</div>
+				</LumoraWrapper>
+			);
+
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+
+			const paper = screen
+				.getByText('notification list')
+				.closest('.MuiDrawer-paper') as HTMLElement;
+			expect(paper).toHaveClass('MuiDrawer-paperAnchorLeft');
+			expect(paper).toHaveStyle({
+				left: '8px',
+				top: '14px',
+				height: '778px'
+			});
 		});
 	});
 });
