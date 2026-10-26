@@ -63,6 +63,10 @@ import { GlassAccentContext, SidebarSurfaceContext } from './liquidGlass';
 import { deriveGroupTint, getContrastText } from './sidebarUtils';
 import useEdgeReveal from './useEdgeReveal';
 import useHoverExpand from './useHoverExpand';
+import {
+	measureUpdatesDrawerPlacement,
+	type UpdatesDrawerPlacement
+} from './updatesDrawerPlacement';
 
 /** Width of the drawer-mode links drawer (capped at 85% of the screen). */
 const MOBILE_DRAWER_WIDTH_PX = 300;
@@ -750,7 +754,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const useBottomBar = isMobile && mobileNavigation === 'bottom-bar';
 	// Room the bottom bar takes, including the phone's home-indicator inset
 	const bottomBarSpace = `calc(${MOBILE_BOTTOM_NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`;
-	// Right-side updates drawer; `tab` is what the host content should show.
+	// Updates drawer; `tab` is what the host content should show.
 	const [updatesDrawer, setUpdatesDrawer] = useState<{
 		open: boolean;
 		tab: UpdatesTab;
@@ -759,6 +763,27 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		setUpdatesDrawer(prev => ({ ...prev, open: false }));
 	const hasUpdatesDrawer =
 		showNotifications && Boolean(NotificationSidebarContent);
+	// The shell root: the drawer measures the desktop sidebar inside it.
+	const shellRef = useRef<HTMLDivElement>(null);
+	// Beside the sidebar on desktop; null keeps the drawer on the right.
+	const [updatesPlacement, setUpdatesPlacement] =
+		useState<UpdatesDrawerPlacement | null>(null);
+	const measureUpdatesPlacement = useCallback(
+		() =>
+			setUpdatesPlacement(
+				isMobile
+					? null
+					: measureUpdatesDrawerPlacement(shellRef.current)
+			),
+		[isMobile]
+	);
+	// The sidebar's box changes with the window, so follow it while open
+	useEffect(() => {
+		if (!updatesDrawer.open) return;
+		window.addEventListener('resize', measureUpdatesPlacement);
+		return () =>
+			window.removeEventListener('resize', measureUpdatesPlacement);
+	}, [updatesDrawer.open, measureUpdatesPlacement]);
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
@@ -909,6 +934,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const openUpdates = (tab: UpdatesTab) => {
 		setMobileSidebarOpen(false);
 		setMobileSearchOpen(false);
+		measureUpdatesPlacement();
 		setUpdatesDrawer({ open: true, tab });
 	};
 	const openNotifications =
@@ -1249,6 +1275,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<SidebarSurfaceContext.Provider value={resolvedSidebarSurface}>
 					<NotificationIconContext.Provider value={notificationsIcon}>
 						<Box
+							ref={shellRef}
 							sx={{
 								display: 'flex',
 								minHeight: '100vh',
@@ -1723,21 +1750,33 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									/>
 								)}
 
-							{/* Updates drawer (container only; content from host). `key`
-				    remounts the content when a different tab is requested, so
-				    hosts that read `initialTab` once still switch. */}
+							{/* Updates drawer (container only; content from host). On
+				    desktop it opens beside the sidebar and as tall as it, by
+				    the bell; otherwise on the right. `key` remounts the content
+				    when a different tab is requested, so hosts that read
+				    `initialTab` once still switch. */}
 							{showNotifications &&
 								NotificationSidebarContent && (
 									<Drawer
-										anchor='right'
+										anchor={
+											updatesPlacement ? 'left' : 'right'
+										}
 										open={updatesDrawer.open}
 										onClose={closeUpdates}
 										slotProps={{
 											paper: {
-												sx: {
-													width: 380,
-													maxWidth: '100vw'
-												}
+												sx: updatesPlacement
+													? {
+															width: 380,
+															maxWidth: `calc(100vw - ${updatesPlacement.left}px)`,
+															left: updatesPlacement.left,
+															top: updatesPlacement.top,
+															height: updatesPlacement.height
+														}
+													: {
+															width: 380,
+															maxWidth: '100vw'
+														}
 											}
 										}}
 									>
