@@ -141,6 +141,12 @@ const TruncatingLabel: React.FC<{
 	);
 };
 
+/** The glass rail's group arrow: a right-pointing triangle, its corners
+ * rounded 0.5px (a 1px round-joined stroke around the shape). */
+const GROUP_ARROW_MASK = `url("data:image/svg+xml,${encodeURIComponent(
+	"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 8'><path d='M0.5 0.9L4.1 4L0.5 7.1Z' stroke='black' stroke-width='1' stroke-linejoin='round'/></svg>"
+)}")`;
+
 /** Small up/down chevron marking a parent on the narrow rails. */
 const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 	open,
@@ -321,6 +327,11 @@ export interface CollapsibleSidebarProps {
 	/** Solid background of the highlighted item — shared by the active item and
 	 * any item on hover (default '#01584f'). */
 	activeAccentColor?: string;
+	/** Fill of the highlighted item alone, when it should differ from
+	 * `activeAccentColor` (which also tints the idle icons and text). */
+	activeBackgroundColor?: string;
+	/** The glass rail's group arrow; defaults to the icon colour, softened. */
+	groupArrowColor?: string;
 	/** Light tint for a parent's child group (default derived). */
 	groupAccentColor?: string;
 	/** Foreground of the highlighted item (active or hovered); default
@@ -386,6 +397,8 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	headerForegroundColor,
 	brandColor,
 	activeAccentColor: activeAccent = '#01584f',
+	activeBackgroundColor,
+	groupArrowColor,
 	groupAccentColor,
 	activeForegroundColor,
 	foregroundColor,
@@ -438,10 +451,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				}
 			: {})
 	};
+	const activeFill = activeBackgroundColor ?? activeAccent;
 	const activeGlass = useActiveGlass({
 		enabled: useFlyout,
 		isDark,
-		color: activeAccent,
+		color: activeFill,
 		containerRef: linksRef
 	});
 	const { close: closeFlyout } = flyout;
@@ -456,21 +470,21 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		{}
 	);
 
-	const activeFg = activeForegroundColor ?? getContrastText(activeAccent);
+	const activeFg = activeForegroundColor ?? getContrastText(activeFill);
 	// The highlighted look: accent fill + active foreground. Applied to the
 	// active item in every variant, and — in the rail-labeled layout only
 	// (`showLabels`) — to any hovered item, so active and hover match there.
 	// The collapsible variant keeps its original subtle idle-hover tint instead.
 	// `highlightSx` targets expanded rows, which set an explicit icon color.
 	const highlightSx = {
-		bgcolor: activeAccent,
+		bgcolor: activeFill,
 		color: activeFg,
 		'& .MuiListItemIcon-root': { color: activeFg }
 	};
 	// The same look for the collapsed labeled icon buttons (the icon uses
 	// currentColor and the caption inherits), plus the highlight's rounded corner.
 	const iconHighlightSx = {
-		bgcolor: activeAccent,
+		bgcolor: activeFill,
 		color: activeFg,
 		borderRadius: '8px'
 	};
@@ -546,7 +560,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		iconMinWidth: number
 	) => ({
 		color: active ? activeFg : accentOnSurface,
-		bgcolor: active ? activeAccent : 'transparent',
+		bgcolor: active ? activeFill : 'transparent',
 		'& .MuiListItemIcon-root': {
 			color: active ? activeFg : accentOnSurface,
 			minWidth: iconMinWidth
@@ -556,7 +570,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// Page rows set `selected`; override MUI's default selected styling.
 	const selectedRowSx = {
 		'&.Mui-selected': {
-			bgcolor: activeAccent
+			bgcolor: activeFill
 		},
 		'&.Mui-selected:hover': highlightSx
 	};
@@ -848,7 +862,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								p: 1,
 								borderRadius: '8px',
 								color: active ? activeFg : accentOnSurface,
-								bgcolor: active ? activeAccent : 'transparent',
+								bgcolor: active ? activeFill : 'transparent',
 								'& .MuiSvgIcon-root': {
 									fontSize: RAIL_LABEL_ICON_SIZE_PX
 								},
@@ -862,11 +876,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								width: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
 								height: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
 								color: active ? activeFg : accentOnSurface,
-								bgcolor: active ? activeAccent : 'transparent',
+								bgcolor: active ? activeFill : 'transparent',
 								borderRadius: active ? '8px' : '50%',
 								'&:hover': {
 									bgcolor: active
-										? activeAccent
+										? activeFill
 										: options?.insideGroup
 											? 'action.hover'
 											: groupTint,
@@ -990,7 +1004,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						color: groupActive ? activeFg : accentOnSurface,
 						// Open, the rail's hover lens stays on it (useRailLens)
 						// rather than a fill of its own under the lens
-						bgcolor: groupActive ? activeAccent : 'transparent',
+						bgcolor: groupActive ? activeFill : 'transparent',
 						...glassRailIconSx(groupActive),
 						// The icon stays centred, in line with every other
 						// icon down the rail; the arrow sits in the room
@@ -1001,11 +1015,11 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							right: 3,
 							top: '50%',
 							transform: 'translateY(-50%)',
-							borderStyle: 'solid',
-							borderWidth: '4px 0 4px 5px',
-							borderColor:
-								'transparent transparent transparent currentColor',
-							opacity: 0.55
+							width: 5,
+							height: 8,
+							bgcolor: groupArrowColor ?? 'currentColor',
+							mask: `${GROUP_ARROW_MASK} center / contain no-repeat`,
+							opacity: groupArrowColor ? 1 : 0.55
 						},
 						...FOCUS_OUTLINE_FIX
 					}}
@@ -1043,15 +1057,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					...(showLabels ? { p: 1 } : { py: 0.75 }),
 					borderRadius: '10px',
 					color: parentActive ? activeFg : accentOnSurface,
-					bgcolor: parentActive ? activeAccent : 'transparent',
+					bgcolor: parentActive ? activeFill : 'transparent',
 					// rail-labeled: active AND hover share the highlight. collapsible:
 					// original behavior — accent only when active; the outer pill
 					// supplies the idle-hover tint, so the button stays transparent.
 					'&:hover': showLabels
-						? { bgcolor: activeAccent, color: activeFg }
+						? { bgcolor: activeFill, color: activeFg }
 						: {
 								bgcolor: parentActive
-									? activeAccent
+									? activeFill
 									: 'transparent'
 							},
 					...FOCUS_OUTLINE_FIX
@@ -1183,7 +1197,23 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				alignItems: collapsed ? 'center' : 'stretch'
 			}}
 		>
-			{links.map(renderItem)}
+			{links.map((link, index) =>
+				link.dividerAfter && index < links.length - 1 ? (
+					<React.Fragment key={link.text}>
+						{renderItem(link)}
+						<Divider
+							data-testid={`sidebar-divider-${link.text}`}
+							sx={{
+								alignSelf: 'stretch',
+								my: useFlyout ? railGap : 1,
+								borderColor: 'divider'
+							}}
+						/>
+					</React.Fragment>
+				) : (
+					renderItem(link)
+				)
+			)}
 		</Stack>
 	);
 
@@ -1235,6 +1265,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				onClose={flyout.close}
 				panelProps={flyout.flyoutProps}
 				accentColor={activeAccent}
+				activeBackgroundColor={activeBackgroundColor}
 				activeForegroundColor={activeFg}
 				solidSurface={flyoutSurfaceColor ?? surface}
 			/>

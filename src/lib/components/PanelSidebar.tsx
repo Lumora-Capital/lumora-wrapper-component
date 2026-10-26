@@ -34,6 +34,8 @@ export interface PanelSidebarProps {
 	headerForegroundColor?: string;
 	// Accents (forwarded to the nav list)
 	activeAccentColor?: string;
+	activeBackgroundColor?: string;
+	groupArrowColor?: string;
 	groupAccentColor?: string;
 	activeForegroundColor?: string;
 	foregroundColor?: string;
@@ -99,6 +101,8 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	headerBackgroundColor,
 	headerForegroundColor,
 	activeAccentColor = '#01584f',
+	activeBackgroundColor,
+	groupArrowColor,
 	groupAccentColor,
 	activeForegroundColor,
 	foregroundColor,
@@ -283,6 +287,8 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 				headerBackgroundColor={headerBackgroundColor}
 				headerForegroundColor={headerForegroundColor}
 				activeAccentColor={activeAccentColor}
+				activeBackgroundColor={activeBackgroundColor}
+				groupArrowColor={groupArrowColor}
 				groupAccentColor={groupAccentColor}
 				activeForegroundColor={activeForegroundColor}
 				foregroundColor={foregroundColor}

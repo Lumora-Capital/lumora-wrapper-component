@@ -16,22 +16,25 @@ import {
 	springTiming
 } from './glassMotion';
 import {
+	GLASS_RADIUS_PX,
 	REDUCED_MOTION,
 	glassLabelSx,
-	tileIn,
-	GLASS_RADIUS_PX
+	tileIn
 } from './liquidGlass';
 import { useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
-/** Each page's icon tile: compact, a step below the rail's buttons. */
-const TILE_PX = 36;
-/** The same glyph size as the rail, so both magnify to the same size. */
-const TILE_ICON_PX = 20;
-const TILE_RADIUS_PX = GLASS_RADIUS_PX;
+/** Each page's icon tile: a step up from the rail's buttons, room for its
+ * larger glyph. */
+const TILE_PX = 52;
+const TILE_ICON_PX = 36;
+/** Round tiles: a circle as wide as the tile. */
+const TILE_RADIUS_PX = TILE_PX / 2;
 const TILE_SELECTOR = '[data-flyout-tile]';
 /** A page's column: its tile and its name, one above the other. */
 const ROW_GAP_PX = 4;
+/** One line of a name: the names' row is never shorter. */
+const NAME_LINE_PX = 16;
 /** A name wider than this wraps onto two lines (two at most). */
 const NAME_MAX_PX = 104;
 /** The space between neighbours along each row. */
@@ -45,6 +48,9 @@ const PANEL_GAP_PX = 10;
 const STAGE_PADDING_PX = 10;
 /** The tiles well up one after another. */
 const TILE_STAGGER_MS = 18;
+/** How far the group's rail icon swells as its tiles open: a gentler gel
+ * than a press, so moving between groups doesn't jiggle the rail. */
+const ANCHOR_SWELL_SCALE = 1.08;
 /** Above the page, its sticky bars and the docked chat (1140); below the
  * MUI drawers and menus, which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
@@ -80,6 +86,8 @@ export interface SidebarFlyoutProps {
 		onMouseLeave: () => void;
 	};
 	accentColor: string;
+	/** The current page's tile fill, when it should differ from `accentColor`. */
+	activeBackgroundColor?: string;
 	/** Icons and text on the accent fill. */
 	activeForegroundColor: string;
 	/** The tiles' and names' surface. */
@@ -136,6 +144,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	onClose,
 	panelProps,
 	accentColor,
+	activeBackgroundColor,
 	activeForegroundColor,
 	solidSurface
 }) => {
@@ -185,7 +194,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	// The icon swells as its glass opens, like a pressed gel button
 	React.useEffect(() => {
 		if (anchor) {
-			gelSwell(anchor);
+			gelSwell(anchor, ANCHOR_SWELL_SCALE);
 		}
 	}, [anchor]);
 
@@ -229,15 +238,16 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	// before paint, and again if the names change size (a web font
 	// arriving).
 	const nameRefs = React.useRef<Array<HTMLElement | null>>([]);
-	const [nameWidths, setNameWidths] = React.useState<number[]>([]);
+	const [nameSizes, setNameSizes] = React.useState<number[][]>([]);
 	React.useLayoutEffect(() => {
 		const measure = () => {
-			const next = leaves.map(
-				(_, i) => nameRefs.current[i]?.offsetWidth ?? 0
-			);
-			setNameWidths(prev =>
+			const next = leaves.map((_, i) => [
+				nameRefs.current[i]?.offsetWidth ?? 0,
+				nameRefs.current[i]?.offsetHeight ?? 0
+			]);
+			setNameSizes(prev =>
 				prev.length === next.length &&
-				prev.every((w, i) => w === next[i])
+				prev.every(([w, h], i) => w === next[i][0] && h === next[i][1])
 					? prev
 					: next
 			);
@@ -252,7 +262,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			.forEach(el => el && observer.observe(el));
 		return () => observer.disconnect();
 	}, [leaves]);
-	const layout = zigzagLayout(nameWidths, leaves.length);
+	const layout = zigzagLayout(
+		nameSizes.map(([w]) => w),
+		leaves.length
+	);
+	// The names' row: as tall as the tallest name (two lines when one wraps)
+	const nameRowPx = Math.max(NAME_LINE_PX, ...nameSizes.map(([, h]) => h));
 
 	// Roving focus: one tile in the tab order, arrows move between them
 	const tileRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
@@ -336,9 +351,11 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 							? { clipPath: windowLessShape(railShape) }
 							: {}),
 						zIndex: SCRIM_Z_INDEX,
-						// Clear: it is only there to close the flyout on a click
-						// outside it; the page stays as it is
-						bgcolor: 'transparent'
+						// The flyout's only surface: a wash from the rail across
+						// the page, strongest behind the tiles, fading to the right
+						background: isDark
+							? 'linear-gradient(90deg, rgba(24, 30, 40, 0.97) 0%, rgba(24, 30, 40, 0.9) 30%, rgba(24, 30, 40, 0.6) 55%, rgba(24, 30, 40, 0.2) 100%)'
+							: 'linear-gradient(90deg, rgba(236, 239, 243, 0.97) 0%, rgba(236, 239, 243, 0.9) 30%, rgba(236, 239, 243, 0.6) 55%, rgba(236, 239, 243, 0.2) 100%)'
 					}}
 				/>
 			</Fade>
@@ -371,8 +388,32 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 						onExited={TransitionProps?.onExited}
 						panelProps={panelProps}
 						groupText={shown?.group.text}
-						isDark={isDark}
 					>
+						{shown ? (
+							<Box
+								key={`${shown.key}-heading`}
+								aria-hidden
+								data-testid='sidebar-flyout-heading'
+								sx={{
+									// Above the tiles, so they stay centred on the
+									// rail icon; the row's name already labels it
+									position: 'absolute',
+									bottom: '100%',
+									left: STAGE_PADDING_PX,
+									mb: '2px',
+									whiteSpace: 'nowrap',
+									pointerEvents: 'none',
+									fontSize: '0.75rem',
+									fontWeight: 600,
+									letterSpacing: '0.08em',
+									textTransform: 'uppercase',
+									// The pages' own name colour
+									color: glassLabelSx(isDark).color
+								}}
+							>
+								{shown.group.text}
+							</Box>
+						) : null}
 						{shown ? (
 							<Box
 								key={shown.key}
@@ -392,7 +433,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 								sx={{
 									position: 'relative',
 									width: layout.width,
-									height: TILE_PX * 2 + ROW_GAP_PX,
+									height: TILE_PX + ROW_GAP_PX + nameRowPx,
 									// The panel stretches as the dock pushes
 									// the pages along, as the Dock's shelf does
 									mr: 'var(--dock-spread, 0px)',
@@ -411,6 +452,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										}}
 										tileLeft={layout.tiles[index]}
 										nameLeft={layout.names[index]}
+										nameRowPx={nameRowPx}
 										sub={sub}
 										icon={icon}
 										index={index}
@@ -449,6 +491,9 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 											}
 										}}
 										accentColor={accentColor}
+										activeBackgroundColor={
+											activeBackgroundColor
+										}
 										activeForegroundColor={
 											activeForegroundColor
 										}
@@ -473,7 +518,6 @@ interface FlyoutStageProps {
 	onExited?: () => void;
 	panelProps: SidebarFlyoutProps['panelProps'];
 	groupText?: string;
-	isDark: boolean;
 	children: React.ReactNode;
 }
 
@@ -488,7 +532,6 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	onExited,
 	panelProps,
 	groupText,
-	isDark,
 	children
 }) => {
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -544,18 +587,9 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 			data-group={groupText}
 			sx={{
 				position: 'relative',
-				// A light, see-through panel behind the tiles alone (not
-				// frosted); the rest of the page is left untouched. A tile the
-				// dock grows pops out past it.
+				// No surface of its own: the scrim's gradient sits behind it.
+				// A tile the dock grows pops out past it.
 				p: `${STAGE_PADDING_PX}px`,
-				borderRadius: `${TILE_RADIUS_PX + STAGE_PADDING_PX}px`,
-				bgcolor: isDark
-					? 'rgba(24, 30, 40, 0.65)'
-					: 'rgba(236, 239, 243, 0.65)',
-				// A deep, soft shadow lifts it off the page
-				boxShadow: isDark
-					? '0 24px 56px -12px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.35)'
-					: '0 24px 56px -12px rgba(15, 23, 42, 0.38), 0 4px 12px rgba(15, 23, 42, 0.08)',
 				// Fills the gap to the rail so the pointer can cross it
 				// without leaving the flyout
 				'&::before': {
@@ -589,6 +623,9 @@ const zigzagLayout = (widths: number[], count: number) => {
 	const names: number[] = [];
 	let topEnd = -ITEM_GAP_PX;
 	let bottomEnd = -ITEM_GAP_PX;
+	// The rows interlock (a tile reaches into the other row's band), so
+	// neighbouring tiles keep the gap between them too
+	let tileEnd = -ITEM_GAP_PX;
 	for (let i = 0; i < count; i += 1) {
 		const name = widths[i] || TILE_PX;
 		const tileOnTop = !nameOnTopAt(i);
@@ -596,10 +633,12 @@ const zigzagLayout = (widths: number[], count: number) => {
 		const bottomWidth = tileOnTop ? name : TILE_PX;
 		const centre = Math.max(
 			topEnd + ITEM_GAP_PX + topWidth / 2,
-			bottomEnd + ITEM_GAP_PX + bottomWidth / 2
+			bottomEnd + ITEM_GAP_PX + bottomWidth / 2,
+			tileEnd + ITEM_GAP_PX + TILE_PX / 2
 		);
 		topEnd = centre + topWidth / 2;
 		bottomEnd = centre + bottomWidth / 2;
+		tileEnd = centre + TILE_PX / 2;
 		tiles.push(Math.round(centre - TILE_PX / 2));
 		names.push(Math.round(centre - name / 2));
 	}
@@ -612,6 +651,8 @@ interface FlyoutTileProps {
 	/** Left edges of the tile and the name in the row (`zigzagLayout`). */
 	tileLeft: number;
 	nameLeft: number;
+	/** The height of the names' row: the rows interlock by it. */
+	nameRowPx: number;
 	sub: SidebarSubLink;
 	icon: React.ReactNode;
 	index: number;
@@ -621,6 +662,7 @@ interface FlyoutTileProps {
 	onKeyDown: (event: React.KeyboardEvent) => void;
 	onFocus: (event: React.FocusEvent<HTMLAnchorElement>) => void;
 	accentColor: string;
+	activeBackgroundColor?: string;
 	activeForegroundColor: string;
 	labelColor: string;
 	iconColor: string;
@@ -641,6 +683,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			nameRef,
 			tileLeft,
 			nameLeft,
+			nameRowPx,
 			sub,
 			icon,
 			index,
@@ -650,6 +693,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			onKeyDown,
 			onFocus,
 			accentColor,
+			activeBackgroundColor,
 			activeForegroundColor,
 			labelColor,
 			iconColor,
@@ -668,7 +712,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		// The current page: the accent, solid, its icon and text in the
 		// accent's foreground — as the current page on the rail
 		const fill = {
-			background: accentColor,
+			background: activeBackgroundColor ?? accentColor,
 			color: activeForegroundColor,
 			'& .MuiSvgIcon-root': { color: activeForegroundColor }
 		};
@@ -678,8 +722,12 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		const hover = {
 			background: `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`
 		};
+		// A name is plain text on the panel: it takes the accent on hover
+		// (the light theme's accent; on dark glass, the text colour reads)
+		const accentText = isDark ? card.color : accentColor;
 		const lit = {
-			'& [data-flyout-tile], & [data-flyout-name]': active ? {} : hover
+			'& [data-flyout-tile]': active ? {} : hover,
+			'& [data-flyout-name]': { color: accentText, fontWeight: 600 }
 		};
 		// Cards of their own: a surface and a soft shadow, no edge
 		const cardSx = {
@@ -710,10 +758,11 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 					inset: 0,
 					display: 'block',
 					pointerEvents: 'none',
-					'& [data-flyout-tile], & [data-flyout-slot]': {
-						position: 'absolute',
-						pointerEvents: 'auto'
-					},
+					'& [data-flyout-tile], & [data-flyout-slot], & [data-flyout-bridge]':
+						{
+							position: 'absolute',
+							pointerEvents: 'auto'
+						},
 					color: labelColor,
 					textDecoration: 'none',
 					'&:hover': lit,
@@ -732,12 +781,25 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 					}
 				}}
 			>
+				{/* The page's whole column, name to tile, is the link: no gap
+				    between them (or round the tile's corners) drops the hover.
+				    Tiles never share a column, so it reaches no neighbour. */}
+				<Box
+					data-flyout-bridge=''
+					aria-hidden
+					sx={{
+						left: tileLeft,
+						top: 0,
+						width: TILE_PX,
+						height: '100%'
+					}}
+				/>
 				<Box
 					data-flyout-tile=''
 					sx={{
 						...cardSx,
 						left: tileLeft,
-						top: nameOnTop ? TILE_PX + ROW_GAP_PX : 0,
+						top: nameOnTop ? nameRowPx + ROW_GAP_PX : 0,
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
@@ -756,6 +818,12 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 							color: iconColor,
 							transition: 'color 160ms ease'
 						},
+						// A host's own glyph (an image in a `role="img"` box)
+						// takes the same size
+						'& [role="img"], & [role="img"] > img': {
+							width: TILE_ICON_PX,
+							height: TILE_ICON_PX
+						},
 						...(active ? fill : {}),
 						...enter
 					}}
@@ -768,22 +836,24 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 					sx={{
 						left: nameLeft,
 						top: nameOnTop ? 0 : TILE_PX + ROW_GAP_PX,
-						height: TILE_PX,
+						height: nameRowPx,
 						display: 'flex',
-						alignItems: 'center'
+						// Held against its own tile, not floating mid-row
+						alignItems: nameOnTop ? 'flex-end' : 'flex-start'
 					}}
 				>
 					<Box
 						component='span'
 						ref={nameRef}
 						data-flyout-name=''
+						data-text={sub.text}
 						sx={{
-							...cardSx,
+							// No card of its own: text on the panel
+							color: card.color,
 							px: 1,
-							py: '3px',
+							py: 0,
 							fontSize: '0.75rem',
 							lineHeight: '16px',
-							borderRadius: '6px',
 							// A long name wraps onto a second line, split
 							// evenly, so it stays as compact as its tile
 							maxWidth: NAME_MAX_PX,
@@ -794,9 +864,19 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 							WebkitLineClamp: 2,
 							overflow: 'hidden',
 							fontWeight: active ? 600 : 500,
-							...(active ? fill : {}),
-							transition:
-								'background 160ms ease, color 160ms ease',
+							// Room for the bold it turns on hover, held from
+							// the start, so the measured width (and with it
+							// every column after) never moves
+							'&::after': {
+								content: 'attr(data-text)',
+								display: 'block',
+								fontWeight: 600,
+								height: 0,
+								overflow: 'hidden',
+								visibility: 'hidden'
+							},
+							...(active ? { color: accentText } : {}),
+							transition: 'color 160ms ease',
 							...enter
 						}}
 					>

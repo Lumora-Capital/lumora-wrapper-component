@@ -6,6 +6,10 @@ import * as React from 'react';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
 
+/** The host's bell icon (`notificationsIcon`), in place of the default. */
+export const NotificationIconContext =
+	React.createContext<React.ReactNode>(undefined);
+
 interface NotificationBellProps {
 	count: number;
 	onClick?: () => void;
@@ -25,6 +29,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	testId
 }) => {
 	const railTooltip = useRailTooltipProps();
+	const icon = React.useContext(NotificationIconContext);
 	// On the floating rail it matches the rail's icon buttons
 	const onGlassRail = React.useContext(RailGlassContext);
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
@@ -70,7 +75,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 						}
 					}}
 				>
-					<NotificationsNoneOutlinedIcon />
+					{icon ?? <NotificationsNoneOutlinedIcon />}
 				</Badge>
 			</IconButton>
 		</Tooltip>

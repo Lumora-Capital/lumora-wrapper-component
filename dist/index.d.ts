@@ -99,6 +99,11 @@ export declare interface CollapsibleSidebarProps {
     /** Solid background of the highlighted item — shared by the active item and
      * any item on hover (default '#01584f'). */
     activeAccentColor?: string;
+    /** Fill of the highlighted item alone, when it should differ from
+     * `activeAccentColor` (which also tints the idle icons and text). */
+    activeBackgroundColor?: string;
+    /** The glass rail's group arrow; defaults to the icon colour, softened. */
+    groupArrowColor?: string;
     /** Light tint for a parent's child group (default derived). */
     groupAccentColor?: string;
     /** Foreground of the highlighted item (active or hovered); default
@@ -359,6 +364,10 @@ export declare interface LumoraWrapperProps {
      * fixed narrow rails the icon opens it in a popover.
      */
     searchComponent?: default_2.ReactNode;
+    /** The rail's search icon, in place of the default magnifier. */
+    searchIcon?: default_2.ReactNode;
+    /** The notifications bell's icon, in place of the default. */
+    notificationsIcon?: default_2.ReactNode;
     /**
      * Wordmark and default-logo tint, when it should differ from the sidebar
      * text (e.g. a teal CENTRA over dark-gray links).
@@ -489,6 +498,14 @@ export declare interface LumoraWrapperProps {
      * the active item and any item on hover. Defaults to `accentColor`.
      */
     sidebarAccentColor?: string;
+    /**
+     * Fill of the active sidebar item alone, when it should differ from
+     * `sidebarAccentColor` (which also colours the idle icons and text).
+     */
+    sidebarActiveBackgroundColor?: string;
+    /** The arrow beside a group's icon on the glass rail; defaults to the
+     * icon colour, softened. */
+    sidebarGroupArrowColor?: string;
     /**
      * Idle (inactive) text/icon color for sidebar items, the search icon, the
      * notifications row and the user row. Defaults to the sidebar accent in
@@ -643,6 +660,11 @@ export declare type SidebarLink = {
      * no room for it, so also offer it elsewhere (e.g. `userMenuItems`).
      */
     action?: SidebarLinkAction;
+    /**
+     * A divider under this link, splitting the list into sections (e.g. pins
+     * above, pages below). Ignored on the last link of its list.
+     */
+    dividerAfter?: boolean;
 };
 
 /** A quick action shown at the end of a sidebar row, e.g. "New request". */

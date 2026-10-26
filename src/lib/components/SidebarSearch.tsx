@@ -43,6 +43,8 @@ const focusFirstField = (container: HTMLElement | null) => {
 interface SidebarSearchProps {
 	/** The host app's search component. */
 	search: React.ReactNode;
+	/** The icon in place of the default magnifier. */
+	icon?: React.ReactNode;
 	/**
 	 * `full`: the component inline. `expand`: an icon that asks the owner to
 	 * expand the sidebar (the collapsed collapsible variant). `popover`: an
@@ -61,6 +63,7 @@ interface SidebarSearchProps {
 /** Slot for the host's global search, under the brand and above the links. */
 const SidebarSearch: React.FC<SidebarSearchProps> = ({
 	search,
+	icon,
 	mode,
 	onExpand,
 	autoFocus = false,
@@ -97,6 +100,7 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 		return (
 			<HoverSearch
 				search={search}
+				icon={icon}
 				color={color}
 				railTooltip={railTooltip}
 			/>
@@ -124,7 +128,7 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 						'&:hover': { bgcolor: hoverColor }
 					}}
 				>
-					<SearchRoundedIcon />
+					{icon ?? <SearchRoundedIcon />}
 				</IconButton>
 			</Tooltip>
 			<Popover
@@ -152,9 +156,10 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
  */
 const HoverSearch: React.FC<{
 	search: React.ReactNode;
+	icon?: React.ReactNode;
 	color: string;
 	railTooltip: ReturnType<typeof useRailTooltipProps>;
-}> = ({ search, color, railTooltip }) => {
+}> = ({ search, icon, color, railTooltip }) => {
 	const isDark = useTheme().palette.mode === 'dark';
 	const well = glassWellSx(isDark, withAlpha(color, isDark ? 0.3 : 0.35));
 	// Solid (glass look off): the host's field with the glass corner and
@@ -271,9 +276,11 @@ const HoverSearch: React.FC<{
 						borderRadius: `${GLASS_RADIUS_PX}px`
 					}}
 				>
-					<SearchRoundedIcon
-						sx={{ fontSize: FLOATING_RAIL_ICON_PX }}
-					/>
+					{icon ?? (
+						<SearchRoundedIcon
+							sx={{ fontSize: FLOATING_RAIL_ICON_PX }}
+						/>
+					)}
 				</IconButton>
 			</Tooltip>
 			<Popper
