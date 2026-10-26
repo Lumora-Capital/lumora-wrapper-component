@@ -768,18 +768,27 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Beside the sidebar on desktop; null keeps the drawer on the right.
 	const [updatesPlacement, setUpdatesPlacement] =
 		useState<UpdatesDrawerPlacement | null>(null);
-	const measureUpdatesPlacement = useCallback(
-		() =>
-			setUpdatesPlacement(
-				isMobile
-					? null
-					: measureUpdatesDrawerPlacement(shellRef.current)
-			),
-		[isMobile]
-	);
-	// The sidebar's box changes with the window, so follow it while open
+	const measureUpdatesPlacement = useCallback(() => {
+		const next = isMobile
+			? null
+			: measureUpdatesDrawerPlacement(shellRef.current);
+		// Resize fires often; keep the old object when nothing moved
+		setUpdatesPlacement(prev =>
+			prev &&
+			next &&
+			prev.left === next.left &&
+			prev.top === next.top &&
+			prev.height === next.height
+				? prev
+				: next
+		);
+	}, [isMobile]);
+	// The sidebar's box changes with the window, so follow it while open.
+	// Re-measure on every change of layout too (the sidebar may have just
+	// mounted or unmounted when the breakpoint flipped).
 	useEffect(() => {
 		if (!updatesDrawer.open) return;
+		measureUpdatesPlacement();
 		window.addEventListener('resize', measureUpdatesPlacement);
 		return () =>
 			window.removeEventListener('resize', measureUpdatesPlacement);
@@ -1267,6 +1276,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		contentPadding,
 		muiNativeTheme
 	);
+
+	// Never beside a sidebar that is no longer there, even before a re-measure
+	const drawerPlacement = isMobile ? null : updatesPlacement;
 
 	return (
 		<ThemeProvider theme={muiTheme}>
@@ -1759,19 +1771,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								NotificationSidebarContent && (
 									<Drawer
 										anchor={
-											updatesPlacement ? 'left' : 'right'
+											drawerPlacement ? 'left' : 'right'
 										}
 										open={updatesDrawer.open}
 										onClose={closeUpdates}
 										slotProps={{
 											paper: {
-												sx: updatesPlacement
+												sx: drawerPlacement
 													? {
 															width: 380,
-															maxWidth: `calc(100vw - ${updatesPlacement.left}px)`,
-															left: updatesPlacement.left,
-															top: updatesPlacement.top,
-															height: updatesPlacement.height
+															maxWidth: `calc(100vw - ${drawerPlacement.left}px)`,
+															left: drawerPlacement.left,
+															top: drawerPlacement.top,
+															height: drawerPlacement.height
 														}
 													: {
 															width: 380,

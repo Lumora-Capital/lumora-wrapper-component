@@ -500,7 +500,7 @@ describe('LumoraWrapper', () => {
 				});
 			});
 
-			it('keeps the right-hand drawer when the sidebar is not laid out', () => {
+			it('keeps the right-hand drawer when there is no aside sidebar', () => {
 				renderWrapper({
 					showNotifications: true,
 					notificationCount: 2,
