@@ -802,6 +802,40 @@ describe('CollapsibleSidebar', () => {
 			).toBeTruthy();
 		});
 
+		it('draws an aboveSearch link between the logo and the search, under its divider', () => {
+			renderSidebar({
+				showHeaderBar: true,
+				collapsed: false,
+				logo: <svg data-testid='brand-logo' />,
+				topContent: <input placeholder='Find' />,
+				mainLinks: [
+					{
+						text: 'Home',
+						path: '/home',
+						icon: <Home />,
+						dividerBefore: true,
+						aboveSearch: true
+					},
+					...mainLinks
+				]
+			});
+			const follows = (a: Element, b: Element) =>
+				Boolean(
+					a.compareDocumentPosition(b) &
+						Node.DOCUMENT_POSITION_FOLLOWING
+				);
+			const logo = screen.getByTestId('brand-logo');
+			const divider = screen.getByTestId('sidebar-divider-before-Home');
+			const home = screen.getByTestId('sidebar-item-Home');
+			const search = screen.getByPlaceholderText('Find');
+			expect(follows(logo, divider)).toBe(true);
+			expect(follows(divider, home)).toBe(true);
+			expect(follows(home, search)).toBe(true);
+			expect(
+				follows(search, screen.getByTestId('sidebar-item-Dashboard'))
+			).toBe(true);
+		});
+
 		it('shows the logo on top of the labeled rail (no header bar)', () => {
 			renderSidebar({
 				collapsed: true,

@@ -675,6 +675,16 @@ export declare type SidebarLink = {
      * above, pages below). Ignored on the last link of its list.
      */
     dividerAfter?: boolean;
+    /**
+     * A divider above this link. On the first link it sets the list apart
+     * from the logo above it.
+     */
+    dividerBefore?: boolean;
+    /**
+     * Draws this main link above the search and Ask Nexa, straight under the
+     * logo, e.g. the app's home page.
+     */
+    aboveSearch?: boolean;
 };
 
 /** A quick action shown at the end of a sidebar row, e.g. "New request". */

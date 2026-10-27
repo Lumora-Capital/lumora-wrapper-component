@@ -467,6 +467,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// it scrolls with its item and is clipped with the links instead of
 	// resting on the footer when a short window scrolls the rail.
 	const linksRef = React.useRef<HTMLDivElement>(null);
+	const topLinksRef = React.useRef<HTMLDivElement>(null);
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
@@ -509,6 +510,22 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		color: activeFill,
 		containerRef: linksRef
 	});
+	// Links drawn above the search have their own drop: the one below is
+	// clipped by the links' scroll container.
+	const topLinksGlass = useActiveGlass({
+		enabled: useFlyout,
+		isDark,
+		color: activeFill,
+		containerRef: topLinksRef
+	});
+	const topLinks = React.useMemo(
+		() => mainLinks.filter(link => link.aboveSearch),
+		[mainLinks]
+	);
+	const listLinks = React.useMemo(
+		() => mainLinks.filter(link => !link.aboveSearch),
+		[mainLinks]
+	);
 	const { close: closeFlyout } = flyout;
 	// A navigation from anywhere (a tile, the browser's back) closes it
 	React.useEffect(() => {
@@ -1257,23 +1274,28 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				alignItems: collapsed ? 'center' : 'stretch'
 			}}
 		>
-			{links.map((link, index) =>
-				link.dividerAfter && index < links.length - 1 ? (
+			{links.map((link, index) => {
+				const divider = (position: 'before' | 'after') => (
+					<Divider
+						data-testid={`sidebar-divider-${position === 'before' ? 'before-' : ''}${link.text}`}
+						sx={{
+							alignSelf: 'stretch',
+							my: useFlyout ? railGap : 1,
+							borderColor: 'divider'
+						}}
+					/>
+				);
+				const after = link.dividerAfter && index < links.length - 1;
+				return link.dividerBefore || after ? (
 					<React.Fragment key={link.text}>
+						{link.dividerBefore ? divider('before') : null}
 						{renderItem(link)}
-						<Divider
-							data-testid={`sidebar-divider-${link.text}`}
-							sx={{
-								alignSelf: 'stretch',
-								my: useFlyout ? railGap : 1,
-								borderColor: 'divider'
-							}}
-						/>
+						{after ? divider('after') : null}
 					</React.Fragment>
 				) : (
 					renderItem(link)
-				)
-			)}
+				);
+			})}
 		</Stack>
 	);
 
@@ -1431,6 +1453,20 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			>
 				{railLens.lens}
 				{headerBar ?? railBrand}
+				{topLinks.length > 0 ? (
+					<Box
+						ref={topLinksRef}
+						sx={{
+							flexShrink: 0,
+							position: 'relative',
+							mx: horizontalPadding,
+							pb: useFlyout ? railGap : 1
+						}}
+					>
+						{topLinksGlass.glass}
+						{renderLinkStack(topLinks)}
+					</Box>
+				) : null}
 				{topContent ? (
 					<Box
 						sx={{
@@ -1530,7 +1566,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						}}
 					>
 						{activeGlass.glass}
-						{renderLinkStack(mainLinks)}
+						{renderLinkStack(listLinks)}
 						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
 				    the divider moves below it, between the links and the user. */}
 						{secondaryLinks.length > 0 ? (
