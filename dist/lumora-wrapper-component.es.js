@@ -6871,7 +6871,6 @@ const gr = {
             open: Ft.open,
             onClose: Jr,
             slotProps: {
-              backdrop: { invisible: !0 },
               paper: {
                 sx: bt ? {
                   width: 380,
