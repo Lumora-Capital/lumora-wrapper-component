@@ -20,6 +20,35 @@ const glide = springTiming(GLIDE_SPRING);
 export const dockFalloff = (distance: number, reach = DOCK_REACH_PX) =>
 	distance >= reach ? 0 : (1 + Math.cos((Math.PI * distance) / reach)) / 2;
 
+/**
+ * The most `el` can scale about its centre and stay inside `bounds`'s
+ * visible box (its client area, so a classic scrollbar's gutter is left
+ * out): past a scroller's end it would scroll it, past its sides it clips.
+ * Measured from `el`'s layout box, so a scale already on it doesn't count.
+ */
+export const fitWithin = (el: HTMLElement, bounds: HTMLElement) => {
+	const { offsetWidth: width, offsetHeight: height } = el;
+	if (!(width > 0 && height > 0)) {
+		return Infinity;
+	}
+	const b = bounds.getBoundingClientRect();
+	const left = b.left + bounds.clientLeft;
+	const top = b.top + bounds.clientTop;
+	// A scale leaves the centre in place
+	const r = el.getBoundingClientRect();
+	const cx = r.left + r.width / 2;
+	const cy = r.top + r.height / 2;
+	const roomX = Math.min(
+		cx - width / 2 - left,
+		left + bounds.clientWidth - (cx + width / 2)
+	);
+	const roomY = Math.min(
+		cy - height / 2 - top,
+		top + bounds.clientHeight - (cy + height / 2)
+	);
+	return Math.min(1 + (2 * roomX) / width, 1 + (2 * roomY) / height);
+};
+
 export type DockMagnifyOptions = {
 	enabled: boolean;
 	/** The direction the items run in: the rail's column, the flyout's row. */
@@ -47,6 +76,12 @@ export type DockMagnifyOptions = {
 	 * container's `--dock-spread` holds how much longer the row has grown.
 	 */
 	carrierSelector?: string;
+	/**
+	 * The box the items swell within (the rail's scroller: grown past its
+	 * end it scrolls, past its sides it clips). An item near its edge grows
+	 * only as far as the room there. Omitted: no limit.
+	 */
+	boundsRef?: React.RefObject<HTMLElement | null>;
 };
 
 /**
@@ -72,7 +107,8 @@ export const useDockMagnify = (
 		transition,
 		maxScale = DOCK_MAX_SCALE,
 		reach = DOCK_REACH_PX,
-		carrierSelector
+		carrierSelector,
+		boundsRef
 	}: DockMagnifyOptions
 ) => {
 	const frame = React.useRef(0);
@@ -160,6 +196,12 @@ export const useDockMagnify = (
 		return Math.max(1, Math.min(fit, maxScale));
 	};
 
+	/** Items outside the bounds (the rail's footer) are not limited by them. */
+	const fitOf = (glyph: HTMLElement) => {
+		const bounds = boundsRef?.current;
+		return bounds?.contains(glyph) ? fitWithin(glyph, bounds) : Infinity;
+	};
+
 	const settle = () => {
 		cancelAnimationFrame(frame.current);
 		grown.current.forEach(glyph => {
@@ -187,10 +229,9 @@ export const useDockMagnify = (
 		const at = axis === 'x' ? x : y;
 		const row = entries(container).map(({ item, glyph }) => {
 			const centre = centreOf(item);
+			const cap = Math.max(1, Math.min(capOf(item, glyph), fitOf(glyph)));
 			const scale =
-				1 +
-				(capOf(item, glyph) - 1) *
-					dockFalloff(Math.abs(at - centre), reach);
+				1 + (cap - 1) * dockFalloff(Math.abs(at - centre), reach);
 			glyph.style.transition = `scale ${DOCK_FOLLOW_MS}ms ease-out${extra}`;
 			if (scale > 1.001) {
 				glyph.style.scale = scale.toFixed(3);

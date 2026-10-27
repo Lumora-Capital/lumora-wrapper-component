@@ -25,6 +25,9 @@ export const FLOATING_RAIL_ICON_PX = 24;
  * content, links, bottom group, divider and footer alike. */
 export const FLOATING_RAIL_GAP_PX = 4;
 export const FLOATING_RAIL_GUTTER_PX = 8;
+/** How far the rail's button under the pointer swells (the flyout's tiles
+ * go further: there is room around them). */
+export const RAIL_MAX_SCALE = 1.4;
 export const FLOATING_RAIL_RADIUS_PX = GLASS_RADIUS_PX;
 
 /** Content padding: 16px (2 theme spacing units) on phones, 18px from `md`. */

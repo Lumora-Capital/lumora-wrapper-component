@@ -880,4 +880,44 @@ describe('CollapsibleSidebar', () => {
 			expect(onBrandClick).toHaveBeenCalledTimes(1);
 		});
 	});
+
+	describe('links scroller', () => {
+		const scrollerOf = () =>
+			screen
+				.getByTestId('collapsible-sidebar')
+				.querySelector<HTMLElement>(
+					':scope > div:not([data-testid])'
+				) as HTMLElement;
+
+		const sizeLinks = (linksPx: number) => {
+			jest.spyOn(
+				HTMLElement.prototype,
+				'offsetHeight',
+				'get'
+			).mockImplementation(function (this: HTMLElement) {
+				return this.parentElement === scrollerOf() ? linksPx : 0;
+			});
+			jest.spyOn(
+				HTMLElement.prototype,
+				'clientHeight',
+				'get'
+			).mockReturnValue(400);
+		};
+
+		afterEach(() => jest.restoreAllMocks());
+
+		// A hover swell reaching past the end would otherwise scroll it
+		// and flash its scrollbar
+		it("doesn't scroll while the links fit", () => {
+			sizeLinks(300);
+			renderSidebar({ collapsed: true });
+			expect(scrollerOf()).toHaveStyle({ overflowY: 'hidden' });
+		});
+
+		it('scrolls once the links are longer than it', () => {
+			sizeLinks(600);
+			renderSidebar({ collapsed: true });
+			expect(scrollerOf()).toHaveStyle({ overflowY: 'auto' });
+		});
+	});
 });

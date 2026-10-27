@@ -43,7 +43,8 @@ import {
 	FLOATING_RAIL_GAP_PX,
 	FLOATING_RAIL_ICON_PX,
 	FLOATING_RAIL_ITEM_PX,
-	FLOATING_RAIL_WIDTH_PX
+	FLOATING_RAIL_WIDTH_PX,
+	RAIL_MAX_SCALE
 } from './shellLayout';
 import useFlyoutIntent from './useFlyoutIntent';
 import { useDockMagnify } from './useDockMagnify';
@@ -190,9 +191,6 @@ const ROW_LABEL_WEIGHT = 600;
  * (brand, top content, links, bottom group, footer) takes it once in place of
  * its own padding. */
 const railGap = `${FLOATING_RAIL_GAP_PX}px`;
-/** How far the rail's button under the pointer swells (the flyout's tiles
- * go further: there is room around them). */
-const RAIL_MAX_SCALE = 1.4;
 
 /** The floating rail's side padding, matching its top content and footer. */
 const FLOATING_RAIL_INSET_PX =
@@ -245,6 +243,36 @@ function useScrollbarWidth(
 		return () => observer.disconnect();
 	}, [scrollRef, enabled]);
 	return width;
+}
+
+/**
+ * Whether the scroller's links are longer than it, at rest: from layout
+ * sizes, which a scale or transform on an item never changes. While they
+ * fit, the scroller doesn't scroll at all, so a hover swell or gel reaching
+ * past its end can't flash its scrollbar.
+ */
+function useOverflowsAtRest(scrollRef: React.RefObject<HTMLElement | null>) {
+	const [overflows, setOverflows] = React.useState(false);
+	React.useLayoutEffect(() => {
+		const el = scrollRef.current;
+		const links = el?.firstElementChild as HTMLElement | null | undefined;
+		if (!el || !links) return;
+		const measure = () => {
+			const style = getComputedStyle(el);
+			const content =
+				links.offsetHeight +
+				parseFloat(style.paddingTop) +
+				parseFloat(style.paddingBottom);
+			setOverflows(content > el.clientHeight + 0.5);
+		};
+		measure();
+		if (typeof ResizeObserver === 'undefined') return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		observer.observe(links);
+		return () => observer.disconnect();
+	}, [scrollRef]);
+	return overflows;
 }
 
 /** Gap kept between the active item and the scroller's edge when revealing it. */
@@ -442,6 +470,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
+	const linksOverflow = useOverflowsAtRest(scrollRef);
 	const railLens = useRailLens(useFlyout, isDark, flyout.state?.key ?? null);
 	// The Dock's magnification down the rail, as the flyout's tiles have it:
 	// each button swells whole around the pointer, its hover lens and
@@ -455,6 +484,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		// One button's pitch: the one under the pointer swells, its
 		// neighbours only as the pointer crosses over to them
 		reach: FLOATING_RAIL_ITEM_PX + FLOATING_RAIL_GAP_PX,
+		// Only 4px of padding at the scroller's ends: the first and last
+		// buttons swell less, or the last would scroll the rail
+		boundsRef: scrollRef,
 		transition: `transform ${railGel.duration}ms ${railGel.easing}, background-color 160ms ease`
 	});
 	// Both settle when the rail scrolls its items out from under them
@@ -1420,7 +1452,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						minHeight: 0,
 						display: 'flex',
 						flexDirection: 'column',
-						overflowY: 'auto',
+						overflowY: linksOverflow ? 'auto' : 'hidden',
 						overflowX: 'hidden',
 						// Scrollbar shows only while the pointer is inside (or a
 						// keyboard user tabs in). Not :focus-within, since a

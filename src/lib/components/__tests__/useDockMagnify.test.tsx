@@ -78,6 +78,34 @@ const CarriedRail = () => {
 	);
 };
 
+/** The rail's three items in a scroller that ends 4px below the last,
+ * plus a footer item outside it. */
+const SCROLLER = { top: 0, left: -20, width: 92, height: 132 };
+const BoundedRail = () => {
+	const ref = React.useRef<HTMLElement>(null);
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	const { containerProps } = useDockMagnify(ref, {
+		enabled: true,
+		axis: 'y',
+		itemSelector: 'button',
+		boundsRef: scrollRef
+	});
+	return (
+		<nav ref={ref} data-testid='rail' {...containerProps}>
+			<div ref={scrollRef} data-testid='scroller'>
+				{[0, 1, 2].map(i => (
+					<button
+						key={i}
+						data-testid={`item-${i}`}
+						data-top={i * 44}
+					/>
+				))}
+			</div>
+			<button data-testid='footer' data-top={200} />
+		</nav>
+	);
+};
+
 // jsdom has no PointerEvent: a MouseEvent of that type carries the point
 const movePointer = (clientX: number, clientY: number, pointerType = 'mouse') =>
 	act(() => {
@@ -101,6 +129,12 @@ beforeEach(() => {
 		function (this: Element) {
 			if (this.getAttribute('data-testid') === 'rail') {
 				return { ...rect(0, 0, 0), ...RAIL } as DOMRect;
+			}
+			if (this.getAttribute('data-testid') === 'scroller') {
+				return {
+					...rect(SCROLLER.top, SCROLLER.left, 0),
+					...SCROLLER
+				} as DOMRect;
 			}
 			const button = this.closest('button') as HTMLElement | null;
 			const top = Number(button?.dataset.top ?? 0);
@@ -194,5 +228,49 @@ describe('useDockMagnify', () => {
 		expect(slide(0)).toBeCloseTo(growth / 2, 0);
 		expect(slide(1)).toBeGreaterThan(slide(0));
 		expect(slide(2)).toBeGreaterThan(slide(1));
+	});
+
+	describe('within bounds', () => {
+		beforeEach(() => {
+			jest.spyOn(
+				HTMLElement.prototype,
+				'offsetWidth',
+				'get'
+			).mockReturnValue(ITEM_PX);
+			jest.spyOn(
+				HTMLElement.prototype,
+				'offsetHeight',
+				'get'
+			).mockReturnValue(ITEM_PX);
+			jest.spyOn(
+				HTMLElement.prototype,
+				'clientWidth',
+				'get'
+			).mockReturnValue(SCROLLER.width);
+			jest.spyOn(
+				HTMLElement.prototype,
+				'clientHeight',
+				'get'
+			).mockReturnValue(SCROLLER.height);
+		});
+
+		it('grows the last item only into the room before the end', () => {
+			render(<BoundedRail />);
+			movePointer(26, 108);
+			// 4px below a 40px item: 8px of growth, 1.2
+			expect(Number(scaleOf('item-2'))).toBeCloseTo(1.2);
+		});
+
+		it('keeps the full swell away from the edges', () => {
+			render(<BoundedRail />);
+			movePointer(26, 64);
+			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
+		});
+
+		it('leaves items outside the bounds unlimited', () => {
+			render(<BoundedRail />);
+			movePointer(26, 220);
+			expect(Number(scaleOf('footer'))).toBeCloseTo(DOCK_MAX_SCALE);
+		});
 	});
 });

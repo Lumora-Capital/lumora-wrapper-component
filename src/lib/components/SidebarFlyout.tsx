@@ -21,7 +21,8 @@ import {
 	glassLabelSx,
 	tileIn
 } from './liquidGlass';
-import { DOCK_FOLLOW_MS, useDockMagnify } from './useDockMagnify';
+import { RAIL_MAX_SCALE } from './shellLayout';
+import { DOCK_FOLLOW_MS, fitWithin, useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Each page's icon tile: a step up from the rail's buttons, room for its
@@ -59,6 +60,31 @@ const TILE_STAGGER_MS = 18;
 /** How far the group's rail icon swells as its tiles open: a gentler gel
  * than a press, so moving between groups doesn't jiggle the rail. */
 const ANCHOR_SWELL_SCALE = 1.08;
+
+/** The scroller `el` sits in, if any. */
+const scrollerOf = (el: HTMLElement) => {
+	for (let box = el.parentElement; box; box = box.parentElement) {
+		const { overflowY } = getComputedStyle(box);
+		if (overflowY === 'auto' || overflowY === 'scroll') {
+			return box;
+		}
+	}
+	return null;
+};
+
+/**
+ * The anchor's gel, within what its rail's hover swell leaves of the room
+ * in its scroller: at the scroller's end the swell takes it all, and the
+ * gel on top would scroll the rail for a moment (a scrollbar flash).
+ */
+const anchorSwellOf = (anchor: HTMLElement) => {
+	const scroller = scrollerOf(anchor);
+	if (!scroller) {
+		return ANCHOR_SWELL_SCALE;
+	}
+	const fit = fitWithin(anchor, scroller);
+	return Math.min(ANCHOR_SWELL_SCALE, fit / Math.min(fit, RAIL_MAX_SCALE));
+};
 /** Above the page, its sticky bars and the docked chat (1140); below the
  * MUI drawers and menus, which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
@@ -203,8 +229,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 
 	// The icon swells as its glass opens, like a pressed gel button
 	React.useEffect(() => {
-		if (anchor) {
-			gelSwell(anchor, ANCHOR_SWELL_SCALE);
+		if (!anchor) {
+			return;
+		}
+		const scale = anchorSwellOf(anchor);
+		if (scale > 1.001) {
+			gelSwell(anchor, scale);
 		}
 	}, [anchor]);
 
