@@ -1772,7 +1772,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				    desktop it opens beside the sidebar and as tall as it, by
 				    the bell; otherwise on the right. `key` remounts the content
 				    when a different tab is requested, so hosts that read
-				    `initialTab` once still switch. */}
+				    `initialTab` once still switch. The backdrop is invisible, so
+				    the page isn't dimmed but an outside click still closes the
+				    drawer. */}
 							{showNotifications &&
 								NotificationSidebarContent && (
 									<Drawer
@@ -1782,6 +1784,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 										open={updatesDrawer.open}
 										onClose={closeUpdates}
 										slotProps={{
+											backdrop: { invisible: true },
 											paper: {
 												sx: drawerPlacement
 													? {
