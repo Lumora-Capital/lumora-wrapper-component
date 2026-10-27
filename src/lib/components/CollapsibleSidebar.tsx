@@ -151,6 +151,15 @@ const GROUP_ARROW_MASK = `url("data:image/svg+xml,${encodeURIComponent(
  * floating rail's 10px gutter. */
 const GROUP_ARROW_OUTSET_PX = 4;
 
+/**
+ * The group arrow's outset beside a scrollbar `bar` px wide. A classic bar
+ * takes the gutter the arrow sits in (and clips it), so the arrow draws
+ * back by as much, at most to just inside the button's edge: the room
+ * there beside the centred icon still keeps it clear.
+ */
+const groupArrowOutset = (bar: number) =>
+	Math.max(0, Math.min(GROUP_ARROW_OUTSET_PX, FLOATING_RAIL_INSET_PX - bar));
+
 /** Small up/down chevron marking a parent on the narrow rails. */
 const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 	open,
@@ -1023,8 +1032,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 							content: '""',
 							position: 'absolute',
 							// Just past the button, in the rail's side gutter,
-							// clear of the icon
-							right: -GROUP_ARROW_OUTSET_PX,
+							// clear of the icon (drawn back inside it when
+							// the scrollbar takes that gutter)
+							right: -groupArrowOutset(railScrollbarPx),
 							top: '50%',
 							transform: 'translateY(-50%)',
 							width: 5,
