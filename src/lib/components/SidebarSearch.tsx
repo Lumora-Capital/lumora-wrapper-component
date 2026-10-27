@@ -58,7 +58,13 @@ interface SidebarSearchProps {
 	onAutoFocused?: () => void;
 	color: string;
 	hoverColor: string;
+	/** The host's search shortcut (e.g. ['⌘', 'K']), named in the icon's tooltip. */
+	shortcutKeys?: string[];
 }
+
+/** "Search", with the host's shortcut when it has one: "Search (⌘K)". */
+const searchTooltip = (shortcutKeys?: string[]) =>
+	shortcutKeys ? `Search (${shortcutKeys.join('')})` : 'Search';
 
 /** Slot for the host's global search, under the brand and above the links. */
 const SidebarSearch: React.FC<SidebarSearchProps> = ({
@@ -69,7 +75,8 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 	autoFocus = false,
 	onAutoFocused,
 	color,
-	hoverColor
+	hoverColor,
+	shortcutKeys
 }) => {
 	const railTooltip = useRailTooltipProps();
 	const onGlassRail = React.useContext(RailGlassContext);
@@ -103,6 +110,7 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 				icon={icon}
 				color={color}
 				railTooltip={railTooltip}
+				tooltip={searchTooltip(shortcutKeys)}
 			/>
 		);
 	}
@@ -112,7 +120,12 @@ const SidebarSearch: React.FC<SidebarSearchProps> = ({
 			data-testid='sidebar-search'
 			sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
 		>
-			<Tooltip title='Search' placement='right' arrow {...railTooltip}>
+			<Tooltip
+				title={searchTooltip(shortcutKeys)}
+				placement='right'
+				arrow
+				{...railTooltip}
+			>
 				<IconButton
 					aria-label='Search'
 					onClick={event =>
@@ -159,7 +172,8 @@ const HoverSearch: React.FC<{
 	icon?: React.ReactNode;
 	color: string;
 	railTooltip: ReturnType<typeof useRailTooltipProps>;
-}> = ({ search, icon, color, railTooltip }) => {
+	tooltip: string;
+}> = ({ search, icon, color, railTooltip, tooltip }) => {
 	const isDark = useTheme().palette.mode === 'dark';
 	const well = glassWellSx(isDark, withAlpha(color, isDark ? 0.3 : 0.35));
 	// Solid (glass look off): the host's field with the glass corner and
@@ -253,7 +267,7 @@ const HoverSearch: React.FC<{
 			sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
 		>
 			<Tooltip
-				title={open ? '' : 'Search'}
+				title={open ? '' : tooltip}
 				placement='right'
 				arrow
 				{...railTooltip}

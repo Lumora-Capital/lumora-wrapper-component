@@ -369,6 +369,11 @@ export declare interface LumoraWrapperProps {
     /** The notifications bell's icon, in place of the default. */
     notificationsIcon?: default_2.ReactNode;
     /**
+     * Letter of the host's search shortcut with ⌘ (Mac) / Ctrl, named in the
+     * collapsed search icon's tooltip. A hint only: the host handles the key.
+     */
+    searchShortcut?: string | false;
+    /**
      * Wordmark and default-logo tint, when it should differ from the sidebar
      * text (e.g. a teal CENTRA over dark-gray links).
      */
