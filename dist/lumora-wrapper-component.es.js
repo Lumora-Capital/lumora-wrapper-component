@@ -6858,6 +6858,7 @@ const mr = {
             open: Wt.open,
             onClose: Zr,
             slotProps: {
+              backdrop: { invisible: !0 },
               paper: {
                 sx: xt ? {
                   width: 380,

@@ -7,6 +7,7 @@ import {
 	mockSidebarLinks,
 	render,
 	screen,
+	waitFor,
 	within
 } from './testUtils';
 
@@ -432,6 +433,27 @@ describe('LumoraWrapper', () => {
 			).not.toBeInTheDocument();
 			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 			expect(screen.getByText('close notifications')).toBeInTheDocument();
+		});
+
+		it('does not dim the page, and an outside click still closes it', async () => {
+			const Panel = () => <div>notification list</div>;
+			renderWrapper({
+				showNotifications: true,
+				NotificationSidebarContent: Panel
+			});
+
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+			const backdrop = document.querySelector(
+				'.MuiDrawer-root .MuiBackdrop-root'
+			) as HTMLElement;
+			expect(backdrop).toHaveClass('MuiBackdrop-invisible');
+
+			fireEvent.click(backdrop);
+			await waitFor(() =>
+				expect(
+					screen.queryByText('notification list')
+				).not.toBeInTheDocument()
+			);
 		});
 
 		describe('placement', () => {
