@@ -253,6 +253,11 @@ export interface LumoraWrapperProps {
 	/** The notifications bell's icon, in place of the default. */
 	notificationsIcon?: React.ReactNode;
 	/**
+	 * Letter of the host's search shortcut with ⌘ (Mac) / Ctrl, named in the
+	 * collapsed search icon's tooltip. A hint only: the host handles the key.
+	 */
+	searchShortcut?: string | false;
+	/**
 	 * Wordmark and default-logo tint, when it should differ from the sidebar
 	 * text (e.g. a teal CENTRA over dark-gray links).
 	 */
@@ -532,6 +537,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	searchComponent,
 	searchIcon,
 	notificationsIcon,
+	searchShortcut = false,
 	brandColor,
 	contentPadding = DEFAULT_CONTENT_PADDING,
 	userMenuItems,
@@ -1006,6 +1012,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				accentColor={sidebarChromeFg}
 			/>
 		) : null;
+	const searchShortcutKeys = searchShortcut
+		? [isApplePlatform() ? '⌘' : 'Ctrl', searchShortcut.toUpperCase()]
+		: undefined;
 	const renderSearch = (mode: 'full' | 'expand' | 'popover') =>
 		searchNode ? (
 			<SidebarSearch
@@ -1020,6 +1029,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				onAutoFocused={clearFocusSearch}
 				color={sidebarChromeFg}
 				hoverColor={sidebarChromeHover}
+				shortcutKeys={searchShortcutKeys}
 			/>
 		) : null;
 	// Under the brand: Ask Nexa, then the host's search
