@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import { type Theme, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import Brand from './Brand';
+import HoverTooltip from './HoverTooltip';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	RAIL_ITEM_ATTR,
@@ -703,7 +704,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		return (
 			<Box key={link.text} sx={{ position: 'relative' }}>
 				{row}
-				<Tooltip title={action.label} placement='right' arrow>
+				<HoverTooltip title={action.label} placement='right' arrow>
 					<IconButton
 						aria-label={action.label}
 						data-testid={`sidebar-action-${link.text}`}
@@ -746,7 +747,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					>
 						{action.icon}
 					</IconButton>
-				</Tooltip>
+				</HoverTooltip>
 			</Box>
 		);
 	};
@@ -980,7 +981,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			);
 		}
 		return (
-			<Tooltip
+			<HoverTooltip
 				key={key}
 				title={label}
 				placement='right'
@@ -988,7 +989,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				{...(useFlyout ? glassTooltipProps : {})}
 			>
 				{disabled ? <span>{button}</span> : button}
-			</Tooltip>
+			</HoverTooltip>
 		);
 	};
 
@@ -1181,9 +1182,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const parentButton = showLabels ? (
 			parentIconButton
 		) : (
-			<Tooltip title={link.text} placement='right' arrow>
+			<HoverTooltip title={link.text} placement='right' arrow>
 				{parentIconButton}
-			</Tooltip>
+			</HoverTooltip>
 		);
 
 		return (

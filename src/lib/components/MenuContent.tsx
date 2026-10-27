@@ -13,6 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import HoverTooltip from './HoverTooltip';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	hasChildren,
@@ -187,9 +188,9 @@ const withRailTooltip = (
 	railShowTitles ? (
 		button
 	) : (
-		<Tooltip title={text} placement='right' arrow>
+		<HoverTooltip title={text} placement='right' arrow>
 			{button}
-		</Tooltip>
+		</HoverTooltip>
 	);
 
 // Desktop rail item with a hover/keyboard submenu: subitems live only in the
