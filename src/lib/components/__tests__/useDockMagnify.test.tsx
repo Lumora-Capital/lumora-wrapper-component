@@ -141,7 +141,13 @@ beforeEach(() => {
 			const top = Number(button?.dataset.top ?? 0);
 			const left = Number(button?.dataset.left ?? 6);
 			if (this.tagName === 'BUTTON') {
-				return rect(top, left, ITEM_PX);
+				// Drawn where its carrier has slid it, the glide done
+				const slid = parseFloat(
+					this.closest<HTMLElement>(
+						'[data-carrier]'
+					)?.style.translate.split(' ')[1] ?? '0'
+				);
+				return rect(top + (slid || 0), left, ITEM_PX);
 			}
 			const scale = Number((this as HTMLElement).style.scale) || 1;
 			return rect(top + 10, left + 10, GLYPH_PX * scale);
@@ -232,8 +238,17 @@ describe('useDockMagnify', () => {
 	});
 
 	describe('hovered only', () => {
-		// Items rest with centres at 20, 64 and 108: halfway is 42 and 86
-		it('swells the item nearest the pointer at rest, whole, and no other', () => {
+		beforeEach(() => {
+			jest.spyOn(
+				HTMLElement.prototype,
+				'offsetHeight',
+				'get'
+			).mockReturnValue(ITEM_PX);
+		});
+
+		// Items rest with centres at 20, 64 and 108. The swollen one (64px)
+		// moves on by half its growth (12px), the ones after it by all of it
+		it('swells the item nearest the pointer, whole, and no other', () => {
 			render(<CarriedRail hoveredOnly />);
 			movePointer(26, 60);
 			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
@@ -241,14 +256,27 @@ describe('useDockMagnify', () => {
 			expect(scaleOf('item-2')).toBe('');
 		});
 
-		it('hands over only a little past halfway to the next', () => {
+		// Item 1 swollen covers 44 to 108; item 2, slid on, 112 to 152
+		it('holds while the pointer is on the swollen item, past halfway at rest', () => {
 			render(<CarriedRail hoveredOnly />);
 			movePointer(26, 64);
-			movePointer(26, 88);
+			movePointer(26, 100);
 			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
-			movePointer(26, 94);
+			movePointer(26, 112);
+			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
+			expect(scaleOf('item-2')).toBe('');
+		});
+
+		// Item 2 swollen covers 88 to 152, so lands under the pointer
+		it('hands over just off the swollen item, to one that lands under the pointer', () => {
+			render(<CarriedRail hoveredOnly />);
+			movePointer(26, 64);
+			movePointer(26, 116);
 			expect(Number(scaleOf('item-2'))).toBeCloseTo(DOCK_MAX_SCALE);
 			expect(scaleOf('item-1')).toBe('');
+			// Back within item 2 as it now sits: it holds, no bounce
+			movePointer(26, 92);
+			expect(Number(scaleOf('item-2'))).toBeCloseTo(DOCK_MAX_SCALE);
 		});
 	});
 

@@ -12,8 +12,8 @@ export const DOCK_MAX_SCALE = 1.6;
 export const DOCK_REACH_PX = 110;
 /** Short enough to track the pointer, long enough to smooth each frame. */
 export const DOCK_FOLLOW_MS = 110;
-/** With `hoveredOnly`, how far past halfway to the next item the pointer
- * goes before that one takes over, so it never flickers between the two. */
+/** With `hoveredOnly`, how far off the swollen item the pointer goes before
+ * another can take over, so it never flickers between the two. */
 export const DOCK_HANDOFF_PX = 6;
 
 const glide = springTiming(GLIDE_SPRING);
@@ -90,8 +90,10 @@ export type DockMagnifyOptions = {
 	/**
 	 * Only the item nearest the pointer swells, whole, and the rest keep
 	 * their size (they still make room, with `carrierSelector`). Nearest
-	 * where each stands at rest, not where it is drawn: a swollen item would
-	 * otherwise cover the way to the next, which slides off as it grows. As
+	 * where each is headed, swollen and slid along, so the swollen one is
+	 * the one under the pointer: anchored at the row's start, an item slides
+	 * on as it grows, and judged at rest the swell would leave it while the
+	 * pointer was still on it, for one that lands away from the pointer. As
 	 * it changes only from item to item, not with every move, it glides
 	 * there on the settle's spring. That item carries `data-dock-hovered`,
 	 * for a hover state that agrees with the swell (the pointer may still be
@@ -159,12 +161,33 @@ export const useDockMagnify = (
 
 	const carrierOf = (item: HTMLElement) =>
 		carrierSelector ? item.closest<HTMLElement>(carrierSelector) : null;
-	/** How far an item's carrier has been slid along the row. */
-	const slidOf = (item: HTMLElement) => {
-		const [x = '0', y = '0'] = (carrierOf(item)?.style.translate ?? '')
-			.split(' ')
-			.filter(Boolean);
+	/** A `translate`'s distance along the row. */
+	const alongOf = (translate: string) => {
+		const [x = '0', y = '0'] = translate.split(' ').filter(Boolean);
 		return axis === 'x' ? parseFloat(x) || 0 : parseFloat(y) || 0;
+	};
+	/** How far an item's carrier is slid along the row as drawn now (mid
+	 * glide, not where it is headed), to take back out of where it is drawn. */
+	const slidOf = (item: HTMLElement) => {
+		const carrier = carrierOf(item);
+		if (!carrier) {
+			return 0;
+		}
+		const drawn = getComputedStyle(carrier).translate;
+		return alongOf(
+			drawn && drawn !== 'none' ? drawn : carrier.style.translate
+		);
+	};
+	/** How far the pointer at `at` is from where an item is headed: its rest
+	 * centre slid on by its carrier, at the scale it grows to; 0 over it.
+	 * Where it is headed rather than where it is drawn, so a glide under way
+	 * can't hand the swell back. */
+	const distanceTo = (item: HTMLElement, at: number) => {
+		const size = axis === 'x' ? item.offsetWidth : item.offsetHeight;
+		const half = (size * (Number(item.style.scale) || 1)) / 2;
+		const centre =
+			centreOf(item) + alongOf(carrierOf(item)?.style.translate ?? '');
+		return Math.max(0, Math.abs(at - centre) - half);
 	};
 	/** An item's centre along the row where it stands at rest: its scale
 	 * grows it about that centre, and any slide is taken back out. */
@@ -357,26 +380,29 @@ export const useDockMagnify = (
 				return;
 			}
 			if (hoveredOnly) {
-				// The nearest at rest; the current one holds until the
-				// pointer is a little past halfway to another
+				// The one nearest as drawn, swollen and slid along: the
+				// current one holds while the pointer is on it or just off
+				// it, and the next takes over only where it will sit under
+				// the pointer once it has swollen
 				const at = axis === 'x' ? clientX : clientY;
-				const distanceTo = (item: HTMLElement) =>
-					Math.abs(at - centreOf(item));
-				let nearest: HTMLElement | null = null;
-				entries(container).forEach(({ item }) => {
-					if (!nearest || distanceTo(item) < distanceTo(nearest)) {
-						nearest = item;
-					}
-				});
 				const current = hovered.current;
-				if (
-					nearest &&
-					(!current ||
-						!container.contains(current) ||
-						distanceTo(nearest) + DOCK_HANDOFF_PX <
-							distanceTo(current))
-				) {
-					setHovered(nearest);
+				const holds =
+					current &&
+					container.contains(current) &&
+					distanceTo(current, at) <= DOCK_HANDOFF_PX;
+				if (!holds) {
+					let nearest: HTMLElement | null = null;
+					let best = Infinity;
+					entries(container).forEach(({ item }) => {
+						const distance = distanceTo(item, at);
+						if (distance < best) {
+							nearest = item;
+							best = distance;
+						}
+					});
+					if (nearest) {
+						setHovered(nearest);
+					}
 				}
 			}
 			swell(container, clientX, clientY);
