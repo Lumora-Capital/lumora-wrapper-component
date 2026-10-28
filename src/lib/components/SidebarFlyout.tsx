@@ -22,7 +22,7 @@ import {
 	tileIn
 } from './liquidGlass';
 import { RAIL_MAX_SCALE } from './shellLayout';
-import { DOCK_FOLLOW_MS, fitWithin, useDockMagnify } from './useDockMagnify';
+import { fitWithin, useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Each page's icon tile: a step up from the rail's buttons, room for its
@@ -30,7 +30,10 @@ import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 const TILE_PX = 52;
 const TILE_ICON_PX = 36;
 /** How far the tile under the pointer swells. */
-const TILE_MAX_SCALE = 1.8;
+const TILE_MAX_SCALE = 2;
+/** The room the tile under the pointer opens either side of it, beyond
+ * its growth, pushing its neighbours a little further away. */
+const TILE_SPACING_PX = 10;
 /** Round tiles: a circle as wide as the tile. */
 const TILE_RADIUS_PX = TILE_PX / 2;
 const TILE_SELECTOR = '[data-flyout-tile]';
@@ -272,13 +275,17 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		transition: TILE_TRANSITION,
 		// A bigger swell than the rail's: the tiles are the destination
 		maxScale: TILE_MAX_SCALE,
-		// The neighbours make room as it grows
-		carrierSelector: '[role="menuitem"]'
+		// The neighbours make room as it grows, and a little more
+		carrierSelector: '[role="menuitem"]',
+		spacing: TILE_SPACING_PX,
+		// Only the tile under the pointer swells; the rest keep their size
+		hoveredOnly: true
 	});
 
-	// The heading moves only when a tile would reach it: one that grows up
-	// out of the row (its name below it) and, slid along by the dock, still
-	// sits under the heading's span. It follows the scales the dock writes,
+	// The heading moves only when a page would reach it: a tile swelling up
+	// about its centre, or a name above its tile pushed up by it, that,
+	// slid along by the dock, still sits under the heading's span. It
+	// follows the scales the dock writes,
 	// watched from the moment it mounts (Popper mounts the row after this
 	// component's effects have run, so a ref callback rather than an effect).
 	const stopFollowing = React.useRef<() => void>(undefined);
@@ -295,25 +302,31 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			const headingLeft = heading.offsetLeft - heading.offsetWidth / 2;
 			const headingRight = headingLeft + heading.offsetWidth;
 			let rise = 0;
-			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
-				if (tile.dataset.flyoutGrows !== 'up') {
-					return;
+			// Reaches the heading if it sits under its span and above its gap
+			const reach = (left: number, width: number, top: number) => {
+				if (left < headingRight && left + width > headingLeft) {
+					rise = Math.max(rise, -top - HEADING_GAP_PX);
 				}
+			};
+			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
 				const scale = parseFloat(tile.style.scale) || 1;
-				const slide =
-					parseFloat(
-						tile.closest<HTMLElement>('[role="menuitem"]')?.style
-							.translate ?? ''
-					) || 0;
-				const left =
-					tile.offsetLeft + slide - ((scale - 1) * TILE_PX) / 2;
-				if (
-					left < headingRight &&
-					left + scale * TILE_PX > headingLeft
-				) {
-					rise = Math.max(
-						rise,
-						(scale - 1) * TILE_PX - tile.offsetTop - HEADING_GAP_PX
+				// How far it grows past each edge, about its centre
+				const growth = ((scale - 1) * TILE_PX) / 2;
+				const page = tile.closest<HTMLElement>('[role="menuitem"]');
+				const slide = parseFloat(page?.style.translate ?? '') || 0;
+				reach(
+					tile.offsetLeft + slide - growth,
+					scale * TILE_PX,
+					tile.offsetTop - growth
+				);
+				const name =
+					page?.querySelector<HTMLElement>('[data-flyout-name]');
+				const slot = name?.parentElement;
+				if (name && slot && tile.dataset.flyoutNameSide === 'above') {
+					reach(
+						slot.offsetLeft + slide,
+						name.offsetWidth,
+						slot.offsetTop + name.offsetTop - growth
 					);
 				}
 			});
@@ -508,7 +521,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 									// The panel stretches as the dock pushes
 									// the pages along, as the Dock's shelf does
 									mr: 'var(--dock-spread, 0px)',
-									transition: `margin-right ${glide.duration}ms ${glide.easing}`,
+									// In step with the pages it makes room for
+									transition: `margin-right var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`,
 									[REDUCED_MOTION]: { transition: 'none' }
 								}}
 							>
@@ -528,7 +542,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 										left: '50%',
 										transform: 'translateX(-50%)',
 										mb: `${HEADING_GAP_PX}px`,
-										transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
+										transition: `translate var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`,
 										[REDUCED_MOTION]: {
 											transition: 'none'
 										},
@@ -884,7 +898,11 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 						},
 					color: labelColor,
 					textDecoration: 'none',
-					'&:hover': lit,
+					// Lit with the swell (the tile nearest the pointer, which
+					// may not be the one under it as the last shrinks away);
+					// by a plain hover only while nothing swells (reduced motion)
+					'&:has([data-dock-hovered])': lit,
+					'[role="menu"]:not(:has([data-dock-hovered])) &:hover': lit,
 					'&.Mui-focusVisible': {
 						...lit,
 						'& [data-flyout-tile]': {
@@ -915,7 +933,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				/>
 				<Box
 					data-flyout-tile=''
-					data-flyout-grows={nameOnTop ? 'down' : 'up'}
+					data-flyout-name-side={nameOnTop ? 'above' : 'below'}
 					sx={{
 						...cardSx,
 						left: tileLeft,
@@ -928,10 +946,9 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 						height: TILE_PX,
 						p: 0,
 						borderRadius: `${TILE_RADIUS_PX}px`,
-						// Grows out of the row, away from its name
-						transformOrigin: nameOnTop
-							? 'center top'
-							: 'center bottom',
+						// Grows about its centre, so the row stays level; its
+						// name moves aside to clear it (see the name's slot)
+						transformOrigin: 'center',
 						transition: `scale ${glide.duration}ms ${glide.easing}, ${TILE_TRANSITION}`,
 						'& .MuiSvgIcon-root': {
 							fontSize: TILE_ICON_PX,
@@ -960,7 +977,14 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 						display: 'flex',
 						// Held against its own tile, not floating mid-band; a
 						// name too long for the band bleeds away from the tile
-						alignItems: nameOnTop ? 'flex-end' : 'flex-start'
+						alignItems: nameOnTop ? 'flex-end' : 'flex-start',
+						// Pushed away from its tile by as much as the tile
+						// grows towards it (`--dock-scale`, on the page)
+						translate: `0 calc((var(--dock-scale, 1) - 1) * ${
+							nameOnTop ? -TILE_PX / 2 : TILE_PX / 2
+						}px)`,
+						transition: `translate var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`,
+						[REDUCED_MOTION]: { transition: 'none' }
 					}}
 				>
 					<Box

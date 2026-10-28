@@ -59,13 +59,14 @@ const Rail = ({ enabled = true }: { enabled?: boolean }) => {
 };
 
 /** The rail's three items, each carried by a wrapper that slides. */
-const CarriedRail = () => {
+const CarriedRail = ({ hoveredOnly = false }: { hoveredOnly?: boolean }) => {
 	const ref = React.useRef<HTMLElement>(null);
 	const { containerProps } = useDockMagnify(ref, {
 		enabled: true,
 		axis: 'y',
 		itemSelector: 'button',
-		carrierSelector: '[data-carrier]'
+		carrierSelector: '[data-carrier]',
+		hoveredOnly
 	});
 	return (
 		<nav ref={ref} data-testid='rail' {...containerProps}>
@@ -228,6 +229,27 @@ describe('useDockMagnify', () => {
 		expect(slide(0)).toBeCloseTo(growth / 2, 0);
 		expect(slide(1)).toBeGreaterThan(slide(0));
 		expect(slide(2)).toBeGreaterThan(slide(1));
+	});
+
+	describe('hovered only', () => {
+		// Items rest with centres at 20, 64 and 108: halfway is 42 and 86
+		it('swells the item nearest the pointer at rest, whole, and no other', () => {
+			render(<CarriedRail hoveredOnly />);
+			movePointer(26, 60);
+			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
+			expect(scaleOf('item-0')).toBe('');
+			expect(scaleOf('item-2')).toBe('');
+		});
+
+		it('hands over only a little past halfway to the next', () => {
+			render(<CarriedRail hoveredOnly />);
+			movePointer(26, 64);
+			movePointer(26, 88);
+			expect(Number(scaleOf('item-1'))).toBeCloseTo(DOCK_MAX_SCALE);
+			movePointer(26, 94);
+			expect(Number(scaleOf('item-2'))).toBeCloseTo(DOCK_MAX_SCALE);
+			expect(scaleOf('item-1')).toBe('');
+		});
 	});
 
 	describe('within bounds', () => {

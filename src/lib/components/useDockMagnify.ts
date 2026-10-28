@@ -12,6 +12,9 @@ export const DOCK_MAX_SCALE = 1.6;
 export const DOCK_REACH_PX = 110;
 /** Short enough to track the pointer, long enough to smooth each frame. */
 export const DOCK_FOLLOW_MS = 110;
+/** With `hoveredOnly`, how far past halfway to the next item the pointer
+ * goes before that one takes over, so it never flickers between the two. */
+export const DOCK_HANDOFF_PX = 6;
 
 const glide = springTiming(GLIDE_SPRING);
 
@@ -73,9 +76,28 @@ export type DockMagnifyOptions = {
 	 * Each item moves
 	 * with the nearest ancestor matching this (the flyout: a page's link,
 	 * carrying its name with its tile). Omitted: nothing moves. The
-	 * container's `--dock-spread` holds how much longer the row has grown.
+	 * container's `--dock-spread` holds how much longer the row has grown,
+	 * and each carrier's `--dock-scale` its item's scale (for what sits
+	 * beside the item and must clear it, such as its name).
 	 */
 	carrierSelector?: string;
+	/**
+	 * Extra room, in px, the item under the pointer opens either side of
+	 * it beyond its growth, easing off with the swell: its neighbours are
+	 * pushed a little further away. Needs `carrierSelector`. 0 by default.
+	 */
+	spacing?: number;
+	/**
+	 * Only the item nearest the pointer swells, whole, and the rest keep
+	 * their size (they still make room, with `carrierSelector`). Nearest
+	 * where each stands at rest, not where it is drawn: a swollen item would
+	 * otherwise cover the way to the next, which slides off as it grows. As
+	 * it changes only from item to item, not with every move, it glides
+	 * there on the settle's spring. That item carries `data-dock-hovered`,
+	 * for a hover state that agrees with the swell (the pointer may still be
+	 * over the one it left as that one shrinks).
+	 */
+	hoveredOnly?: boolean;
 	/**
 	 * The box the items swell within (the rail's scroller: grown past its
 	 * end it scrolls, past its sides it clips). An item near its edge grows
@@ -108,6 +130,8 @@ export const useDockMagnify = (
 		maxScale = DOCK_MAX_SCALE,
 		reach = DOCK_REACH_PX,
 		carrierSelector,
+		spacing = 0,
+		hoveredOnly = false,
 		boundsRef
 	}: DockMagnifyOptions
 ) => {
@@ -117,8 +141,21 @@ export const useDockMagnify = (
 		new WeakMap<Element, { width: number; height: number }>()
 	);
 	const grown = React.useRef(new Set<HTMLElement>());
+	/** With `hoveredOnly`: the item swollen now. */
+	const hovered = React.useRef<HTMLElement | null>(null);
+	const setHovered = (item: HTMLElement | null) => {
+		if (hovered.current === item) {
+			return;
+		}
+		hovered.current?.removeAttribute('data-dock-hovered');
+		item?.setAttribute('data-dock-hovered', '');
+		hovered.current = item;
+	};
 	const moved = React.useRef(new Set<HTMLElement>());
 	const extra = transition ? `, ${transition}` : '';
+	const follow = hoveredOnly
+		? `${glide.duration}ms ${glide.easing}`
+		: `${DOCK_FOLLOW_MS}ms ease-out`;
 
 	const carrierOf = (item: HTMLElement) =>
 		carrierSelector ? item.closest<HTMLElement>(carrierSelector) : null;
@@ -209,9 +246,11 @@ export const useDockMagnify = (
 			glyph.style.scale = '';
 		});
 		grown.current.clear();
+		setHovered(null);
 		moved.current.forEach(carrier => {
 			carrier.style.transition = `translate ${glide.duration}ms ${glide.easing}`;
 			carrier.style.translate = '';
+			carrier.style.removeProperty('--dock-scale');
 		});
 		moved.current.clear();
 		// What is drawn behind the items settles on their timing too. Kept
@@ -229,10 +268,14 @@ export const useDockMagnify = (
 		const at = axis === 'x' ? x : y;
 		const row = entries(container).map(({ item, glyph }) => {
 			const centre = centreOf(item);
+			const falloff = hoveredOnly
+				? item === hovered.current
+					? 1
+					: 0
+				: dockFalloff(Math.abs(at - centre), reach);
 			const cap = Math.max(1, Math.min(capOf(item, glyph), fitOf(glyph)));
-			const scale =
-				1 + (cap - 1) * dockFalloff(Math.abs(at - centre), reach);
-			glyph.style.transition = `scale ${DOCK_FOLLOW_MS}ms ease-out${extra}`;
+			const scale = 1 + (cap - 1) * falloff;
+			glyph.style.transition = `scale ${follow}${extra}`;
 			if (scale > 1.001) {
 				glyph.style.scale = scale.toFixed(3);
 				grown.current.add(glyph);
@@ -241,15 +284,14 @@ export const useDockMagnify = (
 				grown.current.delete(glyph);
 			}
 			const size = axis === 'x' ? item.offsetWidth : item.offsetHeight;
-			return { item, centre, scale, growth: (scale - 1) * size };
+			// Its own growth, and the room it opens either side
+			const growth = (scale - 1) * size + 2 * spacing * falloff;
+			return { item, centre, scale, growth };
 		});
 		// For what is drawn behind the items rather than in them (the rail's
 		// hover lens, on the item under the pointer, and its current page's
 		// fill), so it swells with them
-		container.style.setProperty(
-			'--dock-scale-timing',
-			`${DOCK_FOLLOW_MS}ms ease-out`
-		);
+		container.style.setProperty('--dock-scale-timing', follow);
 		container.style.setProperty(
 			'--dock-max-scale',
 			Math.max(1, ...row.map(({ scale }) => scale)).toFixed(3)
@@ -268,7 +310,7 @@ export const useDockMagnify = (
 		// Anchored at the row's start (the flyout hangs off the rail): each
 		// item moves on by the growth of everything before it, plus half its
 		// own, which it grows by either side — so every gap holds
-		row.forEach(({ item, centre, growth }) => {
+		row.forEach(({ item, centre, scale, growth }) => {
 			const carrier = carrierOf(item);
 			if (!carrier) {
 				return;
@@ -278,15 +320,17 @@ export const useDockMagnify = (
 					other.centre < centre ? sum + other.growth : sum,
 				growth / 2
 			);
-			carrier.style.transition = `translate ${DOCK_FOLLOW_MS}ms ease-out`;
-			if (Math.abs(slide) > 0.1) {
+			carrier.style.transition = `translate ${follow}`;
+			if (Math.abs(slide) > 0.1 || scale > 1.001) {
 				carrier.style.translate =
 					axis === 'x'
 						? `${slide.toFixed(1)}px 0`
 						: `0 ${slide.toFixed(1)}px`;
+				carrier.style.setProperty('--dock-scale', scale.toFixed(3));
 				moved.current.add(carrier);
 			} else if (moved.current.has(carrier)) {
 				carrier.style.translate = '';
+				carrier.style.removeProperty('--dock-scale');
 				moved.current.delete(carrier);
 			}
 		});
@@ -312,6 +356,29 @@ export const useDockMagnify = (
 				settle();
 				return;
 			}
+			if (hoveredOnly) {
+				// The nearest at rest; the current one holds until the
+				// pointer is a little past halfway to another
+				const at = axis === 'x' ? clientX : clientY;
+				const distanceTo = (item: HTMLElement) =>
+					Math.abs(at - centreOf(item));
+				let nearest: HTMLElement | null = null;
+				entries(container).forEach(({ item }) => {
+					if (!nearest || distanceTo(item) < distanceTo(nearest)) {
+						nearest = item;
+					}
+				});
+				const current = hovered.current;
+				if (
+					nearest &&
+					(!current ||
+						!container.contains(current) ||
+						distanceTo(nearest) + DOCK_HANDOFF_PX <
+							distanceTo(current))
+				) {
+					setHovered(nearest);
+				}
+			}
 			swell(container, clientX, clientY);
 		});
 	};
@@ -320,6 +387,9 @@ export const useDockMagnify = (
 		const container = containerRef.current;
 		if (!enabled || !container || prefersReducedMotion()) {
 			return;
+		}
+		if (hoveredOnly) {
+			setHovered(item as HTMLElement);
 		}
 		const r = item.getBoundingClientRect();
 		swell(container, r.left + r.width / 2, r.top + r.height / 2);
