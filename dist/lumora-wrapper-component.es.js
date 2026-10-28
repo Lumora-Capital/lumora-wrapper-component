@@ -351,7 +351,7 @@ const Ao = ({
     })).filter(
       (b) => b.glyph !== null
     );
-  }, F = (O, L) => {
+  }, W = (O, L) => {
     if (L === O)
       return a;
     let b = x.current.get(L);
@@ -369,7 +369,7 @@ const Ao = ({
   }, q = (O) => {
     const L = h == null ? void 0 : h.current;
     return L != null && L.contains(O) ? xs(O, L) : 1 / 0;
-  }, W = () => {
+  }, F = () => {
     var O, L, b, U;
     cancelAnimationFrame(g.current), p.current.forEach((H) => {
       H.style.transition = `scale ${at.duration}ms ${at.easing}${v}`, H.style.scale = "";
@@ -381,7 +381,7 @@ const Ao = ({
     ), (L = e.current) == null || L.style.removeProperty("--dock-spread"), (b = e.current) == null || b.style.removeProperty("--dock-max-scale"), (U = e.current) == null || U.style.removeProperty("--dock-active-scale");
   }, G = (O, L, b) => {
     const U = r === "x" ? L : b, H = I(O).map(({ item: V, glyph: J }) => {
-      const se = _(V), C = m ? V === S.current ? 1 : 0 : Wi(Math.abs(U - se), c), z = 1 + (Math.max(1, Math.min(F(V, J), q(J))) - 1) * C;
+      const se = _(V), C = m ? V === S.current ? 1 : 0 : Wi(Math.abs(U - se), c), z = 1 + (Math.max(1, Math.min(W(V, J), q(J))) - 1) * C;
       J.style.transition = `scale ${E}${v}`, z > 1.001 ? (J.style.scale = z.toFixed(3), p.current.add(J)) : p.current.has(J) && (J.style.scale = "", p.current.delete(J));
       const P = r === "x" ? V.offsetWidth : V.offsetHeight, j = (z - 1) * P + 2 * l * C;
       return { item: V, centre: se, scale: z, growth: j };
@@ -414,7 +414,7 @@ const Ao = ({
     cancelAnimationFrame(g.current), g.current = requestAnimationFrame(() => {
       const H = L.getBoundingClientRect(), oe = r === "x" ? U : b, [ie, V] = r === "x" ? [H.top, H.bottom] : [H.left, H.right];
       if (oe < ie || oe > V) {
-        W();
+        F();
         return;
       }
       if (m) {
@@ -437,11 +437,11 @@ const Ao = ({
     G(L, b.left + b.width / 2, b.top + b.height / 2);
   };
   return d.useEffect(() => {
-    t || W();
+    t || F();
   }, [t]), d.useEffect(() => () => cancelAnimationFrame(g.current), []), {
-    containerProps: t ? { onPointerMove: N, onPointerLeave: W, onScrollCapture: W } : {},
+    containerProps: t ? { onPointerMove: N, onPointerLeave: F, onScrollCapture: F } : {},
     swellOn: K,
-    settle: W
+    settle: F
   };
 }, to = "data-rail-item", vs = `[${to}], button, [role="button"]`, Lt = d.createContext(!1), kr = () => {
   const e = d.useContext(Lt), t = qe(), r = d.useContext(Lo);
@@ -467,18 +467,18 @@ const Ao = ({
 }) => {
   const c = d.useRef(null), f = ko(), [l, m] = d.useState(null), h = d.useRef(null), g = d.useRef(null), x = (w, _) => {
     g.current = _;
-    const I = _.getBoundingClientRect(), F = w.getBoundingClientRect(), q = n ?? I.width, W = n ?? I.height, G = {
-      top: Math.round(I.top - F.top + (I.height - W) / 2),
-      left: Math.round(I.left - F.left + (I.width - q) / 2),
+    const I = _.getBoundingClientRect(), W = w.getBoundingClientRect(), q = n ?? I.width, F = n ?? I.height, G = {
+      top: Math.round(I.top - W.top + (I.height - F) / 2),
+      left: Math.round(I.left - W.left + (I.width - q) / 2),
       width: Math.round(q),
-      height: Math.round(W)
+      height: Math.round(F)
     };
     m(
       (N) => N && N.visible && N.top === G.top && N.left === G.left && N.width === G.width && N.height === G.height ? N : { ...G, visible: !0, instant: !(N != null && N.visible) }
     );
   }, p = (w, _) => {
-    var F;
-    const I = (F = _ == null ? void 0 : _.closest) == null ? void 0 : F.call(_, r);
+    var W;
+    const I = (W = _ == null ? void 0 : _.closest) == null ? void 0 : W.call(_, r);
     return I && w.contains(I) ? I : null;
   }, S = (w) => {
     if (!e)
@@ -795,7 +795,7 @@ const Ao = ({
   const I = d.useMemo(
     () => v ? _r(v.group.subitems, v.group.icon) : [],
     [v]
-  ), F = d.useRef(null), q = bs(F, {
+  ), W = d.useRef(null), q = bs(W, {
     enabled: R,
     axis: "x",
     itemSelector: er,
@@ -807,9 +807,9 @@ const Ao = ({
     spacing: Hi,
     // Only the tile under the pointer swells; the rest keep their size
     hoveredOnly: !0
-  }), W = d.useRef(void 0), G = d.useCallback((C) => {
+  }), F = d.useRef(void 0), G = d.useCallback((C) => {
     var j;
-    (j = W.current) == null || j.call(W), W.current = void 0;
+    (j = F.current) == null || j.call(F), F.current = void 0;
     const k = C == null ? void 0 : C.parentElement;
     if (!C || !k || typeof MutationObserver > "u")
       return;
@@ -840,7 +840,7 @@ const Ao = ({
       subtree: !0,
       attributes: !0,
       attributeFilter: ["style"]
-    }), W.current = () => P.disconnect();
+    }), F.current = () => P.disconnect();
   }, []), N = d.useRef([]), [K, O] = d.useState([]);
   d.useLayoutEffect(() => {
     const C = () => {
@@ -958,7 +958,7 @@ const Ao = ({
             children: v ? /* @__PURE__ */ y(
               A,
               {
-                ref: F,
+                ref: W,
                 role: "menu",
                 "aria-label": v.group.text,
                 ...q.containerProps,
@@ -1175,10 +1175,10 @@ const Ao = ({
       "& .MuiSvgIcon-root": { color: x }
     }, I = {
       background: `color-mix(in srgb, ${h} ${T ? 20 : 12}%, ${R})`
-    }, F = T ? $.color : h, q = {
+    }, W = T ? $.color : h, q = {
       "& [data-flyout-tile]": a ? {} : I,
-      "& [data-flyout-name]": { color: F, fontWeight: 600 }
-    }, W = {
+      "& [data-flyout-name]": { fontWeight: 600 }
+    }, F = {
       ...$,
       border: "none",
       // Lifted a little more than a resting label: they float over
@@ -1250,7 +1250,7 @@ const Ao = ({
               "data-flyout-tile": "",
               "data-flyout-name-side": E ? "above" : "below",
               sx: {
-                ...W,
+                ...F,
                 left: t,
                 top: dr,
                 display: "flex",
@@ -1332,7 +1332,7 @@ const Ao = ({
                       overflow: "hidden",
                       visibility: "hidden"
                     },
-                    ...a ? { color: F } : {},
+                    ...a ? { color: W } : {},
                     transition: "color 160ms ease",
                     ...w
                   },
@@ -1584,14 +1584,14 @@ const fr = ({
   collapsed: w = !1,
   expandedWidth: _ = ra,
   collapsedWidth: I = na,
-  showLabels: F = !1,
+  showLabels: W = !1,
   topInsetPx: q = 0,
-  topContent: W,
+  topContent: F,
   footer: G,
   submenuMode: N = "inline"
 }) => {
   var Me;
-  const K = qe(), O = K.palette.mode === "dark", L = d.useContext(Lo), b = N === "flyout" && w && !F, U = oa(b), H = d.useRef(null), oe = d.useRef(null), ie = d.useRef(null), V = d.useRef(null);
+  const K = qe(), O = K.palette.mode === "dark", L = d.useContext(Lo), b = N === "flyout" && w && !W, U = oa(b), H = d.useRef(null), oe = d.useRef(null), ie = d.useRef(null), V = d.useRef(null);
   ga(V, r, w);
   const J = pa(V, b), se = ma(V), C = Pi(b, O, ((Me = U.state) == null ? void 0 : Me.key) ?? null), k = bs(H, {
     enabled: b,
@@ -1661,7 +1661,7 @@ const fr = ({
       color: u ? re : ce,
       minWidth: Y
     },
-    "&:hover": u || F ? Ie : { bgcolor: M }
+    "&:hover": u || W ? Ie : { bgcolor: M }
   }), io = {
     "&.Mui-selected": {
       bgcolor: P
@@ -1915,7 +1915,7 @@ const fr = ({
         ...b ? { [to]: "" } : {},
         "data-testid": (le == null ? void 0 : le.testId) ?? `sidebar-item-${M}`,
         "data-active": B ? "true" : "false",
-        sx: F ? {
+        sx: W ? {
           display: "flex",
           flexDirection: "column",
           gap: 0.25,
@@ -1950,7 +1950,7 @@ const fr = ({
         },
         children: [
           Y,
-          F ? /* @__PURE__ */ o(
+          W ? /* @__PURE__ */ o(
             vt,
             {
               text: M,
@@ -1962,7 +1962,7 @@ const fr = ({
         ]
       }
     );
-    return F ? de ? /* @__PURE__ */ o("span", { children: me }, u) : /* @__PURE__ */ o(d.Fragment, { children: me }, u) : /* @__PURE__ */ o(
+    return W ? de ? /* @__PURE__ */ o("span", { children: me }, u) : /* @__PURE__ */ o(d.Fragment, { children: me }, u) : /* @__PURE__ */ o(
       Ro,
       {
         title: M,
@@ -2080,24 +2080,24 @@ const fr = ({
         sx: {
           display: "flex",
           flexDirection: "column",
-          gap: F ? 0.25 : 0,
-          width: F ? "100%" : 44,
+          gap: W ? 0.25 : 0,
+          width: W ? "100%" : 44,
           maxWidth: "100%",
           // 8px padding on all sides of the labeled item container.
-          ...F ? { p: 1 } : { py: 0.75 },
+          ...W ? { p: 1 } : { py: 0.75 },
           borderRadius: "10px",
           color: Y ? re : ce,
           bgcolor: Y ? P : "transparent",
           // rail-labeled: active AND hover share the highlight. collapsible:
           // original behavior — accent only when active; the outer pill
           // supplies the idle-hover tint, so the button stays transparent.
-          "&:hover": F ? { bgcolor: P, color: re } : {
+          "&:hover": W ? { bgcolor: P, color: re } : {
             bgcolor: Y ? P : "transparent"
           },
           ...vo
         },
         children: [
-          F ? /* @__PURE__ */ o(
+          W ? /* @__PURE__ */ o(
             A,
             {
               sx: {
@@ -2111,7 +2111,7 @@ const fr = ({
               children: u.icon
             }
           ) : u.icon,
-          F ? /* @__PURE__ */ o(
+          W ? /* @__PURE__ */ o(
             vt,
             {
               text: u.text,
@@ -2123,7 +2123,7 @@ const fr = ({
           /* @__PURE__ */ o(fa, { open: X, size: ia })
         ]
       }
-    ), de = F ? le : /* @__PURE__ */ o(Ro, { title: u.text, placement: "right", arrow: !0, children: le });
+    ), de = W ? le : /* @__PURE__ */ o(Ro, { title: u.text, placement: "right", arrow: !0, children: le });
     return /* @__PURE__ */ y(
       A,
       {
@@ -2140,7 +2140,7 @@ const fr = ({
           // the whole group on hover (original); rail-labeled leaves hover
           // highlighting to the individual items.
           bgcolor: M ? ge : "transparent",
-          ...F ? {} : { "&:hover": { bgcolor: ge } }
+          ...W ? {} : { "&:hover": { bgcolor: ge } }
         },
         children: [
           de,
@@ -2291,7 +2291,7 @@ const fr = ({
         }
       )
     }
-  ) : null, gt = F ? 0.5 : b ? 0.75 : w ? 1 : 1.5;
+  ) : null, gt = W ? 0.5 : b ? 0.75 : w ? 1 : 1.5;
   return /* @__PURE__ */ o(Lt.Provider, { value: b, children: /* @__PURE__ */ y(
     A,
     {
@@ -2301,7 +2301,7 @@ const fr = ({
       "aria-label": "Main sidebar",
       "data-testid": "collapsible-sidebar",
       "data-collapsed": w ? "true" : "false",
-      "data-labeled": F ? "true" : "false",
+      "data-labeled": W ? "true" : "false",
       sx: {
         width: Dt,
         minWidth: Dt,
@@ -2339,7 +2339,7 @@ const fr = ({
             ]
           }
         ) : null,
-        W ? /* @__PURE__ */ o(
+        F ? /* @__PURE__ */ o(
           A,
           {
             sx: {
@@ -2348,7 +2348,7 @@ const fr = ({
               pt: b ? 0 : 1,
               pb: b ? 0 : 1
             },
-            children: W
+            children: F
           }
         ) : null,
         /* @__PURE__ */ o(
@@ -3673,29 +3673,29 @@ const ue = {
   d.useEffect(() => {
     if (!m)
       return;
-    const W = (G) => {
+    const F = (G) => {
       var N;
       G.key === "Escape" && (h(!1), (N = p.current) == null || N.focus());
     };
-    return document.addEventListener("keydown", W), () => document.removeEventListener("keydown", W);
+    return document.addEventListener("keydown", F), () => document.removeEventListener("keydown", F);
   }, [m]), d.useEffect(() => {
     if (!m || !R.current)
       return;
-    const W = globalThis.requestAnimationFrame(() => {
+    const F = globalThis.requestAnimationFrame(() => {
       var N;
       const G = (N = x.current) == null ? void 0 : N.querySelector(
         '[role="menuitem"]'
       );
       G == null || G.focus(), R.current = !1;
     });
-    return () => cancelAnimationFrame(W);
+    return () => cancelAnimationFrame(F);
   }, [m]);
   const w = dt(e, t), { activeBg: _, sx: I } = Ts(
     s,
     n,
     w,
     a
-  ), F = /* @__PURE__ */ o(
+  ), W = /* @__PURE__ */ o(
     Oe,
     {
       ref: p,
@@ -3705,16 +3705,16 @@ const ue = {
       onFocus: () => {
         S.current || $();
       },
-      onBlur: (W) => {
+      onBlur: (F) => {
         var N;
-        const G = W.relatedTarget;
+        const G = F.relatedTarget;
         G && ((N = x.current) != null && N.contains(G)) || E();
       },
-      onKeyDown: (W) => {
-        W.key === "ArrowDown" && (W.preventDefault(), R.current = !0, $());
+      onKeyDown: (F) => {
+        F.key === "ArrowDown" && (F.preventDefault(), R.current = !0, $());
       },
-      onClick: (W) => {
-        W.stopPropagation(), !(e.path && !$t(W)) && (W.preventDefault(), e.path && (r == null || r(e.path)));
+      onClick: (F) => {
+        F.stopPropagation(), !(e.path && !$t(F)) && (F.preventDefault(), e.path && (r == null || r(e.path)));
       },
       "aria-haspopup": "menu",
       "aria-expanded": m,
@@ -3745,7 +3745,7 @@ const ue = {
             onMouseLeave: () => {
               S.current = !1, E();
             },
-            children: As(F, e.text, a)
+            children: As(W, e.text, a)
           }
         ),
         /* @__PURE__ */ o(
@@ -3755,7 +3755,7 @@ const ue = {
             anchorEl: f,
             placement: "right-start",
             modifiers: [{ name: "offset", options: { offset: [8, 0] } }],
-            sx: { zIndex: (W) => W.zIndex.modal },
+            sx: { zIndex: (F) => F.zIndex.modal },
             children: /* @__PURE__ */ o(
               Sr,
               {
@@ -3798,8 +3798,8 @@ const ue = {
       ]
     }
   );
-  function q(W, G, N) {
-    return W.flatMap((K) => {
+  function q(F, G, N) {
+    return F.flatMap((K) => {
       const O = Ct(G, K);
       return At(K) ? [
         /* @__PURE__ */ o(
@@ -4381,8 +4381,8 @@ const ue = {
             label: I.text,
             icon: I.icon,
             href: I.path,
-            onClick: (F) => {
-              $t(F) && (F.preventDefault(), p == null || p(I.path));
+            onClick: (W) => {
+              $t(W) && (W.preventDefault(), p == null || p(I.path));
             },
             active: dt(I, x),
             isPage: !0,
@@ -4899,17 +4899,17 @@ const xr = {
     isDark: $,
     selector: zn,
     radius: fe
-  }), [F, q] = d.useState(null);
+  }), [W, q] = d.useState(null);
   d.useEffect(() => {
-    if (!F || typeof ResizeObserver > "u")
+    if (!W || typeof ResizeObserver > "u")
       return;
     const b = new ResizeObserver(() => {
       var U;
       (U = w.current) == null || U.updatePosition();
     });
-    return b.observe(F), () => b.disconnect();
-  }, [F]);
-  const W = (b) => {
+    return b.observe(W), () => b.disconnect();
+  }, [W]);
+  const F = (b) => {
     r(), b == null || b();
   }, G = (b) => {
     r(), b.onClick ? b.onClick() : b.path && (S == null || S(b.path));
@@ -4950,7 +4950,7 @@ const xr = {
           /* @__PURE__ */ o(
             Ye,
             {
-              onClick: () => W(x),
+              onClick: () => F(x),
               "data-testid": "account-menu-view-profile",
               sx: K,
               children: "View profile"
@@ -4969,7 +4969,7 @@ const xr = {
         /* @__PURE__ */ o(
           Ye,
           {
-            onClick: () => W(p),
+            onClick: () => F(p),
             "data-testid": "account-menu-ai-usage",
             sx: K,
             children: "My AI usage"
@@ -5104,7 +5104,7 @@ const xr = {
                   x && !p ? /* @__PURE__ */ o(
                     Ye,
                     {
-                      onClick: () => W(x),
+                      onClick: () => F(x),
                       "data-testid": "account-menu-header",
                       sx: {
                         display: "block",
@@ -5183,7 +5183,7 @@ const xr = {
                         T ? /* @__PURE__ */ y(
                           ut,
                           {
-                            onClick: () => W(T),
+                            onClick: () => F(T),
                             "data-testid": "menu-item-logout",
                             sx: {
                               ...N,
@@ -5233,9 +5233,9 @@ const xr = {
   collapsedWidth: w,
   topContent: _,
   submenuMode: I,
-  color: F,
+  color: W,
   hoverColor: q,
-  avatarColor: W,
+  avatarColor: F,
   showProfile: G = !0,
   userName: N = "User",
   userEmail: K,
@@ -5253,7 +5253,7 @@ const xr = {
   showThemeToggler: k = !0,
   onThemeToggle: z
 }) => {
-  const P = qe(), j = P.palette.mode === "dark", be = T ?? (j ? P.palette.background.paper : "#ffffff"), Fe = F ?? R ?? (j ? P.palette.text.primary : h), we = q ?? p ?? Zt(h), ee = W ?? h, Ze = d.useRef(null), [he, re] = d.useState(!1), Ie = O ? rs(O) : void 0, _e = (ft) => /* @__PURE__ */ o(
+  const P = qe(), j = P.palette.mode === "dark", be = T ?? (j ? P.palette.background.paper : "#ffffff"), Fe = W ?? R ?? (j ? P.palette.text.primary : h), we = q ?? p ?? Zt(h), ee = F ?? h, Ze = d.useRef(null), [he, re] = d.useState(!1), Ie = O ? rs(O) : void 0, _e = (ft) => /* @__PURE__ */ o(
     Pr,
     {
       name: N,
@@ -5846,12 +5846,12 @@ const xr = {
     if (!h)
       return;
     const $ = setTimeout(() => br(m.current)), w = (I) => {
-      var q, W;
-      const F = I.target;
-      !((q = m.current) != null && q.contains(F)) && !((W = l.current) != null && W.contains(F)) && T();
+      var q, F;
+      const W = I.target;
+      !((q = m.current) != null && q.contains(W)) && !((F = l.current) != null && F.contains(W)) && T();
     }, _ = (I) => {
-      var F;
-      I.key === "Escape" && (T(), (F = l.current) == null || F.focus());
+      var W;
+      I.key === "Escape" && (T(), (W = l.current) == null || W.focus());
     };
     return document.addEventListener("pointerdown", w), document.addEventListener("keydown", _), () => {
       clearTimeout($), document.removeEventListener("pointerdown", w), document.removeEventListener("keydown", _);
@@ -6101,9 +6101,9 @@ const xr = {
   sidebarHeaderBackgroundColor: w,
   groupAccentColor: _,
   activeSidebarForegroundColor: I,
-  enableRefreshToken: F = !1,
+  enableRefreshToken: W = !1,
   holdSessionSkeleton: q = !1,
-  sessionSkeletonContent: W,
+  sessionSkeletonContent: F,
   activePath: G,
   onLinkClick: N,
   showProfile: K = !0,
@@ -6275,8 +6275,8 @@ const xr = {
       }
     })();
   }, [mt]), Xt(() => {
-    F && _a(nn, mt);
-  }, [F, nn]), Hs || q)
+    W && _a(nn, mt);
+  }, [W, nn]), Hs || q)
     return /* @__PURE__ */ o(
       wa,
       {
@@ -6289,7 +6289,7 @@ const xr = {
         contentPadding: v,
         sidebarBackgroundColor: $,
         contentBackgroundColor: We,
-        content: W
+        content: F
       }
     );
   if (!Us)

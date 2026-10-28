@@ -855,12 +855,13 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		const hover = {
 			background: `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`
 		};
-		// A name is plain text on the panel: it takes the accent on hover
-		// (the light theme's accent; on dark glass, the text colour reads)
+		// A name is plain text on the panel: the current page's takes the
+		// accent (the light theme's accent; on dark glass, the text colour
+		// reads). On hover it only turns bold, keeping its colour
 		const accentText = isDark ? card.color : accentColor;
 		const lit = {
 			'& [data-flyout-tile]': active ? {} : hover,
-			'& [data-flyout-name]': { color: accentText, fontWeight: 600 }
+			'& [data-flyout-name]': { fontWeight: 600 }
 		};
 		// Cards of their own: a surface and a soft shadow, no edge
 		const cardSx = {
