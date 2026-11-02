@@ -1,32 +1,15 @@
-import Box from '@mui/material/Box';
 import * as React from 'react';
 
 /** Keyboard shortcut hint, e.g. ⌘ J. */
 const Kbd: React.FC<{ keys: string[] }> = ({ keys }) => (
-	<Box
-		component='kbd'
+	<kbd
 		aria-hidden='true'
-		sx={{
-			display: 'inline-flex',
-			alignItems: 'center',
-			gap: 0.5,
-			px: 0.75,
-			height: 20,
-			flexShrink: 0,
-			border: '1px solid',
-			borderColor: 'divider',
-			borderRadius: '4px',
-			bgcolor: 'background.paper',
-			color: 'text.secondary',
-			fontFamily: 'inherit',
-			fontSize: 11,
-			lineHeight: 1
-		}}
+		className='lw:inline-flex lw:h-5 lw:shrink-0 lw:items-center lw:gap-1 lw:rounded-sm lw:border lw:border-solid lw:border-border lw:bg-surface lw:px-1.5 lw:font-[inherit] lw:text-[11px] lw:leading-none lw:text-muted-foreground'
 	>
 		{keys.map(key => (
 			<span key={key}>{key}</span>
 		))}
-	</Box>
+	</kbd>
 );
 
 export default Kbd;

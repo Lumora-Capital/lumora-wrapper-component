@@ -1,0 +1,72 @@
+/*
+ * The playground's own styles, as a host app (Nexa) has them: full Tailwind with its preflight, and the
+ * Nexa variables the shell's stylesheet picks up (--bg-surface, --text-primary, --ui-primary…). The
+ * shell's stylesheet (src/lib/styles.css, `lw:`-prefixed) is a separate import in main.tsx.
+ */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@source './';
+
+@custom-variant dark (&:where([data-color-scheme='dark'], [data-color-scheme='dark'] *));
+
+:root {
+	--bg-page: #f4f2f0;
+	--bg-surface: #ffffff;
+	--bg-raised: #f9fafb;
+	--surface-tray: #eef1f3;
+	--text-primary: #1a1a1a;
+	--text-muted: #55636b;
+	--border-color: #e5e7eb;
+	--hover-wash: color-mix(in srgb, #5d737e 6%, var(--bg-surface));
+	--input-border: #8a939b;
+	--ui-primary: #049586;
+	--ui-primary-hover: #037e72;
+	--ui-ring: #00a896;
+	--shadow-float:
+		0 8px 24px rgba(16, 24, 40, 0.12), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+html[data-color-scheme='dark'] {
+	--bg-page: hsl(220, 25%, 11%);
+	--bg-surface: hsl(220, 20%, 15%);
+	--bg-raised: hsl(220, 20%, 18%);
+	--surface-tray: hsl(220, 22%, 13%);
+	--text-primary: #ffffff;
+	--text-muted: rgba(255, 255, 255, 0.66);
+	--border-color: rgba(255, 255, 255, 0.1);
+	--hover-wash: color-mix(in srgb, #ffffff 4%, var(--bg-surface));
+	--input-border: rgba(255, 255, 255, 0.36);
+	--ui-primary-hover: #00a896;
+	--ui-ring: #2ed3c0;
+	--shadow-float:
+		0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	color-scheme: dark;
+}
+
+@theme inline {
+	--font-sans: Inter, Arial, Helvetica, sans-serif;
+	--color-background: var(--bg-page);
+	--color-foreground: var(--text-primary);
+	--color-surface: var(--bg-surface);
+	--color-tray: var(--surface-tray);
+	--color-muted-foreground: var(--text-muted);
+	--color-border: var(--border-color);
+	--color-accent: var(--hover-wash);
+	--color-input: var(--input-border);
+	--color-primary: var(--ui-primary);
+	--color-primary-hover: var(--ui-primary-hover);
+	--color-ring: var(--ui-ring);
+	--shadow-popover: var(--shadow-float);
+}
+
+@layer base {
+	* {
+		border-color: var(--color-border);
+	}
+	body {
+		font-family: var(--font-sans);
+		color: var(--color-foreground);
+		background: var(--color-background);
+	}
+}

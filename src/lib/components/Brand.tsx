@@ -1,7 +1,5 @@
-import ButtonBase from '@mui/material/ButtonBase';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import * as React from 'react';
+import { cn } from '../utils';
 
 interface BrandProps {
 	logo?: React.ReactNode;
@@ -20,6 +18,10 @@ interface BrandProps {
 	testId?: string;
 }
 
+// Consumer SVG logos pick up the brand color
+const BASE =
+	'lw:flex lw:flex-row lw:items-center lw:gap-2 lw:min-w-0 lw:shrink-0 lw:[&_svg]:text-inherit lw:[&_svg]:fill-current';
+
 /** App wordmark + logo, static or clickable. */
 const Brand: React.FC<BrandProps> = ({
 	logo,
@@ -30,31 +32,15 @@ const Brand: React.FC<BrandProps> = ({
 	testId,
 	menuOpen
 }) => {
-	const sx = {
-		alignItems: 'center',
-		gap: 1,
-		minWidth: 0,
-		flexShrink: 0,
-		color,
-		// Consumer SVG logos pick up the brand color
-		'& svg': { color: 'inherit', fill: 'currentColor' }
-	} as const;
 	const content = (
 		<>
 			{title ? (
-				<Typography
-					variant='h6'
-					noWrap
-					sx={{
-						color,
-						fontWeight: 600,
-						fontSize: '18px',
-						lineHeight: 1,
-						textTransform: 'uppercase'
-					}}
+				<h6
+					className='lw:overflow-hidden lw:text-ellipsis lw:whitespace-nowrap lw:text-[18px] lw:leading-none lw:font-semibold lw:uppercase'
+					style={{ color }}
 				>
 					{title}
-				</Typography>
+				</h6>
 			) : null}
 			{logo}
 		</>
@@ -62,13 +48,14 @@ const Brand: React.FC<BrandProps> = ({
 
 	if (!onClick) {
 		return (
-			<Stack direction='row' data-testid={testId} sx={sx}>
+			<div data-testid={testId} className={BASE} style={{ color }}>
 				{content}
-			</Stack>
+			</div>
 		);
 	}
 	return (
-		<ButtonBase
+		<button
+			type='button'
 			onClick={onClick}
 			aria-label={
 				menuOpen === undefined
@@ -80,23 +67,14 @@ const Brand: React.FC<BrandProps> = ({
 				'aria-expanded': menuOpen
 			})}
 			data-testid={testId}
-			focusRipple
-			sx={{
-				...sx,
-				display: 'flex',
-				borderRadius: 1,
-				px: 0.5,
-				mx: -0.5,
-				'&:hover': { backgroundColor: 'action.hover' },
-				'&.Mui-focusVisible': {
-					outline: '2px solid',
-					outlineColor: color,
-					outlineOffset: 2
-				}
-			}}
+			className={cn(
+				BASE,
+				'lw:cursor-pointer lw:rounded-lg lw:px-1 lw:-mx-1 lw:outline-none lw:hover:bg-accent lw:focus-visible:outline-2 lw:focus-visible:outline-solid lw:focus-visible:outline-offset-2 lw:focus-visible:outline-(--lw-brand-color)'
+			)}
+			style={{ color, '--lw-brand-color': color } as React.CSSProperties}
 		>
 			{content}
-		</ButtonBase>
+		</button>
 	);
 };
 

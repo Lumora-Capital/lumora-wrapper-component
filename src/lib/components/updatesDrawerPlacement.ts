@@ -18,7 +18,11 @@ export interface UpdatesDrawerPlacement {
 export const measureUpdatesDrawerPlacement = (
 	shell: HTMLElement | null
 ): UpdatesDrawerPlacement | null => {
-	const aside = shell?.querySelector<HTMLElement>(':scope > aside');
+	// A walk of the direct children rather than `:scope > aside`, which
+	// jsdom's selector engine cannot parse beside `lw:` class names
+	const aside = Array.from(shell?.children ?? []).find(
+		(child): child is HTMLElement => child.tagName === 'ASIDE'
+	);
 	if (!aside) return null;
 	const surface =
 		aside.querySelector<HTMLElement>('[data-rail-surface]') ?? aside;

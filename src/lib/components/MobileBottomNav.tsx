@@ -1,10 +1,6 @@
-import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+import { MenuIcon, SearchIcon } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '../utils';
 import type { SidebarLink } from './LumoraWrapper';
 import NexaLogo from './NexaLogo';
 import { isInAppClick, isSidebarLinkActive } from './sidebarUtils';
@@ -68,56 +64,55 @@ const Item: React.FC<{
 	isPage = false,
 	href,
 	testId
-}) => (
-	<ButtonBase
-		{...(href && { component: 'a', href })}
-		onClick={onClick}
-		aria-label={ariaLabel ?? label}
-		aria-haspopup={haspopup}
-		aria-expanded={haspopup ? active : undefined}
-		aria-current={isPage && active ? 'page' : undefined}
-		data-testid={testId}
-		sx={{
-			flex: '1 1 0',
-			minWidth: 0,
-			height: '100%',
-			flexDirection: 'column',
-			gap: 0.25,
-			color: active ? activeColor : color,
-			'&.Mui-focusVisible': {
-				outline: '2px solid',
-				outlineColor: activeColor,
-				outlineOffset: -4
-			}
-		}}
-	>
-		<Box
-			sx={{
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				height: 28,
-				minWidth: 48,
-				borderRadius: '14px',
-				bgcolor: active ? activeBackground : 'transparent',
-				transition: 'background-color 150ms'
-			}}
-		>
-			{icon}
-		</Box>
-		<Typography
-			component='span'
-			sx={{
-				fontSize: 11,
-				fontWeight: active ? 600 : 500,
-				lineHeight: 1.2,
-				color: 'inherit'
-			}}
-		>
-			{label}
-		</Typography>
-	</ButtonBase>
-);
+}) => {
+	const className = cn(
+		'lw:flex lw:h-full lw:min-w-0 lw:flex-[1_1_0] lw:cursor-pointer lw:flex-col lw:items-center lw:justify-center lw:gap-0.5 lw:border-0 lw:bg-transparent lw:p-0 lw:no-underline lw:outline-none lw:select-none',
+		'lw:focus-visible:outline-2 lw:focus-visible:outline-offset-[-4px] lw:focus-visible:outline-(--lw-item-active) lw:focus-visible:outline-solid'
+	);
+	const style = {
+		color: active ? activeColor : color,
+		'--lw-item-active': activeColor
+	} as React.CSSProperties;
+	const content = (
+		<>
+			<span
+				className='lw:flex lw:h-7 lw:min-w-12 lw:items-center lw:justify-center lw:rounded-[14px] lw:transition-colors lw:duration-150 lw:[&>svg]:size-6'
+				style={{
+					backgroundColor: active ? activeBackground : 'transparent'
+				}}
+			>
+				{icon}
+			</span>
+			<span
+				className={cn(
+					'lw:text-[11px] lw:leading-[1.2] lw:text-inherit',
+					active ? 'lw:font-semibold' : 'lw:font-medium'
+				)}
+			>
+				{label}
+			</span>
+		</>
+	);
+	const shared = {
+		onClick,
+		'aria-label': ariaLabel ?? label,
+		'aria-haspopup': haspopup,
+		'aria-expanded': haspopup ? active : undefined,
+		'aria-current': isPage && active ? ('page' as const) : undefined,
+		'data-testid': testId,
+		className,
+		style
+	};
+	return href ? (
+		<a href={href} {...shared}>
+			{content}
+		</a>
+	) : (
+		<button type='button' {...shared}>
+			{content}
+		</button>
+	);
+};
 
 /**
  * Mobile navigation bar pinned to the bottom of the screen, so the actions
@@ -152,33 +147,21 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 	const itemColors = { color, activeColor, activeBackground };
 
 	return (
-		<Paper
-			component='nav'
+		<nav
 			aria-label='Mobile navigation'
-			square
-			elevation={0}
 			data-testid='mobile-bottom-nav'
-			sx={{
-				position: 'fixed',
-				left: 0,
-				right: 0,
-				bottom: 0,
-				// Above the page and the top bar; drawers and menus cover it. The
-				// chat popup stops above it on phones, so it stays reachable.
-				zIndex: 1199,
-				display: 'flex',
-				alignItems: 'stretch',
+			// Above the page and the top bar; drawers and menus cover it. The
+			// chat popup stops above it on phones, so it stays reachable.
+			className='lw:fixed lw:right-0 lw:bottom-0 lw:left-0 lw:z-[1199] lw:flex lw:items-stretch lw:border-t lw:border-solid lw:border-border lw:pb-[env(safe-area-inset-bottom,0px)]'
+			style={{
 				height: `calc(${MOBILE_BOTTOM_NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
-				pb: 'env(safe-area-inset-bottom, 0px)',
-				bgcolor: background,
-				borderTop: '1px solid',
-				borderColor: 'divider'
+				backgroundColor: background
 			}}
 		>
 			{onMenuClick && (
 				<Item
 					label='Menu'
-					icon={<MenuRoundedIcon />}
+					icon={<MenuIcon />}
 					onClick={onMenuClick}
 					active={menuOpen}
 					haspopup='dialog'
@@ -209,23 +192,16 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 					label='Nexa'
 					ariaLabel='Ask Nexa'
 					icon={
-						<Box
-							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								width: 40,
-								height: 28,
-								borderRadius: '8px',
-								border: '1px solid',
+						<span
+							className='lw:flex lw:h-7 lw:w-10 lw:items-center lw:justify-center lw:rounded-lg lw:border lw:border-solid lw:bg-[rgba(9,193,174,0.1)]'
+							style={{
 								borderColor: assistantActive
 									? '#09C1AE'
-									: 'rgba(9, 193, 174, 0.45)',
-								bgcolor: 'rgba(9, 193, 174, 0.1)'
+									: 'rgba(9, 193, 174, 0.45)'
 							}}
 						>
 							<NexaLogo size={18} />
-						</Box>
+						</span>
 					}
 					onClick={onAssistantClick}
 					active={assistantActive}
@@ -236,7 +212,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 			{onSearchClick && (
 				<Item
 					label='Search'
-					icon={<SearchRoundedIcon />}
+					icon={<SearchIcon />}
 					onClick={onSearchClick}
 					active={searchOpen}
 					haspopup='dialog'
@@ -272,7 +248,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 					/>
 				</>
 			)}
-		</Paper>
+		</nav>
 	);
 };
 

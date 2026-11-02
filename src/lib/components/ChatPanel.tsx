@@ -1,7 +1,11 @@
-import Grow from '@mui/material/Grow';
-import Paper from '@mui/material/Paper';
-import Slide from '@mui/material/Slide';
 import * as React from 'react';
+import { REDUCED_MOTION_FADE_FAST } from './liquidGlass';
+
+/** MUI's enter / exit timings, which the slide and grow keep. */
+const ENTER_MS = 225;
+const EXIT_MS = 195;
+const ENTER_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+const EXIT_EASE = 'cubic-bezier(0.4, 0, 0.6, 1)';
 
 /** Gap between the floating card and the viewport edges (and the sidebar). */
 const EDGE_GAP_PX = 24;
@@ -67,6 +71,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 		});
 		return () => cancelAnimationFrame(frame);
 	}, []);
+	// Mounted on first open, then kept (hidden) so an ongoing chat keeps its state
+	const [mounted, setMounted] = React.useState(open);
+	// In its open place; one frame after `open`, so the move is animated
+	const [shown, setShown] = React.useState(open);
+	React.useEffect(() => {
+		if (!open) {
+			setShown(false);
+			return undefined;
+		}
+		setMounted(true);
+		const frame = requestAnimationFrame(() => setShown(true));
+		return () => cancelAnimationFrame(frame);
+	}, [open]);
 
 	React.useEffect(() => {
 		if (!open || !onClose) {
@@ -83,7 +100,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
 	const docked = variant === 'docked';
 	const bottom = EDGE_GAP_PX + bottomOffsetPx;
-	let placement: Record<string, unknown>;
+	let placement: React.CSSProperties;
 	if (fullScreen) {
 		placement = {
 			top: 0,
@@ -115,49 +132,47 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 		};
 	}
 
-	const panel = (
-		<Paper
+	if (!open && !mounted) {
+		return null;
+	}
+	const visible = open && shown;
+	const instant = !paintedRef.current;
+	// Slides in from the right edge when docked; grows from its corner when floating
+	const motion: React.CSSProperties = docked
+		? {
+				transform: visible ? 'none' : 'translateX(100%)',
+				transition: open
+					? `transform ${instant ? 0 : ENTER_MS}ms ${ENTER_EASE}`
+					: `transform ${EXIT_MS}ms ${EXIT_EASE}, visibility 0ms linear ${EXIT_MS}ms`
+			}
+		: {
+				transform: visible ? 'none' : 'scale(0.75, 0.5625)',
+				opacity: visible ? 1 : 0,
+				transformOrigin:
+					position === 'left' ? 'bottom left' : 'bottom right',
+				transition: open
+					? `opacity ${ENTER_MS}ms ${ENTER_EASE}, transform ${Math.round(ENTER_MS * 0.666)}ms ${ENTER_EASE}`
+					: `opacity ${EXIT_MS}ms ${EXIT_EASE}, transform ${EXIT_MS}ms ${EXIT_EASE}, visibility 0ms linear ${EXIT_MS}ms`
+			};
+
+	return (
+		<div
 			role={docked ? 'complementary' : 'dialog'}
 			aria-label='Nexa chat'
+			aria-hidden={open ? undefined : true}
 			data-testid='chat-panel'
 			data-variant={variant}
-			elevation={8}
-			sx={{
-				position: 'fixed',
+			data-lw-host=''
+			className={`lw:fixed lw:flex lw:flex-col lw:overflow-hidden lw:border lw:border-solid lw:border-border lw:bg-surface lw:text-foreground lw:shadow-popover ${REDUCED_MOTION_FADE_FAST}`}
+			style={{
 				zIndex: docked ? DOCKED_CHAT_Z_INDEX : FLOATING_CHAT_Z_INDEX,
-				display: 'flex',
-				flexDirection: 'column',
-				overflow: 'hidden',
-				border: '1px solid',
-				borderColor: 'divider',
-				...placement
+				visibility: open ? 'visible' : 'hidden',
+				...placement,
+				...motion
 			}}
 		>
 			{children}
-		</Paper>
-	);
-
-	// Slides in from the right edge when docked; grows from its corner when floating
-	return docked ? (
-		<Slide
-			direction='left'
-			in={open}
-			mountOnEnter
-			{...(paintedRef.current ? {} : { timeout: { enter: 0 } })}
-		>
-			{panel}
-		</Slide>
-	) : (
-		<Grow
-			in={open}
-			mountOnEnter
-			style={{
-				transformOrigin:
-					position === 'left' ? 'bottom left' : 'bottom right'
-			}}
-		>
-			{panel}
-		</Grow>
+		</div>
 	);
 };
 

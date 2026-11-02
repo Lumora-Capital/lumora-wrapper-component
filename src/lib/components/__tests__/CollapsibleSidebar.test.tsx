@@ -1,11 +1,15 @@
-import { Business, Home, People, Settings } from '@mui/icons-material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import userEvent from '@testing-library/user-event';
+import {
+	BuildingIcon as Business,
+	HouseIcon as Home,
+	SettingsIcon as Settings,
+	UsersIcon as People
+} from 'lucide-react';
 import * as React from 'react';
 import CollapsibleSidebar from '../CollapsibleSidebar';
 import type { SidebarLink } from '../LumoraWrapper';
+import { ShellThemeContext } from '../shellTheme';
 import { fireEvent, render, screen, within } from './testUtils';
-
-const darkTheme = createTheme({ palette: { mode: 'dark' } });
 
 const mainLinks: SidebarLink[] = [
 	{ text: 'Dashboard', path: '/dashboard', icon: <Home /> },
@@ -112,7 +116,7 @@ describe('CollapsibleSidebar', () => {
 			// Collapsed: label is not visible text up front
 			expect(screen.queryByText('Deals')).not.toBeInTheDocument();
 
-			fireEvent.mouseOver(screen.getByTestId('sidebar-item-Deals'));
+			await userEvent.hover(screen.getByTestId('sidebar-item-Deals'));
 			const tooltip = await screen.findByRole('tooltip');
 			expect(tooltip).toHaveTextContent('Deals');
 		});
@@ -155,7 +159,7 @@ describe('CollapsibleSidebar', () => {
 				'aria-label',
 				'Liam · Legal & Compliance'
 			);
-			fireEvent.mouseOver(icon);
+			await userEvent.hover(icon);
 			const tooltip = await screen.findByRole('tooltip');
 			expect(tooltip).toHaveTextContent('Liam · Legal & Compliance');
 		});
@@ -433,10 +437,10 @@ describe('CollapsibleSidebar', () => {
 
 		it('gives each labeled item 8px padding on all sides', () => {
 			renderSidebar({ collapsed: true, showLabels: true });
-			// p: 1 => 8px on every side of the item container.
-			expect(screen.getByTestId('sidebar-item-Deals')).toHaveStyle({
-				padding: '8px'
-			});
+			// 8px (lw:p-2) on every side of the item container.
+			expect(screen.getByTestId('sidebar-item-Deals')).toHaveClass(
+				'lw:p-2'
+			);
 		});
 
 		it('tints idle items with foregroundColor while the active item uses the accent fill', () => {
@@ -469,31 +473,21 @@ describe('CollapsibleSidebar', () => {
 				activeForegroundColor: '#abcdef', // foreground (active AND hover)
 				foregroundColor: '#7ec8bf' // idle tint (distinct, so hover != idle)
 			});
-			// jsdom cannot resolve :hover state, so read the injected CSSOM rules
-			// directly. Idle items are teal (#7ec8bf), so the accent (#123abc) /
-			// active-fg (#abcdef) colors only appear in the active + hover rules;
-			// their presence confirms hover reuses the active look. Accept hex or
-			// the rgb() form some CSSOM implementations normalize to.
-			const cssRules = Array.from(document.styleSheets)
-				.flatMap(sheet => {
-					try {
-						return Array.from(sheet.cssRules).map(r => r.cssText);
-					} catch {
-						return [];
-					}
-				})
-				.map(r => r.toLowerCase());
-			// A :hover rule exists carrying both the accent fill and the fg.
-			const hoverRule = cssRules.find(
-				r =>
-					r.includes(':hover') &&
-					/#123abc|rgb\(18,\s*58,\s*188\)/.test(r)
+			// jsdom cannot resolve :hover, so read what the hover classes use:
+			// the hover fill and foreground are variables on the row, read by
+			// its `lw:hover:` classes. An idle item hovers into the accent fill
+			// (#123abc) and the active foreground (#abcdef): the active look.
+			const idle = screen.getByTestId('sidebar-item-Dashboard');
+			expect(idle).toHaveClass(
+				'lw:hover:bg-(--lw-row-hover-bg)!',
+				'lw:hover:text-(--lw-row-hover-fg)!'
 			);
-			expect(hoverRule).toBeDefined();
-			expect(hoverRule).toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
-			const cssText = cssRules.join(' ');
-			expect(cssText).toMatch(/#123abc|rgb\(18,\s*58,\s*188\)/);
-			expect(cssText).toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
+			expect(idle.style.getPropertyValue('--lw-row-hover-bg')).toBe(
+				'#123abc'
+			);
+			expect(idle.style.getPropertyValue('--lw-row-hover-fg')).toBe(
+				'#abcdef'
+			);
 		});
 
 		it('keeps a parent group chevron and expands children inline on click', () => {
@@ -529,36 +523,23 @@ describe('CollapsibleSidebar', () => {
 	// Guards that the rail-labeled "active == hover" look did NOT leak into the
 	// collapsible variant, which must keep its original subtle idle-hover tint.
 	describe('collapsible variant hover (regression: unaffected by rail-labeled)', () => {
-		const readCssRules = () =>
-			Array.from(document.styleSheets)
-				.flatMap(sheet => {
-					try {
-						return Array.from(sheet.cssRules).map(r => r.cssText);
-					} catch {
-						return [];
-					}
-				})
-				.map(r => r.toLowerCase());
-
 		it('tints idle items subtly on hover (groupTint), never the solid accent + fg', () => {
 			renderSidebar({
 				collapsed: false, // expanded collapsible rows
 				showLabels: false, // collapsible, NOT rail-labeled
-				activePath: '/nothing', // nothing active → only idle-hover rules
+				activePath: '/nothing', // nothing active → only idle-hover tints
 				activeAccentColor: '#123abc', // solid accent (rgb 18,58,188)
 				activeForegroundColor: '#abcdef' // active fg (rgb 171,205,239)
 			});
-			const rules = readCssRules();
-			// The idle-hover rule uses the derived translucent tint
+			const idle = screen.getByTestId('sidebar-item-Dashboard');
+			// The idle hover uses the derived translucent tint
 			// rgba(18, 58, 188, 0.14), i.e. the accent at 14% — NOT the solid fill.
-			const idleHover = rules.find(
-				r =>
-					r.includes(':hover') &&
-					/rgba\(18,\s*58,\s*188,\s*0?\.14\)/.test(r)
+			expect(idle.style.getPropertyValue('--lw-row-hover-bg')).toMatch(
+				/rgba\(18,\s*58,\s*188,\s*0?\.14\)/
 			);
-			expect(idleHover).toBeDefined();
 			// ...and it must not flip the foreground to the active fg on hover.
-			expect(idleHover).not.toMatch(/#abcdef|rgb\(171,\s*205,\s*239\)/);
+			expect(idle.style.getPropertyValue('--lw-row-hover-fg')).toBe('');
+			expect(idle).not.toHaveClass('lw:hover:text-(--lw-row-hover-fg)!');
 		});
 	});
 
@@ -583,7 +564,7 @@ describe('CollapsibleSidebar', () => {
 
 		it('reveals the full label as a tooltip when an expanded label is truncated', async () => {
 			renderSidebar({ collapsed: false });
-			fireEvent.mouseOver(screen.getByText('Dashboard'));
+			await userEvent.hover(screen.getByText('Dashboard'));
 			expect(await screen.findByRole('tooltip')).toHaveTextContent(
 				'Dashboard'
 			);
@@ -598,26 +579,38 @@ describe('CollapsibleSidebar', () => {
 			});
 		});
 
-		it('defaults the surface to the theme paper color in dark mode', () => {
+		it('defaults the surface to the shell paper color in dark mode', () => {
 			render(
-				<ThemeProvider theme={darkTheme}>
+				<ShellThemeContext.Provider value='dark'>
 					<CollapsibleSidebar mainLinks={mainLinks} />
-				</ThemeProvider>
+				</ShellThemeContext.Provider>
 			);
-			// MUI dark palette background.paper is #121212
+			// The shell's dark paper (resolveSidebarSurface)
 			expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
-				backgroundColor: 'rgb(18, 18, 18)'
+				backgroundColor: 'hsl(220, 30%, 7%)'
 			});
+		});
+
+		it("follows the host's html[data-color-scheme] outside the wrapper", () => {
+			document.documentElement.setAttribute('data-color-scheme', 'dark');
+			try {
+				render(<CollapsibleSidebar mainLinks={mainLinks} />);
+				expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
+					backgroundColor: 'hsl(220, 30%, 7%)'
+				});
+			} finally {
+				document.documentElement.removeAttribute('data-color-scheme');
+			}
 		});
 
 		it('lets surfaceBackgroundColor override the theme default', () => {
 			render(
-				<ThemeProvider theme={darkTheme}>
+				<ShellThemeContext.Provider value='dark'>
 					<CollapsibleSidebar
 						mainLinks={mainLinks}
 						surfaceBackgroundColor='#123456'
 					/>
-				</ThemeProvider>
+				</ShellThemeContext.Provider>
 			);
 			expect(screen.getByTestId('collapsible-sidebar')).toHaveStyle({
 				backgroundColor: 'rgb(18, 52, 86)'
@@ -734,9 +727,9 @@ describe('CollapsibleSidebar', () => {
 			);
 			const brand = screen.getByTestId('sidebar-header-brand');
 			expect(within(brand).getByTestId('brand-logo')).toBeInTheDocument();
-			expect(within(brand).getByText('Polymer')).toHaveStyle({
-				textTransform: 'uppercase'
-			});
+			expect(within(brand).getByText('Polymer')).toHaveClass(
+				'lw:uppercase'
+			);
 
 			rerender(
 				<CollapsibleSidebar
@@ -882,12 +875,7 @@ describe('CollapsibleSidebar', () => {
 	});
 
 	describe('links scroller', () => {
-		const scrollerOf = () =>
-			screen
-				.getByTestId('collapsible-sidebar')
-				.querySelector<HTMLElement>(
-					':scope > div:not([data-testid])'
-				) as HTMLElement;
+		const scrollerOf = () => screen.getByTestId('sidebar-links-scroller');
 
 		const sizeLinks = (linksPx: number) => {
 			jest.spyOn(

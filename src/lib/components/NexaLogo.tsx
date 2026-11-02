@@ -14,6 +14,8 @@ const NexaLogo: React.FC<NexaLogoProps> = ({ size = 20 }) => (
 	<svg
 		width={size}
 		height={(size * 30) / 33}
+		// Inline, so a parent's icon-size classes (`[&_svg]:size-6`) leave it be
+		style={{ width: size, height: (size * 30) / 33, flexShrink: 0 }}
 		viewBox='0 0 33 30'
 		fill='none'
 		xmlns='http://www.w3.org/2000/svg'

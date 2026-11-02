@@ -1,14 +1,14 @@
-import { Home } from '@mui/icons-material';
-import { useMediaQuery } from '@mui/material';
+import { HouseIcon } from 'lucide-react';
+import { useIsMobile } from '../useMediaQuery';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import { act, lumoraTestRequiredProps, render, screen } from './testUtils';
 
-jest.mock('@mui/material', () => ({
-	...jest.requireActual('@mui/material'),
-	useMediaQuery: jest.fn()
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
 }));
-const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
-	typeof useMediaQuery
+const mockUseMediaQuery = useIsMobile as jest.MockedFunction<
+	typeof useIsMobile
 >;
 
 const renderWrapper = (props: Partial<LumoraWrapperProps> = {}) =>
@@ -18,7 +18,9 @@ const renderWrapper = (props: Partial<LumoraWrapperProps> = {}) =>
 			sidebarVariant='panel'
 			sidebarSubmenu='flyout'
 			sidebarAutoHide
-			sidebarLinks={[{ text: 'Deals', path: '/deals', icon: <Home /> }]}
+			sidebarLinks={[
+				{ text: 'Deals', path: '/deals', icon: <HouseIcon /> }
+			]}
 			{...props}
 		>
 			<div>Page</div>

@@ -1,18 +1,6 @@
-import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
-import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
-import Box from '@mui/material/Box';
-import Collapse from '@mui/material/Collapse';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import { type Theme, useTheme } from '@mui/material/styles';
+import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '../utils';
 import Brand from './Brand';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
@@ -25,10 +13,11 @@ import {
 import SidebarFlyout from './SidebarFlyout';
 import { GEL_SPRING, springTiming } from './glassMotion';
 import {
-	GLASS_RADIUS_PX,
-	glassLabelSx,
+	REDUCED_MOTION_NONE,
+	glassLabel,
 	SidebarSurfaceContext
 } from './liquidGlass';
+import { useIsDark } from './shellTheme';
 import {
 	deriveGroupTint,
 	flattenLeaves,
@@ -41,11 +30,13 @@ import {
 } from './sidebarUtils';
 import {
 	FLOATING_RAIL_GAP_PX,
-	FLOATING_RAIL_ICON_PX,
 	FLOATING_RAIL_ITEM_PX,
 	FLOATING_RAIL_WIDTH_PX,
-	RAIL_MAX_SCALE
+	RAIL_MAX_SCALE,
+	resolveSidebarSurface
 } from './shellLayout';
+import { Separator } from './ui/separator';
+import { Tooltip } from './ui/tooltip';
 import useFlyoutIntent from './useFlyoutIntent';
 import { useDockMagnify } from './useDockMagnify';
 
@@ -56,21 +47,85 @@ const HEADER_HEIGHT_PX = 64;
 /** Host apps (and the demo's base CSS) often outline every `button:focus`,
  * which lingers after a mouse click — neutralize it on all sidebar icon
  * buttons (same treatment as the navbar hamburger). */
-const FOCUS_OUTLINE_FIX = {
-	'&:focus, &:focus-visible': { outline: 'none' }
-} as const;
+const FOCUS_OUTLINE_FIX =
+	'lw:outline-none lw:focus:outline-none lw:focus-visible:outline-none';
 /** Chevron indicator size; kept clearly smaller than the item's own icon. */
 const CHEVRON_FONT_SIZE_PX = 16;
 /** Subtler chevron beneath the icon on the narrow collapsed rail. */
 const CHEVRON_FONT_SIZE_RAIL_PX = 14;
-/** Left inset of an expanded child row, and how much each further level adds. */
-const CHILD_INDENT = 4;
-const CHILD_INDENT_STEP = 2.5;
+/** Left inset (px) of an expanded child row, and how much each further level adds. */
+const CHILD_INDENT_PX = 32;
+const CHILD_INDENT_STEP_PX = 20;
 /** Caption + icon sizing for the narrow (80px) labeled rail, tuned so labels
  * like "Analytics" / "Knowledge" stay legible without overflowing. */
 const RAIL_LABEL_FONT_SIZE = '0.7rem';
-const RAIL_LABEL_ICON_SIZE_PX = 22;
 const railGel = springTiming(GEL_SPRING);
+/** MUI's action.hover: the quiet wash a nested row takes on hover. */
+const ACTION_HOVER = 'var(--lw-hover-wash)';
+/** The text colour on a dark surface (MUI's dark text.primary). */
+const DARK_TEXT = '#ffffff';
+
+/**
+ * A row's colours at rest (inline, so they can be any runtime colour) and on
+ * hover (variables read by important hover classes, which beat the inline
+ * rest colours). Leave `hover` out for no change on hover.
+ */
+const rowColors = (
+	rest: { fg?: string; bg?: string },
+	hover?: { fg?: string; bg?: string; radius?: string }
+): { className: string; style: React.CSSProperties } => ({
+	className: cn(
+		hover?.bg && 'lw:hover:bg-(--lw-row-hover-bg)!',
+		hover?.fg && 'lw:hover:text-(--lw-row-hover-fg)!',
+		hover?.radius && 'lw:hover:rounded-(--lw-row-hover-radius)!'
+	),
+	style: {
+		color: rest.fg,
+		backgroundColor: rest.bg ?? 'transparent',
+		...(hover?.bg ? { '--lw-row-hover-bg': hover.bg } : {}),
+		...(hover?.fg ? { '--lw-row-hover-fg': hover.fg } : {}),
+		...(hover?.radius ? { '--lw-row-hover-radius': hover.radius } : {})
+	} as React.CSSProperties
+});
+
+/** A row that is a link when it has a path, else a button. */
+type RowProps = React.HTMLAttributes<HTMLElement> & {
+	href?: string;
+	disabled?: boolean;
+	[data: `data-${string}`]: string | undefined;
+};
+const RowControl = React.forwardRef<HTMLElement, RowProps>(
+	({ href, disabled, ...rest }, ref) =>
+		href ? (
+			<a
+				ref={ref as React.Ref<HTMLAnchorElement>}
+				href={href}
+				{...rest}
+			/>
+		) : (
+			<button
+				ref={ref as React.Ref<HTMLButtonElement>}
+				type='button'
+				disabled={disabled}
+				{...rest}
+			/>
+		)
+);
+RowControl.displayName = 'RowControl';
+
+/** The expanded rows' frame (MUI ListItemButton). */
+const LIST_ROW_CLASS =
+	'lw:relative lw:flex lw:w-full lw:min-w-0 lw:grow lw:items-center lw:justify-start lw:text-left lw:no-underline lw:transition-colors lw:duration-150 lw:outline-none lw:focus-visible:bg-selected lw:disabled:opacity-40';
+/** The row's leading icon (MUI ListItemIcon); its min-width is per row. */
+const LIST_ICON_CLASS =
+	'lw:inline-flex lw:shrink-0 lw:text-inherit lw:[&_svg]:size-6';
+/** The row's label column (MUI ListItemText). */
+const LIST_TEXT_CLASS = 'lw:my-1 lw:min-w-0 lw:flex-auto';
+/** The icon-button frame (MUI IconButton). */
+const ICON_BUTTON_CLASS = cn(
+	'lw:relative lw:inline-flex lw:shrink-0 lw:items-center lw:justify-center lw:p-2 lw:transition-[background-color,border-radius,color] lw:duration-150 lw:disabled:opacity-40 lw:[&_svg]:size-6',
+	FOCUS_OUTLINE_FIX
+);
 
 /**
  * Row/caption label that ellipsizes when it overflows and reveals the full text
@@ -113,31 +168,27 @@ const TruncatingLabel: React.FC<{
 	return (
 		<Tooltip
 			title={text}
-			placement='right'
+			side='right'
 			arrow
-			enterDelay={400}
-			disableHoverListener={!truncated}
-			disableFocusListener={!truncated}
-			disableTouchListener={!truncated}
+			delayDuration={400}
+			disabled={!truncated}
 		>
-			<Typography
+			<span
 				ref={ref}
-				component='span'
-				variant={variant}
-				sx={{
-					display: 'block',
-					width: center ? '100%' : undefined,
-					overflow: 'hidden',
-					textOverflow: 'ellipsis',
-					whiteSpace: 'nowrap',
-					color: 'inherit',
+				className={cn(
+					'lw:block lw:overflow-hidden lw:text-ellipsis lw:whitespace-nowrap lw:text-inherit',
+					variant === 'caption'
+						? 'lw:text-xs lw:leading-[1.66]'
+						: 'lw:text-sm lw:leading-normal',
+					center && 'lw:w-full lw:text-center lw:leading-[1.1]'
+				)}
+				style={{
 					...(fontSize ? { fontSize } : {}),
-					...(fontWeight ? { fontWeight } : {}),
-					...(center ? { textAlign: 'center', lineHeight: 1.1 } : {})
+					...(fontWeight ? { fontWeight } : {})
 				}}
 			>
 				{text}
-			</Typography>
+			</span>
 		</Tooltip>
 	);
 };
@@ -165,22 +216,25 @@ const groupArrowOutset = (bar: number) =>
 const GroupChevron: React.FC<{ open: boolean; size?: number }> = ({
 	open,
 	size = CHEVRON_FONT_SIZE_PX
-}) =>
-	open ? (
-		<KeyboardArrowUpRounded sx={{ fontSize: size, opacity: 0.75 }} />
-	) : (
-		<KeyboardArrowDownRounded sx={{ fontSize: size, opacity: 0.75 }} />
+}) => {
+	const Icon = open ? ChevronUpIcon : ChevronDownIcon;
+	return (
+		<Icon
+			aria-hidden
+			className='lw:shrink-0 lw:opacity-75'
+			style={{ width: size, height: size }}
+		/>
 	);
+};
 
 /** Expanded rows: a right chevron that turns down while the group is open. */
 const RowChevron: React.FC<{ open: boolean }> = ({ open }) => (
-	<ChevronRightRounded
-		sx={{
-			fontSize: 20,
-			opacity: 0.75,
-			transition: 'transform 150ms ease',
-			transform: open ? 'rotate(90deg)' : 'none'
-		}}
+	<ChevronRightIcon
+		aria-hidden
+		className={cn(
+			'lw:size-5! lw:shrink-0 lw:opacity-75 lw:transition-transform lw:duration-150',
+			open && 'lw:rotate-90'
+		)}
 	/>
 );
 
@@ -205,8 +259,8 @@ const FLOATING_RAIL_INSET_PX =
 const railScrollerPadding = (bar: number) => {
 	const overflow = Math.max(0, bar - FLOATING_RAIL_INSET_PX);
 	return {
-		pl: `${Math.max(0, FLOATING_RAIL_INSET_PX - overflow)}px`,
-		pr: `${Math.max(0, FLOATING_RAIL_INSET_PX - bar)}px`
+		paddingLeft: `${Math.max(0, FLOATING_RAIL_INSET_PX - overflow)}px`,
+		paddingRight: `${Math.max(0, FLOATING_RAIL_INSET_PX - bar)}px`
 	};
 };
 
@@ -457,8 +511,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	footer,
 	submenuMode = 'inline'
 }) => {
-	const theme = useTheme();
-	const isDark = theme.palette.mode === 'dark';
+	const isDark = useIsDark();
 	const labelSurface = React.useContext(SidebarSurfaceContext);
 	const useFlyout = submenuMode === 'flyout' && collapsed && !showLabels;
 	const flyout = useFlyoutIntent(useFlyout);
@@ -526,47 +579,31 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// active item in every variant, and — in the rail-labeled layout only
 	// (`showLabels`) — to any hovered item, so active and hover match there.
 	// The collapsible variant keeps its original subtle idle-hover tint instead.
-	// `highlightSx` targets expanded rows, which set an explicit icon color.
-	const highlightSx = {
-		bgcolor: activeFill,
-		color: activeFg,
-		'& .MuiListItemIcon-root': { color: activeFg }
-	};
-	// The same look for the collapsed labeled icon buttons (the icon uses
-	// currentColor and the caption inherits), plus the highlight's rounded corner.
-	const iconHighlightSx = {
-		bgcolor: activeFill,
-		color: activeFg,
-		borderRadius: '8px'
-	};
+	const highlight = { bg: activeFill, fg: activeFg };
 	const groupTint = groupAccentColor ?? deriveGroupTint(activeAccent);
-	// Surface defaults to white in light mode and the theme's paper (dark chrome)
-	// in dark mode; overridable via surfaceBackgroundColor.
-	const surface =
-		surfaceBackgroundColor ??
-		(isDark ? theme.palette.background.paper : '#ffffff');
+	// Surface defaults to white in light mode and the shell's dark paper in
+	// dark mode; overridable via surfaceBackgroundColor.
+	const surface = resolveSidebarSurface(surfaceBackgroundColor, isDark);
 	// Accent-colored chrome (brand title, logo, inactive icons) uses the
 	// brand accent in light mode (per the mockup); in dark mode the accent is too
 	// dim on the dark surface, so fall back to the theme's primary text color.
 	// `foregroundColor` overrides this so idle labels can be tinted independently
 	// of the active highlight (e.g. teal idle labels over a dark-green active pill).
 	const accentOnSurface =
-		foregroundColor ?? (isDark ? 'text.primary' : activeAccent);
+		foregroundColor ?? (isDark ? 'var(--lw-text-primary)' : activeAccent);
 	// Header bar chrome. Without a custom header background the header is part
 	// of the sidebar surface, so the brand keeps the same accent-on-surface tint
 	// as the idle nav chrome (auto-contrast would paint a black brand on the
 	// default white surface). A custom header background switches to
 	// auto-contrast, which falls back to white for non-hex values (see the
-	// headerForegroundColor prop doc). The dark-mode fallback is the resolved
-	// theme color rather than the 'text.primary' token so the divider below can
-	// still parse it.
+	// headerForegroundColor prop doc). The dark-mode fallback is a real colour
+	// rather than the text token so the divider below can still parse it.
 	const headerBg = headerBackgroundColor ?? surface;
 	const headerFg =
 		headerForegroundColor ??
 		(headerBackgroundColor
 			? getContrastText(headerBg)
-			: (foregroundColor ??
-				(isDark ? theme.palette.text.primary : activeAccent)));
+			: (foregroundColor ?? (isDark ? DARK_TEXT : activeAccent)));
 	// Hairline separating the header from the nav list — the foreground at low
 	// alpha so it stays legible on any header color.
 	const headerDivider = deriveGroupTint(headerFg);
@@ -579,7 +616,6 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	const pageLinkProps = (path: string | undefined) =>
 		path
 			? {
-					component: 'a' as const,
 					href: path,
 					onClick: (event: React.MouseEvent) => {
 						if (isInAppClick(event)) {
@@ -605,132 +641,102 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// Colors shared by every expanded row. rail-labeled: active AND hover share
 	// the highlight. collapsible: keep the original subtle idle-hover tint
 	// (`idleHoverBg`), with the accent only when active.
-	const expandedRowSx = (
-		active: boolean,
-		idleHoverBg: string,
-		iconMinWidth: number
-	) => ({
-		color: active ? activeFg : accentOnSurface,
-		bgcolor: active ? activeFill : 'transparent',
-		'& .MuiListItemIcon-root': {
-			color: active ? activeFg : accentOnSurface,
-			minWidth: iconMinWidth
-		},
-		'&:hover': active || showLabels ? highlightSx : { bgcolor: idleHoverBg }
-	});
-	// Page rows set `selected`; override MUI's default selected styling.
-	const selectedRowSx = {
-		'&.Mui-selected': {
-			bgcolor: activeFill
-		},
-		'&.Mui-selected:hover': highlightSx
-	};
+	const expandedRowColors = (active: boolean, idleHoverBg: string) =>
+		rowColors(
+			{
+				fg: active ? activeFg : accentOnSurface,
+				bg: active ? activeFill : undefined
+			},
+			active || showLabels ? highlight : { bg: idleHoverBg }
+		);
 
 	const renderExpandedLeaf = (link: SidebarLink) => {
 		const active = isSubLinkActive(link, activePath);
+		const colors = expandedRowColors(active, groupTint);
 		const row = (
-			<ListItemButton
+			<RowControl
 				key={link.text}
 				disabled={!link.path}
-				selected={active}
 				{...pageLinkProps(link.path)}
 				data-testid={`sidebar-item-${link.text}`}
 				data-active={active ? 'true' : 'false'}
-				sx={{
-					borderRadius: '8px',
-					py: 1.25,
-					px: 1.5,
+				data-selected={active ? 'true' : undefined}
+				className={cn(
+					LIST_ROW_CLASS,
+					'lw:rounded-lg lw:px-3',
+					link.subtitle ? 'lw:py-2' : 'lw:py-2.5',
 					// Room for the action button laid over the row's end
-					...(link.action && { pr: 6 }),
-					...(link.subtitle && { py: 1 }),
-					// A two-line row usually leads with a larger avatar; give it room
-					...expandedRowSx(
-						active,
-						groupTint,
-						link.subtitle ? 48 : 36
-					),
-					...selectedRowSx
-				}}
+					link.action && 'lw:pr-12',
+					colors.className
+				)}
+				style={colors.style}
 			>
-				<ListItemIcon>{link.icon}</ListItemIcon>
-				<ListItemText
-					disableTypography
-					primary={
-						<TruncatingLabel
-							text={link.text}
-							fontWeight={ROW_LABEL_WEIGHT}
-						/>
-					}
-					secondary={
-						link.subtitle ? (
-							<Box
-								component='span'
-								sx={{ display: 'block', opacity: 0.85 }}
-							>
-								<TruncatingLabel
-									text={link.subtitle}
-									fontSize='0.8125rem'
-								/>
-							</Box>
-						) : undefined
-					}
-					sx={link.subtitle ? { my: 0 } : undefined}
-				/>
-			</ListItemButton>
+				{/* A two-line row usually leads with a larger avatar; give it room */}
+				<span
+					className={LIST_ICON_CLASS}
+					style={{ minWidth: link.subtitle ? 48 : 36 }}
+				>
+					{link.icon}
+				</span>
+				<span
+					className={cn(LIST_TEXT_CLASS, link.subtitle && 'lw:my-0')}
+				>
+					<TruncatingLabel
+						text={link.text}
+						fontWeight={ROW_LABEL_WEIGHT}
+					/>
+					{link.subtitle ? (
+						<span className='lw:block lw:opacity-85'>
+							<TruncatingLabel
+								text={link.subtitle}
+								fontSize='0.8125rem'
+							/>
+						</span>
+					) : null}
+				</span>
+			</RowControl>
 		);
 		if (!link.action) {
 			return row;
 		}
 		const { action } = link;
+		const actionFg = active ? activeFg : accentOnSurface;
 		// A sibling of the row button, not nested in it: two separate controls
 		return (
-			<Box key={link.text} sx={{ position: 'relative' }}>
+			<div key={link.text} className='lw:relative'>
 				{row}
-				<Tooltip title={action.label} placement='right' arrow>
-					<IconButton
+				<Tooltip title={action.label} side='right' arrow>
+					<button
+						type='button'
 						aria-label={action.label}
 						data-testid={`sidebar-action-${link.text}`}
 						onClick={() => {
 							action.onClick();
 							onLinkAction?.();
 						}}
-						size='small'
-						sx={{
-							position: 'absolute',
-							right: 8,
-							top: '50%',
-							transform: 'translateY(-50%)',
-							width: 30,
-							height: 30,
-							borderRadius: '6px',
-							border: '1px solid',
-							borderColor: active
-								? 'rgba(255, 255, 255, 0.35)'
-								: groupTint,
-							color: active ? activeFg : accentOnSurface,
-							'&:hover': {
-								bgcolor: active
-									? 'rgba(255, 255, 255, 0.15)'
-									: groupTint
-							},
-							'& .MuiSvgIcon-root': { fontSize: 18 },
+						className={cn(
+							'lw:absolute lw:top-1/2 lw:right-2 lw:inline-flex lw:size-[30px] lw:-translate-y-1/2 lw:items-center lw:justify-center lw:rounded-md lw:border lw:border-solid lw:transition-colors lw:[&_svg]:size-[18px]',
+							'lw:hover:bg-(--lw-action-hover-bg)',
 							// No lingering outline after a click; a clear ring for keyboard focus
-							'&:focus:not(.Mui-focusVisible)': {
-								outline: 'none'
-							},
-							'&.Mui-focusVisible': {
-								outline: '2px solid',
-								outlineColor: active
-									? activeFg
-									: accentOnSurface,
-								outlineOffset: 1
-							}
-						}}
+							'lw:focus:outline-none lw:focus-visible:outline-2 lw:focus-visible:outline-offset-1 lw:focus-visible:outline-solid lw:focus-visible:outline-(--lw-action-ring)'
+						)}
+						style={
+							{
+								borderColor: active
+									? 'rgba(255, 255, 255, 0.35)'
+									: groupTint,
+								color: actionFg,
+								'--lw-action-hover-bg': active
+									? 'rgba(255, 255, 255, 0.15)'
+									: groupTint,
+								'--lw-action-ring': actionFg
+							} as React.CSSProperties
+						}
 					>
 						{action.icon}
-					</IconButton>
+					</button>
 				</Tooltip>
-			</Box>
+			</div>
 		);
 	};
 
@@ -742,52 +748,52 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const parentActive = isSubLinkActive(link, activePath);
 		const key = nodeKey('', link);
 		const open = isGroupOpen(link, key);
+		const colors = expandedRowColors(parentActive, groupTint);
 
 		return (
-			<Box
+			<div
 				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
-				sx={{
-					borderRadius: '8px',
-					bgcolor: groupActive ? groupTint : 'transparent'
+				className='lw:rounded-lg'
+				style={{
+					backgroundColor: groupActive ? groupTint : 'transparent'
 				}}
 			>
 				{/* Clicking the parent row toggles its child group open/closed. */}
-				<ListItemButton
+				<RowControl
 					onClick={() => toggleGroup(key, open)}
 					data-testid={`sidebar-item-${link.text}`}
 					data-active={parentActive ? 'true' : 'false'}
 					aria-expanded={open}
-					sx={{
-						borderRadius: '8px',
-						py: 1.25,
-						px: 1.5,
-						...expandedRowSx(parentActive, groupTint, 36)
-					}}
+					className={cn(
+						LIST_ROW_CLASS,
+						'lw:rounded-lg lw:px-3 lw:py-2.5',
+						colors.className
+					)}
+					style={colors.style}
 				>
-					<ListItemIcon>{link.icon}</ListItemIcon>
-					<ListItemText
-						disableTypography
-						primary={
-							<TruncatingLabel
-								text={link.text}
-								fontWeight={ROW_LABEL_WEIGHT}
-							/>
-						}
-					/>
+					<span className={LIST_ICON_CLASS} style={{ minWidth: 36 }}>
+						{link.icon}
+					</span>
+					<span className={LIST_TEXT_CLASS}>
+						<TruncatingLabel
+							text={link.text}
+							fontWeight={ROW_LABEL_WEIGHT}
+						/>
+					</span>
 					<RowChevron open={open} />
-				</ListItemButton>
-				<Collapse in={open} timeout='auto' unmountOnExit>
-					<Box
+				</RowControl>
+				{open ? (
+					<div
 						data-testid={`sidebar-children-${link.text}`}
-						sx={{ pb: 0.5 }}
+						className='lw:pb-1 lw:animate-in lw:fade-in-0'
 					>
 						{link.subitems!.map(sub =>
 							renderExpandedChild(sub, key, 1)
 						)}
-					</Box>
-				</Collapse>
-			</Box>
+					</div>
+				) : null}
+			</div>
 		);
 	};
 
@@ -803,83 +809,100 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		depth: number
 	): React.ReactNode => {
 		const key = nodeKey(parentKey, sub);
-		const indent = CHILD_INDENT + (depth - 1) * CHILD_INDENT_STEP;
+		const indent = CHILD_INDENT_PX + (depth - 1) * CHILD_INDENT_STEP_PX;
+		const childRowClass = cn(
+			LIST_ROW_CLASS,
+			'lw:mx-1 lw:w-[calc(100%-8px)] lw:rounded-lg lw:py-1.5 lw:pr-4'
+		);
 
 		if (hasChildren(sub)) {
 			const sectionActive = isSidebarLinkActive(sub, activePath);
 			const rowActive = isSubLinkActive(sub, activePath);
 			const open = isGroupOpen(sub, key);
+			const colors = expandedRowColors(rowActive, ACTION_HOVER);
 			return (
-				<Box key={key} data-testid={`sidebar-group-${sub.text}`}>
-					<ListItemButton
+				<div key={key} data-testid={`sidebar-group-${sub.text}`}>
+					<RowControl
 						onClick={() => toggleGroup(key, open)}
 						data-testid={`sidebar-subitem-${sub.text}`}
 						data-active={sectionActive ? 'true' : 'false'}
 						aria-expanded={open}
-						sx={{
-							borderRadius: '8px',
-							mx: 0.5,
-							py: 0.75,
-							pl: indent,
-							...expandedRowSx(rowActive, 'action.hover', 32)
-						}}
+						className={cn(childRowClass, colors.className)}
+						style={{ ...colors.style, paddingLeft: indent }}
 					>
 						{sub.icon ? (
-							<ListItemIcon>{sub.icon}</ListItemIcon>
+							<span
+								className={LIST_ICON_CLASS}
+								style={{ minWidth: 32 }}
+							>
+								{sub.icon}
+							</span>
 						) : null}
-						<ListItemText
-							disableTypography
-							primary={
-								<TruncatingLabel
-									text={sub.text}
-									fontWeight={ROW_LABEL_WEIGHT}
-								/>
-							}
-						/>
+						<span className={LIST_TEXT_CLASS}>
+							<TruncatingLabel
+								text={sub.text}
+								fontWeight={ROW_LABEL_WEIGHT}
+							/>
+						</span>
 						<RowChevron open={open} />
-					</ListItemButton>
-					<Collapse in={open} timeout='auto' unmountOnExit>
-						<Box data-testid={`sidebar-children-${sub.text}`}>
+					</RowControl>
+					{open ? (
+						<div
+							data-testid={`sidebar-children-${sub.text}`}
+							className='lw:animate-in lw:fade-in-0'
+						>
 							{sub.subitems!.map(child =>
 								renderExpandedChild(child, key, depth + 1)
 							)}
-						</Box>
-					</Collapse>
-				</Box>
+						</div>
+					) : null}
+				</div>
 			);
 		}
 
 		const active = isSubLinkActive(sub, activePath);
+		const colors = expandedRowColors(active, ACTION_HOVER);
 		return (
-			<ListItemButton
+			<RowControl
 				key={key}
-				selected={active}
 				disabled={!sub.path}
 				{...pageLinkProps(sub.path)}
 				data-testid={`sidebar-subitem-${sub.text}`}
 				data-active={active ? 'true' : 'false'}
-				sx={{
-					borderRadius: '8px',
-					mx: 0.5,
-					py: 0.75,
-					pl: indent,
-					...expandedRowSx(active, 'action.hover', 32),
-					...selectedRowSx
-				}}
+				data-selected={active ? 'true' : undefined}
+				className={cn(childRowClass, colors.className)}
+				style={{ ...colors.style, paddingLeft: indent }}
 			>
-				{sub.icon ? <ListItemIcon>{sub.icon}</ListItemIcon> : null}
-				<ListItemText
-					disableTypography
-					primary={
-						<TruncatingLabel
-							text={sub.text}
-							fontWeight={ROW_LABEL_WEIGHT}
-						/>
-					}
-				/>
-			</ListItemButton>
+				{sub.icon ? (
+					<span className={LIST_ICON_CLASS} style={{ minWidth: 32 }}>
+						{sub.icon}
+					</span>
+				) : null}
+				<span className={LIST_TEXT_CLASS}>
+					<TruncatingLabel
+						text={sub.text}
+						fontWeight={ROW_LABEL_WEIGHT}
+					/>
+				</span>
+			</RowControl>
 		);
 	};
+
+	// --- Flyout rail -------------------------------------------------------
+	// Icons on the glass rail: one rounded shape for every state, no hover
+	// tint of their own (the lens glides behind them), and a gel squish on
+	// press that springs back. The active item's glass is one drop that
+	// glides between items (useActiveGlass); the item itself stays clear.
+	const GLASS_RAIL_ICON_CLASS = cn(
+		'lw:rounded-md! lw:[&_svg]:size-6 lw:hover:bg-transparent! lw:active:[transform:scale(0.88)] lw:active:duration-[90ms] lw:motion-reduce:active:[transform:none]',
+		REDUCED_MOTION_NONE
+	);
+	const glassRailIconStyle = (active: boolean): React.CSSProperties => ({
+		...(active ? { backgroundColor: 'transparent' } : {}),
+		transition: `transform ${railGel.duration}ms ${railGel.easing}, background-color 160ms ease`
+	});
+	// The flyout rail's hover labels: frosted pills, no arrow.
+	const glassTooltip = glassLabel(isDark, labelSurface);
 
 	// --- Collapsed rows ----------------------------------------------------
 	const renderCollapsedIcon = (
@@ -891,8 +914,36 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		options?: { insideGroup?: boolean; testId?: string }
 	) => {
 		const disabled = !path;
+		const colors = showLabels
+			? rowColors(
+					{
+						fg: active ? activeFg : accentOnSurface,
+						bg: active ? activeFill : undefined
+					},
+					highlight
+				)
+			: // Icon-only collapsed rail (collapsible variant): original
+				// hover — accent when active, else a subtle tint; no
+				// foreground change. The glass rail has no hover of its own.
+				rowColors(
+					{
+						fg: active ? activeFg : accentOnSurface,
+						bg: active ? activeFill : undefined
+					},
+					useFlyout
+						? undefined
+						: {
+								bg: active
+									? activeFill
+									: options?.insideGroup
+										? ACTION_HOVER
+										: groupTint,
+								radius: '8px'
+							}
+				);
+		const size = useFlyout ? FLOATING_RAIL_ITEM_PX : 44;
 		const button = (
-			<IconButton
+			<RowControl
 				aria-label={label}
 				disabled={disabled}
 				{...pageLinkProps(path)}
@@ -900,47 +951,24 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				{...(useFlyout ? { [RAIL_ITEM_ATTR]: '' } : {})}
 				data-testid={options?.testId ?? `sidebar-item-${label}`}
 				data-active={active ? 'true' : 'false'}
-				sx={
+				className={cn(
+					ICON_BUTTON_CLASS,
+					colors.className,
 					showLabels
-						? {
-								display: 'flex',
-								flexDirection: 'column',
-								gap: 0.25,
-								width: '100%',
-								maxWidth: '100%',
-								height: 'auto',
-								// 8px padding on all sides of the item container.
-								p: 1,
-								borderRadius: '8px',
-								color: active ? activeFg : accentOnSurface,
-								bgcolor: active ? activeFill : 'transparent',
-								'& .MuiSvgIcon-root': {
-									fontSize: RAIL_LABEL_ICON_SIZE_PX
-								},
-								'&:hover': iconHighlightSx,
-								...FOCUS_OUTLINE_FIX
-							}
-						: {
-								// Icon-only collapsed rail (collapsible variant):
-								// original hover — accent when active, else a subtle
-								// tint; no foreground change.
-								width: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
-								height: useFlyout ? FLOATING_RAIL_ITEM_PX : 44,
-								color: active ? activeFg : accentOnSurface,
-								bgcolor: active ? activeFill : 'transparent',
-								borderRadius: active ? '8px' : '50%',
-								'&:hover': {
-									bgcolor: active
-										? activeFill
-										: options?.insideGroup
-											? 'action.hover'
-											: groupTint,
-									borderRadius: '8px'
-								},
-								...FOCUS_OUTLINE_FIX,
-								...(useFlyout ? glassRailIconSx(active) : {})
-							}
-				}
+						? // 8px padding on all sides of the item container.
+							'lw:flex lw:h-auto lw:w-full lw:max-w-full lw:flex-col lw:gap-0.5 lw:rounded-lg lw:p-2 lw:[&_svg]:size-[22px]'
+						: active
+							? 'lw:rounded-lg'
+							: 'lw:rounded-full',
+					!showLabels && useFlyout && GLASS_RAIL_ICON_CLASS
+				)}
+				style={{
+					...colors.style,
+					...(showLabels ? {} : { width: size, height: size }),
+					...(!showLabels && useFlyout
+						? glassRailIconStyle(active)
+						: {})
+				}}
 			>
 				{icon}
 				{showLabels ? (
@@ -951,7 +979,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						fontSize={RAIL_LABEL_FONT_SIZE}
 					/>
 				) : null}
-			</IconButton>
+			</RowControl>
 		);
 		// With visible captions the tooltip is redundant (the caption keeps its
 		// own truncation-only tooltip); disabled buttons still need the span wrapper.
@@ -966,59 +994,19 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			<Tooltip
 				key={key}
 				title={label}
-				placement='right'
+				side='right'
 				arrow={!useFlyout}
-				{...(useFlyout ? glassTooltipProps : {})}
+				{...(useFlyout
+					? {
+							contentClassName: glassTooltip.className,
+							contentStyle: glassTooltip.style,
+							sideOffset: 6
+						}
+					: {})}
 			>
 				{disabled ? <span>{button}</span> : button}
 			</Tooltip>
 		);
-	};
-
-	// --- Flyout rail -------------------------------------------------------
-	// The glass rail holds the lens, so every control on it — links, Ask
-	// Nexa, search, notifications, the account — hovers the same way: no
-	// tint of its own, the lens gliding behind it. An active or highlighted
-	// control keeps its fill.
-	const glassRailSx = {
-		position: 'relative' as const,
-		'& :is(button, a, [role="button"]):not([data-active="true"]):not([data-rail-keep-fill]):hover':
-			{
-				bgcolor: 'transparent'
-			},
-		// The rail's content paints above the lens, which is its first layer.
-		// Not the flyout's backdrop: it is fixed over the whole window, and
-		// made relative it collapses to nothing at the rail's foot.
-		'& > :not([data-glass-lens], [data-active-glass], [data-flyout-scrim])':
-			{
-				position: 'relative'
-			}
-	};
-	// Icons on the glass rail: one rounded shape for every state, no hover
-	// tint of their own (the lens glides behind them), and a gel squish on
-	// press that springs back.
-	const glassRailIconSx = (active: boolean) => ({
-		borderRadius: `${GLASS_RADIUS_PX}px`,
-		'& .MuiSvgIcon-root': { fontSize: FLOATING_RAIL_ICON_PX },
-		// The active item's glass is one drop that glides between items
-		// (useActiveGlass); the item itself stays clear
-		...(active ? { bgcolor: 'transparent' } : {}),
-		transition: `transform ${railGel.duration}ms ${railGel.easing}, background-color 160ms ease`,
-		'&:hover': { bgcolor: 'transparent' },
-		'&:active': { transform: 'scale(0.88)', transitionDuration: '90ms' },
-		'@media (prefers-reduced-motion: reduce)': {
-			transition: 'none',
-			'&:active': { transform: 'none' }
-		}
-	});
-	// The flyout rail's hover labels: frosted pills, no arrow.
-	const glassTooltipProps = {
-		slotProps: {
-			tooltip: { sx: glassLabelSx(isDark, labelSurface) },
-			popper: {
-				modifiers: [{ name: 'offset', options: { offset: [0, 6] } }]
-			}
-		}
 	};
 
 	// A group on the flyout rail: its icon alone, with a small arrow on its
@@ -1030,16 +1018,13 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const key = nodeKey('', link);
 		const open = flyout.state?.key === key;
 		return (
-			<Box
+			<div
 				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
-				sx={{
-					width: '100%',
-					display: 'flex',
-					justifyContent: 'center'
-				}}
+				className='lw:flex lw:w-full lw:justify-center'
 			>
-				<IconButton
+				<button
+					type='button'
 					{...flyout.triggerProps(key)}
 					aria-label={link.text}
 					aria-haspopup='menu'
@@ -1048,45 +1033,37 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					data-active={groupActive ? 'true' : 'false'}
 					data-open={open ? 'true' : 'false'}
 					{...{ [RAIL_ITEM_ATTR]: '' }}
-					sx={{
-						position: 'relative',
-						width: FLOATING_RAIL_ITEM_PX,
-						height: FLOATING_RAIL_ITEM_PX,
-						color: groupActive ? activeFg : accentOnSurface,
-						// Open, the rail's hover lens stays on it (useRailLens)
-						// rather than a fill of its own under the lens
-						bgcolor: groupActive ? activeFill : 'transparent',
-						...glassRailIconSx(groupActive),
-						// The icon stays centred, in line with every other
-						// icon down the rail; the arrow sits in the room
-						// beside it
-						'&::after': {
-							content: '""',
-							position: 'absolute',
-							// Just past the button, in the rail's side gutter,
-							// clear of the icon (drawn back inside it when
-							// the scrollbar takes that gutter)
-							right: -groupArrowOutset(railScrollbarPx),
-							top: '50%',
-							transform: 'translateY(-50%)',
-							width: 5,
-							height: 8,
-							bgcolor: groupArrowColor ?? 'currentColor',
-							mask: `${GROUP_ARROW_MASK} center / contain no-repeat`,
-							opacity: groupArrowColor ? 1 : 0.55,
-							transition: 'opacity 160ms ease'
-						},
-						// Pointed at, or its pages already out: the arrow has
-						// said its piece
-						'&:hover::after, &[data-open="true"]::after': {
-							opacity: 0
-						},
-						...FOCUS_OUTLINE_FIX
-					}}
+					className={cn(
+						ICON_BUTTON_CLASS,
+						GLASS_RAIL_ICON_CLASS,
+						// The icon stays centred, in line with every other icon
+						// down the rail; the arrow sits in the room beside it,
+						// just past the button, in the rail's side gutter (drawn
+						// back inside it when the scrollbar takes that gutter).
+						// Pointed at, or its pages already out, it has said its piece
+						"lw:after:pointer-events-none lw:after:absolute lw:after:top-1/2 lw:after:h-[8px] lw:after:w-[5px] lw:after:-translate-y-1/2 lw:after:content-[''] lw:after:transition-opacity lw:after:duration-150 lw:after:right-(--lw-arrow-right) lw:after:bg-(--lw-arrow-bg) lw:after:opacity-(--lw-arrow-opacity) lw:after:[mask:var(--lw-arrow-mask)] lw:hover:after:opacity-0 lw:data-[open=true]:after:opacity-0"
+					)}
+					style={
+						{
+							width: FLOATING_RAIL_ITEM_PX,
+							height: FLOATING_RAIL_ITEM_PX,
+							color: groupActive ? activeFg : accentOnSurface,
+							// Open, the rail's hover lens stays on it (useRailLens)
+							// rather than a fill of its own under the lens
+							backgroundColor: groupActive
+								? activeFill
+								: 'transparent',
+							...glassRailIconStyle(groupActive),
+							'--lw-arrow-right': `${-groupArrowOutset(railScrollbarPx)}px`,
+							'--lw-arrow-bg': groupArrowColor ?? 'currentColor',
+							'--lw-arrow-opacity': groupArrowColor ? 1 : 0.55,
+							'--lw-arrow-mask': `${GROUP_ARROW_MASK} center / contain no-repeat`
+						} as React.CSSProperties
+					}
 				>
 					{link.icon}
-				</IconButton>
-			</Box>
+				</button>
+			</div>
 		);
 	};
 
@@ -1099,52 +1076,43 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const parentActive = isSubLinkActive(link, activePath);
 		const key = nodeKey('', link);
 		const open = isGroupOpen(link, key);
+		// rail-labeled: active AND hover share the highlight. collapsible:
+		// original behavior — accent only when active; the outer pill
+		// supplies the idle-hover tint, so the button stays transparent.
+		const colors = rowColors(
+			{
+				fg: parentActive ? activeFg : accentOnSurface,
+				bg: parentActive ? activeFill : undefined
+			},
+			showLabels
+				? highlight
+				: { bg: parentActive ? activeFill : 'transparent' }
+		);
 
 		const parentIconButton = (
-			<IconButton
+			<button
+				type='button'
 				aria-label={link.text}
 				aria-expanded={open}
 				onClick={() => toggleGroup(key, open)}
 				data-testid={`sidebar-item-${link.text}`}
 				data-active={parentActive ? 'true' : 'false'}
-				sx={{
-					display: 'flex',
-					flexDirection: 'column',
-					gap: showLabels ? 0.25 : 0,
-					width: showLabels ? '100%' : 44,
-					maxWidth: '100%',
+				className={cn(
+					ICON_BUTTON_CLASS,
+					colors.className,
+					'lw:flex lw:max-w-full lw:flex-col lw:rounded-[10px]',
 					// 8px padding on all sides of the labeled item container.
-					...(showLabels ? { p: 1 } : { py: 0.75 }),
-					borderRadius: '10px',
-					color: parentActive ? activeFg : accentOnSurface,
-					bgcolor: parentActive ? activeFill : 'transparent',
-					// rail-labeled: active AND hover share the highlight. collapsible:
-					// original behavior — accent only when active; the outer pill
-					// supplies the idle-hover tint, so the button stays transparent.
-					'&:hover': showLabels
-						? { bgcolor: activeFill, color: activeFg }
-						: {
-								bgcolor: parentActive
-									? activeFill
-									: 'transparent'
-							},
-					...FOCUS_OUTLINE_FIX
-				}}
+					showLabels
+						? 'lw:w-full lw:gap-0.5 lw:p-2'
+						: 'lw:w-11 lw:px-2 lw:py-1.5'
+				)}
+				style={colors.style}
 			>
 				{/* Size only the item's own icon; the chevron below stays smaller. */}
 				{showLabels ? (
-					<Box
-						sx={{
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							'& .MuiSvgIcon-root': {
-								fontSize: RAIL_LABEL_ICON_SIZE_PX
-							}
-						}}
-					>
+					<span className='lw:flex lw:items-center lw:justify-center lw:[&_svg]:size-[22px]'>
 						{link.icon}
-					</Box>
+					</span>
 				) : (
 					link.icon
 				)}
@@ -1157,36 +1125,34 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					/>
 				) : null}
 				<GroupChevron open={open} size={CHEVRON_FONT_SIZE_RAIL_PX} />
-			</IconButton>
+			</button>
 		);
 
 		// With a visible caption the tooltip is redundant.
 		const parentButton = showLabels ? (
 			parentIconButton
 		) : (
-			<Tooltip title={link.text} placement='right' arrow>
+			<Tooltip title={link.text} side='right' arrow>
 				{parentIconButton}
 			</Tooltip>
 		);
+		// The active group's container stays tinted. collapsible tints the
+		// whole group on hover (original); rail-labeled leaves hover
+		// highlighting to the individual items.
+		const pill = rowColors(
+			{ bg: groupActive ? groupTint : undefined },
+			showLabels ? undefined : { bg: groupTint }
+		);
 
 		return (
-			<Box
+			<div
 				key={link.text}
 				data-testid={`sidebar-group-${link.text}`}
-				sx={{
-					width: '100%',
-					borderRadius: '10px',
-					py: 0.5,
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					gap: 0.5,
-					// The active group's container stays tinted. collapsible tints
-					// the whole group on hover (original); rail-labeled leaves hover
-					// highlighting to the individual items.
-					bgcolor: groupActive ? groupTint : 'transparent',
-					...(showLabels ? {} : { '&:hover': { bgcolor: groupTint } })
-				}}
+				className={cn(
+					'lw:flex lw:w-full lw:flex-col lw:items-center lw:gap-1 lw:rounded-[10px] lw:py-1',
+					pill.className
+				)}
+				style={pill.style}
 			>
 				{parentButton}
 				{/* Pages at every depth, flat: the rail has no room for a
@@ -1208,23 +1174,16 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 								)
 						)
 					: null}
-			</Box>
+			</div>
 		);
 	};
 
 	// Collapsed leaf: a single icon (with a tooltip, or a caption when
 	// `showLabels`). Wrapped in a full-width, center-justified row so it lines up
-	// with the (full-width) group items regardless of the Stack's alignment or
+	// with the (full-width) group items regardless of the stack's alignment or
 	// any host-app icon-button styles.
 	const renderCollapsedLeaf = (link: SidebarLink) => (
-		<Box
-			key={link.text}
-			sx={{
-				width: '100%',
-				display: 'flex',
-				justifyContent: 'center'
-			}}
-		>
+		<div key={link.text} className='lw:flex lw:w-full lw:justify-center'>
 			{renderCollapsedIcon(
 				link.text,
 				link.subtitle ? `${link.text} · ${link.subtitle}` : link.text,
@@ -1233,7 +1192,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				link.path,
 				{ testId: `sidebar-item-${link.text}` }
 			)}
-		</Box>
+		</div>
 	);
 
 	// --- Item dispatch -----------------------------------------------------
@@ -1250,23 +1209,22 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	};
 
 	const renderLinkStack = (links: SidebarLink[]) => (
-		<Stack
-			spacing={0.5}
-			sx={{
-				width: '100%',
-				alignItems: collapsed ? 'center' : 'stretch'
-			}}
+		<div
+			className={cn(
+				'lw:flex lw:w-full lw:flex-col lw:gap-1',
+				collapsed ? 'lw:items-center' : 'lw:items-stretch'
+			)}
 		>
 			{links.map((link, index) =>
 				link.dividerAfter && index < links.length - 1 ? (
 					<React.Fragment key={link.text}>
 						{renderItem(link)}
-						<Divider
+						<Separator
 							data-testid={`sidebar-divider-${link.text}`}
-							sx={{
-								alignSelf: 'stretch',
-								my: useFlyout ? railGap : 1,
-								borderColor: 'divider'
+							className='lw:self-stretch'
+							style={{
+								marginBlock: useFlyout ? railGap : '8px',
+								width: 'auto'
 							}}
 						/>
 					</React.Fragment>
@@ -1274,7 +1232,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					renderItem(link)
 				)
 			)}
-		</Stack>
+		</div>
 	);
 
 	const width = collapsed ? collapsedWidth : expandedWidth;
@@ -1333,23 +1291,20 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	};
 
 	const headerBar = showHeaderBar ? (
-		<Box
+		<div
 			data-testid='sidebar-header'
-			sx={{
+			className={cn(
+				'lw:flex lw:shrink-0 lw:items-center lw:justify-center',
 				// On the floating rail the logo sits 12px from the top and
 				// 12px above Nexa — a section apart, wider than the 4px
 				// between items
+				useFlyout && 'lw:py-3'
+			)}
+			style={{
+				backgroundColor: headerBg,
 				...(useFlyout
-					? { pt: '12px', pb: '12px' }
-					: {
-							height: HEADER_HEIGHT_PX,
-							minHeight: HEADER_HEIGHT_PX
-						}),
-				flexShrink: 0,
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				bgcolor: headerBg
+					? {}
+					: { height: HEADER_HEIGHT_PX, minHeight: HEADER_HEIGHT_PX })
 			}}
 		>
 			{logo || title ? (
@@ -1364,20 +1319,15 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					testId='sidebar-header-brand'
 				/>
 			) : null}
-		</Box>
+		</div>
 	) : null;
 
 	// Without the header bar (the labeled rail), the logo alone sits on top.
 	const railBrand =
 		!showHeaderBar && logo ? (
-			<Box
-				sx={{
-					display: 'flex',
-					justifyContent: 'center',
-					flexShrink: 0,
-					pt: 2,
-					pb: useFlyout ? railGap : 1
-				}}
+			<div
+				className='lw:flex lw:shrink-0 lw:justify-center lw:pt-4'
+				style={{ paddingBottom: useFlyout ? railGap : '8px' }}
 			>
 				<Brand
 					logo={logo}
@@ -1387,197 +1337,155 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					color={brandColor ?? headerFg}
 					testId='sidebar-header-brand'
 				/>
-			</Box>
+			</div>
 		) : null;
 
 	// The floating rail's 6px matches its scrollbar gutters, so the top
 	// content and footer line up with the links.
-	const horizontalPadding = showLabels
-		? 0.5
+	const horizontalPaddingPx = showLabels
+		? 4
 		: useFlyout
-			? 0.75
+			? 6
 			: collapsed
-				? 1
-				: 1.5;
+				? 8
+				: 12;
+
+	// Scrollbar shows only while the pointer is inside (or a keyboard user
+	// tabs in). Not :focus-within, since a clicked link keeps focus and would
+	// pin it on. Chrome lets `scrollbar-width`/`-color` override the
+	// ::-webkit-scrollbar rules, and its `thin` is 11px — too wide for the
+	// floating rail, so there only browsers without those rules (Firefox) get
+	// them; Chrome and Safari draw the 6px bar. Safari only honours the thumb
+	// rule once the bar itself is styled.
+	const scrollbarClass = cn(
+		useFlyout
+			? 'lw:not-supports-[selector(::-webkit-scrollbar)]:[scrollbar-width:thin] lw:not-supports-[selector(::-webkit-scrollbar)]:[scrollbar-color:transparent_transparent] lw:not-supports-[selector(::-webkit-scrollbar)]:hover:[scrollbar-color:var(--lw-border-color)_transparent] lw:not-supports-[selector(::-webkit-scrollbar)]:has-[:focus-visible]:[scrollbar-color:var(--lw-border-color)_transparent] lw:[&::-webkit-scrollbar]:w-1.5'
+			: 'lw:[scrollbar-width:thin] lw:[scrollbar-color:transparent_transparent] lw:hover:[scrollbar-color:var(--lw-border-color)_transparent] lw:has-[:focus-visible]:[scrollbar-color:var(--lw-border-color)_transparent] lw:[&::-webkit-scrollbar]:w-2',
+		'lw:[&::-webkit-scrollbar-thumb]:rounded-[4px] lw:[&::-webkit-scrollbar-thumb]:bg-transparent lw:[&:hover::-webkit-scrollbar-thumb]:bg-border lw:[&:has(:focus-visible)::-webkit-scrollbar-thumb]:bg-border'
+	);
 
 	return (
 		<RailGlassContext.Provider value={useFlyout}>
-			<Box
+			<nav
 				ref={navRef}
 				{...railContainerProps}
-				component='nav'
 				aria-label='Main sidebar'
 				data-testid='collapsible-sidebar'
 				data-collapsed={collapsed ? 'true' : 'false'}
 				data-labeled={showLabels ? 'true' : 'false'}
-				sx={{
-					width,
-					minWidth: width,
-					height: '100%',
-					boxSizing: 'border-box',
-					bgcolor: surface,
-					display: 'flex',
-					flexDirection: 'column',
+				className={cn(
 					// Lets the sidebar shrink inside a flex-column host so siblings
 					// (e.g. an alert card below it) stay within the viewport.
-					flex: '1 1 auto',
-					minHeight: 0,
 					// Snaps to its width; an owner that animates the switch (the
 					// wrapper's hover panel) clips it from a container, so the
 					// rows never reflow mid-animation.
-					overflow: 'hidden',
-					...(useFlyout ? glassRailSx : {})
-				}}
+					'lw:box-border lw:flex lw:h-full lw:min-h-0 lw:flex-auto lw:flex-col lw:overflow-hidden',
+					// The glass rail holds the lens, so every control on it — links,
+					// Ask Nexa, search, notifications, the account — hovers the same
+					// way: no tint of its own, the lens gliding behind it. An active
+					// or highlighted control keeps its fill. The rail's content
+					// paints above the lens, which is its first layer; not the
+					// flyout's backdrop, which is fixed over the whole window.
+					useFlyout &&
+						'lw:relative lw:[&_:is(button,a,[role=button]):not([data-active=true]):not([data-rail-keep-fill]):hover]:bg-transparent! lw:[&>:not([data-glass-lens],[data-active-glass],[data-flyout-scrim])]:relative'
+				)}
+				style={{ width, minWidth: width, backgroundColor: surface }}
 			>
 				{railLens.lens}
 				{headerBar ?? railBrand}
 				{topContent ? (
-					<Box
-						sx={{
-							flexShrink: 0,
-							px: horizontalPadding,
-							pt: useFlyout ? 0 : 1,
-							pb: useFlyout ? 0 : 1
+					<div
+						className='lw:shrink-0'
+						style={{
+							paddingInline: horizontalPaddingPx,
+							paddingBlock: useFlyout ? 0 : 8
 						}}
 					>
 						{topContent}
-					</Box>
+					</div>
 				) : null}
 				{/* Scroll container; flex column keeps the bottom group's mt:auto
 			    pinning intact. */}
-				<Box
+				<div
 					ref={scrollRef}
-					sx={{
-						flex: '1 1 auto',
-						minHeight: 0,
-						display: 'flex',
-						flexDirection: 'column',
+					data-testid='sidebar-links-scroller'
+					className={cn(
+						'lw:flex lw:min-h-0 lw:flex-auto lw:flex-col',
+						scrollbarClass
+					)}
+					style={{
 						overflowY: linksOverflow ? 'auto' : 'hidden',
 						overflowX: 'hidden',
-						// Scrollbar shows only while the pointer is inside (or a
-						// keyboard user tabs in). Not :focus-within, since a
-						// clicked link keeps focus and would pin it on.
-						...(useFlyout
-							? {
-									// Chrome lets `scrollbar-width`/`-color` override
-									// the ::-webkit-scrollbar rules, and its `thin` is
-									// 11px — too wide for the 52px rail. So only
-									// browsers without those rules (Firefox) get them;
-									// Chrome and Safari draw the 6px bar below.
-									'@supports not selector(::-webkit-scrollbar)':
-										{
-											scrollbarWidth: 'thin',
-											scrollbarColor:
-												'transparent transparent',
-											'&:hover, &:has(:focus-visible)': {
-												scrollbarColor: (
-													theme: Theme
-												) =>
-													`${theme.palette.divider} transparent`
-											}
-										}
-								}
-							: {
-									scrollbarWidth: 'thin',
-									scrollbarColor: 'transparent transparent',
-									'&:hover, &:has(:focus-visible)': {
-										scrollbarColor: (theme: Theme) =>
-											`${theme.palette.divider} transparent`
-									}
-								}),
-						// Safari only honours the thumb rule once the bar
-						// itself is styled.
-						'&::-webkit-scrollbar': {
-							width: useFlyout ? FLOATING_RAIL_INSET_PX : 8
-						},
-						'&::-webkit-scrollbar-thumb': {
-							backgroundColor: 'transparent',
-							borderRadius: 4
-						},
-						'&:hover::-webkit-scrollbar-thumb, &:has(:focus-visible)::-webkit-scrollbar-thumb':
-							{
-								backgroundColor: (theme: Theme) =>
-									theme.palette.divider
-							},
-						// On the floating rail the bar (when it takes space at
-						// all) stands in for the right padding, and the left
-						// padding follows it, so the 44px column keeps equal
-						// gaps in the capsule whether the bar is classic,
-						// overlay or absent. (The inline collapsed rail keeps
-						// its padding: its open groups tint the full row width.)
+						// On the floating rail the bar (when it takes space at all)
+						// stands in for the right padding, and the left padding
+						// follows it, so the 44px column keeps equal gaps in the
+						// capsule whether the bar is classic, overlay or absent.
+						// (The inline collapsed rail keeps its padding: its open
+						// groups tint the full row width.)
 						...(useFlyout
 							? railScrollerPadding(railScrollbarPx)
-							: { px: horizontalPadding }),
-						pt:
+							: { paddingInline: horizontalPaddingPx }),
+						paddingTop:
 							topInsetPx && !showHeaderBar
 								? `${topInsetPx}px`
 								: useFlyout
 									? railGap
-									: 1,
-						pb: useFlyout ? railGap : 2
+									: '8px',
+						paddingBottom: useFlyout ? railGap : '16px'
 					}}
 				>
 					{/* Offset parent for the active drop, inside the padding
 					    so its offsets match the items'. Grows to fill,
 					    keeping the bottom group's mt:auto pinning. */}
-					<Box
+					<div
 						ref={linksRef}
-						sx={{
-							flex: '1 0 auto',
-							display: 'flex',
-							flexDirection: 'column',
-							position: 'relative'
-						}}
+						className='lw:relative lw:flex lw:flex-[1_0_auto] lw:flex-col'
 					>
 						{activeGlass.glass}
 						{renderLinkStack(mainLinks)}
 						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
 				    the divider moves below it, between the links and the user. */}
 						{secondaryLinks.length > 0 ? (
-							<Box
-								sx={{ mt: 'auto', pt: useFlyout ? railGap : 2 }}
+							<div
+								className='lw:mt-auto'
+								style={{
+									paddingTop: useFlyout ? railGap : '16px'
+								}}
 							>
 								{footer ? null : (
-									<Divider
-										sx={{
-											mb: useFlyout ? railGap : 1,
-											borderColor: 'divider'
+									<Separator
+										style={{
+											marginBottom: useFlyout
+												? railGap
+												: '8px'
 										}}
 									/>
 								)}
 								{renderLinkStack(secondaryLinks)}
-							</Box>
+							</div>
 						) : null}
-					</Box>
-				</Box>
+					</div>
+				</div>
 				{footer ? (
-					<Box
-						sx={{
-							flexShrink: 0,
-							px: horizontalPadding,
-							pb: 1.5,
-							...(useFlyout
-								? {
-										'& .MuiIconButton-root .MuiSvgIcon-root':
-											{
-												fontSize: FLOATING_RAIL_ICON_PX
-											}
-									}
-								: {})
-						}}
+					<div
+						className={cn(
+							'lw:shrink-0 lw:pb-3',
+							useFlyout && 'lw:[&_button_svg]:size-6'
+						)}
+						style={{ paddingInline: horizontalPaddingPx }}
 					>
-						<Box
-							sx={{
+						<div
+							style={{
 								borderTop: `1px solid ${headerDivider}`,
-								pt: useFlyout ? railGap : 1.5
+								paddingTop: useFlyout ? railGap : '12px'
 							}}
 						>
 							{footer}
-						</Box>
-					</Box>
+						</div>
+					</div>
 				) : null}
 				{useFlyout ? renderFlyout() : null}
-			</Box>
+			</nav>
 		</RailGlassContext.Provider>
 	);
 };

@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mui/material';
+import { useIsMobile } from '../useMediaQuery';
 import LumoraWrapper, {
 	type NotificationSidebarContentProps
 } from '../LumoraWrapper';
@@ -13,12 +13,12 @@ import {
 } from './testUtils';
 
 // Desktop viewport (the panel variant only replaces the navbar on desktop).
-jest.mock('@mui/material', () => ({
-	...jest.requireActual('@mui/material'),
-	useMediaQuery: jest.fn()
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
 }));
-const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
-	typeof useMediaQuery
+const mockUseMediaQuery = useIsMobile as jest.MockedFunction<
+	typeof useIsMobile
 >;
 
 const renderPanel = (extraProps: Record<string, unknown> = {}) => {

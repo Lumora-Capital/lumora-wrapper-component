@@ -1,15 +1,4 @@
-import {
-	Box,
-	CssBaseline,
-	GlobalStyles,
-	Skeleton,
-	Stack,
-	useMediaQuery,
-	useTheme
-} from '@mui/material';
-import { type Theme, ThemeProvider, createTheme } from '@mui/material/styles';
 import React from 'react';
-import { getDesignTokens } from '../theme';
 import {
 	type ContentPadding,
 	DEFAULT_CONTENT_PADDING,
@@ -27,6 +16,8 @@ import {
 	type SidebarVariant,
 	usesFlyoutSubmenu
 } from './shellLayout';
+import { Skeleton } from './ui/skeleton';
+import { useIsMobile } from './useMediaQuery';
 
 type ThemeMode = 'dark' | 'light';
 
@@ -72,16 +63,44 @@ type ShellOutlineProps = Omit<
 	'theme' | 'darkModeSelector'
 > & {
 	themeMode: ThemeMode;
-	muiTheme: Theme;
-	// The host app's theme: its breakpoints and spacing size the layout, as in LumoraWrapper
-	hostTheme: Theme;
 };
+
+/**
+ * A line of text in outline, as MUI's text skeleton drew it: the bar is 60%
+ * of the line's height, centred in it.
+ */
+const TextLine: React.FC<{
+	width: number;
+	height?: number;
+	className?: string;
+}> = ({ width, height = 20, className }) => (
+	<Skeleton
+		variant='text'
+		className={className}
+		style={{
+			width,
+			height: height * 0.6,
+			marginTop: height * 0.2,
+			marginBottom: height * 0.2
+		}}
+	/>
+);
+
+/** A square / round placeholder of a fixed size. */
+const Block: React.FC<{
+	size: number;
+	variant?: 'rounded' | 'circular';
+}> = ({ size, variant = 'rounded' }) => (
+	<Skeleton
+		variant={variant}
+		className='lw:shrink-0'
+		style={{ width: size, height: size }}
+	/>
+);
 
 /** The shell outline in one mode */
 const ShellOutline: React.FC<ShellOutlineProps> = ({
 	themeMode,
-	muiTheme,
-	hostTheme,
 	sidebarVariant = 'rail',
 	sidebarSubmenu = 'expand',
 	sidebarAutoHide = false,
@@ -91,7 +110,7 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 	contentBackgroundColor,
 	content
 }) => {
-	const isMobile = useMediaQuery(hostTheme.breakpoints.down('md'));
+	const isMobile = useIsMobile();
 	const isDark = themeMode === 'dark';
 	const sidebarWidthPx = getDesktopSidebarWidthPx({
 		showSidebar,
@@ -115,169 +134,142 @@ const ShellOutline: React.FC<ShellOutlineProps> = ({
 		colorFor(contentBackgroundColor, themeMode),
 		isDark
 	);
-	const resolvedPadding = resolveContentPadding(contentPadding, hostTheme);
+	const paddingVars = resolveContentPadding(contentPadding);
 
 	// The floating rail's own geometry: a 36px brand 12px down, then 44px
 	// items 4px apart, each glyph 20px, so the icons land where the
 	// placeholders stood
 	const railIcons = floatingRail ? (
-		<Stack alignItems='center' sx={{ pt: '12px' }}>
-			<Skeleton variant='rounded' width={36} height={36} />
-			<Stack
-				alignItems='center'
-				spacing={`${FLOATING_RAIL_GAP_PX}px`}
-				sx={{ mt: 2 }}
+		<div className='lw:flex lw:flex-col lw:items-center lw:pt-3'>
+			<Block size={36} />
+			<div
+				className='lw:mt-4 lw:flex lw:flex-col lw:items-center'
+				style={{ gap: FLOATING_RAIL_GAP_PX }}
 			>
 				{Array.from({ length: FLOATING_RAIL_ITEMS }, (_, i) => (
-					<Box
+					<div
 						key={i}
-						sx={{
+						className='lw:flex lw:items-center lw:justify-center'
+						style={{
 							width: FLOATING_RAIL_ITEM_PX,
-							height: FLOATING_RAIL_ITEM_PX,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center'
+							height: FLOATING_RAIL_ITEM_PX
 						}}
 					>
-						<Skeleton
-							variant='rounded'
-							width={FLOATING_RAIL_ICON_PX}
-							height={FLOATING_RAIL_ICON_PX}
-						/>
-					</Box>
+						<Block size={FLOATING_RAIL_ICON_PX} />
+					</div>
 				))}
-			</Stack>
-		</Stack>
+			</div>
+		</div>
 	) : (
-		<Stack alignItems='center' spacing={2} sx={{ pt: 2 }}>
-			<Skeleton variant='rounded' width={32} height={32} />
-			<Box sx={{ height: 8 }} />
+		<div className='lw:flex lw:flex-col lw:items-center lw:gap-4 lw:pt-4'>
+			<Block size={32} />
+			<div className='lw:h-2' />
 			{Array.from({ length: RAIL_ITEMS }, (_, i) => (
-				<Skeleton key={i} variant='rounded' width={28} height={28} />
+				<Block key={i} size={28} />
 			))}
-		</Stack>
+		</div>
 	);
 
 	return (
-		<ThemeProvider theme={muiTheme}>
-			<Box
-				role='status'
-				aria-busy='true'
-				aria-label='Checking session'
-				sx={{
-					display: 'flex',
-					minHeight: '100vh',
-					backgroundColor: contentBackground
-				}}
-			>
-				{isMobile && (
-					<Box
-						sx={{
-							position: 'fixed',
-							top: 0,
-							left: 0,
-							right: 0,
-							height: mobileBarHeightPx,
-							px: 2,
-							display: 'flex',
-							alignItems: 'center',
-							gap: 2,
-							bgcolor: sidebarSurface,
-							zIndex: 1
-						}}
-					>
-						<Skeleton variant='rounded' width={24} height={24} />
-						<Skeleton variant='text' width={96} />
-						<Box sx={{ flexGrow: 1 }} />
-						<Skeleton variant='circular' width={32} height={32} />
-					</Box>
-				)}
+		<div
+			role='status'
+			aria-busy='true'
+			aria-label='Checking session'
+			// Re-reads the colour tokens in this outline's mode (styles.css)
+			data-lw-scope=''
+			data-lw-theme={themeMode}
+			className='lw:flex lw:min-h-screen'
+			style={{ backgroundColor: contentBackground }}
+		>
+			{isMobile && (
+				<div
+					className='lw:fixed lw:top-0 lw:right-0 lw:left-0 lw:z-[1] lw:flex lw:items-center lw:gap-4 lw:px-4'
+					style={{
+						height: mobileBarHeightPx,
+						backgroundColor: sidebarSurface
+					}}
+				>
+					<Block size={24} />
+					<TextLine width={96} />
+					<div className='lw:grow' />
+					<Block size={32} variant='circular' />
+				</div>
+			)}
 
-				{!isMobile && sidebarWidthPx > 0 && (
-					<Box
-						sx={{
-							position: 'relative',
-							width: sidebarWidthPx,
-							flexShrink: 0
-						}}
+			{!isMobile && sidebarWidthPx > 0 && (
+				<div
+					className='lw:relative lw:shrink-0'
+					style={{ width: sidebarWidthPx }}
+				>
+					<div
+						className='lw:fixed'
+						style={
+							floatingRail
+								? {
+										top: floatingRail.gutterPx,
+										bottom: floatingRail.gutterPx,
+										left: floatingRail.gutterPx,
+										width:
+											sidebarWidthPx -
+											2 * floatingRail.gutterPx,
+										borderRadius: floatingRail.radiusPx,
+										backgroundColor: sidebarSurface
+									}
+								: {
+										top: 0,
+										bottom: 0,
+										left: 0,
+										width: sidebarWidthPx,
+										backgroundColor: sidebarSurface
+									}
+						}
 					>
-						<Box
-							sx={
-								floatingRail
-									? {
-											position: 'fixed',
-											top: floatingRail.gutterPx,
-											bottom: floatingRail.gutterPx,
-											left: floatingRail.gutterPx,
-											width:
-												sidebarWidthPx -
-												2 * floatingRail.gutterPx,
-											borderRadius: `${floatingRail.radiusPx}px`,
-											bgcolor: sidebarSurface
-										}
-									: {
-											position: 'fixed',
-											top: 0,
-											bottom: 0,
-											left: 0,
-											width: sidebarWidthPx,
-											bgcolor: sidebarSurface
-										}
-							}
-						>
-							{railIcons}
-						</Box>
-					</Box>
-				)}
+						{railIcons}
+					</div>
+				</div>
+			)}
 
-				<Box
-					sx={{
-						flexGrow: 1,
-						minWidth: 0,
-						// The variables the wrapper's <main> sets, so a host's `content`
-						// that sizes itself from them measures as it will in the app
-						'--lumora-content-padding': resolvedPadding,
+			<div
+				// The variables the wrapper's <main> sets, so a host's `content`
+				// that sizes itself from them measures as it will in the app
+				className='lw-content-padding lw:min-w-0 lw:grow'
+				data-lw-host=''
+				style={
+					{
+						...paddingVars,
 						'--lumora-sticky-top': isMobile
 							? `${mobileBarHeightPx}px`
 							: '0px',
-						p: 'var(--lumora-content-padding)',
-						mt: isMobile ? `${mobileBarHeightPx}px` : 0
-					}}
-				>
-					{content ?? (
-						<>
-							<Skeleton variant='text' width={220} height={40} />
-							<Skeleton
-								variant='text'
-								width={320}
-								sx={{ mb: 3 }}
-							/>
-							<Stack direction='row' spacing={2} sx={{ mb: 3 }}>
-								{Array.from(
-									{ length: isMobile ? 2 : 4 },
-									(_, i) => (
-										<Skeleton
-											key={i}
-											variant='rounded'
-											height={96}
-											sx={{ flex: 1 }}
-										/>
-									)
-								)}
-							</Stack>
-							<Skeleton variant='rounded' height={360} />
-						</>
-					)}
-				</Box>
-			</Box>
-		</ThemeProvider>
+						padding: 'var(--lumora-content-padding)',
+						marginTop: isMobile ? mobileBarHeightPx : 0
+					} as React.CSSProperties
+				}
+			>
+				{content ?? (
+					<>
+						<TextLine width={220} height={40} />
+						<TextLine width={320} className='lw:mb-6' />
+						<div className='lw:mb-6 lw:flex lw:flex-row lw:gap-4'>
+							{Array.from(
+								{ length: isMobile ? 2 : 4 },
+								(_, i) => (
+									<Skeleton
+										key={i}
+										className='lw:h-24 lw:flex-1'
+									/>
+								)
+							)}
+						</div>
+						<Skeleton className='lw:h-[360px]' />
+					</>
+				)}
+			</div>
+		</div>
 	);
 };
 
-const lightTheme = createTheme(getDesignTokens('light'));
-const darkTheme = createTheme(getDesignTokens('dark'));
-const themeFor = (mode: ThemeMode) =>
-	mode === 'dark' ? darkTheme : lightTheme;
+/** The former dark MUI theme's page colours, for the body under the dark selector. */
+const DARK_BODY = { background: 'hsl(220, 35%, 3%)', color: '#ffffff' };
 
 /**
  * The app shell in outline, sized like LumoraWrapper's sidebar and top bar so
@@ -290,53 +282,30 @@ const LumoraShellSkeleton: React.FC<LumoraShellSkeletonProps> = ({
 	darkModeSelector,
 	...layout
 }) => {
-	const hostTheme = useTheme();
 	if (!darkModeSelector) {
-		const muiTheme = themeFor(themeMode);
-		return (
-			<ThemeProvider theme={muiTheme}>
-				<CssBaseline />
-				<ShellOutline
-					themeMode={themeMode}
-					muiTheme={muiTheme}
-					hostTheme={hostTheme}
-					{...layout}
-				/>
-			</ThemeProvider>
-		);
+		return <ShellOutline themeMode={themeMode} {...layout} />;
 	}
 
 	// Both modes, the same on the server and in the browser: the selector picks one before
-	// the first paint, so a dark page never flashes the light shell
-	const darkOnly = `${darkModeSelector} &`;
+	// the first paint, so a dark page never flashes the light shell. The rules are the host's
+	// selector, so they ship with the markup rather than in the stylesheet.
+	const rules = [
+		'[data-lw-skeleton-mode="dark"]{display:none}',
+		'[data-lw-skeleton-mode="light"]{display:contents}',
+		`${darkModeSelector} [data-lw-skeleton-mode="light"]{display:none}`,
+		`${darkModeSelector} [data-lw-skeleton-mode="dark"]{display:contents}`,
+		`${darkModeSelector} body{background-color:${DARK_BODY.background};color:${DARK_BODY.color}}`
+	].join('\n');
 	return (
-		<ThemeProvider theme={lightTheme}>
-			<CssBaseline />
-			<GlobalStyles
-				styles={{
-					[`${darkModeSelector} body`]: {
-						backgroundColor: darkTheme.palette.background.default,
-						color: darkTheme.palette.text.primary
-					}
-				}}
-			/>
-			<Box sx={{ display: 'contents', [darkOnly]: { display: 'none' } }}>
-				<ShellOutline
-					themeMode='light'
-					muiTheme={lightTheme}
-					hostTheme={hostTheme}
-					{...layout}
-				/>
-			</Box>
-			<Box sx={{ display: 'none', [darkOnly]: { display: 'contents' } }}>
-				<ShellOutline
-					themeMode='dark'
-					muiTheme={darkTheme}
-					hostTheme={hostTheme}
-					{...layout}
-				/>
-			</Box>
-		</ThemeProvider>
+		<>
+			<style dangerouslySetInnerHTML={{ __html: rules }} />
+			<div data-lw-skeleton-mode='light'>
+				<ShellOutline themeMode='light' {...layout} />
+			</div>
+			<div data-lw-skeleton-mode='dark'>
+				<ShellOutline themeMode='dark' {...layout} />
+			</div>
+		</>
 	);
 };
 

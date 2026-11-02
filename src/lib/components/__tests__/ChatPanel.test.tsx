@@ -1,4 +1,3 @@
-import * as React from 'react';
 import ChatPanel from '../ChatPanel';
 import { act, render, screen } from './testUtils';
 

@@ -1,5 +1,10 @@
-import { Business, Home, People, Settings } from '@mui/icons-material';
-import { useMediaQuery } from '@mui/material';
+import {
+	BuildingIcon as Business,
+	HouseIcon as Home,
+	SettingsIcon as Settings,
+	UsersIcon as People
+} from 'lucide-react';
+import { useIsMobile } from '../useMediaQuery';
 import * as React from 'react';
 import CollapsibleSidebar from '../CollapsibleSidebar';
 import LumoraWrapper, { type SidebarLink } from '../LumoraWrapper';
@@ -15,12 +20,12 @@ import {
 	screen
 } from './testUtils';
 
-jest.mock('@mui/material', () => ({
-	...jest.requireActual('@mui/material'),
-	useMediaQuery: jest.fn()
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
 }));
-const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
-	typeof useMediaQuery
+const mockUseMediaQuery = useIsMobile as jest.MockedFunction<
+	typeof useIsMobile
 >;
 
 const mainLinks: SidebarLink[] = [

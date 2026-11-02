@@ -3,7 +3,17 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 
-// Library build: `npm run build` bundles src/lib into dist/
+const EXTERNAL_PACKAGES = [
+	'axios',
+	'radix-ui',
+	'lucide-react',
+	'class-variance-authority',
+	'clsx',
+	'tailwind-merge'
+];
+
+// Library build: `npm run build` bundles src/lib into dist/ (the stylesheet,
+// dist/lumora-wrapper.css, is compiled by Tailwind afterwards: `build:css`)
 export default defineConfig({
 	plugins: [
 		react({
@@ -37,15 +47,11 @@ export default defineConfig({
 				) {
 					return true;
 				}
-				// Externalize peer dependencies
-				if (
-					id.startsWith('@mui/') ||
-					id.startsWith('@emotion/') ||
-					id === 'axios'
-				) {
-					return true;
-				}
-				return false;
+				// Externalize peer dependencies and dependencies (the host's
+				// bundler resolves them, so one copy of Radix serves both)
+				return EXTERNAL_PACKAGES.some(
+					pkg => id === pkg || id.startsWith(`${pkg}/`)
+				);
 			},
 			output: [
 				{
@@ -61,11 +67,12 @@ export default defineConfig({
 					globals: {
 						react: 'React',
 						'react-dom': 'ReactDOM',
-						'@mui/material': 'MaterialUI',
-						'@mui/icons-material': 'MaterialUIIcons',
-						'@emotion/react': 'EmotionReact',
-						'@emotion/styled': 'EmotionStyled',
-						axios: 'axios'
+						axios: 'axios',
+						'radix-ui': 'RadixUI',
+						'lucide-react': 'LucideReact',
+						'class-variance-authority': 'ClassVarianceAuthority',
+						clsx: 'clsx',
+						'tailwind-merge': 'TailwindMerge'
 					},
 					entryFileNames: 'lumora-wrapper-component.umd.js'
 				}

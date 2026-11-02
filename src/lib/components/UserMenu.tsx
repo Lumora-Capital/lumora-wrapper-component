@@ -1,20 +1,15 @@
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import type { PopoverOrigin } from '@mui/material';
-import Avatar from '@mui/material/Avatar';
-import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Typography from '@mui/material/Typography';
+import { BellIcon, LogOutIcon, SettingsIcon } from 'lucide-react';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '../utils';
 import { formatRole } from './sidebarUtils';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger
+} from './ui/dropdown-menu';
 
 /**
  * An extra entry in the user menu (and the `panel` account menu), e.g.
@@ -63,32 +58,14 @@ const initials = (name: string) =>
 		.map(part => part.charAt(0).toUpperCase())
 		.join('');
 
-const ellipsis = {
-	overflow: 'hidden',
-	textOverflow: 'ellipsis',
-	whiteSpace: 'nowrap',
-	maxWidth: '100%'
-} as const;
+const ELLIPSIS =
+	'lw:max-w-full lw:overflow-hidden lw:text-ellipsis lw:whitespace-nowrap';
 
 export const CountPill: React.FC<{ count?: number }> = ({ count }) =>
 	count ? (
-		<Box
-			component='span'
-			sx={{
-				minWidth: 22,
-				height: 20,
-				px: 0.75,
-				borderRadius: '10px',
-				bgcolor: 'error.main',
-				color: 'error.contrastText',
-				fontSize: 12,
-				fontWeight: 600,
-				lineHeight: '20px',
-				textAlign: 'center'
-			}}
-		>
+		<span className='lw:h-5 lw:min-w-[22px] lw:rounded-[10px] lw:bg-destructive-fill lw:px-1.5 lw:text-center lw:text-xs lw:leading-5 lw:font-semibold lw:text-white'>
 			{count > 99 ? '99+' : count}
-		</Box>
+		</span>
 	) : null;
 
 /** The user's avatar: their picture, else initials on `color`. */
@@ -97,23 +74,33 @@ export const UserAvatar: React.FC<{
 	avatar?: string;
 	color: string;
 	size?: number;
-}> = ({ name, avatar, color, size = 36 }) => (
-	<Avatar
-		src={avatar}
-		alt={name}
-		sx={{
-			width: size,
-			height: size,
-			flexShrink: 0,
-			fontSize: size * 0.36,
-			fontWeight: 600,
-			bgcolor: color,
-			color: '#ffffff'
-		}}
-	>
-		{initials(name)}
-	</Avatar>
-);
+}> = ({ name, avatar, color, size = 36 }) => {
+	const [failed, setFailed] = React.useState(false);
+	React.useEffect(() => setFailed(false), [avatar]);
+	const showImage = Boolean(avatar) && !failed;
+	return (
+		<span
+			className='lw:relative lw:inline-flex lw:shrink-0 lw:items-center lw:justify-center lw:overflow-hidden lw:rounded-full lw:leading-none lw:font-semibold lw:text-white lw:select-none'
+			style={{
+				width: size,
+				height: size,
+				fontSize: size * 0.36,
+				backgroundColor: showImage ? undefined : color
+			}}
+		>
+			{showImage ? (
+				<img
+					src={avatar}
+					alt={name}
+					onError={() => setFailed(true)}
+					className='lw:size-full lw:object-cover'
+				/>
+			) : (
+				initials(name)
+			)}
+		</span>
+	);
+};
 
 /** Avatar beside name / role. */
 export const Identity: React.FC<{
@@ -126,28 +113,24 @@ export const Identity: React.FC<{
 	<>
 		<UserAvatar name={name} avatar={avatar} color={avatarColor} />
 		{showText && (
-			<Box
-				sx={{
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'flex-start',
-					minWidth: 0,
-					flexGrow: 1
-				}}
-			>
-				<Typography
-					variant='body2'
-					sx={{ ...ellipsis, fontWeight: 600, color: 'inherit' }}
+			<span className='lw:flex lw:min-w-0 lw:grow lw:flex-col lw:items-start lw:text-left'>
+				<span
+					className={cn(
+						ELLIPSIS,
+						'lw:text-sm lw:leading-[1.43] lw:font-semibold'
+					)}
 				>
 					{name}
-				</Typography>
-				<Typography
-					variant='caption'
-					sx={{ ...ellipsis, opacity: 0.8, color: 'inherit' }}
+				</span>
+				<span
+					className={cn(
+						ELLIPSIS,
+						'lw:text-xs lw:leading-[1.66] lw:opacity-80'
+					)}
 				>
 					{roleLabel(role)}
-				</Typography>
-			</Box>
+				</span>
+			</span>
 		)}
 	</>
 );
@@ -158,23 +141,20 @@ export const Identity: React.FC<{
  * of a narrow rail.
  */
 type Placement = 'above' | 'above-end' | 'beside';
-const ORIGINS: Record<
+const POSITIONS: Record<
 	Placement,
-	{ anchor: PopoverOrigin; transform: PopoverOrigin }
+	{ side: 'top' | 'right'; align: 'start' | 'end'; sideOffset: number }
 > = {
-	above: {
-		anchor: { vertical: 'top', horizontal: 'left' },
-		transform: { vertical: 'bottom', horizontal: 'left' }
-	},
-	'above-end': {
-		anchor: { vertical: 'top', horizontal: 'right' },
-		transform: { vertical: 'bottom', horizontal: 'right' }
-	},
-	beside: {
-		anchor: { vertical: 'bottom', horizontal: 'right' },
-		transform: { vertical: 'bottom', horizontal: 'left' }
-	}
+	above: { side: 'top', align: 'start', sideOffset: 8 },
+	'above-end': { side: 'top', align: 'end', sideOffset: 8 },
+	beside: { side: 'right', align: 'end', sideOffset: 12 }
 };
+
+/** One row of the menu: icon, label, optional count. */
+const ITEM =
+	"lw:mx-1 lw:min-h-9 lw:gap-0 lw:rounded-md lw:px-4 lw:text-sm lw:[&_svg:not([class*='size-'])]:size-5";
+const ITEM_ICON =
+	'lw:inline-flex lw:min-w-9 lw:shrink-0 lw:items-center lw:text-muted-foreground';
 
 interface UserMenuProps extends UserMenuOptions {
 	anchorEl: HTMLElement | null;
@@ -213,139 +193,169 @@ const UserMenu: React.FC<UserMenuProps> = ({
 		callback?.();
 	};
 
+	// The menu opens against an element the caller holds (MUI Menu's
+	// anchorEl): an invisible trigger over its box positions it, and on close
+	// focus goes back to whatever opened it.
+	const open = Boolean(anchorEl);
+	const rect = open ? anchorEl!.getBoundingClientRect() : null;
+	const returnFocus = React.useRef<HTMLElement | null>(null);
+	React.useEffect(() => {
+		if (open && typeof document !== 'undefined') {
+			returnFocus.current = document.activeElement as HTMLElement | null;
+		}
+	}, [open]);
+	const position = POSITIONS[placement];
+	const themeOption = (value: 'light' | 'dark', label: string) => {
+		const selected = theme === value;
+		return (
+			<button
+				type='button'
+				aria-pressed={selected}
+				disabled={!onThemeToggle}
+				// Stays open so the switch visibly flips
+				onClick={() => !selected && onThemeToggle?.()}
+				className={cn(
+					'lw:h-8 lw:flex-1 lw:cursor-pointer lw:rounded-md lw:text-sm lw:font-medium lw:outline-none lw:transition-colors lw:focus-visible:ring-2 lw:focus-visible:ring-ring lw:disabled:cursor-default lw:disabled:opacity-50',
+					selected
+						? 'lw:bg-surface lw:text-foreground lw:shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_1px_rgba(0,0,0,0.08)]'
+						: 'lw:text-muted-foreground lw:hover:text-foreground'
+				)}
+			>
+				{label}
+			</button>
+		);
+	};
+
 	return (
-		<Menu
-			anchorEl={anchorEl}
-			open={Boolean(anchorEl)}
-			onClose={onClose}
-			anchorOrigin={ORIGINS[placement].anchor}
-			transformOrigin={ORIGINS[placement].transform}
-			slotProps={{
-				paper: {
-					sx: {
+		<>
+			{/* An invisible backdrop over the page while open, as MUI's
+			    menu had: a press on it closes the menu, and as a React child
+			    of the opener the pointer over it still counts as inside the
+			    hover sidebar, which stays open beneath the menu. */}
+			{open && typeof document !== 'undefined'
+				? createPortal(
+						<div
+							aria-hidden='true'
+							data-slot='menu-backdrop'
+							className='lw:fixed lw:inset-0 lw:z-[1399]'
+						/>,
+						document.body
+					)
+				: null}
+			<DropdownMenu
+				open={open}
+				onOpenChange={next => !next && onClose()}
+				modal={false}
+			>
+				<DropdownMenuTrigger asChild>
+					<span
+						aria-hidden='true'
+						tabIndex={-1}
+						className='lw:pointer-events-none lw:fixed'
+						style={{
+							left: rect?.left ?? 0,
+							top: rect?.top ?? 0,
+							width: rect?.width ?? 0,
+							height: rect?.height ?? 0
+						}}
+					/>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent
+					side={position.side}
+					align={position.align}
+					sideOffset={position.sideOffset}
+					collisionPadding={8}
+					onCloseAutoFocus={event => {
+						event.preventDefault();
+						returnFocus.current?.focus?.();
+					}}
+					className='lw:min-w-0 lw:rounded-[10px] lw:px-0 lw:py-1 lw:shadow-[0_8px_24px_rgba(0,0,0,0.12)]'
+					style={{
 						width: width ?? 240,
-						maxWidth: 'calc(100vw - 16px)',
-						mt: placement === 'beside' ? 0 : -1,
-						ml: placement === 'beside' ? 1.5 : 0,
-						borderRadius: '10px',
-						border: '1px solid',
-						borderColor: 'divider',
-						boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
-					}
-				},
-				list: { sx: { py: 0.5 } }
-			}}
-			sx={{
-				'& .MuiMenuItem-root': {
-					mx: 0.5,
-					borderRadius: '6px',
-					fontSize: 14
-				}
-			}}
-		>
-			<Stack
-				direction='row'
-				spacing={1.25}
-				sx={{ px: 1.5, py: 1, alignItems: 'center' }}
-			>
-				<Identity
-					name={userName}
-					role={userRole}
-					avatar={userAvatar}
-					avatarColor={avatarColor}
-					showText
-				/>
-			</Stack>
-			<Divider />
-			{showNotifications && (
-				<MenuItem onClick={runAndClose(onNotificationsClick)}>
-					<ListItemIcon>
-						<NotificationsNoneOutlinedIcon fontSize='small' />
-					</ListItemIcon>
-					<ListItemText>Notifications</ListItemText>
-					<CountPill count={notificationCount} />
-				</MenuItem>
-			)}
-			{menuItems.map(item => (
-				<MenuItem key={item.key} onClick={runAndClose(item.onClick)}>
-					{item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
-					<ListItemText inset={!item.icon}>{item.label}</ListItemText>
-					<CountPill count={item.badge} />
-				</MenuItem>
-			))}
-			{showSettings && (
-				<MenuItem onClick={runAndClose(onSettingsClick)}>
-					<ListItemIcon>
-						<SettingsOutlinedIcon fontSize='small' />
-					</ListItemIcon>
-					<ListItemText>Settings</ListItemText>
-				</MenuItem>
-			)}
-			{showThemeToggler && [
-				<Divider key='theme-divider' />,
-				<Box key='theme' sx={{ px: 1.5, py: 1 }}>
-					<Typography
-						variant='overline'
-						sx={{
-							display: 'block',
-							lineHeight: 1.5,
-							mb: 0.75,
-							color: 'text.secondary',
-							letterSpacing: '0.08em'
-						}}
+						maxWidth: 'calc(100vw - 16px)'
+					}}
+				>
+					<div className='lw:flex lw:flex-row lw:items-center lw:gap-2.5 lw:px-3 lw:py-2'>
+						<Identity
+							name={userName}
+							role={userRole}
+							avatar={userAvatar}
+							avatarColor={avatarColor}
+							showText
+						/>
+					</div>
+					<DropdownMenuSeparator className='lw:mx-0' />
+					{showNotifications && (
+						<DropdownMenuItem
+							className={ITEM}
+							onSelect={runAndClose(onNotificationsClick)}
+						>
+							<span className={ITEM_ICON}>
+								<BellIcon />
+							</span>
+							<span className='lw:flex-auto'>Notifications</span>
+							<CountPill count={notificationCount} />
+						</DropdownMenuItem>
+					)}
+					{menuItems.map(item => (
+						<DropdownMenuItem
+							key={item.key}
+							className={ITEM}
+							onSelect={runAndClose(item.onClick)}
+						>
+							<span className={ITEM_ICON}>{item.icon}</span>
+							<span className='lw:flex-auto'>{item.label}</span>
+							<CountPill count={item.badge} />
+						</DropdownMenuItem>
+					))}
+					{showSettings && (
+						<DropdownMenuItem
+							className={ITEM}
+							onSelect={runAndClose(onSettingsClick)}
+						>
+							<span className={ITEM_ICON}>
+								<SettingsIcon />
+							</span>
+							<span className='lw:flex-auto'>Settings</span>
+						</DropdownMenuItem>
+					)}
+					{showThemeToggler && (
+						<>
+							<DropdownMenuSeparator className='lw:mx-0' />
+							<div className='lw:px-3 lw:py-2'>
+								<span className='lw:mb-1.5 lw:block lw:text-xs lw:leading-[1.5] lw:font-normal lw:tracking-[0.08em] lw:text-muted-foreground lw:uppercase'>
+									— Theme
+								</span>
+								<div
+									role='group'
+									aria-label='Theme'
+									className='lw:flex lw:gap-1 lw:rounded-lg lw:bg-accent lw:p-1'
+								>
+									{themeOption('light', 'Light')}
+									{themeOption('dark', 'Dark')}
+								</div>
+							</div>
+						</>
+					)}
+					<DropdownMenuSeparator className='lw:mx-0' />
+					<DropdownMenuItem
+						className={cn(
+							ITEM,
+							// The dark palette's error colors are too dim on the dark menu
+							theme === 'dark'
+								? 'lw:text-[hsl(0,90%,65%)]'
+								: 'lw:text-destructive'
+						)}
+						onSelect={runAndClose(onLogout)}
 					>
-						— Theme
-					</Typography>
-					<ToggleButtonGroup
-						exclusive
-						fullWidth
-						size='small'
-						aria-label='Theme'
-						value={theme}
-						// Stays open so the switch visibly flips
-						onChange={(_, next) =>
-							next && next !== theme && onThemeToggle?.()
-						}
-						disabled={!onThemeToggle}
-						sx={{
-							p: 0.5,
-							gap: 0.5,
-							bgcolor: 'action.hover',
-							borderRadius: '8px',
-							'& .MuiToggleButton-root': {
-								border: 0,
-								borderRadius: '6px !important',
-								textTransform: 'none',
-								fontWeight: 500,
-								color: 'text.secondary',
-								'&.Mui-selected': {
-									bgcolor: 'background.paper',
-									color: 'text.primary',
-									boxShadow: 1,
-									'&:hover': { bgcolor: 'background.paper' }
-								}
-							}
-						}}
-					>
-						<ToggleButton value='light'>Light</ToggleButton>
-						<ToggleButton value='dark'>Dark</ToggleButton>
-					</ToggleButtonGroup>
-				</Box>
-			]}
-			<Divider />
-			<MenuItem
-				onClick={runAndClose(onLogout)}
-				// The dark palette's error colors are too dim on the dark menu
-				sx={{
-					color: theme === 'dark' ? 'hsl(0, 90%, 65%)' : 'error.main'
-				}}
-			>
-				<ListItemIcon sx={{ color: 'inherit' }}>
-					<LogoutRoundedIcon fontSize='small' />
-				</ListItemIcon>
-				<ListItemText>Log out</ListItemText>
-			</MenuItem>
-		</Menu>
+						<span className={cn(ITEM_ICON, 'lw:text-inherit')}>
+							<LogOutIcon className='lw:size-5 lw:text-current' />
+						</span>
+						<span className='lw:flex-auto'>Log out</span>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</>
 	);
 };
 

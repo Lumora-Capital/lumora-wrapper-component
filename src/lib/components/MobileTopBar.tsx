@@ -1,10 +1,7 @@
-import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Toolbar from '@mui/material/Toolbar';
+import { MenuIcon } from 'lucide-react';
 import * as React from 'react';
 import Brand from './Brand';
+import { Button } from './ui/button';
 
 interface MobileTopBarProps {
 	/** Bar height; the content area is offset by the same amount. */
@@ -37,26 +34,26 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 	brandColor = color,
 	endContent
 }) => (
-	<AppBar
-		position='fixed'
-		elevation={0}
-		sx={{
-			height,
-			background,
-			color,
-			borderBottom: '1px solid',
-			borderColor: 'divider'
-		}}
+	<header
+		// MUI's app bar layer: above the page, under drawers and menus
+		className='lw:fixed lw:top-0 lw:right-0 lw:left-0 lw:z-[1100] lw:flex lw:flex-col lw:border-b lw:border-solid lw:border-border'
+		style={{ height, background, color }}
 	>
-		<Toolbar sx={{ minHeight: `${height}px !important`, gap: 1, px: 1 }}>
+		<div
+			className='lw:flex lw:items-center lw:gap-2 lw:px-2'
+			style={{ minHeight: height }}
+		>
 			{onMenuClick && (
-				<IconButton
+				<Button
+					variant='bare'
+					size='none'
 					aria-label='Open navigation menu'
 					onClick={onMenuClick}
-					sx={{ color }}
+					className='lw:size-10 lw:rounded-full lw:text-inherit lw:hover:bg-black/5 lw:dark:hover:bg-white/10 lw:[&_svg:not([class*=size-])]:size-6'
+					style={{ color }}
 				>
-					<MenuRoundedIcon />
-				</IconButton>
+					<MenuIcon />
+				</Button>
 			)}
 			<Brand
 				title={appName}
@@ -68,12 +65,12 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
 				testId='mobile-brand'
 			/>
 			{endContent ? (
-				<Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+				<div className='lw:ml-auto lw:flex lw:items-center'>
 					{endContent}
-				</Box>
+				</div>
 			) : null}
-		</Toolbar>
-	</AppBar>
+		</div>
+	</header>
 );
 
 export default MobileTopBar;

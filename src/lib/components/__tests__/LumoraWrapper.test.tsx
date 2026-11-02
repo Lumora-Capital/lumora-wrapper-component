@@ -1,6 +1,7 @@
 import * as React from 'react';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
+	act,
 	fireEvent,
 	hoverSidebarOpen,
 	lumoraTestRequiredProps,
@@ -86,9 +87,7 @@ describe('LumoraWrapper', () => {
 			});
 			expect(
 				screen.getByRole('button', { name: 'Ask Nexa' })
-			).toHaveStyle({
-				position: 'fixed'
-			});
+			).toHaveClass('lw:fixed');
 		});
 
 		it('opens Nexa with Ctrl/⌘ + J, unless the shortcut is off', () => {
@@ -133,11 +132,10 @@ describe('LumoraWrapper', () => {
 			expect(
 				screen
 					.getByRole('main')
-					.style.getPropertyValue('--lumora-content-padding') ||
-					getComputedStyle(screen.getByRole('main')).getPropertyValue(
-						'--lumora-content-padding'
-					)
+					// The base value of --lumora-content-padding (lw-content-padding)
+					.style.getPropertyValue('--lw-cp-xs')
 			).toBe('0px');
+			expect(screen.getByRole('main')).toHaveClass('lw-content-padding');
 		});
 	});
 
@@ -291,14 +289,16 @@ describe('LumoraWrapper', () => {
 		it('handles an empty sidebar links array', () => {
 			renderWrapper({ sidebarLinks: [] });
 			expect(
-				document.querySelector('.MuiDrawer-root')
+				document.querySelector('[data-slot="rail-drawer"]')
 			).toBeInTheDocument();
 			expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		});
 
 		it('applies custom sidebar styles', () => {
 			renderWrapper({ sidebarStyles: { backgroundColor: 'green' } });
-			expect(document.querySelector('.MuiDrawer-root')).toHaveStyle({
+			expect(
+				document.querySelector('[data-slot="rail-drawer"]')
+			).toHaveStyle({
 				backgroundColor: 'rgb(0, 128, 0)'
 			});
 		});
@@ -353,8 +353,8 @@ describe('LumoraWrapper', () => {
 				name: 'Nexa chat'
 			});
 			expect(panel).toHaveAttribute('data-variant', 'docked');
+			expect(panel).toHaveClass('lw:fixed');
 			expect(panel).toHaveStyle({
-				position: 'fixed',
 				top: '0px',
 				right: '0px',
 				bottom: '0px',
@@ -444,11 +444,14 @@ describe('LumoraWrapper', () => {
 
 			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 			const backdrop = document.querySelector(
-				'.MuiDrawer-root .MuiBackdrop-root'
+				'[data-slot="sheet-overlay"]'
 			) as HTMLElement;
-			expect(backdrop).toHaveClass('MuiBackdrop-invisible');
+			expect(backdrop).toHaveAttribute('data-invisible', 'true');
+			expect(backdrop).toHaveClass('lw:bg-transparent');
 
-			fireEvent.click(backdrop);
+			// Radix listens for the outside press from the next tick
+			await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+			fireEvent.pointerDown(backdrop);
 			await waitFor(() =>
 				expect(
 					screen.queryByText('notification list')
@@ -468,7 +471,7 @@ describe('LumoraWrapper', () => {
 			const paperOf = (text: string) =>
 				screen
 					.getByText(text)
-					.closest('.MuiDrawer-paper') as HTMLElement;
+					.closest('[data-slot="sheet-content"]') as HTMLElement;
 
 			it('opens on the left, beside and as tall as the sidebar', () => {
 				rectSpy = jest
@@ -513,7 +516,7 @@ describe('LumoraWrapper', () => {
 				fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 
 				const paper = paperOf('notification list');
-				expect(paper).toHaveClass('MuiDrawer-paperAnchorLeft');
+				expect(paper).toHaveAttribute('data-side', 'left');
 				expect(paper).toHaveStyle({
 					left: '80px',
 					top: '14px',
@@ -531,8 +534,9 @@ describe('LumoraWrapper', () => {
 
 				fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 
-				expect(paperOf('notification list')).toHaveClass(
-					'MuiDrawer-paperAnchorRight'
+				expect(paperOf('notification list')).toHaveAttribute(
+					'data-side',
+					'right'
 				);
 			});
 		});

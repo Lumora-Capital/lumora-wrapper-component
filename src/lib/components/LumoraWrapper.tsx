@@ -1,14 +1,3 @@
-import type { SxProps, Theme } from '@mui/material';
-import {
-	Box,
-	CssBaseline,
-	Drawer,
-	Stack,
-	SwipeableDrawer,
-	useMediaQuery,
-	useTheme
-} from '@mui/material';
-import { ThemeProvider, alpha, createTheme } from '@mui/material/styles';
 import React, {
 	useCallback,
 	useEffect,
@@ -19,8 +8,8 @@ import React, {
 } from 'react';
 import { clearAuthTokens, getCurrentUser, isAuthenticated } from '../authUtils';
 import { createAxiosClient } from '../axiosClient';
-import { getDesignTokens } from '../theme';
 import { validateAndRefreshTokens } from '../tokenValidator';
+import { cn } from '../utils';
 import AssistantButton from './AssistantButton';
 import Brand from './Brand';
 import CardAlert from './CardAlert';
@@ -59,8 +48,15 @@ import SidebarFooter, { type SidebarFooterProps } from './SidebarFooter';
 import type { UserMenuItem } from './UserMenu';
 import SidebarSearch from './SidebarSearch';
 import GlassLayer from './GlassLayer';
-import { GlassAccentContext, SidebarSurfaceContext } from './liquidGlass';
-import { deriveGroupTint, getContrastText } from './sidebarUtils';
+import {
+	GlassAccentContext,
+	REDUCED_MOTION_FADE_FAST,
+	SidebarSurfaceContext
+} from './liquidGlass';
+import { ShellThemeContext } from './shellTheme';
+import { deriveGroupTint, getContrastText, withAlpha } from './sidebarUtils';
+import { Sheet, SheetContent } from './ui/sheet';
+import { useIsMobile } from './useMediaQuery';
 import useEdgeReveal from './useEdgeReveal';
 import useHoverExpand from './useHoverExpand';
 import {
@@ -388,9 +384,21 @@ export interface LumoraWrapperProps {
 		show?: boolean;
 	};
 	// Styling props
-	style?: SxProps<Theme>;
-	sidebarStyles?: SxProps<Theme>;
-	contentStyles?: SxProps<Theme>;
+	/**
+	 * Inline styles for the shell root, the desktop sidebar and the `<main>`
+	 * content area. They were MUI `sx` objects; now plain CSS properties
+	 * (a flat `sx` object of CSS properties still works as is). Use the
+	 * `*ClassName` props for anything else.
+	 */
+	style?: React.CSSProperties;
+	sidebarStyles?: React.CSSProperties;
+	contentStyles?: React.CSSProperties;
+	/** Classes for the shell root (beside `style`). */
+	className?: string;
+	/** Classes for the desktop sidebar container (beside `sidebarStyles`). */
+	sidebarClassName?: string;
+	/** Classes for the `<main>` content area (beside `contentStyles`). */
+	contentClassName?: string;
 	/**
 	 * Brand accent; the default for the sidebar accent and the logo tint.
 	 * Defaults to '#01584f'.
@@ -480,7 +488,7 @@ export interface LumoraWrapperProps {
 	/** @deprecated Accepted but ignored; there is no header on desktop. */
 	showHeader?: boolean;
 	/** @deprecated Accepted but ignored; there is no header on desktop. */
-	headerStyles?: SxProps<Theme>;
+	headerStyles?: React.CSSProperties;
 	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
 	showSearchbar?: boolean;
 	/** @deprecated Accepted but ignored; pass your own `searchComponent`. */
@@ -573,6 +581,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	style,
 	sidebarStyles,
 	contentStyles,
+	className,
+	sidebarClassName,
+	contentClassName,
 	accentColor,
 	sidebarAccentColor,
 	sidebarActiveBackgroundColor,
@@ -600,12 +611,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	redirectToLogin,
 	apiBaseUrl
 }) => {
-	const muiNativeTheme = useTheme();
-	const isMobile = useMediaQuery(muiNativeTheme.breakpoints.down('md'));
-	const muiTheme = useMemo(
-		() => createTheme(getDesignTokens(themeMode)),
-		[themeMode]
-	);
+	const isMobile = useIsMobile();
 	const isDark = themeMode === 'dark';
 	const resolvedAccentColor = accentColor ?? '#01584f';
 	const resolvedSidebarAccent = sidebarAccentColor ?? resolvedAccentColor;
@@ -651,14 +657,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Default logo via a CSS mask so it can be tinted per surface. Consumers
 	// can pass their own `logo` node instead.
 	const renderMaskLogo = (tint: string) => (
-		<Box
+		<div
 			role='img'
 			aria-label={`${appName} logo`}
-			sx={{
-				width: 28,
-				height: 28,
-				flexShrink: 0,
-				bgcolor: tint,
+			className='lw:size-7 lw:shrink-0'
+			style={{
+				backgroundColor: tint,
 				maskImage: 'url(/lumora-logo.svg)',
 				maskRepeat: 'no-repeat',
 				maskPosition: 'center',
@@ -1037,24 +1041,27 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		const assistant = renderAssistant(mode !== 'full');
 		const search = renderSearch(mode);
 		return assistant || search ? (
-			<Stack
-				spacing={useFlyoutSubmenu ? `${FLOATING_RAIL_GAP_PX}px` : 1.5}
-				sx={{ alignItems: mode === 'full' ? 'stretch' : 'center' }}
+			<div
+				className={cn(
+					'lw:flex lw:flex-col',
+					mode === 'full' ? 'lw:items-stretch' : 'lw:items-center'
+				)}
+				style={{ gap: useFlyoutSubmenu ? FLOATING_RAIL_GAP_PX : 12 }}
 			>
 				{assistant}
 				{/* On the glass rail a hairline sets Nexa apart from search, in
 				    the footer divider's tint */}
 				{useFlyoutSubmenu && assistant && search ? (
-					<Box
+					<div
 						role='separator'
-						sx={{
-							width: '100%',
-							borderTop: `1px solid ${deriveGroupTint(sidebarChromeFg)}`
+						className='lw:w-full lw:border-t lw:border-solid'
+						style={{
+							borderTopColor: deriveGroupTint(sidebarChromeFg)
 						}}
 					/>
 				) : null}
 				{search}
-			</Stack>
+			</div>
 		) : undefined;
 	};
 	// The collapsible and rail-labeled variants both render CollapsibleSidebar;
@@ -1115,104 +1122,88 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	// Auto-hide: the aside floats over the page and lets the pointer through,
 	// except on the edge strip and the shown rail.
 	const renderGlassRail = (content: React.ReactNode) => (
-		<Box
-			component='aside'
+		<aside
 			{...(autoHideRail ? edgeReveal.rootProps : {})}
 			data-auto-hide={autoHideRail ? 'true' : undefined}
 			data-shown={autoHideRail ? String(edgeReveal.shown) : undefined}
-			sx={{
+			className={cn(
 				// Above the page, including its sticky app bars
-				zIndex: theme => theme.zIndex.appBar + 1,
-				top: 0,
-				height: '100vh',
-				...(autoHideRail
+				'lw:top-0 lw:z-[1101] lw:h-screen',
+				autoHideRail
+					? 'lw:pointer-events-none lw:fixed lw:left-0'
+					: 'lw:sticky lw:shrink-0 lw:self-start'
+			)}
+			style={
+				autoHideRail
 					? {
-							position: 'fixed',
-							left: 0,
 							width:
 								FLOATING_RAIL_WIDTH_PX +
-								2 * FLOATING_RAIL_GUTTER_PX,
-							pointerEvents: 'none'
+								2 * FLOATING_RAIL_GUTTER_PX
 						}
 					: {
 							width: desktopSidebarWidthPx,
 							minWidth: desktopSidebarWidthPx,
-							flexShrink: 0,
-							position: 'sticky',
-							alignSelf: 'flex-start',
-							bgcolor: resolvedContentBg
-						})
-			}}
+							backgroundColor: resolvedContentBg
+						}
+			}
 		>
 			{autoHideRail && (
-				<Box
+				<div
 					data-testid='sidebar-edge-reveal'
 					aria-hidden='true'
-					sx={{
-						position: 'absolute',
-						top: 0,
-						bottom: 0,
-						left: 0,
-						width: AUTO_HIDE_EDGE_PX,
-						pointerEvents: 'auto'
-					}}
+					className='lw:pointer-events-auto lw:absolute lw:inset-y-0 lw:left-0'
+					style={{ width: AUTO_HIDE_EDGE_PX }}
 				/>
 			)}
 			{autoHideRail && (
-				<Box
-					ref={edgeReveal.glowRef}
+				<div
+					ref={edgeReveal.glowRef as React.RefObject<HTMLDivElement>}
 					data-testid='sidebar-edge-glow'
 					data-visible={String(edgeReveal.nearEdge)}
 					aria-hidden='true'
-					sx={{
-						'--edge-glow-y': '50%',
-						position: 'absolute',
-						top: 0,
-						bottom: 0,
-						left: 0,
-						width: AUTO_HIDE_GLOW_PX,
-						pointerEvents: 'none',
-						// A pool of light at the edge, where the pointer is
-						background: `radial-gradient(${AUTO_HIDE_GLOW_PX}px ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px at 0 var(--edge-glow-y), ${alpha(sidebarChromeFg, isDark ? 0.5 : 0.4)}, ${alpha(sidebarChromeFg, 0)})`,
-						opacity: edgeReveal.nearEdge ? 1 : 0,
-						transition: 'opacity 200ms ease',
-						// And a bright line along the edge beside it
-						'&::before': {
-							content: '""',
-							position: 'absolute',
-							top: 0,
-							bottom: 0,
-							left: 0,
-							width: 3,
-							background: `linear-gradient(180deg, transparent calc(var(--edge-glow-y) - ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px), ${alpha(sidebarChromeFg, isDark ? 0.95 : 0.85)} var(--edge-glow-y), transparent calc(var(--edge-glow-y) + ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px))`
-						}
-					}}
-				/>
+					className='lw:pointer-events-none lw:absolute lw:inset-y-0 lw:left-0 lw:transition-opacity lw:duration-200 lw:ease-[ease]'
+					style={
+						{
+							'--edge-glow-y': '50%',
+							width: AUTO_HIDE_GLOW_PX,
+							// A pool of light at the edge, where the pointer is
+							background: `radial-gradient(${AUTO_HIDE_GLOW_PX}px ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px at 0 var(--edge-glow-y), ${withAlpha(sidebarChromeFg, isDark ? 0.5 : 0.4)}, ${withAlpha(sidebarChromeFg, 0)})`,
+							opacity: edgeReveal.nearEdge ? 1 : 0
+						} as React.CSSProperties
+					}
+				>
+					{/* And a bright line along the edge beside it */}
+					<span
+						className='lw:absolute lw:inset-y-0 lw:left-0 lw:w-[3px]'
+						style={{
+							background: `linear-gradient(180deg, transparent calc(var(--edge-glow-y) - ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px), ${withAlpha(sidebarChromeFg, isDark ? 0.95 : 0.85)} var(--edge-glow-y), transparent calc(var(--edge-glow-y) + ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px))`
+						}}
+					/>
+				</div>
 			)}
-			<Box
+			<div
 				data-testid='sidebar-hover-panel'
 				data-expanded='false'
 				data-glass='true'
 				data-rail-surface=''
-				sx={{
-					position: 'absolute',
+				className={cn(
+					'lw:absolute lw:flex lw:flex-col',
+					autoHideRail && REDUCED_MOTION_FADE_FAST,
+					sidebarClassName
+				)}
+				style={{
 					top: FLOATING_RAIL_GUTTER_PX,
 					bottom: FLOATING_RAIL_GUTTER_PX,
 					left: FLOATING_RAIL_GUTTER_PX,
 					width: FLOATING_RAIL_WIDTH_PX,
-					borderRadius: `${FLOATING_RAIL_RADIUS_PX}px`,
-					display: 'flex',
-					flexDirection: 'column',
+					borderRadius: FLOATING_RAIL_RADIUS_PX,
 					...(autoHideRail && {
 						pointerEvents: edgeReveal.shown ? 'auto' : 'none',
 						opacity: edgeReveal.shown ? 1 : 0,
 						transform: edgeReveal.shown
 							? 'none'
 							: `translateX(calc(-100% - ${2 * FLOATING_RAIL_GUTTER_PX}px))`,
-						transition: AUTO_HIDE_TRANSITION,
-						'@media (prefers-reduced-motion: reduce)': {
-							transition: 'opacity 120ms ease'
-						}
+						transition: AUTO_HIDE_TRANSITION
 					}),
 					...sidebarStyles
 				}}
@@ -1220,63 +1211,42 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<GlassLayer
 					isDark={isDark}
 					solid={resolvedSidebarSurface}
-					sx={{
-						position: 'absolute',
-						inset: 0,
-						borderRadius: 'inherit'
-					}}
+					className='lw:absolute lw:inset-0'
+					style={{ borderRadius: 'inherit' }}
 				/>
-				<Box
-					sx={{
-						position: 'relative',
-						flex: '1 1 auto',
-						minHeight: 0,
-						display: 'flex',
-						flexDirection: 'column',
-						borderRadius: 'inherit',
-						overflow: 'hidden'
-					}}
+				<div
+					className='lw:relative lw:flex lw:min-h-0 lw:flex-auto lw:flex-col lw:overflow-hidden'
+					style={{ borderRadius: 'inherit' }}
 				>
 					{content}
-				</Box>
-			</Box>
-		</Box>
+				</div>
+			</div>
+		</aside>
 	);
 	const renderHoverPanel = (content: React.ReactNode) => (
-		<Box
-			component='aside'
-			sx={{
+		<aside
+			// Above the page, including its sticky app bars
+			className='lw:sticky lw:top-0 lw:z-[1101] lw:h-screen lw:shrink-0 lw:self-start'
+			style={{
 				width: COLLAPSIBLE_COLLAPSED_WIDTH_PX,
-				minWidth: COLLAPSIBLE_COLLAPSED_WIDTH_PX,
-				flexShrink: 0,
-				// Above the page, including its sticky app bars
-				zIndex: theme => theme.zIndex.appBar + 1,
-				position: 'sticky',
-				top: 0,
-				alignSelf: 'flex-start',
-				height: '100vh'
+				minWidth: COLLAPSIBLE_COLLAPSED_WIDTH_PX
 			}}
 		>
-			<Box
+			<div
 				{...(useFlyoutSubmenu ? {} : hoverSidebar.rootProps)}
 				data-testid='sidebar-hover-panel'
 				data-expanded={sidebarCollapsed ? 'false' : 'true'}
-				sx={{
-					position: 'absolute',
-					top: 0,
-					left: 0,
-					height: '100%',
+				// Flex column so the sidebar shrinks to fit siblings (the
+				// alert card) instead of pushing them off-screen.
+				className={cn(
+					'lw:absolute lw:top-0 lw:left-0 lw:flex lw:h-full lw:flex-col lw:overflow-hidden lw:border-r lw:border-solid lw:border-border',
+					sidebarClassName
+				)}
+				style={{
 					width: sidebarCollapsed
 						? COLLAPSIBLE_COLLAPSED_WIDTH_PX
 						: COLLAPSIBLE_EXPANDED_WIDTH_PX,
-					// Flex column so the sidebar shrinks to fit siblings (the
-					// alert card) instead of pushing them off-screen.
-					display: 'flex',
-					flexDirection: 'column',
-					overflow: 'hidden',
-					bgcolor: resolvedSidebarSurface,
-					borderRight: '1px solid',
-					borderColor: 'divider',
+					backgroundColor: resolvedSidebarSurface,
 					boxShadow: sidebarCollapsed
 						? 'none'
 						: `4px 0 24px rgba(0, 0, 0, ${isDark ? 0.5 : 0.12})`,
@@ -1285,33 +1255,29 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				}}
 			>
 				{content}
-			</Box>
-		</Box>
+			</div>
+		</aside>
 	);
-	const resolvedContentPadding = resolveContentPadding(
-		contentPadding,
-		muiNativeTheme
-	);
+	const contentPaddingVars = resolveContentPadding(contentPadding);
 
 	// Never beside a sidebar that is no longer there, even before a re-measure
 	const drawerPlacement = isMobile ? null : updatesPlacement;
 
 	return (
-		<ThemeProvider theme={muiTheme}>
+		<ShellThemeContext.Provider value={themeMode}>
 			{/* The glass's pointer light and glow take the sidebar accent */}
 			<GlassAccentContext.Provider value={resolvedSidebarAccent}>
 				<SidebarSurfaceContext.Provider value={resolvedSidebarSurface}>
 					<NotificationIconContext.Provider value={notificationsIcon}>
-						<Box
+						<div
 							ref={shellRef}
-							sx={{
-								display: 'flex',
-								minHeight: '100vh',
-								...style
-							}}
+							// The shell's tokens and scoped resets (styles.css),
+							// in the mode of the `theme` prop
+							data-lw-scope=''
+							data-lw-theme={themeMode}
+							className={cn('lw:flex lw:min-h-screen', className)}
+							style={style}
 						>
-							<CssBaseline />
-
 							{isMobile && (
 								<MobileTopBar
 									height={MOBILE_BAR_HEIGHT_PX}
@@ -1348,27 +1314,20 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							{showSidebar &&
 								!isMobile &&
 								useRailLabeledSidebar && (
-									<Box
-										component='aside'
-										sx={{
+									<aside
+										// Flex column so the rail shrinks inside the viewport.
+										className={cn(
+											'lw:sticky lw:top-0 lw:z-[2] lw:flex lw:h-screen lw:shrink-0 lw:flex-col lw:self-start lw:border-r lw:border-solid lw:border-border',
+											sidebarClassName
+										)}
+										style={{
 											width: desktopSidebarWidthPx,
 											minWidth: desktopSidebarWidthPx,
-											flexShrink: 0,
-											zIndex: 2,
-											position: 'sticky',
-											top: 0,
-											alignSelf: 'flex-start',
-											height: '100vh',
-											// Flex column so the rail shrinks inside the viewport.
-											display: 'flex',
-											flexDirection: 'column',
-											borderRight: '1px solid',
-											borderColor: 'divider',
 											...sidebarStyles
 										}}
 									>
 										{renderCollapsibleSidebar()}
-									</Box>
+									</aside>
 								)}
 
 							{/* Desktop Sidebar — collapsible variant: the rail that opens
@@ -1486,39 +1445,29 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								!isMobile &&
 								!rendersCollapsibleComponent &&
 								!usePanelSidebar && (
-									<Drawer
-										variant='permanent'
-										sx={{
+									// The fixed rail: a permanent drawer, its column fixed
+									// to the window's left edge
+									<div
+										data-slot='rail-drawer'
+										className={cn(
+											'lw:z-[2] lw:shrink-0',
+											sidebarClassName
+										)}
+										style={{
 											width: desktopSidebarWidthPx,
-											flexShrink: 0,
-											zIndex: 2,
-											'& .MuiDrawer-paper': {
-												width: desktopSidebarWidthPx,
-												boxSizing: 'border-box',
-												bgcolor: resolvedContentBg,
-												borderRight: 'none'
-											},
 											...sidebarStyles
 										}}
 									>
-										<Box
-											sx={{
-												height: '100%',
-												display: 'flex',
-												flexDirection: 'column',
-												pt: 2,
-												// Inset rail content from drawer edges (esp. left) so items do not sit flush
-												px: 1.5,
-												boxSizing: 'border-box'
+										<aside
+											data-slot='rail-drawer-paper'
+											className='lw:fixed lw:top-0 lw:left-0 lw:z-[1200] lw:flex lw:h-full lw:flex-col lw:overflow-y-auto lw:px-3 lw:pt-4'
+											style={{
+												width: desktopSidebarWidthPx,
+												backgroundColor:
+													resolvedContentBg
 											}}
 										>
-											<Box
-												sx={{
-													display: 'flex',
-													justifyContent: 'center',
-													mb: 1.5
-												}}
-											>
+											<div className='lw:mb-3 lw:flex lw:justify-center'>
 												<Brand
 													logo={railLogo}
 													appName={appName}
@@ -1530,18 +1479,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													}
 													testId='sidebar-header-brand'
 												/>
-											</Box>
+											</div>
 											{renderTopContent('popover')}
-											<Box
-												sx={{
-													flex: '1 1 auto',
-													minHeight: 0,
-													overflowY: 'auto',
-													display: 'flex',
-													flexDirection: 'column',
-													mt: 1
-												}}
-											>
+											<div className='lw:mt-2 lw:flex lw:min-h-0 lw:flex-auto lw:flex-col lw:overflow-y-auto'>
 												<MenuContent
 													mainLinks={sidebarLinks}
 													secondaryLinks={
@@ -1564,12 +1504,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 														{...alertProps}
 													/>
 												)}
-											</Box>
-											<Box sx={{ py: 1.5 }}>
+											</div>
+											<div className='lw:py-3'>
 												{renderFooter(true)}
-											</Box>
-										</Box>
-									</Drawer>
+											</div>
+										</aside>
+									</div>
 								)}
 
 							{/* Mobile: the links, in the same sidebar as desktop (expanded).
@@ -1577,101 +1517,90 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				    reach. Drawer mode: a left drawer that also holds Nexa, search
 				    and the user. */}
 							{showSidebar && isMobile && (
-								<SwipeableDrawer
-									anchor={useBottomBar ? 'bottom' : 'left'}
+								<Sheet
 									open={mobileSidebarOpen}
-									onOpen={() => setMobileSidebarOpen(true)}
-									onClose={() => setMobileSidebarOpen(false)}
-									disableSwipeToOpen
-									sx={{
-										zIndex: theme => theme.zIndex.drawer + 1
-									}}
-									slotProps={{
-										paper: {
-											'aria-label': 'Navigation',
-											sx: {
-												bgcolor: resolvedSidebarSurface,
-												backgroundImage: 'none',
-												...(useBottomBar
-													? {
-															maxHeight:
-																'min(80vh, 640px)',
-															borderTopLeftRadius:
-																'16px',
-															borderTopRightRadius:
-																'16px',
-															pb: 'env(safe-area-inset-bottom, 0px)'
-														}
-													: { maxWidth: '85vw' })
-											}
-										} as object
-									}}
+									onOpenChange={setMobileSidebarOpen}
 								>
-									{useBottomBar && (
-										// Grab handle: the sheet can be swiped down to close
-										<Box
-											aria-hidden='true'
-											sx={{
-												width: 36,
-												height: 4,
-												borderRadius: '2px',
-												bgcolor: 'divider',
-												mx: 'auto',
-												mt: 1,
-												mb: 0.5,
-												flexShrink: 0
-											}}
-										/>
-									)}
-									<CollapsibleSidebar
-										mainLinks={sidebarLinks}
-										secondaryLinks={secondarySidebarLinks}
-										activePath={activePath}
-										onLinkClick={path => {
-											onLinkClick?.(path);
-											setMobileSidebarOpen(false);
+									<SheetContent
+										side={useBottomBar ? 'bottom' : 'left'}
+										aria-label='Navigation'
+										srTitle='Navigation'
+										// Above the mobile bars, as MUI's drawer + 1
+										overlayClassName='lw:z-[1201]'
+										className={cn(
+											'lw:z-[1201] lw:overflow-y-auto lw:border-0',
+											useBottomBar
+												? 'lw:max-h-[min(80vh,640px)] lw:rounded-t-2xl lw:pb-[env(safe-area-inset-bottom,0px)]'
+												: 'lw:max-w-[85vw]'
+										)}
+										style={{
+											backgroundColor:
+												resolvedSidebarSurface
 										}}
-										// A row action (e.g. a request popup) opens over the page
-										onLinkAction={() =>
-											setMobileSidebarOpen(false)
-										}
-										collapsed={false}
-										expandedWidth={
-											useBottomBar
-												? '100%'
-												: MOBILE_DRAWER_WIDTH_PX
-										}
-										activeAccentColor={
-											resolvedSidebarAccent
-										}
-										activeBackgroundColor={
-											sidebarActiveBackgroundColor
-										}
-										groupArrowColor={sidebarGroupArrowColor}
-										groupAccentColor={groupAccentColor}
-										activeForegroundColor={
-											activeSidebarForegroundColor
-										}
-										foregroundColor={sidebarForegroundColor}
-										surfaceBackgroundColor={
-											resolvedSidebarSurface
-										}
-										topInsetPx={useBottomBar ? 8 : 0}
-										topContent={
-											useBottomBar
-												? undefined
-												: renderTopContent('full')
-										}
-										footer={
-											useBottomBar
-												? undefined
-												: renderFooter(false)
-										}
-									/>
-									{alertProps?.show && (
-										<CardAlert {...alertProps} />
-									)}
-								</SwipeableDrawer>
+									>
+										{useBottomBar && (
+											// Grab handle, marking the sheet as one that closes downwards
+											<div
+												aria-hidden='true'
+												className='lw:mx-auto lw:mt-2 lw:mb-1 lw:h-1 lw:w-9 lw:shrink-0 lw:rounded-[2px] lw:bg-border'
+											/>
+										)}
+										<CollapsibleSidebar
+											mainLinks={sidebarLinks}
+											secondaryLinks={
+												secondarySidebarLinks
+											}
+											activePath={activePath}
+											onLinkClick={path => {
+												onLinkClick?.(path);
+												setMobileSidebarOpen(false);
+											}}
+											// A row action (e.g. a request popup) opens over the page
+											onLinkAction={() =>
+												setMobileSidebarOpen(false)
+											}
+											collapsed={false}
+											expandedWidth={
+												useBottomBar
+													? '100%'
+													: MOBILE_DRAWER_WIDTH_PX
+											}
+											activeAccentColor={
+												resolvedSidebarAccent
+											}
+											activeBackgroundColor={
+												sidebarActiveBackgroundColor
+											}
+											groupArrowColor={
+												sidebarGroupArrowColor
+											}
+											groupAccentColor={groupAccentColor}
+											activeForegroundColor={
+												activeSidebarForegroundColor
+											}
+											foregroundColor={
+												sidebarForegroundColor
+											}
+											surfaceBackgroundColor={
+												resolvedSidebarSurface
+											}
+											topInsetPx={useBottomBar ? 8 : 0}
+											topContent={
+												useBottomBar
+													? undefined
+													: renderTopContent('full')
+											}
+											footer={
+												useBottomBar
+													? undefined
+													: renderFooter(false)
+											}
+										/>
+										{alertProps?.show && (
+											<CardAlert {...alertProps} />
+										)}
+									</SheetContent>
+								</Sheet>
 							)}
 
 							{useBottomBar && searchNode && (
@@ -1711,34 +1640,40 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								/>
 							)}
 
-							{/* Main Content Area */}
-							<Box
-								component='main'
-								sx={{
-									flexGrow: 1,
-									'--lumora-content-padding':
-										resolvedContentPadding,
-									// Where sticky page elements should pin (below the mobile bar)
-									'--lumora-sticky-top': isMobile
-										? `${MOBILE_BAR_HEIGHT_PX}px`
-										: '0px',
-									p: 'var(--lumora-content-padding)',
-									width: desktopSidebarWidthPx
-										? `calc(100% - ${desktopSidebarWidthPx}px)`
-										: '100%',
-									mt: isMobile
-										? `${MOBILE_BAR_HEIGHT_PX}px`
-										: 0,
-									// Keep the last content clear of the bottom bar
-									...(useBottomBar && {
-										pb: `calc(var(--lumora-content-padding) + ${bottomBarSpace})`
-									}),
-									backgroundColor: resolvedContentBg,
-									...contentStyles
-								}}
+							{/* Main Content Area. The page is the host's: data-lw-host
+							    keeps the shell's scoped resets off it. */}
+							<main
+								data-lw-host=''
+								className={cn(
+									'lw-content-padding lw:grow',
+									contentClassName
+								)}
+								style={
+									{
+										...contentPaddingVars,
+										// Where sticky page elements should pin (below the mobile bar)
+										'--lumora-sticky-top': isMobile
+											? `${MOBILE_BAR_HEIGHT_PX}px`
+											: '0px',
+										padding:
+											'var(--lumora-content-padding)',
+										width: desktopSidebarWidthPx
+											? `calc(100% - ${desktopSidebarWidthPx}px)`
+											: '100%',
+										marginTop: isMobile
+											? `${MOBILE_BAR_HEIGHT_PX}px`
+											: 0,
+										// Keep the last content clear of the bottom bar
+										...(useBottomBar && {
+											paddingBottom: `calc(var(--lumora-content-padding) + ${bottomBarSpace})`
+										}),
+										backgroundColor: resolvedContentBg,
+										...contentStyles
+									} as React.CSSProperties
+								}
 							>
 								{children}
-							</Box>
+							</main>
 
 							{GlobalChatSidebar && (
 								<ChatPanel
@@ -1787,16 +1722,24 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				    drawer. */}
 							{showNotifications &&
 								NotificationSidebarContent && (
-									<Drawer
-										anchor={
-											drawerPlacement ? 'left' : 'right'
-										}
+									<Sheet
 										open={updatesDrawer.open}
-										onClose={closeUpdates}
-										slotProps={{
-											backdrop: { invisible: true },
-											paper: {
-												sx: drawerPlacement
+										onOpenChange={open => {
+											if (!open) closeUpdates();
+										}}
+									>
+										<SheetContent
+											side={
+												drawerPlacement
+													? 'left'
+													: 'right'
+											}
+											overlay='invisible'
+											srTitle='Updates'
+											data-lw-host=''
+											className='lw:border-0'
+											style={
+												drawerPlacement
 													? {
 															width: 380,
 															maxWidth: `calc(100vw - ${drawerPlacement.left}px)`,
@@ -1809,20 +1752,20 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 															maxWidth: '100vw'
 														}
 											}
-										}}
-									>
-										<NotificationSidebarContent
-											key={updatesDrawer.tab}
-											onClose={closeUpdates}
-											initialTab={updatesDrawer.tab}
-										/>
-									</Drawer>
+										>
+											<NotificationSidebarContent
+												key={updatesDrawer.tab}
+												onClose={closeUpdates}
+												initialTab={updatesDrawer.tab}
+											/>
+										</SheetContent>
+									</Sheet>
 								)}
-						</Box>
+						</div>
 					</NotificationIconContext.Provider>
 				</SidebarSurfaceContext.Provider>
 			</GlassAccentContext.Provider>
-		</ThemeProvider>
+		</ShellThemeContext.Provider>
 	);
 };
 

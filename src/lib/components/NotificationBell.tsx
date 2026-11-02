@@ -1,10 +1,10 @@
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import Badge from '@mui/material/Badge';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
+import { BellIcon } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '../utils';
 import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
+import { CountBadge } from './ui/badge';
+import { Tooltip } from './ui/tooltip';
 
 /** The host's bell icon (`notificationsIcon`), in place of the default. */
 export const NotificationIconContext =
@@ -34,50 +34,38 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	const onGlassRail = React.useContext(RailGlassContext);
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
 	return (
-		<Tooltip
-			title={label}
-			placement={tooltipPlacement}
-			arrow
-			{...railTooltip}
-		>
-			<IconButton
+		<Tooltip title={label} side={tooltipPlacement} arrow {...railTooltip}>
+			<button
+				type='button'
 				onClick={onClick}
 				aria-label={label}
 				data-testid={testId}
-				sx={{
-					...(onGlassRail
-						? {
-								width: FLOATING_RAIL_ITEM_PX,
-								height: FLOATING_RAIL_ITEM_PX
-							}
-						: {}),
-					color,
-					flexShrink: 0,
-					borderRadius: '8px',
-					'&:hover': { bgcolor: hoverColor },
-					'&.Mui-focusVisible': {
-						outline: '2px solid',
-						outlineColor: color
-					}
-				}}
+				className={cn(
+					'lw:inline-flex lw:shrink-0 lw:cursor-pointer lw:items-center lw:justify-center lw:rounded-lg lw:outline-none lw:transition-colors lw:hover:bg-(--lw-hover) lw:focus-visible:outline-2 lw:focus-visible:outline-solid lw:focus-visible:outline-(--lw-fg) lw:[&_svg]:size-6',
+					!onGlassRail && 'lw:p-2'
+				)}
+				style={
+					{
+						color,
+						'--lw-fg': color,
+						'--lw-hover': hoverColor,
+						...(onGlassRail
+							? {
+									width: FLOATING_RAIL_ITEM_PX,
+									height: FLOATING_RAIL_ITEM_PX
+								}
+							: {})
+					} as React.CSSProperties
+				}
 			>
-				<Badge
-					color='error'
-					badgeContent={count}
-					invisible={count === 0}
+				<CountBadge
+					count={count}
 					max={99}
-					sx={{
-						'& .MuiBadge-badge': {
-							fontSize: 10,
-							height: 16,
-							minWidth: 16,
-							px: 0.5
-						}
-					}}
+					badgeClassName='lw:h-4 lw:min-w-4 lw:px-1 lw:text-[10px]'
 				>
-					{icon ?? <NotificationsNoneOutlinedIcon />}
-				</Badge>
-			</IconButton>
+					{icon ?? <BellIcon />}
+				</CountBadge>
+			</button>
 		</Tooltip>
 	);
 };

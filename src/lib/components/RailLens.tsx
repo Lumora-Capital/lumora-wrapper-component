@@ -1,5 +1,3 @@
-import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
 import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
@@ -11,14 +9,17 @@ import {
 	springTiming
 } from './glassMotion';
 import {
-	REDUCED_MOTION,
-	glassBubbleSx,
-	glassLabelSx,
-	glassTintSx,
+	REDUCED_MOTION_FADE,
+	glassBubbleStyle,
+	glassLabel,
+	glassTintStyle,
 	useGlassAccentRgb,
 	GLASS_RADIUS_PX,
 	SidebarSurfaceContext
 } from './liquidGlass';
+import { useIsDark } from './shellTheme';
+import { cn } from '../utils';
+import type { TooltipProps } from './ui/tooltip';
 
 /** Marks a rail icon the lens can rest on (any button in the rail is one). */
 export const RAIL_ITEM_ATTR = 'data-rail-item';
@@ -32,26 +33,27 @@ export const RAIL_ITEM_SELECTOR = `[${RAIL_ITEM_ATTR}], button, [role="button"]`
 export const RailGlassContext = React.createContext(false);
 
 /**
- * Tooltip props for a control on the rail: the frosted label pill (no
- * arrow) on the glass rail, nothing otherwise. Spread after `arrow`.
+ * Tooltip props (ui/tooltip) for a control on the rail: the frosted label
+ * pill (no arrow) on the glass rail, nothing otherwise. Spread after `arrow`.
  */
-export const useRailTooltipProps = () => {
+export const useRailTooltipProps = (): Partial<
+	Pick<
+		TooltipProps,
+		'arrow' | 'contentClassName' | 'contentStyle' | 'sideOffset'
+	>
+> => {
 	const glass = React.useContext(RailGlassContext);
-	const theme = useTheme();
+	const isDark = useIsDark();
 	const surface = React.useContext(SidebarSurfaceContext);
 	if (!glass) {
 		return {};
 	}
+	const label = glassLabel(isDark, surface);
 	return {
 		arrow: false,
-		slotProps: {
-			tooltip: {
-				sx: glassLabelSx(theme.palette.mode === 'dark', surface)
-			},
-			popper: {
-				modifiers: [{ name: 'offset', options: { offset: [0, 6] } }]
-			}
-		}
+		contentClassName: label.className,
+		contentStyle: label.style,
+		sideOffset: 6
 	};
 };
 
@@ -245,13 +247,17 @@ export const useGlassLens = ({
 
 	const lens =
 		enabled && box ? (
-			<Box
+			<div
 				ref={lensRef}
 				aria-hidden
 				data-glass-lens=''
 				data-visible={box.visible ? 'true' : 'false'}
-				sx={{
-					...glassBubbleSx(isDark, accentRgb),
+				className={cn(
+					'lw:pointer-events-none lw:absolute lw:top-0 lw:left-0',
+					REDUCED_MOTION_FADE
+				)}
+				style={{
+					...glassBubbleStyle(isDark, accentRgb),
 					...(LIQUID_GLASS_ENABLED
 						? {
 								backdropFilter: 'blur(8px) saturate(170%)',
@@ -259,27 +265,21 @@ export const useGlassLens = ({
 							}
 						: {}),
 					borderRadius: `${radius}px`,
-					position: 'absolute',
-					top: 0,
-					left: 0,
 					width: box.width,
 					height: box.height,
 					// Placed with `translate`, which the browser applies before
 					// `scale`: the well-up and stretch then scale the drop in
 					// place instead of scaling its offset.
 					translate: `${box.left}px ${box.top}px`,
-					// Shrinks away as it fades; wells back up on return. Swells
-					// with the item under it (useDockMagnify)
-					// Fades in and out at its item's size, never popping from smaller
+					// Swells with the item under it (useDockMagnify); fades in
+					// and out at its item's size, never popping from smaller
 					scale: 'var(--dock-max-scale, 1)',
 					opacity: box.visible ? 1 : 0,
-					pointerEvents: 'none',
 					// Its scale on the item's own timing, swelling and settling
 					// (useDockMagnify), so the two move as one
 					transition: box.instant
 						? `opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
-						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`,
-					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
 				}}
 			/>
 		) : null;
@@ -520,32 +520,31 @@ export const useActiveGlass = ({
 
 	const glass =
 		enabled && box ? (
-			<Box
+			<div
 				ref={glassRef}
 				aria-hidden
 				data-active-glass=''
 				data-testid='sidebar-rail-active'
 				data-visible={box.visible ? 'true' : 'false'}
-				sx={{
-					...glassTintSx(color, isDark),
+				className={cn(
+					'lw:pointer-events-none lw:absolute lw:top-0 lw:left-0',
+					REDUCED_MOTION_FADE
+				)}
+				style={{
+					...glassTintStyle(color, isDark),
 					borderRadius: `${GLASS_RADIUS_PX}px`,
-					position: 'absolute',
-					top: 0,
-					left: 0,
 					width: box.width,
 					height: box.height,
 					translate: `${box.left}px ${box.top}px`,
-					// Swells with its item (useDockMagnify)
-					// Fades in and out at its item's size, never popping from smaller
+					// Swells with its item (useDockMagnify); fades in and out at
+					// its item's size, never popping from smaller
 					scale: 'var(--dock-active-scale, 1)',
 					opacity: box.visible ? 1 : 0,
-					pointerEvents: 'none',
 					// Its scale on the item's own timing, swelling and settling
 					// (useDockMagnify), so the two move as one
 					transition: box.instant
 						? `opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
-						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`,
-					[REDUCED_MOTION]: { transition: 'opacity 160ms ease' }
+						: `translate ${glide.duration}ms ${glide.easing}, width 220ms ease, height 220ms ease, opacity 160ms ease, scale var(--dock-scale-timing, ${DOCK_FOLLOW_MS}ms ease-out)`
 				}}
 			/>
 		) : null;

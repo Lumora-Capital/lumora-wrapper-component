@@ -11,34 +11,41 @@ describe('LumoraShellSkeleton', () => {
 
 	it('draws fewer placeholders without a sidebar', () => {
 		const { container, rerender } = render(<LumoraShellSkeleton />);
-		const withSidebar =
-			container.querySelectorAll('.MuiSkeleton-root').length;
+		const withSidebar = container.querySelectorAll(
+			'[data-slot=skeleton]'
+		).length;
 
 		rerender(<LumoraShellSkeleton showSidebar={false} />);
-		const withoutSidebar =
-			container.querySelectorAll('.MuiSkeleton-root').length;
+		const withoutSidebar = container.querySelectorAll(
+			'[data-slot=skeleton]'
+		).length;
 
 		expect(withSidebar).toBeGreaterThan(withoutSidebar);
 	});
 
 	it("draws the host's content outline in place of the generic one", () => {
 		const { container, rerender } = render(<LumoraShellSkeleton />);
-		const generic = container.querySelectorAll('.MuiSkeleton-root').length;
+		const generic = container.querySelectorAll(
+			'[data-slot=skeleton]'
+		).length;
 
 		rerender(
 			<LumoraShellSkeleton content={<div data-testid='page-outline' />} />
 		);
 		expect(screen.getByTestId('page-outline')).toBeInTheDocument();
 		// Only the rail's placeholders remain around it
-		expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeLessThan(
-			generic
-		);
+		expect(
+			container.querySelectorAll('[data-slot=skeleton]').length
+		).toBeLessThan(generic);
 	});
 
 	describe('with darkModeSelector', () => {
 		const SELECTOR = 'html[data-color-scheme="dark"]';
 		const statuses = () =>
-			screen.getAllByRole('status', { hidden: true, name: 'Checking session' });
+			screen.getAllByRole('status', {
+				hidden: true,
+				name: 'Checking session'
+			});
 
 		afterEach(() => {
 			document.documentElement.removeAttribute('data-color-scheme');
@@ -54,7 +61,12 @@ describe('LumoraShellSkeleton', () => {
 
 		it('shows the dark shell once the selector matches, whatever theme says', () => {
 			document.documentElement.setAttribute('data-color-scheme', 'dark');
-			render(<LumoraShellSkeleton theme='light' darkModeSelector={SELECTOR} />);
+			render(
+				<LumoraShellSkeleton
+					theme='light'
+					darkModeSelector={SELECTOR}
+				/>
+			);
 			const [light, dark] = statuses();
 			expect(light).not.toBeVisible();
 			expect(dark).toBeVisible();
@@ -62,10 +74,15 @@ describe('LumoraShellSkeleton', () => {
 
 		it('draws the same markup for either theme, so server HTML hydrates as is', () => {
 			const { container, rerender } = render(
-				<LumoraShellSkeleton theme='light' darkModeSelector={SELECTOR} />
+				<LumoraShellSkeleton
+					theme='light'
+					darkModeSelector={SELECTOR}
+				/>
 			);
 			const asLight = container.innerHTML;
-			rerender(<LumoraShellSkeleton theme='dark' darkModeSelector={SELECTOR} />);
+			rerender(
+				<LumoraShellSkeleton theme='dark' darkModeSelector={SELECTOR} />
+			);
 			expect(container.innerHTML).toBe(asLight);
 		});
 
@@ -73,7 +90,10 @@ describe('LumoraShellSkeleton', () => {
 			render(
 				<LumoraShellSkeleton
 					darkModeSelector={SELECTOR}
-					contentBackgroundColor={{ light: 'rgb(1, 2, 3)', dark: 'rgb(4, 5, 6)' }}
+					contentBackgroundColor={{
+						light: 'rgb(1, 2, 3)',
+						dark: 'rgb(4, 5, 6)'
+					}}
 				/>
 			);
 			const [light, dark] = statuses();
@@ -82,4 +102,3 @@ describe('LumoraShellSkeleton', () => {
 		});
 	});
 });
-

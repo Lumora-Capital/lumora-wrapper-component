@@ -1,8 +1,6 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Drawer from '@mui/material/Drawer';
-import Stack from '@mui/material/Stack';
 import * as React from 'react';
+import { Button } from './ui/button';
+import { Sheet, SheetContent } from './ui/sheet';
 
 interface MobileSearchSheetProps {
 	open: boolean;
@@ -20,45 +18,42 @@ const MobileSearchSheet: React.FC<MobileSearchSheetProps> = ({
 	onClose,
 	search
 }) => (
-	<Drawer
-		anchor='top'
-		open={open}
-		onClose={onClose}
-		SlideProps={{
-			onEntered: node =>
-				(node as HTMLElement)
-					.querySelector<HTMLElement>(
-						'input, textarea, [contenteditable="true"]'
-					)
-					?.focus()
-		}}
-		slotProps={{
-			paper: {
-				'aria-label': 'Search',
-				sx: {
-					p: 2,
-					pt: 'calc(16px + env(safe-area-inset-top, 0px))',
-					borderBottomLeftRadius: '12px',
-					borderBottomRightRadius: '12px'
+	<Sheet open={open} onOpenChange={next => !next && onClose()}>
+		<SheetContent
+			side='top'
+			aria-label='Search'
+			srTitle='Search'
+			// The host's first field, not the sheet, takes focus
+			onOpenAutoFocus={event => {
+				const field = (
+					event.currentTarget as HTMLElement | null
+				)?.querySelector<HTMLElement>(
+					'input, textarea, [contenteditable="true"]'
+				);
+				if (field) {
+					event.preventDefault();
+					field.focus();
 				}
-			} as object
-		}}
-	>
-		<Stack
-			direction='row'
-			spacing={1}
-			data-testid='mobile-search-sheet'
-			sx={{ alignItems: 'center' }}
+			}}
+			className='lw:rounded-b-xl lw:border-b-0 lw:p-4 lw:pt-[calc(16px+env(safe-area-inset-top,0px))]'
 		>
-			<Box sx={{ flex: '1 1 auto', minWidth: 0 }}>{search}</Box>
-			<Button
-				onClick={onClose}
-				sx={{ flexShrink: 0, textTransform: 'none' }}
+			<div
+				data-testid='mobile-search-sheet'
+				className='lw:flex lw:flex-row lw:items-center lw:gap-2'
 			>
-				Cancel
-			</Button>
-		</Stack>
-	</Drawer>
+				<div data-lw-host='' className='lw:min-w-0 lw:flex-auto'>
+					{search}
+				</div>
+				<Button
+					variant='ghost-primary'
+					onClick={onClose}
+					className='lw:shrink-0'
+				>
+					Cancel
+				</Button>
+			</div>
+		</SheetContent>
+	</Sheet>
 );
 
 export default MobileSearchSheet;

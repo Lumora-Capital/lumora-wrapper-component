@@ -1,8 +1,7 @@
-import Box from '@mui/material/Box';
-import type { SxProps, Theme } from '@mui/material/styles';
 import * as React from 'react';
+import { cn } from '../utils';
 import { LIQUID_GLASS_ENABLED } from './featureFlags';
-import { glassSurfaceSx, useGlassAccentRgb } from './liquidGlass';
+import { glassSurface, useGlassAccentRgb } from './liquidGlass';
 
 /** How far in from the edge the glass bends light, and how hard. */
 const EDGE_PX = 14;
@@ -51,7 +50,8 @@ export interface GlassLayerProps {
 	isDark: boolean;
 	/** Surface where the backdrop cannot be blurred. */
 	solid: string;
-	sx?: SxProps<Theme>;
+	className?: string;
+	style?: React.CSSProperties;
 	'data-testid'?: string;
 	/**
 	 * Bend the backdrop at the edges (Chromium). Off for a layer whose shape
@@ -188,7 +188,8 @@ const GlassLayer = React.forwardRef<HTMLDivElement, GlassLayerProps>(
 		{
 			isDark,
 			solid,
-			sx,
+			className,
+			style,
 			'data-testid': testId,
 			refract: refractProp = true,
 			light = true,
@@ -252,6 +253,7 @@ const GlassLayer = React.forwardRef<HTMLDivElement, GlassLayerProps>(
 			[size]
 		);
 		const refract = allowRefract && Boolean(map && size);
+		const surface = glassSurface(isDark, solid, accentRgb);
 
 		return (
 			<>
@@ -296,22 +298,26 @@ const GlassLayer = React.forwardRef<HTMLDivElement, GlassLayerProps>(
 						</filter>
 					</svg>
 				) : null}
-				<Box
+				<div
 					ref={setRef}
 					aria-hidden
 					data-testid={testId}
 					data-refract={refract ? 'true' : undefined}
-					sx={[
-						glassSurfaceSx(isDark, solid, accentRgb),
-						refract
+					className={cn(
+						surface.className,
+						refract &&
+							'lw:reduce-transparency:[backdrop-filter:none]! lw:reduce-transparency:[-webkit-backdrop-filter:none]!',
+						className
+					)}
+					style={{
+						...surface.style,
+						...(refract
 							? {
-									backdropFilter: `url(#${filterId}) ${REFRACT_BLUR}`,
-									'@media (prefers-reduced-transparency: reduce)':
-										{ backdropFilter: 'none' }
+									backdropFilter: `url(#${filterId}) ${REFRACT_BLUR}`
 								}
-							: {},
-						...(Array.isArray(sx) ? sx : [sx])
-					]}
+							: {}),
+						...style
+					}}
 				/>
 			</>
 		);

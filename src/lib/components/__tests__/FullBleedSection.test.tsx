@@ -44,9 +44,10 @@ describe('FullBleedSection', () => {
 		);
 		const main = screen.getByRole('main');
 		expect(main).toContainElement(screen.getByTestId('full-bleed-section'));
-		expect(
-			getComputedStyle(main).getPropertyValue('--lumora-content-padding')
-		).toBe('32px');
+		// The stylesheet's lw-content-padding class turns the per-breakpoint
+		// variables into --lumora-content-padding (jsdom loads no CSS)
+		expect(main).toHaveClass('lw-content-padding');
+		expect(main.style.getPropertyValue('--lw-cp-xs')).toBe('32px');
 		expect(
 			getComputedStyle(main).getPropertyValue('--lumora-sticky-top')
 		).toBe('0px');

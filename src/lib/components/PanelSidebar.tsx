@@ -1,22 +1,18 @@
-import Badge from '@mui/material/Badge';
-import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import { cn } from '../utils';
 import AccountMenu from './AccountMenu';
 import CollapsibleSidebar from './CollapsibleSidebar';
 import type { SidebarLink } from './LumoraWrapper';
 import NotificationBell from './NotificationBell';
+import { useIsDark } from './shellTheme';
+import { resolveSidebarSurface } from './shellLayout';
 import { deriveGroupTint, formatRole } from './sidebarUtils';
+import { CountBadge } from './ui/badge';
 import { UserAvatar } from './UserMenu';
 import type { UserMenuItem } from './UserMenu';
 
 /** Host apps often outline every `button:focus`; keep the footer clean after a click. */
-const FOCUS_OUTLINE_FIX = {
-	'&:focus, &:focus-visible': { outline: 'none' }
-} as const;
+const FOCUS_OUTLINE_FIX = 'lw:outline-none lw:focus:outline-none';
 
 export interface PanelSidebarProps {
 	mainLinks: SidebarLink[];
@@ -135,16 +131,11 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	showThemeToggler = true,
 	onThemeToggle
 }) => {
-	const theme = useTheme();
-	const isDark = theme.palette.mode === 'dark';
-	const surface =
-		surfaceBackgroundColor ??
-		(isDark ? theme.palette.background.paper : '#ffffff');
+	const isDark = useIsDark();
+	const surface = resolveSidebarSurface(surfaceBackgroundColor, isDark);
 	// Footer chrome follows the nav's idle color unless the owner sets one
 	const fg =
-		color ??
-		foregroundColor ??
-		(isDark ? theme.palette.text.primary : activeAccentColor);
+		color ?? foregroundColor ?? (isDark ? '#ffffff' : activeAccentColor);
 	const tint =
 		hoverColor ?? groupAccentColor ?? deriveGroupTint(activeAccentColor);
 	const avatarFill = avatarColor ?? activeAccentColor;
@@ -183,67 +174,59 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	) : null;
 
 	const userButton = showProfile ? (
-		<ButtonBase
+		<button
+			type='button'
 			ref={footerRef}
 			onClick={() => setMenuOpen(true)}
 			aria-haspopup='menu'
 			aria-expanded={menuOpen}
 			aria-label='Account menu'
 			data-testid='panel-user-button'
-			sx={{
-				flex: collapsed ? '0 0 auto' : 1,
-				minWidth: 0,
-				justifyContent: 'flex-start',
-				gap: 1.25,
+			className={cn(
+				'lw:flex lw:min-w-0 lw:cursor-pointer lw:items-center lw:justify-start lw:gap-2.5 lw:rounded-[10px] lw:hover:bg-(--lw-footer-tint)',
+				collapsed ? 'lw:flex-[0_0_auto]' : 'lw:flex-1',
 				// On the flyout rail the 36px avatar fills a 44px button,
 				// matching the rail's icon buttons
-				p: railOnly ? '4px' : 0.75,
-				borderRadius: '10px',
-				bgcolor: menuOpen ? tint : 'transparent',
-				'&:hover': { bgcolor: tint },
-				...FOCUS_OUTLINE_FIX
-			}}
+				railOnly ? 'lw:p-1' : 'lw:p-1.5',
+				menuOpen ? 'lw:bg-(--lw-footer-tint)' : 'lw:bg-transparent',
+				FOCUS_OUTLINE_FIX
+			)}
+			style={{ '--lw-footer-tint': tint } as React.CSSProperties}
 		>
 			{collapsed && !railOnly && showNotifications ? (
 				// Collapsed: no room for the bell, so unread shows as a dot
-				<Badge
-					color='error'
-					variant='dot'
-					overlap='circular'
-					invisible={!bellCount}
+				<CountBadge
+					dot
+					count={bellCount}
+					className='lw:rounded-full'
+					// The dot sits on the avatar's edge, as MUI's circular overlap
+					badgeClassName='lw:top-[14%] lw:right-[14%]'
 				>
 					{renderAvatar(36)}
-				</Badge>
+				</CountBadge>
 			) : (
 				renderAvatar(collapsed ? 36 : 40)
 			)}
 			{!collapsed ? (
-				<Box sx={{ minWidth: 0, textAlign: 'left' }}>
-					<Typography
-						noWrap
-						sx={{ fontWeight: 600, color: fg, lineHeight: 1.3 }}
+				<span className='lw:block lw:min-w-0 lw:text-left'>
+					<span
+						className='lw:block lw:truncate lw:text-sm lw:leading-[1.3] lw:font-semibold'
+						style={{ color: fg }}
 					>
 						{userName}
-					</Typography>
+					</span>
 					{roleLabel ? (
-						<Typography
-							noWrap
-							variant='caption'
+						<span
 							data-testid='panel-user-role'
-							sx={{
-								display: 'block',
-								color: fg,
-								opacity: 0.85,
-								letterSpacing: '0.02em',
-								lineHeight: 1.3
-							}}
+							className='lw:block lw:truncate lw:text-xs lw:leading-[1.3] lw:tracking-[0.02em] lw:opacity-85'
+							style={{ color: fg }}
 						>
 							{roleLabel}
-						</Typography>
+						</span>
 					) : null}
-				</Box>
+				</span>
 			) : null}
-		</ButtonBase>
+		</button>
 	) : null;
 
 	// Collapsed, the bell folds into the avatar's dot (unless there is no user
@@ -251,30 +234,23 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	const showBell = Boolean(bell) && (!collapsed || railOnly || !userButton);
 	const footer =
 		userButton || showBell ? (
-			<Stack
-				direction={railOnly ? 'column' : 'row'}
-				sx={{
-					alignItems: 'center',
-					gap: 0.5,
-					justifyContent: 'center'
-				}}
+			<div
+				className={cn(
+					'lw:flex lw:items-center lw:justify-center lw:gap-1',
+					railOnly ? 'lw:flex-col' : 'lw:flex-row'
+				)}
 			>
 				{railOnly && showBell ? bell : null}
 				{userButton}
 				{!railOnly && showBell ? bell : null}
-			</Stack>
+			</div>
 		) : undefined;
 
 	return (
-		<Box
+		<div
 			data-testid='panel-sidebar'
 			data-collapsed={collapsed ? 'true' : 'false'}
-			sx={{
-				flex: '1 1 auto',
-				minHeight: 0,
-				display: 'flex',
-				flexDirection: 'column'
-			}}
+			className='lw:flex lw:min-h-0 lw:flex-auto lw:flex-col'
 		>
 			<CollapsibleSidebar
 				mainLinks={mainLinks}
@@ -327,7 +303,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					glass={submenuMode === 'flyout'}
 				/>
 			) : null}
-		</Box>
+		</div>
 	);
 };
 

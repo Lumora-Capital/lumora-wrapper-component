@@ -1,18 +1,17 @@
 import {
-	AccountBalanceOutlined as DealsIcon,
-	BusinessOutlined as CompaniesIcon,
-	CampaignOutlined as CampaignIcon,
-	ContentCopyOutlined as DuplicatesIcon,
-	DashboardOutlined as OverviewIcon,
-	GroupWorkOutlined as GroupsIcon,
-	HandshakeOutlined as FundingIcon,
-	ViewKanbanOutlined as PipelineIcon,
-	HeadsetMicOutlined as SupportIcon,
-	InsertChartOutlined as DashboardIcon,
-	PeopleOutline as PeopleIcon,
-	StarBorderRounded as PinsIcon
-} from '@mui/icons-material';
-import Avatar from '@mui/material/Avatar';
+	ChartColumnIcon as DashboardIcon,
+	BuildingIcon as CompaniesIcon,
+	MegaphoneIcon as CampaignIcon,
+	CopyIcon as DuplicatesIcon,
+	LayoutDashboardIcon as OverviewIcon,
+	NetworkIcon as GroupsIcon,
+	HandshakeIcon as FundingIcon,
+	KanbanIcon as PipelineIcon,
+	HeadsetIcon as SupportIcon,
+	LandmarkIcon as DealsIcon,
+	UsersIcon as PeopleIcon,
+	StarIcon as PinsIcon
+} from 'lucide-react';
 import type { SidebarLink, SidebarSubLink } from '../lib';
 
 /** Flat links, like most host apps. */
@@ -74,7 +73,11 @@ export const secondaryLinks: SidebarLink[] = [
 		text: 'Liam',
 		subtitle: 'Legal & Compliance',
 		path: '/agent',
-		icon: <Avatar sx={{ width: 36, height: 36, fontSize: 15 }}>L</Avatar>
+		icon: (
+			<span className='flex size-9 items-center justify-center rounded-full bg-slate-400 text-[15px] text-white'>
+				L
+			</span>
+		)
 	}
 ];
 

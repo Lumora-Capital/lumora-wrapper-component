@@ -1,5 +1,5 @@
-import { Home } from '@mui/icons-material';
-import { useMediaQuery } from '@mui/material';
+import { HouseIcon as Home } from 'lucide-react';
+import { useIsMobile } from '../useMediaQuery';
 import LumoraWrapper, {
 	type LumoraPlatform,
 	type LumoraWrapperProps
@@ -12,12 +12,12 @@ import {
 	within
 } from './testUtils';
 
-jest.mock('@mui/material', () => ({
-	...jest.requireActual('@mui/material'),
-	useMediaQuery: jest.fn()
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
 }));
-const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
-	typeof useMediaQuery
+const mockUseMediaQuery = useIsMobile as jest.MockedFunction<
+	typeof useIsMobile
 >;
 
 const platforms: LumoraPlatform[] = [

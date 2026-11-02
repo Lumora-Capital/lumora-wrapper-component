@@ -1,9 +1,6 @@
+import { SparklesIcon } from 'lucide-react';
 import * as React from 'react';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import { Button } from './ui/button';
 
 interface CardAlertProps {
 	title?: string;
@@ -23,28 +20,18 @@ const CardAlert: React.FC<CardAlertProps> = ({
 	if (!show) return null;
 
 	return (
-		<Card variant='outlined' sx={{ m: 1.5, flexShrink: 0 }}>
-			<CardContent>
-				<AutoAwesomeRoundedIcon fontSize='small' />
-				<Typography gutterBottom sx={{ fontWeight: 600 }}>
-					{title}
-				</Typography>
-				<Typography
-					variant='body2'
-					sx={{ mb: 2, color: 'text.secondary' }}
-				>
-					{message}
-				</Typography>
-				<Button
-					variant='contained'
-					size='small'
-					fullWidth
-					onClick={onButtonClick}
-				>
-					{buttonText}
-				</Button>
-			</CardContent>
-		</Card>
+		<div className='lw:m-3 lw:shrink-0 lw:rounded-lg lw:border lw:border-solid lw:border-border lw:bg-card lw:p-4 lw:text-card-foreground'>
+			<SparklesIcon className='lw:size-5' aria-hidden />
+			<p className='lw:mb-[0.35em] lw:text-sm lw:font-semibold'>
+				{title}
+			</p>
+			<p className='lw:mb-4 lw:text-sm lw:text-muted-foreground'>
+				{message}
+			</p>
+			<Button size='sm' className='lw:w-full' onClick={onButtonClick}>
+				{buttonText}
+			</Button>
+		</div>
 	);
 };
 

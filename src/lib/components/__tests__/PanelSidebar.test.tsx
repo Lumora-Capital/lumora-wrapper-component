@@ -1,7 +1,7 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ShellThemeContext } from '../shellTheme';
 import PanelSidebar, { type PanelSidebarProps } from '../PanelSidebar';
 import type { SidebarLink } from '../LumoraWrapper';
-import { fireEvent, render, screen, waitFor, within } from './testUtils';
+import { act, fireEvent, render, screen, waitFor, within } from './testUtils';
 
 const links: SidebarLink[] = [
 	{ text: 'Dashboard', path: '/dashboard', icon: <span>D</span> },
@@ -154,9 +154,14 @@ describe('PanelSidebar account menu', () => {
 		});
 
 		it('shows My AI usage alone without onProfileClick', () => {
-			renderPanel({ onProfileClick: undefined, onAiUsageClick: jest.fn() });
+			renderPanel({
+				onProfileClick: undefined,
+				onAiUsageClick: jest.fn()
+			});
 			openMenu();
-			expect(screen.getByTestId('account-menu-ai-usage')).toBeInTheDocument();
+			expect(
+				screen.getByTestId('account-menu-ai-usage')
+			).toBeInTheDocument();
 			expect(
 				screen.queryByTestId('account-menu-view-profile')
 			).toBeNull();
@@ -334,11 +339,9 @@ describe('PanelSidebar account menu', () => {
 	describe('dark theme', () => {
 		it('renders the menu', () => {
 			render(
-				<ThemeProvider
-					theme={createTheme({ palette: { mode: 'dark' } })}
-				>
+				<ShellThemeContext.Provider value='dark'>
 					<PanelSidebar {...baseProps} theme='dark' />
-				</ThemeProvider>
+				</ShellThemeContext.Provider>
 			);
 			openMenu();
 			expect(screen.getByRole('radio', { name: 'Dark' })).toHaveAttribute(
@@ -348,12 +351,12 @@ describe('PanelSidebar account menu', () => {
 		});
 	});
 
-	it('closes on a backdrop click', async () => {
+	it('closes on a click outside the menu', async () => {
 		renderPanel();
 		openMenu();
-		fireEvent.click(
-			document.querySelector('.MuiBackdrop-root') as HTMLElement
-		);
+		// Radix listens for the outside press a tick after opening
+		await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+		fireEvent.pointerDown(document.body);
 		await expectMenuClosed();
 	});
 });
@@ -376,9 +379,9 @@ describe('PanelSidebar footer bell', () => {
 		expect(screen.queryByTestId('panel-notifications')).toBeNull();
 		const dot = screen
 			.getByTestId('panel-user-button')
-			.querySelector('.MuiBadge-dot');
+			.querySelector('[data-slot="badge"][data-dot="true"]');
 		expect(dot).not.toBeNull();
-		expect(dot).not.toHaveClass('MuiBadge-invisible');
+		expect(dot).toHaveAttribute('data-invisible', 'false');
 	});
 
 	it('collapsed, hides the avatar dot when nothing is unread on either tab', () => {
@@ -390,7 +393,7 @@ describe('PanelSidebar footer bell', () => {
 		expect(
 			screen
 				.getByTestId('panel-user-button')
-				.querySelector('.MuiBadge-dot')
-		).toHaveClass('MuiBadge-invisible');
+				.querySelector('[data-slot="badge"][data-dot="true"]')
+		).toHaveAttribute('data-invisible', 'true');
 	});
 });

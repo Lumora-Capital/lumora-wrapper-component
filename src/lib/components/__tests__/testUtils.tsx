@@ -1,5 +1,4 @@
-import { Home, Person, Settings } from '@mui/icons-material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { HouseIcon, SettingsIcon, UserIcon } from 'lucide-react';
 import {
 	fireEvent,
 	render,
@@ -10,23 +9,21 @@ import {
 import type * as React from 'react';
 import type { LumoraWrapperProps, SidebarLink } from '../LumoraWrapper';
 
-const testTheme = createTheme();
-
 export const mockSidebarLinks: SidebarLink[] = [
 	{
 		text: 'Home',
 		path: '/home',
-		icon: <Home data-testid='home-icon' />
+		icon: <HouseIcon data-testid='home-icon' />
 	},
 	{
 		text: 'Settings',
 		path: '/settings',
-		icon: <Settings data-testid='settings-icon' />
+		icon: <SettingsIcon data-testid='settings-icon' />
 	},
 	{
 		text: 'Profile',
 		path: '/profile',
-		icon: <Person data-testid='profile-icon' />
+		icon: <UserIcon data-testid='profile-icon' />
 	}
 ];
 
@@ -40,17 +37,11 @@ export const lumoraTestRequiredProps: Pick<
 	redirectToLogin: jest.fn()
 };
 
-/** Render inside a default MUI theme, as a host app would. */
+/** Render as a host app would (the shell needs no provider of the host's). */
 const customRender = (
 	ui: React.ReactElement,
 	options?: Omit<RenderOptions, 'wrapper'>
-) =>
-	render(ui, {
-		wrapper: ({ children }) => (
-			<ThemeProvider theme={testTheme}>{children}</ThemeProvider>
-		),
-		...options
-	});
+) => render(ui, options);
 
 /** Hover the collapsible / panel sidebar open, as a pointer would. */
 export const hoverSidebarOpen = async () => {

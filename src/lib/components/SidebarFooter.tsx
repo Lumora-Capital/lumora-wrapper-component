@@ -1,9 +1,7 @@
-import ButtonBase from '@mui/material/ButtonBase';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
+import { cn } from '../utils';
 import NotificationBell from './NotificationBell';
-import { RailGlassContext } from './RailLens';
+import { Tooltip } from './ui/tooltip';
 import UserMenu, { Identity, type UserMenuOptions } from './UserMenu';
 
 export interface SidebarFooterProps extends UserMenuOptions {
@@ -60,54 +58,46 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		wasCompact.current = compact;
 	}, [compact]);
 
-	// On the floating rail the avatar's button matches the 44px icon buttons
-	const onGlassRail = React.useContext(RailGlassContext);
-
 	if (!showNotifications && !showProfile) {
 		return null;
 	}
 
-	const focusRing = {
-		'&.Mui-focusVisible': { outline: '2px solid', outlineColor: color }
-	};
-
 	return (
 		<>
-			<Stack
+			<div
 				ref={footerRef}
-				direction={compact ? 'column' : 'row'}
-				spacing={0.5}
 				data-testid='sidebar-footer'
-				sx={{ width: '100%', alignItems: 'center' }}
+				className={cn(
+					'lw:flex lw:w-full lw:items-center lw:gap-1',
+					compact ? 'lw:flex-col' : 'lw:flex-row'
+				)}
 			>
 				{showProfile && (
-					<Tooltip
-						title={compact ? userName : ''}
-						placement='right'
-						arrow
-					>
-						<ButtonBase
+					<Tooltip title={compact ? userName : ''} side='right' arrow>
+						<button
+							type='button'
 							onClick={() => setMenuAnchor(footerRef.current)}
 							aria-label={`Account menu for ${userName}`}
 							aria-haspopup='menu'
 							aria-expanded={menuOpen}
 							data-testid='sidebar-user'
-							sx={{
-								flex: compact ? '0 0 auto' : '1 1 auto',
-								minWidth: 0,
-								gap: 1.25,
-								p: compact
-									? onGlassRail
-										? '4px'
-										: 0.5
-									: '6px 8px',
-								justifyContent: 'flex-start',
-								borderRadius: '8px',
-								color,
-								bgcolor: menuOpen ? hoverColor : 'transparent',
-								'&:hover': { bgcolor: hoverColor },
-								...focusRing
-							}}
+							className={cn(
+								'lw:inline-flex lw:min-w-0 lw:cursor-pointer lw:items-center lw:justify-start lw:gap-2.5 lw:rounded-lg lw:text-left lw:outline-none lw:transition-colors lw:hover:bg-(--lw-hover) lw:focus-visible:outline-2 lw:focus-visible:outline-solid lw:focus-visible:outline-(--lw-fg)',
+								// 4px around the avatar, on the glass rail too
+								compact
+									? 'lw:flex-none lw:p-1'
+									: 'lw:flex-auto lw:px-2 lw:py-1.5'
+							)}
+							style={
+								{
+									color,
+									'--lw-fg': color,
+									'--lw-hover': hoverColor,
+									...(menuOpen
+										? { backgroundColor: hoverColor }
+										: {})
+								} as React.CSSProperties
+							}
 						>
 							<Identity
 								name={userName}
@@ -116,7 +106,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 								avatarColor={avatarColor}
 								showText={!compact}
 							/>
-						</ButtonBase>
+						</button>
 					</Tooltip>
 				)}
 				{showNotifications && (
@@ -129,7 +119,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 						testId='sidebar-notifications'
 					/>
 				)}
-			</Stack>
+			</div>
 			<UserMenu
 				anchorEl={menuAnchor}
 				onClose={() => setMenuAnchor(null)}

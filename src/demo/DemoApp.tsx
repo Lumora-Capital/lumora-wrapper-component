@@ -1,20 +1,16 @@
-import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
-import CloseIcon from '@mui/icons-material/Close';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import InputAdornment from '@mui/material/InputAdornment';
-import TextField from '@mui/material/TextField';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {
+	MegaphoneIcon,
+	HeadsetIcon,
+	PlusIcon,
+	SearchIcon,
+	SettingsIcon,
+	XIcon
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	Kbd,
 	LumoraWrapper,
 	clearAuthTokens,
-	getDesignTokens,
 	isAuthenticated,
 	storeAuthTokens,
 	type LumoraPlatform,
@@ -92,147 +88,106 @@ const demoPlatforms: LumoraPlatform[] = [
 
 /** Stand-in for the host app's own global search component. */
 const DemoSearch = () => (
-	<TextField
-		fullWidth
-		size='small'
-		placeholder='Search deals, companies, people...'
-		slotProps={{
-			input: {
-				startAdornment: (
-					<InputAdornment position='start'>
-						<SearchRoundedIcon fontSize='small' />
-					</InputAdornment>
-				),
-				endAdornment: (
-					<InputAdornment position='end'>
-						<Kbd keys={['⌘', 'K']} />
-					</InputAdornment>
-				)
-			}
-		}}
-		sx={{
-			'& .MuiOutlinedInput-root': {
-				height: 44,
-				bgcolor: 'background.paper',
-				borderRadius: '8px',
-				fontSize: 14
-			}
-		}}
-	/>
+	<div className='flex h-11 w-full items-center gap-2 rounded-lg border border-input bg-surface px-3 text-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'>
+		<SearchIcon className='size-4 shrink-0 text-muted-foreground' />
+		<input
+			data-slot='input'
+			placeholder='Search deals, companies, people...'
+			className='min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground'
+		/>
+		<Kbd keys={['⌘', 'K']} />
+	</div>
 );
+
+const iconButtonClass =
+	'inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground';
 
 /** Host content for the updates drawer; the panel menu's What's New opens it on the other tab. */
 const NotificationPanel = ({
 	onClose,
 	initialTab = 'notifications'
 }: NotificationSidebarContentProps) => (
-	<Box sx={{ p: 2 }}>
-		<Stack
-			direction='row'
-			sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-		>
-			<Typography variant='h6'>
+	<div className='p-4'>
+		<div className='flex items-center justify-between'>
+			<h2 className='text-lg font-semibold'>
 				{initialTab === 'whats-new' ? "What's New" : 'Notifications'}
-			</Typography>
-			<IconButton aria-label='Close notifications' onClick={onClose}>
-				<CloseIcon />
-			</IconButton>
-		</Stack>
-		<Typography sx={{ mt: 1, color: 'text.secondary' }}>
+			</h2>
+			<button
+				type='button'
+				aria-label='Close notifications'
+				onClick={onClose}
+				className={iconButtonClass}
+			>
+				<XIcon className='size-5' />
+			</button>
+		</div>
+		<p className='mt-2 text-sm text-muted-foreground'>
 			Host-provided content rendered through NotificationSidebarContent
 			(initialTab: {initialTab}).
-		</Typography>
-	</Box>
+		</p>
+	</div>
 );
 
 /** Stand-in for the host's chat UI (GlobalChatSidebar). */
 const ChatPanel = ({ onClose }: { onClose: () => void }) => (
 	<>
-		<Stack
-			direction='row'
-			spacing={1}
-			sx={{
-				alignItems: 'center',
-				px: 2,
-				py: 1.5,
-				borderBottom: '1px solid',
-				borderColor: 'divider'
-			}}
-		>
-			<Typography sx={{ fontWeight: 600, flexGrow: 1 }}>Nexa</Typography>
-			<IconButton aria-label='Close Nexa' size='small' onClick={onClose}>
-				<CloseIcon fontSize='small' />
-			</IconButton>
-		</Stack>
-		<Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
-			<Typography variant='body2' sx={{ color: 'text.secondary' }}>
+		<div className='flex items-center gap-2 border-b border-border px-4 py-3'>
+			<span className='grow font-semibold'>Nexa</span>
+			<button
+				type='button'
+				aria-label='Close Nexa'
+				onClick={onClose}
+				className={iconButtonClass}
+			>
+				<XIcon className='size-4' />
+			</button>
+		</div>
+		<div className='grow overflow-y-auto p-4'>
+			<p className='text-sm text-muted-foreground'>
 				Rendered through GlobalChatSidebar while useChatSidebar reports
 				it open. Pinned to the right over the page, so the content keeps
 				its width; notifications open on top. Esc closes it
 				(onChatClose).
-			</Typography>
-		</Box>
-		<Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-			<TextField
-				fullWidth
-				size='small'
+			</p>
+		</div>
+		<div className='border-t border-border p-3'>
+			<input
 				placeholder='Ask Nexa anything...'
+				className='h-8 w-full rounded-md border border-input bg-surface px-2.5 text-sm outline-none focus-visible:border-primary'
 			/>
-		</Box>
+		</div>
 	</>
 );
-
-const pageTitleSx = { fontWeight: 700, fontSize: 32, lineHeight: 1.2 };
 
 /** A page inside the default content padding, as in the mockup. */
 const StandardPage = ({ title }: { title: string }) => (
 	<>
-		<Typography component='h1' sx={pageTitleSx}>
-			{title}
-		</Typography>
-		<Box
-			sx={{
-				mt: 3,
-				minHeight: 'calc(100vh - 180px)',
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-				border: '1px dashed',
-				borderColor: 'divider',
-				borderRadius: '12px',
-				bgcolor: 'background.paper',
-				textAlign: 'center',
-				px: 2
-			}}
-		>
-			<Typography sx={{ fontWeight: 600 }}>
+		<h1 className='text-[32px] leading-[1.2] font-bold'>{title}</h1>
+		<div className='mt-6 flex min-h-[calc(100vh-180px)] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-4 text-center'>
+			<p className='font-semibold'>
 				[{title} — existing page content, unchanged]
-			</Typography>
-			<Typography variant='body2' sx={{ color: 'text.secondary' }}>
+			</p>
+			<p className='text-sm text-muted-foreground'>
 				Only the navigation shell changes in this redesign.
-			</Typography>
-		</Box>
+			</p>
+		</div>
 	</>
 );
 
 const SignedOut = ({ onSignIn }: { onSignIn: () => void }) => (
-	<Stack
-		spacing={2}
-		sx={{
-			minHeight: '100vh',
-			alignItems: 'center',
-			justifyContent: 'center'
-		}}
-	>
-		<Typography variant='h5'>Signed out</Typography>
-		<Typography sx={{ color: 'text.secondary' }}>
+	<div className='flex min-h-screen flex-col items-center justify-center gap-4'>
+		<h1 className='text-xl font-semibold'>Signed out</h1>
+		<p className='text-muted-foreground'>
 			LumoraWrapper found no tokens and called redirectToLogin.
-		</Typography>
-		<Button variant='contained' onClick={onSignIn}>
+		</p>
+		<button
+			type='button'
+			onClick={onSignIn}
+			className='h-8 cursor-pointer rounded-md bg-primary px-3 text-sm font-semibold text-white hover:bg-primary-hover'
+		>
 			Sign in with a demo session
-		</Button>
-	</Stack>
+		</button>
+	</div>
 );
 
 const DemoApp = () => {
@@ -258,7 +213,7 @@ const DemoApp = () => {
 							...link,
 							action: {
 								label: 'New request',
-								icon: <AddRoundedIcon />,
+								icon: <PlusIcon />,
 								onClick: () => setRequestOpen(true)
 							}
 						}
@@ -275,10 +230,14 @@ const DemoApp = () => {
 
 	useEffect(() => saveSettings(settings), [settings]);
 
-	const theme = useMemo(
-		() => createTheme(getDesignTokens(settings.mode)),
-		[settings.mode]
-	);
+	// The host's dark switch, as Nexa sets it: the shell's stylesheet and the
+	// playground's both follow html[data-color-scheme]
+	useEffect(() => {
+		document.documentElement.setAttribute(
+			'data-color-scheme',
+			settings.mode
+		);
+	}, [settings.mode]);
 	const updateSettings = (patch: Partial<DemoSettings>) =>
 		setSettings(prev => ({ ...prev, ...patch }));
 	// Stable identity: the wrapper re-runs its session check when this changes
@@ -290,8 +249,7 @@ const DemoApp = () => {
 	};
 
 	return (
-		<ThemeProvider theme={theme}>
-			<CssBaseline />
+		<>
 			{signedIn ? (
 				<LumoraWrapper
 					key={sessionKey}
@@ -388,13 +346,13 @@ const DemoApp = () => {
 						{
 							key: 'settings',
 							label: 'Settings',
-							icon: <SettingsOutlinedIcon fontSize='small' />,
+							icon: <SettingsIcon className='size-5' />,
 							path: '/settings'
 						},
 						{
 							key: 'whats-new',
 							label: "What's New",
-							icon: <CampaignOutlinedIcon fontSize='small' />,
+							icon: <MegaphoneIcon className='size-5' />,
 							badge: 1,
 							onClick: () => setActivePath('/whats-new')
 						},
@@ -403,7 +361,7 @@ const DemoApp = () => {
 						{
 							key: 'support-request',
 							label: 'Submit a request',
-							icon: <SupportAgentOutlinedIcon fontSize='small' />,
+							icon: <HeadsetIcon className='size-5' />,
 							onClick: () => setRequestOpen(true)
 						}
 					]}
@@ -451,7 +409,7 @@ const DemoApp = () => {
 				onReset={() => setSettings(defaultSettings)}
 				onLogout={handleLogout}
 			/>
-		</ThemeProvider>
+		</>
 	);
 };
 

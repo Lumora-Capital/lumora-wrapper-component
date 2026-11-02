@@ -42,7 +42,7 @@ Error Handling: If the refresh API call fails, the user should be logged out and
 5. Tech Stack & Implementation Details
    Framework: React will be used for building the component's structure and handling its lifecycle.
    Language: TypeScript is required for type safety, ensuring robust props and state management.
-   UI Component Library: MUI Material UI should be used to build the primary layout components (e.g., AppBar for the header, Drawer for the sidebar, and Box for the main content area). This ensures consistency with our design system.
+   UI Component Library: Tailwind CSS v4 and Radix primitives (shadcn/ui-style components, as in Nexa's src/components/ui) build the layout components, styled from Nexa's design tokens and shipped as the package's own stylesheet (`@lumora/lumora-wrapper-component/styles.css`). This ensures consistency with our design system. (MUI Material UI until 2.0.0.)
    Styling (Optional): While Material UI provides default styling, developers have the option to use custom CSS or styled-components for more customized styling solutions or for creating new, themed sub-components within the wrapper.
 
 6. Non-Functional Requirements

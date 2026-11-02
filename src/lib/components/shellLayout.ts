@@ -1,4 +1,3 @@
-import type { Breakpoint, Theme } from '@mui/material';
 import { GLASS_RADIUS_PX } from './liquidGlass';
 
 /** Fixed desktop permanent rail width — same with or without `showSidebarRailTitles` so main layout does not shift */
@@ -36,24 +35,39 @@ export const DEFAULT_CONTENT_PADDING = { xs: 2, md: '18px' };
 export type SidebarVariant = 'rail' | 'collapsible' | 'rail-labeled' | 'panel';
 export type SidebarSubmenu = 'expand' | 'flyout';
 
+/** MUI's breakpoint names, which `contentPadding` objects are keyed by. */
+export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+const BREAKPOINTS: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+/** The theme spacing unit numbers in `contentPadding` multiply (MUI's 8px). */
+export const SPACING_UNIT_PX = 8;
+
 type SpacingValue = number | string;
 export type ContentPadding =
 	| SpacingValue
 	| Partial<Record<Breakpoint, SpacingValue>>;
 
-/** Theme spacing units -> px, per breakpoint; CSS strings pass through. */
+/** Spacing units -> px; CSS strings pass through. */
+const toCss = (value: SpacingValue) =>
+	typeof value === 'number' ? `${value * SPACING_UNIT_PX}px` : value;
+
+/**
+ * The padding as CSS variables for the `lw-content-padding` class
+ * (styles.css), which turns them into `--lumora-content-padding` per
+ * breakpoint, each breakpoint falling back to the one below it.
+ */
 export const resolveContentPadding = (
-	padding: ContentPadding,
-	theme: Theme
-): string | Record<string, string> => {
-	const toCss = (value: SpacingValue) =>
-		typeof value === 'number' ? theme.spacing(value) : value;
+	padding: ContentPadding
+): Record<string, string> => {
 	if (typeof padding === 'object') {
 		return Object.fromEntries(
-			Object.entries(padding).map(([bp, value]) => [bp, toCss(value)])
+			BREAKPOINTS.filter(bp => padding[bp] !== undefined).map(bp => [
+				`--lw-cp-${bp}`,
+				toCss(padding[bp]!)
+			])
 		);
 	}
-	return toCss(padding);
+	return { '--lw-cp-xs': toCss(padding) };
 };
 
 /** Flyout submenus only apply to the sidebars that have a rail. */

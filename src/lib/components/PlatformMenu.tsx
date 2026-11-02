@@ -1,23 +1,19 @@
-import CheckRounded from '@mui/icons-material/CheckRounded';
-import Box from '@mui/material/Box';
-import Fade from '@mui/material/Fade';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import MenuItem from '@mui/material/MenuItem';
-import MenuList from '@mui/material/MenuList';
-import Popover from '@mui/material/Popover';
-import { useTheme } from '@mui/material/styles';
+import { CheckIcon } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '../utils';
 import GlassLayer from './GlassLayer';
 import { MENU_MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
 	GLASS_RADIUS_PX,
-	REDUCED_MOTION,
+	REDUCED_MOTION_NONE,
 	contentIn,
 	glassGrow,
 	useSidebarSurface
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
+import { useIsDark } from './shellTheme';
+import { ShellMenuItem, ShellMenuList, focusMenuItem } from './ShellMenuList';
+import { Popover, PopoverAnchor, PopoverContent } from './ui/popover';
 
 /** One entry of the platform switcher opened from the sidebar logo. */
 export type LumoraPlatform = {
@@ -39,15 +35,9 @@ const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 const MENU_MIN_WIDTH_PX = 240;
 
-/** Card chrome without glass; the Popover paper itself is transparent. */
-const cardSx = {
-	bgcolor: 'background.paper',
-	border: '1px solid',
-	borderColor: 'divider',
-	borderRadius: '12px',
-	boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-	overflow: 'hidden'
-} as const;
+/** Card chrome without glass (Nexa's popover card, the menu's 12px corners). */
+const CARD_CLASS =
+	'lw:overflow-hidden lw:rounded-xl lw:border lw:border-solid lw:border-border lw:bg-popover lw:text-popover-foreground lw:shadow-[0_8px_24px_rgba(0,0,0,0.12)]';
 
 export interface PlatformMenuProps {
 	anchorEl: HTMLElement | null;
@@ -76,164 +66,149 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 	accentColor,
 	glass = false
 }) => {
-	const theme = useTheme();
-	const isDark = theme.palette.mode === 'dark';
+	const isDark = useIsDark();
 	const open = Boolean(anchorEl);
-	const surface = useSidebarSurface(theme.palette.background.paper);
+	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const listRef = React.useRef<HTMLUListElement>(null);
+	const anchorRef = React.useMemo(() => ({ current: anchorEl }), [anchorEl]);
 	const lens = useGlassLens({
 		enabled: glass,
 		isDark,
-		selector: '.MuiMenuItem-root',
+		selector: '[role="menuitem"]',
 		radius: GLASS_RADIUS_PX
 	});
 
 	const rows = (
-		<MenuList
-			autoFocusItem={open}
+		<ShellMenuList
+			ref={listRef}
 			aria-label='Switch platform'
 			data-testid='platform-menu-list'
-			sx={{ position: 'relative', p: 0.5, outline: 'none' }}
+			className='lw:p-1'
 		>
 			{platforms.map(platform => {
 				const current = platform.key === currentKey;
 				const color = platform.accentColor ?? accentColor;
 				return (
-					<MenuItem
+					<ShellMenuItem
 						key={platform.key}
 						selected={current}
 						onClick={() => onSelect(platform)}
 						data-testid={`platform-item-${platform.key}`}
-						sx={{
-							borderRadius: glass
-								? `${GLASS_RADIUS_PX}px`
-								: '8px',
+						className={cn(
 							// Compact: 14px name over a 12px description.
-							py: 0.75,
-							px: 1.5,
-							minHeight: 0,
-							'&:focus, &:focus-visible': { outline: 'none' },
-							// Glass: the tick marks the current platform and the
-							// lens is the only hover fill
-							...(glass && {
-								'&.Mui-selected, &.Mui-selected:hover, &:hover, &.Mui-focusVisible':
-									{ bgcolor: 'transparent' }
-							})
-						}}
+							'lw:px-3 lw:py-1.5',
+							glass
+								? // Glass: the tick marks the current platform and
+									// the lens is the only hover fill
+									'lw:rounded-md'
+								: 'lw:rounded-lg lw:hover:bg-accent lw:focus-visible:bg-accent lw:data-[selected=true]:bg-selected'
+						)}
 					>
-						<ListItemIcon sx={{ minWidth: 24 }}>
-							<Box
+						<span className='lw:flex lw:min-w-6 lw:shrink-0 lw:items-center'>
+							<span
 								aria-hidden
-								sx={{
-									width: 10,
-									height: 10,
-									borderRadius: '50%',
-									bgcolor: color,
+								className='lw:block lw:size-2.5 lw:rounded-full'
+								style={{
+									backgroundColor: color,
 									boxShadow: glass
 										? `0 0 0 3px ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)'}`
 										: 'none'
 								}}
 							/>
-						</ListItemIcon>
-						<ListItemText
-							primary={platform.name}
-							secondary={platform.description}
-							sx={{ my: 0 }}
-							slotProps={{
-								primary: {
-									sx: { fontWeight: 600, fontSize: 14, lineHeight: '20px' }
-								},
-								secondary: { sx: { fontSize: 12, lineHeight: '18px' } }
-							}}
-						/>
+						</span>
+						<span className='lw:min-w-0 lw:flex-auto'>
+							<span className='lw:block lw:text-sm lw:leading-5 lw:font-semibold lw:text-foreground'>
+								{platform.name}
+							</span>
+							{platform.description ? (
+								<span className='lw:block lw:text-xs lw:leading-[18px] lw:text-muted-foreground'>
+									{platform.description}
+								</span>
+							) : null}
+						</span>
 						{current ? (
-							<CheckRounded
-								fontSize='small'
+							<CheckIcon
 								data-testid='platform-current'
-								sx={{ ml: 1.5, fontSize: 18, color }}
+								className='lw:ml-3 lw:size-[18px] lw:shrink-0'
+								style={{ color }}
 							/>
 						) : null}
-					</MenuItem>
+					</ShellMenuItem>
 				);
 			})}
-		</MenuList>
+		</ShellMenuList>
 	);
 
 	return (
 		<Popover
 			open={open}
-			anchorEl={anchorEl}
-			onClose={onClose}
-			// The menu sits inside the brand button in React's tree; its clicks
-			// (and the backdrop's) would bubble up and reopen it
-			onClick={event => event.stopPropagation()}
-			anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-			transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-			{...(glass
-				? {
-						slots: { transition: Fade },
-						transitionDuration: { enter: 0, exit: 160 }
-					}
-				: {})}
-			slotProps={{
-				paper: {
-					sx: {
-						bgcolor: 'transparent',
-						backgroundImage: 'none',
-						boxShadow: 'none',
-						border: 'none',
-						borderRadius: 0,
-						overflow: 'visible',
-						mt: 1,
-						maxWidth: 'calc(100vw - 32px)'
-					}
+			onOpenChange={next => {
+				if (!next) {
+					onClose();
 				}
 			}}
+			modal
 		>
-			<Box
-				data-testid='platform-menu'
-				data-glass={glass ? 'true' : undefined}
-				sx={
-					glass
-						? {
-								position: 'relative',
-								minWidth: MENU_MIN_WIDTH_PX,
-								borderRadius: `${GLASS_RADIUS_PX}px`
-							}
-						: { ...cardSx, minWidth: MENU_MIN_WIDTH_PX }
-				}
+			<PopoverAnchor
+				virtualRef={anchorRef as React.RefObject<HTMLElement>}
+			/>
+			<PopoverContent
+				unstyled
+				side='bottom'
+				align='start'
+				sideOffset={8}
+				collisionPadding={16}
+				// The menu sits inside the brand button in React's tree; its
+				// clicks would bubble up and reopen it
+				onClick={event => event.stopPropagation()}
+				onOpenAutoFocus={event => {
+					event.preventDefault();
+					focusMenuItem(listRef.current);
+				}}
+				onCloseAutoFocus={event => {
+					event.preventDefault();
+					anchorEl?.focus?.();
+				}}
+				className='lw:max-w-[calc(100vw-32px)]'
 			>
-				{glass ? (
-					<>
-						<GlassLayer
-							isDark={isDark}
-							solid={surface}
-							sx={{
-								position: 'absolute',
-								inset: 0,
-								borderRadius: 'inherit',
-								transformOrigin: 'top left',
-								animation: `${glassGrow} ${morph.duration}ms ${morph.easing} both`,
-								[REDUCED_MOTION]: { animation: 'none' }
-							}}
-						/>
-						<Box
-							{...lens.containerProps}
-							sx={{
-								position: 'relative',
-								borderRadius: 'inherit',
-								overflow: 'hidden',
-								animation: `${contentIn} ${settle.duration}ms ${settle.easing} 70ms both`,
-								[REDUCED_MOTION]: { animation: 'none' }
-							}}
-						>
-							{lens.lens}
-							{rows}
-						</Box>
-					</>
-				) : (
-					rows
-				)}
-			</Box>
+				<div
+					data-testid='platform-menu'
+					data-glass={glass ? 'true' : undefined}
+					className={glass ? 'lw:relative lw:rounded-md' : CARD_CLASS}
+					style={{ minWidth: MENU_MIN_WIDTH_PX }}
+				>
+					{glass ? (
+						<>
+							<GlassLayer
+								isDark={isDark}
+								solid={surface}
+								className={cn(
+									'lw:absolute lw:inset-0 lw:origin-top-left lw:rounded-[inherit]',
+									REDUCED_MOTION_NONE
+								)}
+								style={{
+									animation: `${glassGrow} ${morph.duration}ms ${morph.easing} both`
+								}}
+							/>
+							<div
+								{...lens.containerProps}
+								className={cn(
+									'lw:relative lw:overflow-hidden lw:rounded-[inherit]',
+									REDUCED_MOTION_NONE
+								)}
+								style={{
+									animation: `${contentIn} ${settle.duration}ms ${settle.easing} 70ms both`
+								}}
+							>
+								{lens.lens}
+								{rows}
+							</div>
+						</>
+					) : (
+						rows
+					)}
+				</div>
+			</PopoverContent>
 		</Popover>
 	);
 };
@@ -255,34 +230,16 @@ export const PlatformSwitcherLogo: React.FC<
 		anchorEl && ref.current && anchorEl.contains(ref.current)
 	);
 	return (
-		<Box
+		<span
 			ref={ref}
-			component='span'
 			data-testid='platform-switcher-logo'
-			sx={{
-				position: 'relative',
-				display: 'inline-flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				p: '6px',
-				'&::after': {
-					content: '""',
-					position: 'absolute',
-					right: 1,
-					bottom: 1,
-					borderStyle: 'solid',
-					borderWidth: '0 0 5px 5px',
-					borderColor:
-						'transparent transparent currentColor transparent',
-					opacity: 0.55
-				}
-			}}
+			className="lw:relative lw:inline-flex lw:items-center lw:justify-center lw:p-1.5 lw:after:absolute lw:after:right-px lw:after:bottom-px lw:after:border-solid lw:after:[border-width:0_0_5px_5px] lw:after:[border-color:transparent_transparent_currentColor_transparent] lw:after:opacity-55 lw:after:content-['']"
 		>
 			{children}
 			<PlatformMenu
 				{...menuProps}
 				anchorEl={ownsAnchor ? anchorEl : null}
 			/>
-		</Box>
+		</span>
 	);
 };

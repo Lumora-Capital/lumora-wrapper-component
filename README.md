@@ -38,7 +38,7 @@ The package installs straight from GitHub (the built `dist/` folder is committed
 ```bash
 npm install https://github.com/Volenday/lumora-wrapper-component.git
 # a branch, commit or tag
-npm install https://github.com/Volenday/lumora-wrapper-component.git#v1.1.0
+npm install https://github.com/Volenday/lumora-wrapper-component.git#v2.0.0
 ```
 
 For the private repo, add a GitHub token with the `repo` scope to `~/.npmrc`:
@@ -47,7 +47,31 @@ For the private repo, add a GitHub token with the `repo` scope to `~/.npmrc`:
 npm config set //npm.pkg.github.com/:_authToken YOUR_TOKEN_HERE
 ```
 
-Peer dependencies: `react`, `react-dom`, `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`, `axios`.
+Peer dependencies: `react`, `react-dom`, `axios`. The shell is built with Tailwind CSS v4 and Radix (shadcn/ui-style components) and brings `radix-ui`, `lucide-react`, `class-variance-authority`, `clsx` and `tailwind-merge` as its own dependencies. It no longer needs MUI or Emotion.
+
+### The stylesheet
+
+The shell ships its own compiled stylesheet. Import it once, at the root of the app (before your own CSS):
+
+```js
+// app/layout.jsx (Next.js) or main.jsx
+import '@lumora/lumora-wrapper-component/styles.css';
+```
+
+- It works with or without Tailwind in the host. Every class is prefixed (`lw:flex`) and so is every theme variable (`--lw-spacing`), so it never redefines the host's own Tailwind classes, breakpoints or fonts.
+- It has **no preflight / global reset**: your app owns its resets. The few the shell's own markup needs are scoped to the shell's elements and stop at your page (`<main>`), the chat panel, the updates drawer and the search slot.
+- Colours come from the same CSS variables as Nexa's `globals.css` / `ui-theme.css` (`--bg-surface`, `--bg-page`, `--text-primary`, `--text-muted`, `--border-color`, `--hover-wash`, `--ui-primary`, `--ui-ring`, `--ui-tooltip-bg`, `--shadow-float`…). Define them and the shell follows them; leave them out and it falls back to Nexa's light and dark values.
+- Dark mode follows `html[data-color-scheme="dark"]` (Nexa's switch) or the `theme` prop. Set both from the same state.
+- The utilities are not in a cascade layer (as MUI's styles were not), so a host's global CSS cannot cancel them. To override the shell from outside, use the `style` / `*Styles` props.
+
+### Upgrading from 1.x
+
+2.0.0 drops MUI and Emotion (breaking):
+
+1. Import `@lumora/lumora-wrapper-component/styles.css` once (above).
+2. LumoraWrapper no longer wraps your page in its own MUI `ThemeProvider` (spacing 8, Inter, Lumora palette) or renders `CssBaseline`. If your pages relied on that theme, provide it yourself (`createTheme(getDesignTokens(mode))`) or, better, style them without MUI.
+3. `style`, `sidebarStyles`, `contentStyles` and FullBleedSection's `sx` are plain CSS properties now. A flat object (`{ backgroundColor: 'green' }`) keeps working; MUI-only parts (theme callbacks, nested selectors such as `'& .MuiDrawer-paper'`, spacing shorthands like `p: 2`, breakpoint objects) are ignored. Use the new `className` / `sidebarClassName` / `contentClassName` / FullBleedSection `className` for the rest.
+4. The DOM no longer carries `Mui*` classes; tests should query by role, label or the `data-*` attributes (`data-slot="rail-drawer"`, `data-slot="sheet-content"` with `data-side`, `data-slot="badge"`…).
 
 The default logo is loaded from `/lumora-logo.svg`: copy `dist/lumora-logo.svg` into your app's `public/` folder, or pass your own `logo`.
 
@@ -187,13 +211,17 @@ export default function AppShell({ children }) {
 
 `icon` is required on top-level links. A link with `subitems` is a group (it expands; `path` optional). A sub-item with its own `subitems` is a section, giving a third level.
 
+Icons are any React node; the shell sizes `svg` icons itself (24px). The examples use `lucide-react`.
+
 ```jsx
 // app/(app)/navigation.jsx
-import StarBorderRounded from '@mui/icons-material/StarBorderRounded';
-import InsertChartOutlined from '@mui/icons-material/InsertChartOutlined';
-import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined';
-import PeopleOutline from '@mui/icons-material/PeopleOutline';
-import HeadsetMicOutlined from '@mui/icons-material/HeadsetMicOutlined';
+import {
+	StarIcon as StarBorderRounded,
+	ChartColumnIcon as InsertChartOutlined,
+	LandmarkIcon as AccountBalanceOutlined,
+	UsersIcon as PeopleOutline,
+	HeadsetIcon as HeadsetMicOutlined
+} from 'lucide-react';
 
 export const mainLinks = [
 	{ text: 'My Pins', path: '/pins', icon: <StarBorderRounded /> },
@@ -243,7 +271,7 @@ The button shows in the expanded sidebar and in the mobile Menu sheet (which clo
 A link can also carry a **`subtitle`**: a second, lighter line under `text` in the `collapsible` / `panel` sidebar and the mobile Menu sheet, e.g. the role beneath a person's name. The collapsed rail puts it in the icon's tooltip (`Liam · Legal & Compliance`). A two-line row gives its icon 48px, room for a 36px avatar.
 
 ```tsx
-{ text: 'Liam', subtitle: 'Legal & Compliance', path: '#switch-agent', icon: <Avatar src={liam} sx={{ width: 36, height: 36 }} /> }
+{ text: 'Liam', subtitle: 'Legal & Compliance', path: '#switch-agent', icon: <img src={liam} alt='' className='size-9 rounded-full' /> }
 ```
 
 ### 3. Global search
@@ -327,7 +355,7 @@ The user sits at the bottom of the sidebar with the notifications bell beside it
 
 ```jsx
 // app/(app)/shellConfig.jsx
-import CampaignOutlined from '@mui/icons-material/CampaignOutlined';
+import { MegaphoneIcon as CampaignOutlined } from 'lucide-react';
 
 export const userMenuItems = router => [
 	{
@@ -471,13 +499,13 @@ export default function DealPage() {
 | `sticky`                | `false`              | Pin to the top while the page scrolls (below the mobile top bar on phones).                                |
 | `flushTop`              | `true`               | Start flush with the top of the content area. `false` for a band further down.                             |
 | `inset`                 | `true`               | Keep the page padding inside, so its content lines up with the body. `false` lets content touch the edges. |
-| `background`            | `'background.paper'` | Band color.                                                                                                |
+| `background`            | `'background.paper'` | Band color: a CSS colour, or `'background.paper'` / `'background.default'` (the `--bg-surface` / `--bg-page` tokens). |
 | `divider`               | `true`               | Hairline under the band.                                                                                   |
-| `sx`                    | —                    | Extra styles.                                                                                              |
+| `className`, `style`    | —                    | Extra classes and inline styles. (`sx` is still accepted as a flat object of CSS properties; deprecated.)  |
 
 It follows `contentPadding` automatically, including per-breakpoint values, through the `--lumora-content-padding` variable the wrapper sets.
 
-**Changing the padding** with `contentPadding`: theme spacing units, a CSS length, or per breakpoint.
+**Changing the padding** with `contentPadding`: spacing units (8px each), a CSS length, or per breakpoint (`xs`/`sm`/`md`/`lg`/`xl` at 0/600/900/1200/1536px).
 
 ```jsx
 contentPadding={5}                   // 40px everywhere
@@ -554,7 +582,7 @@ export const centraColors = {
 };
 ```
 
-In dark mode, leave them out and the wrapper uses its dark defaults. Fonts come from your app's MUI theme; to match the wrapper's own theme in an outer `ThemeProvider`, use `createTheme(getDesignTokens(mode))`.
+In dark mode, leave them out and the wrapper uses its dark defaults. The shell inherits your app's font. It no longer wraps your page in a theme provider of its own: the page is styled by your app alone. `getDesignTokens(mode)` still returns the old MUI tokens as plain data, for an app that still builds an MUI theme (`createTheme(getDesignTokens(mode))`).
 
 ## Props checklist
 
@@ -642,7 +670,7 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 | `showSettings`               | `boolean`                                       | `true`    | Settings entry.                                                                                                                             |
 | `onSettingsClick`            | `() => void`                                    | —         | Usually opens your settings / profile page.                                                                                                 |
 | `showThemeToggler`           | `boolean`                                       | `false`   | Light / Dark switch in the menu.                                                                                                            |
-| `theme`                      | `'light' \| 'dark'`                             | `'light'` | Current mode (also drives the wrapper's own MUI theme).                                                                                     |
+| `theme`                      | `'light' \| 'dark'`                             | `'light'` | Current mode of the shell (keep `html[data-color-scheme]` in step with it).                                                                 |
 | `onThemeToggle`              | `() => void`                                    | —         | Called when the other mode is picked.                                                                                                       |
 
 ### Account menu (`panel` variant)
@@ -671,7 +699,8 @@ Used only with `sidebarVariant='panel'` ([details](#the-panel-variant-account-me
 | `sidebarBackgroundColor`                  | `string`         | `'#ffffff'` / dark paper | Sidebar surface.                                                                       |
 | `sidebarHeaderBackgroundColor`            | `string`         | sidebar surface          | Sidebar header and mobile top bar; a custom color switches the brand to auto-contrast. |
 | `contentBackgroundColor`                  | `string`         | `'#f2f9fc'` / dark       | Content area background.                                                               |
-| `style`, `sidebarStyles`, `contentStyles` | `SxProps<Theme>` | —                        | `sx` overrides for the root, the sidebar and the content area.                         |
+| `style`, `sidebarStyles`, `contentStyles` | `CSSProperties`  | —                        | Inline styles for the root, the sidebar and the content area (were `sx`; a flat `sx` object still works). |
+| `className`, `sidebarClassName`, `contentClassName` | `string` | —              | Classes for the root, the sidebar and the content area.                                |
 
 ### Types
 
@@ -775,8 +804,12 @@ npm install
 npm run dev          # playground at http://localhost:5173
 npm test             # Jest + Testing Library
 npm run typecheck
-npm run build        # library -> dist/
+npm run build        # library -> dist/ (JS, types, and dist/lumora-wrapper.css via build:css)
 ```
+
+### Styling the shell
+
+Components are styled with Tailwind v4 classes carrying the `lw:` prefix (`lw:flex lw:hover:bg-accent`), joined with `cn()` from `src/lib/utils.ts`. `src/lib/styles.css` is the stylesheet's source: the token names match Nexa's `ui-theme.css` (`bg-surface`, `text-muted-foreground`, `border-border`, `bg-primary`…), breakpoints are MUI's (sm 600, md 900, lg 1200, xl 1536), and the primitives in `src/lib/components/ui/` (button, tooltip, popover, dropdown-menu, sheet, badge, skeleton, separator) mirror Nexa's `src/components/ui/`. Colours computed at runtime from props (accents, tints, measured positions) go in inline styles or in CSS variables read by an arbitrary class (`lw:hover:bg-(--lw-row-hover-bg)`). Only classes written out in full are compiled, so never build a class name from a template.
 
 ### Playground
 

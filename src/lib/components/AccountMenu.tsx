@@ -1,50 +1,37 @@
-import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
-import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
-import LogoutRounded from '@mui/icons-material/LogoutRounded';
-import SettingsBrightnessOutlined from '@mui/icons-material/SettingsBrightnessOutlined';
-import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
-import Divider from '@mui/material/Divider';
-import Fade from '@mui/material/Fade';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import MenuItem from '@mui/material/MenuItem';
-import MenuList from '@mui/material/MenuList';
-import Popover from '@mui/material/Popover';
-import type { PopoverActions } from '@mui/material/Popover';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
+import { LogOutIcon, MoonIcon, SunIcon, SunMoonIcon } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '../utils';
 import { CountPill } from './UserMenu';
 import { MENU_MORPH_SPRING, SETTLE_SPRING, springTiming } from './glassMotion';
 import {
-	REDUCED_MOTION,
+	GLASS_RADIUS_PX,
+	REDUCED_MOTION_NONE,
 	contentIn,
 	glassGrow,
-	glassBubbleSx,
+	glassBubbleStyle,
 	useGlassAccentRgb,
-	GLASS_RADIUS_PX,
 	useSidebarSurface
 } from './liquidGlass';
 import { useGlassLens } from './RailLens';
 import GlassLayer from './GlassLayer';
+import { useIsDark } from './shellTheme';
+import {
+	ShellMenuItem,
+	ShellMenuList,
+	ShellMenuSeparator,
+	focusMenuItem
+} from './ShellMenuList';
+import { withAlpha } from './sidebarUtils';
+import { Popover, PopoverAnchor, PopoverContent } from './ui/popover';
+import { Separator } from './ui/separator';
 import type { UserMenuItem } from './UserMenu';
 
-const FOCUS_OUTLINE_FIX = {
-	'&:focus, &:focus-visible': { outline: 'none' }
-} as const;
+/** Host apps often outline every `button:focus`; the focus ring is drawn instead. */
+const FOCUS_OUTLINE_FIX = 'lw:outline-none lw:focus:outline-none';
 
-/** Card chrome; the Popover paper itself is transparent. */
-const cardSx = {
-	bgcolor: 'background.paper',
-	border: '1px solid',
-	borderColor: 'divider',
-	borderRadius: '12px',
-	boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-	overflow: 'hidden',
-	display: 'flex',
-	flexDirection: 'column'
-} as const;
+/** Card chrome without glass (Nexa's popover card, the menu's 12px corners). */
+const CARD_CLASS =
+	'lw:flex lw:flex-col lw:overflow-hidden lw:rounded-xl lw:border lw:border-solid lw:border-border lw:bg-popover lw:text-popover-foreground lw:shadow-[0_8px_24px_rgba(0,0,0,0.12)]';
 
 const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
@@ -54,7 +41,7 @@ const settle = springTiming(SETTLE_SPRING);
  * and the lens would paint over its unpositioned text.
  */
 const GLASS_MENU_ITEMS =
-	'.MuiMenuItem-root, button[data-testid="account-menu-header"], [data-testid="menu-item-theme"]';
+	'[role="menuitem"], button[data-testid="account-menu-header"], [data-testid="menu-item-theme"]';
 
 /**
  * Light/Dark toggle: a pill with a sun and a moon, the current mode raised in
@@ -71,7 +58,7 @@ const ThemeSegments: React.FC<{
 	/** The selected mode as a glass bubble. */
 	glass?: boolean;
 }> = ({ mode, onToggle, accentColor, tint, glass = false }) => {
-	const isDark = useTheme().palette.mode === 'dark';
+	const isDark = useIsDark();
 	const accentRgb = useGlassAccentRgb();
 	const lightRef = React.useRef<HTMLButtonElement>(null);
 	const darkRef = React.useRef<HTMLButtonElement>(null);
@@ -112,12 +99,13 @@ const ThemeSegments: React.FC<{
 	const segment = (
 		value: 'light' | 'dark',
 		label: string,
-		Icon: typeof LightModeOutlined,
+		Icon: typeof SunIcon,
 		ref: React.RefObject<HTMLButtonElement | null>
 	) => {
 		const selected = mode === value;
 		return (
-			<ButtonBase
+			<button
+				type='button'
 				ref={ref}
 				role='radio'
 				aria-checked={selected}
@@ -125,66 +113,56 @@ const ThemeSegments: React.FC<{
 				tabIndex={selected ? 0 : -1}
 				onClick={() => select(value)}
 				data-testid={`theme-segment-${value}`}
-				sx={{
-					width: 32,
-					height: 24,
-					borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '999px',
-					// White on dark: the accent is too dim against a dark surface
-					color: selected
-						? isDark
-							? '#ffffff'
-							: accentColor
-						: 'text.secondary',
-					bgcolor: selected ? tint : 'transparent',
-					...(glass && selected
-						? glassBubbleSx(isDark, accentRgb)
-						: {}),
+				className={cn(
+					'lw:inline-flex lw:h-6 lw:w-8 lw:cursor-pointer lw:items-center lw:justify-center lw:transition-[background-color,color,box-shadow,transform] lw:duration-150 lw:ease-out lw:focus-visible:shadow-[0_0_0_2px_var(--lw-seg-ring)]',
+					glass ? 'lw:rounded-md' : 'lw:rounded-full',
+					!selected &&
+						'lw:text-muted-foreground lw:hover:text-foreground',
 					// On glass each mode answers the pointer itself, so the
 					// row's lens is not the only thing that moves
-					...(glass && {
-						transition:
-							'background 150ms ease, box-shadow 150ms ease, color 150ms ease, transform 150ms ease',
-						'&:hover': selected
-							? { transform: 'scale(1.06)' }
-							: {
-									color: 'text.primary',
-									bgcolor: isDark
-										? 'rgba(255, 255, 255, 0.12)'
-										: 'rgba(255, 255, 255, 0.75)',
-									transform: 'scale(1.06)'
-								},
-						'&:active': { transform: 'scale(0.94)' }
-					}),
-					transition: 'background-color 150ms ease, color 150ms ease',
-					'&.Mui-focusVisible': {
-						boxShadow: `0 0 0 2px ${alpha(accentColor, 0.6)}`
-					},
-					...FOCUS_OUTLINE_FIX
-				}}
+					glass && 'lw:hover:scale-[1.06] lw:active:scale-[0.94]',
+					glass &&
+						!selected &&
+						(isDark
+							? 'lw:hover:bg-white/12'
+							: 'lw:hover:bg-white/75'),
+					FOCUS_OUTLINE_FIX
+				)}
+				style={
+					{
+						'--lw-seg-ring': withAlpha(accentColor, 0.6),
+						// White on dark: the accent is too dim against a dark surface
+						...(selected
+							? {
+									color: isDark ? '#ffffff' : accentColor,
+									backgroundColor: tint,
+									...(glass
+										? glassBubbleStyle(isDark, accentRgb)
+										: {})
+								}
+							: {})
+					} as React.CSSProperties
+				}
 			>
-				<Icon sx={{ fontSize: 16 }} />
-			</ButtonBase>
+				<Icon className='lw:size-4' />
+			</button>
 		);
 	};
 
 	return (
-		<Stack
-			direction='row'
+		<div
 			role='radiogroup'
 			aria-label='Theme'
 			data-testid='theme-segments'
 			onKeyDown={handleKeyDown}
-			sx={{
-				p: '3px',
-				gap: '2px',
-				borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '999px',
-				bgcolor: 'action.selected',
-				flexShrink: 0
-			}}
+			className={cn(
+				'lw:flex lw:shrink-0 lw:flex-row lw:gap-0.5 lw:bg-selected lw:p-[3px]',
+				glass ? 'lw:rounded-md' : 'lw:rounded-full'
+			)}
 		>
-			{segment('light', 'Light', LightModeOutlined, lightRef)}
-			{segment('dark', 'Dark', DarkModeOutlined, darkRef)}
-		</Stack>
+			{segment('light', 'Light', SunIcon, lightRef)}
+			{segment('dark', 'Dark', MoonIcon, darkRef)}
+		</div>
 	);
 };
 
@@ -251,36 +229,16 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	onLogout,
 	glass = false
 }) => {
-	const theme = useTheme();
-	const isDark = theme.palette.mode === 'dark';
-	const popoverActions = React.useRef<PopoverActions>(null);
-	const surface = useSidebarSurface(theme.palette.background.paper);
+	const isDark = useIsDark();
+	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
+	const listRef = React.useRef<HTMLUListElement>(null);
+	const anchorRef = React.useMemo(() => ({ current: anchorEl }), [anchorEl]);
 	const menuLens = useGlassLens({
 		enabled: glass,
 		isDark,
 		selector: GLASS_MENU_ITEMS,
 		radius: GLASS_RADIUS_PX
 	});
-	// State, not a ref: the Popover mounts its paper through a Portal one
-	// render after `open` flips, so an effect keyed on `open` would run before
-	// the paper exists. A state setter as the slot ref re-runs the observer
-	// effect exactly when the paper mounts/unmounts.
-	const [paperEl, setPaperEl] = React.useState<HTMLDivElement | null>(null);
-
-	// Popover positions the paper by its `top` once, so content that grows or
-	// shrinks would extend down over the footer or leave a gap above it.
-	// Re-anchor on every size change instead — ResizeObserver fires per
-	// animation frame, so the bottom edge stays pinned to the footer throughout.
-	React.useEffect(() => {
-		if (!paperEl || typeof ResizeObserver === 'undefined') {
-			return undefined;
-		}
-		const observer = new ResizeObserver(() => {
-			popoverActions.current?.updatePosition();
-		});
-		observer.observe(paperEl);
-		return () => observer.disconnect();
-	}, [paperEl]);
 
 	const closeMenuThen = (callback?: () => void) => {
 		onClose();
@@ -298,315 +256,290 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	};
 
 	// Compact rows: 32px, 14px text, a 32px icon column.
-	const itemSx = {
-		borderRadius: glass ? `${GLASS_RADIUS_PX}px` : '8px',
-		py: 0.75,
-		px: 1.5,
-		minHeight: 32,
-		gap: 0.5,
-		fontSize: 14,
-		lineHeight: '20px',
-		'& .MuiListItemIcon-root': { minWidth: 32 },
-		'& .MuiTypography-root': { fontSize: 14, lineHeight: '20px' }
-	} as const;
+	const itemClass = cn(
+		'lw:min-h-8 lw:gap-1 lw:px-3 lw:py-1.5 lw:text-sm lw:leading-5',
+		glass
+			? 'lw:rounded-md'
+			: 'lw:rounded-lg lw:hover:bg-(--lw-menu-tint) lw:focus-visible:bg-(--lw-menu-tint)'
+	);
+	const iconClass =
+		'lw:flex lw:min-w-8 lw:shrink-0 lw:items-center lw:[&_svg]:size-5';
 
 	// "View profile · My AI usage": with onAiUsageClick the header has two
 	// destinations, so each is its own link and the header itself is static.
-	const linkSx = {
-		fontSize: 12,
-		lineHeight: '18px',
-		letterSpacing: '0.02em',
-		fontWeight: 600,
-		// White on dark: the accent is too dim against a dark surface
-		color: isDark ? '#ffffff' : accentColor,
-		borderRadius: '4px',
-		'&:hover': {
-			textDecoration: 'underline',
-			textUnderlineOffset: '2px'
-		},
-		'&.Mui-focusVisible': {
-			boxShadow: `0 0 0 2px ${alpha(accentColor, 0.6)}`
-		},
-		...FOCUS_OUTLINE_FIX
-	} as const;
+	const linkClass = cn(
+		'lw:cursor-pointer lw:rounded-sm lw:text-xs lw:leading-[18px] lw:font-semibold lw:tracking-[0.02em] lw:hover:underline lw:hover:underline-offset-2 lw:focus-visible:shadow-[0_0_0_2px_var(--lw-link-ring)]',
+		FOCUS_OUTLINE_FIX
+	);
+	// White on dark: the accent is too dim against a dark surface
+	const linkColor = isDark ? '#ffffff' : accentColor;
 	const headerLinks = onAiUsageClick ? (
-		<Stack
-			direction='row'
+		<div
 			data-testid='account-menu-links'
-			sx={{ alignItems: 'center', gap: 0.75, mt: 0.25 }}
+			className='lw:mt-0.5 lw:flex lw:flex-row lw:items-center lw:gap-1.5'
 		>
 			{onProfileClick ? (
 				<>
-					<ButtonBase
+					<button
+						type='button'
 						onClick={() => closeMenuThen(onProfileClick)}
 						data-testid='account-menu-view-profile'
-						sx={linkSx}
+						className={linkClass}
+						style={{ color: linkColor }}
 					>
 						View profile
-					</ButtonBase>
-					<Box
-						component='span'
-						aria-hidden
-						sx={{ color: 'text.disabled', fontSize: 12 }}
-					>
+					</button>
+					<span aria-hidden className='lw:text-xs lw:text-faint'>
 						·
-					</Box>
+					</span>
 				</>
 			) : null}
-			<ButtonBase
+			<button
+				type='button'
 				onClick={() => closeMenuThen(onAiUsageClick)}
 				data-testid='account-menu-ai-usage'
-				sx={linkSx}
+				className={linkClass}
+				style={{ color: linkColor }}
 			>
 				My AI usage
-			</ButtonBase>
-		</Stack>
+			</button>
+		</div>
 	) : null;
 
 	// Name / email / role. With onProfileClick the whole row opens the
 	// profile and the role line swaps to "View profile" on hover / focus.
-	// It sits outside the MenuList, so it's reached with Tab.
+	// It sits outside the menu list, so it's reached with Tab.
 	const userHeader = (
-		<Stack direction='row' sx={{ alignItems: 'center', gap: 1.25, p: 1.5 }}>
+		<div className='lw:flex lw:flex-row lw:items-center lw:gap-2.5 lw:p-3'>
 			{renderAvatar(36)}
-			<Box sx={{ minWidth: 0, flex: 1 }}>
+			<div className='lw:min-w-0 lw:flex-1'>
 				{/* name / email / role */}
-				<Typography noWrap sx={{ fontWeight: 600, fontSize: 14, lineHeight: '20px' }}>
+				<p className='lw:truncate lw:text-sm lw:leading-5 lw:font-semibold lw:text-foreground'>
 					{userName}
-				</Typography>
+				</p>
 				{userEmail ? (
-					<Typography
-						noWrap
-						variant='body2'
+					<p
 						data-testid='account-menu-email'
-						sx={{ color: 'text.secondary', fontSize: 12, lineHeight: '18px' }}
+						className='lw:truncate lw:text-xs lw:leading-[18px] lw:text-muted-foreground'
 					>
 						{userEmail}
-					</Typography>
+					</p>
 				) : null}
 				{roleLabel ? (
-					<Typography
-						noWrap
-						variant='caption'
+					<span
 						data-role
 						data-testid='account-menu-role'
-						sx={{
-							display: 'block',
-							letterSpacing: '0.02em',
-							color: 'text.secondary'
-						}}
+						className='lw:block lw:truncate lw:text-xs lw:leading-[1.66] lw:tracking-[0.02em] lw:text-muted-foreground'
 					>
 						{roleLabel}
-					</Typography>
+					</span>
 				) : null}
 				{headerLinks}
 				{onProfileClick && !onAiUsageClick ? (
-					<Typography
-						noWrap
-						variant='caption'
+					<span
 						data-hint
 						data-testid='account-menu-view-profile'
-						sx={{
-							letterSpacing: '0.02em',
-							fontWeight: 600,
-							// White on dark: the accent is too dim against a dark surface
-							color: isDark ? '#ffffff' : accentColor,
-							textDecoration: 'underline',
-							textUnderlineOffset: '2px'
-						}}
+						className='lw:truncate lw:text-xs lw:leading-[1.66] lw:font-semibold lw:tracking-[0.02em] lw:underline lw:underline-offset-2'
+						style={{ color: linkColor }}
 					>
 						View profile
-					</Typography>
+					</span>
 				) : null}
-			</Box>
-		</Stack>
+			</div>
+		</div>
 	);
 
 	return (
 		<Popover
-			open={open}
-			anchorEl={anchorEl}
-			onClose={onClose}
-			action={popoverActions}
-			anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-			transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-			// Glass grows its own card; the paper only fades on the way out
-			{...(glass
-				? {
-						slots: { transition: Fade },
-						transitionDuration: { enter: 0, exit: 160 }
-					}
-				: {})}
-			slotProps={{
-				paper: {
-					ref: setPaperEl,
-					sx: {
-						// Transparent paper: the card draws its own chrome.
-						bgcolor: 'transparent',
-						backgroundImage: 'none',
-						boxShadow: 'none',
-						border: 'none',
-						borderRadius: 0,
-						overflow: 'visible',
-						mt: -1,
-						maxWidth: 'calc(100vw - 32px)'
-					}
+			open={open && Boolean(anchorEl)}
+			onOpenChange={next => {
+				if (!next) {
+					onClose();
 				}
 			}}
+			modal
 		>
-			{/* Menu card */}
-			<Box
-				data-testid='account-menu'
-				data-glass={glass ? 'true' : undefined}
-				sx={
-					glass
-						? {
-								position: 'relative',
-								width,
-								minWidth: width,
-								borderRadius: `${GLASS_RADIUS_PX}px`,
-								// The rows give up their own hover fill: one drop of glass
-								// (the lens) glides behind whichever is hovered
-								[`& :is(${GLASS_MENU_ITEMS}):is(:hover, .Mui-focusVisible)`]:
-									{ bgcolor: 'transparent' }
-							}
-						: { ...cardSx, width, minWidth: width }
-				}
+			<PopoverAnchor
+				virtualRef={anchorRef as React.RefObject<HTMLElement>}
+			/>
+			<PopoverContent
+				unstyled
+				side='top'
+				align='start'
+				sideOffset={8}
+				collisionPadding={16}
+				onOpenAutoFocus={event => {
+					event.preventDefault();
+					focusMenuItem(listRef.current);
+				}}
+				onCloseAutoFocus={event => {
+					event.preventDefault();
+					anchorEl?.focus?.();
+				}}
+				className='lw:max-w-[calc(100vw-32px)]'
 			>
-				{glass ? (
-					<GlassLayer
-						isDark={isDark}
-						solid={surface}
-						sx={{
-							position: 'absolute',
-							inset: 0,
-							borderRadius: 'inherit',
-							transformOrigin: 'bottom left',
-							animation: `${glassGrow} ${morph.duration}ms ${morph.easing} both`,
-							[REDUCED_MOTION]: { animation: 'none' }
-						}}
-					/>
-				) : null}
-				<Box
-					{...menuLens.containerProps}
-					sx={
+				{/* Menu card */}
+				<div
+					data-testid='account-menu'
+					data-glass={glass ? 'true' : undefined}
+					className={cn(
 						glass
-							? {
-									position: 'relative',
-									display: 'flex',
-									flexDirection: 'column',
-									borderRadius: 'inherit',
-									overflow: 'hidden',
-									animation: `${contentIn} ${settle.duration}ms ${settle.easing} 70ms both`,
-									[REDUCED_MOTION]: { animation: 'none' }
-								}
-							: { display: 'contents' }
+							? // The rows give up their own hover fill: one drop of
+								// glass (the lens) glides behind whichever is hovered
+								'lw:relative lw:rounded-md'
+							: CARD_CLASS
+					)}
+					style={
+						{
+							width,
+							minWidth: width,
+							'--lw-menu-tint': tint,
+							'--lw-link-ring': withAlpha(accentColor, 0.6)
+						} as React.CSSProperties
 					}
 				>
-					{menuLens.lens}
-					{onProfileClick && !onAiUsageClick ? (
-						<ButtonBase
-							onClick={() => closeMenuThen(onProfileClick)}
-							data-testid='account-menu-header'
-							sx={{
-								display: 'block',
-								width: '100%',
-								textAlign: 'left',
-								transition: 'background-color 150ms ease',
-								'& [data-hint]': { display: 'none' },
-								'&:hover, &.Mui-focusVisible': {
-									bgcolor: tint,
-									'& [data-hint]': { display: 'block' },
-									'& [data-role]': { display: 'none' }
-								},
-								...FOCUS_OUTLINE_FIX
+					{glass ? (
+						<GlassLayer
+							isDark={isDark}
+							solid={surface}
+							className={cn(
+								'lw:absolute lw:inset-0 lw:origin-bottom-left lw:rounded-[inherit]',
+								REDUCED_MOTION_NONE
+							)}
+							style={{
+								animation: `${glassGrow} ${morph.duration}ms ${morph.easing} both`
 							}}
-						>
-							{userHeader}
-						</ButtonBase>
-					) : (
-						<Box data-testid='account-menu-header'>
-							{userHeader}
-						</Box>
-					)}
-					<Divider />
-					{/* Theme row: above the list, not in it. It's not a menu item, and
-				    MenuList would otherwise hand its first child autoFocus and
-				    tabindex=0. The toggle is reached with Tab / Shift+Tab. */}
-					{showThemeToggler ? (
-						<Box
-							data-testid='menu-item-theme'
-							sx={{
-								...itemSx,
-								// Paints above the glass lens resting behind it
-								position: 'relative',
-								mx: 0.5,
-								mt: 0.5,
-								px: 1.5,
-								// The 32px pill is taller than a text line; trim the
-								// vertical padding so the row is 40px like the rows
-								// with a count pill, not 48px.
-								py: 0.5,
-								display: 'flex',
-								alignItems: 'center',
-								// Icon column as wide as a MenuItem's.
-								'& .MuiListItemIcon-root': { minWidth: 32 }
-							}}
-						>
-							<ListItemIcon>
-								<SettingsBrightnessOutlined fontSize='small' />
-							</ListItemIcon>
-							<Typography sx={{ flex: 1 }}>Theme</Typography>
-							<ThemeSegments
-								glass={glass}
-								mode={themeMode}
-								onToggle={onThemeToggle}
-								accentColor={accentColor}
-								tint={tint}
-							/>
-						</Box>
+						/>
 					) : null}
-					{/* One list so ArrowUp/Down spans every item; dividers are <li>s
-				    without tabindex, which MenuList skips. */}
-					<MenuList
-						autoFocusItem={open}
-						sx={{ px: 0.5, pt: showThemeToggler ? 0 : 0.5, pb: 0.5 }}
+					<div
+						{...menuLens.containerProps}
+						className={
+							glass
+								? cn(
+										'lw:relative lw:flex lw:flex-col lw:overflow-hidden lw:rounded-[inherit]',
+										REDUCED_MOTION_NONE
+									)
+								: 'lw:contents'
+						}
+						style={
+							glass
+								? {
+										animation: `${contentIn} ${settle.duration}ms ${settle.easing} 70ms both`
+									}
+								: undefined
+						}
 					>
-						{menuItems.map(item => (
-							<MenuItem
-								key={item.key}
-								onClick={() => handleMenuItem(item)}
-								data-testid={`menu-item-${item.key}`}
-								sx={itemSx}
+						{menuLens.lens}
+						{onProfileClick && !onAiUsageClick ? (
+							<button
+								type='button'
+								onClick={() => closeMenuThen(onProfileClick)}
+								data-testid='account-menu-header'
+								className={cn(
+									'lw:group lw:relative lw:block lw:w-full lw:cursor-pointer lw:text-left lw:transition-colors lw:duration-150 lw:[&_[data-hint]]:hidden lw:hover:[&_[data-hint]]:block lw:hover:[&_[data-role]]:hidden lw:focus-visible:[&_[data-hint]]:block lw:focus-visible:[&_[data-role]]:hidden',
+									!glass &&
+										'lw:hover:bg-(--lw-menu-tint) lw:focus-visible:bg-(--lw-menu-tint)',
+									FOCUS_OUTLINE_FIX
+								)}
 							>
-								<ListItemIcon>{item.icon}</ListItemIcon>
-								<Typography sx={{ flex: 1 }}>
-									{item.label}
-								</Typography>
-								<CountPill count={item.badge} />
-							</MenuItem>
-						))}
-						{onLogout ? (
-							<Divider component='li' sx={{ my: 0.5 }} />
-						) : null}
-						{onLogout ? (
-							<MenuItem
-								onClick={() => closeMenuThen(onLogout)}
-								data-testid='menu-item-logout'
-								sx={{
-									...itemSx,
-									color: isDark ? 'error.light' : 'error.main'
-								}}
+								{userHeader}
+							</button>
+						) : (
+							<div
+								data-testid='account-menu-header'
+								className='lw:relative'
 							>
-								<ListItemIcon sx={{ color: 'inherit' }}>
-									<LogoutRounded fontSize='small' />
-								</ListItemIcon>
-								Log out
-							</MenuItem>
+								{userHeader}
+							</div>
+						)}
+						<Separator className='lw:relative' />
+						{/* Theme row: above the list, not in it. It's not a menu
+						    item, and the list would otherwise walk it with the
+						    arrows. The toggle is reached with Tab / Shift+Tab. */}
+						{showThemeToggler ? (
+							<div
+								data-testid='menu-item-theme'
+								// Paints above the glass lens resting behind it.
+								// The 32px pill is taller than a text line; trim
+								// the vertical padding so the row is 40px.
+								className={cn(
+									itemClass,
+									'lw:relative lw:mx-1 lw:mt-1 lw:flex lw:items-center lw:py-1 lw:hover:bg-transparent'
+								)}
+							>
+								<span
+									className={cn(
+										iconClass,
+										'lw:text-muted-foreground'
+									)}
+								>
+									<SunMoonIcon />
+								</span>
+								<span className='lw:flex-1 lw:text-foreground'>
+									Theme
+								</span>
+								<ThemeSegments
+									glass={glass}
+									mode={themeMode}
+									onToggle={onThemeToggle}
+									accentColor={accentColor}
+									tint={tint}
+								/>
+							</div>
 						) : null}
-					</MenuList>
-				</Box>
-			</Box>
+						{/* One list so ArrowUp/Down spans every item; dividers are
+						    separators, which the arrows skip. */}
+						<ShellMenuList
+							ref={listRef}
+							className={cn(
+								'lw:px-1 lw:pb-1',
+								showThemeToggler ? 'lw:pt-0' : 'lw:pt-1'
+							)}
+						>
+							{menuItems.map(item => (
+								<ShellMenuItem
+									key={item.key}
+									onClick={() => handleMenuItem(item)}
+									data-testid={`menu-item-${item.key}`}
+									className={cn(
+										itemClass,
+										'lw:text-foreground'
+									)}
+								>
+									<span
+										className={cn(
+											iconClass,
+											'lw:text-muted-foreground'
+										)}
+									>
+										{item.icon}
+									</span>
+									<span className='lw:flex-1'>
+										{item.label}
+									</span>
+									<CountPill count={item.badge} />
+								</ShellMenuItem>
+							))}
+							{onLogout ? <ShellMenuSeparator /> : null}
+							{onLogout ? (
+								<ShellMenuItem
+									onClick={() => closeMenuThen(onLogout)}
+									data-testid='menu-item-logout'
+									className={cn(
+										itemClass,
+										'lw:text-destructive'
+									)}
+								>
+									<span className={iconClass}>
+										<LogOutIcon />
+									</span>
+									Log out
+								</ShellMenuItem>
+							) : null}
+						</ShellMenuList>
+					</div>
+				</div>
+			</PopoverContent>
 		</Popover>
 	);
 };

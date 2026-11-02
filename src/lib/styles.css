@@ -1,0 +1,521 @@
+/*
+ * The shell's own stylesheet, compiled by Tailwind v4 into dist/lumora-wrapper.css and imported by the
+ * host as `@lumora/lumora-wrapper-component/styles.css`.
+ *
+ * - Every utility carries the `lw:` prefix (`lw:flex`, `lw:hover:bg-accent`), and so does every theme
+ *   variable (`--lw-spacing`), so this sheet can sit beside a host's own Tailwind build (Nexa) without
+ *   either redefining the other's classes, breakpoints or fonts.
+ * - No preflight: hosts own their resets. The few the shell's own markup needs are scoped below to
+ *   the shell's elements, never to the host's page.
+ * - Utilities are not in a cascade layer, as MUI's styles were not: a host's unlayered global CSS
+ *   (`* { padding: 0 }` on a site without Tailwind) cannot cancel them.
+ * - Colours read Nexa's variables (globals.css / ui-theme.css: --bg-surface, --text-primary,
+ *   --ui-primary…) with Nexa's own values as fallbacks, light and dark, so the shell matches Nexa in
+ *   Nexa and still looks right in an app that defines none of them. Dark mode is Nexa's switch,
+ *   html[data-color-scheme="dark"], or the wrapper's `theme` prop (data-lw-theme on its own nodes).
+ */
+@import 'tailwindcss/theme.css' prefix(lw);
+@import 'tailwindcss/utilities.css' prefix(lw);
+@import 'tw-animate-css/prefix';
+
+@source './';
+@source not './**/__tests__/**';
+
+@custom-variant dark (&:where([data-color-scheme='dark'], [data-color-scheme='dark'] *, [data-lw-theme='dark'], [data-lw-theme='dark'] *));
+@custom-variant reduce-transparency (@media (prefers-reduced-transparency: reduce));
+
+/* MUI's breakpoints, which the shell's layout was designed at (md = 900px is the phone/desktop switch). */
+@theme {
+	--breakpoint-sm: 600px;
+	--breakpoint-md: 900px;
+	--breakpoint-lg: 1200px;
+	--breakpoint-xl: 1536px;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+	--radius-xl: 12px;
+}
+
+/* The same token names as Nexa's ui-theme.css, so a class reads the same in both codebases. */
+@theme inline {
+	--color-background: var(--lw-bg-page);
+	--color-foreground: var(--lw-text-primary);
+	--color-card: var(--lw-bg-surface);
+	--color-card-foreground: var(--lw-text-primary);
+	--color-popover: var(--lw-bg-surface);
+	--color-popover-foreground: var(--lw-text-primary);
+	--color-surface: var(--lw-bg-surface);
+	--color-raised: var(--lw-bg-raised);
+	--color-tray: var(--lw-surface-tray);
+
+	--color-primary: var(--lw-ui-primary);
+	--color-primary-hover: var(--lw-ui-primary-hover);
+	--color-primary-foreground: var(--lw-ui-primary-foreground);
+	--color-secondary: var(--lw-surface-tray);
+	--color-secondary-foreground: var(--lw-text-primary);
+	--color-muted: var(--lw-surface-tray);
+	--color-muted-foreground: var(--lw-text-muted);
+	--color-faint: var(--lw-text-faint);
+	--color-accent: var(--lw-hover-wash);
+	--color-accent-foreground: var(--lw-text-primary);
+	--color-selected: var(--lw-selected-wash);
+	--color-brand-text: var(--lw-accent-text);
+	--color-band: var(--lw-band-bg);
+	--color-band-foreground: var(--lw-band-fg);
+
+	--color-destructive: var(--lw-ui-destructive);
+	--color-destructive-fill: var(--lw-ui-destructive-fill);
+	--color-destructive-hover: var(--lw-ui-destructive-hover);
+	--color-success: var(--lw-ui-success);
+	--color-warning: var(--lw-ui-warning);
+	--color-info: var(--lw-ui-info);
+
+	--color-border: var(--lw-border-color);
+	--color-rule: var(--lw-rule);
+	--color-input: var(--lw-input-border);
+	--color-input-hover: var(--lw-input-border-hover);
+	--color-input-bg: var(--lw-input-bg);
+	--color-input-foreground: var(--lw-input-text);
+	--color-placeholder: var(--lw-input-placeholder);
+	--color-ring: var(--lw-ui-ring);
+	--color-skeleton: var(--lw-skeleton-bg);
+
+	--color-tooltip: var(--lw-ui-tooltip-bg);
+	--color-tooltip-foreground: var(--lw-ui-tooltip-fg);
+
+	--shadow-popover: var(--lw-shadow-float);
+}
+
+/*
+ * The host's variable when it has one, else Nexa's value. Re-declared on the shell's own nodes
+ * ([data-lw-scope], including its portalled menus), so a host that sets its variables below :root
+ * still reaches them.
+ */
+:root,
+[data-lw-scope] {
+	--lw-bg-page: var(--bg-page, #f4f2f0);
+	--lw-bg-surface: var(--bg-surface, #ffffff);
+	--lw-bg-raised: var(--bg-raised, #f9fafb);
+	--lw-surface-tray: var(--surface-tray, #eef1f3);
+	--lw-text-primary: var(--text-primary, #1a1a1a);
+	--lw-text-muted: var(--text-muted, #55636b);
+	--lw-text-faint: var(--text-faint, #5d737e);
+	--lw-accent-text: var(--accent-text, #00786a);
+	--lw-hover-wash: var(
+		--hover-wash,
+		color-mix(in srgb, #5d737e 6%, var(--lw-bg-surface))
+	);
+	--lw-selected-wash: var(
+		--selected-wash,
+		color-mix(in srgb, #5d737e 12%, var(--lw-bg-surface))
+	);
+	--lw-band-bg: var(--band-bg, #e8f5f4);
+	--lw-band-fg: var(--band-fg, #01584f);
+	--lw-border-color: var(--border-color, #e5e7eb);
+	--lw-rule: var(--rule, #ececea);
+	--lw-input-bg: var(--input-bg, #ffffff);
+	--lw-input-border: var(--input-border, #8a939b);
+	--lw-input-border-hover: var(--input-border-hover, #5d737e);
+	--lw-input-text: var(--input-text, #273035);
+	--lw-input-placeholder: var(--input-placeholder, #848993);
+	--lw-skeleton-bg: var(--skeleton-bg, #eceef2);
+	--lw-shadow-float: var(
+		--shadow-float,
+		0 8px 24px rgba(16, 24, 40, 0.12),
+		0 1px 2px rgba(16, 24, 40, 0.06)
+	);
+	--lw-ui-primary: var(--ui-primary, #049586);
+	--lw-ui-primary-hover: var(--ui-primary-hover, #037e72);
+	--lw-ui-primary-foreground: var(--ui-primary-foreground, #ffffff);
+	--lw-ui-destructive: var(--ui-destructive, #c62828);
+	--lw-ui-destructive-fill: var(--ui-destructive-fill, #c62828);
+	--lw-ui-destructive-hover: var(--ui-destructive-hover, #a51f1f);
+	--lw-ui-success: var(--ui-success, #037f4c);
+	--lw-ui-warning: var(--ui-warning, #b45309);
+	--lw-ui-info: var(--ui-info, #33517d);
+	--lw-ui-ring: var(--ui-ring, #00a896);
+	--lw-ui-tooltip-bg: var(--ui-tooltip-bg, #2f3640);
+	--lw-ui-tooltip-fg: var(--ui-tooltip-fg, #ffffff);
+}
+
+[data-color-scheme='dark'],
+[data-color-scheme='dark'] [data-lw-scope],
+[data-lw-scope][data-lw-theme='dark'],
+[data-lw-theme='dark'] [data-lw-scope] {
+	--lw-bg-page: var(--bg-page, hsl(220, 25%, 11%));
+	--lw-bg-surface: var(--bg-surface, hsl(220, 20%, 15%));
+	--lw-bg-raised: var(--bg-raised, hsl(220, 20%, 18%));
+	--lw-surface-tray: var(--surface-tray, hsl(220, 22%, 13%));
+	--lw-text-primary: var(--text-primary, #ffffff);
+	--lw-text-muted: var(--text-muted, rgba(255, 255, 255, 0.66));
+	--lw-text-faint: var(--text-faint, rgba(255, 255, 255, 0.5));
+	--lw-accent-text: var(--accent-text, #2ed3c0);
+	--lw-hover-wash: var(
+		--hover-wash,
+		color-mix(in srgb, #ffffff 4%, var(--lw-bg-surface))
+	);
+	--lw-selected-wash: var(
+		--selected-wash,
+		color-mix(in srgb, #5d737e 24%, var(--lw-bg-surface))
+	);
+	--lw-band-bg: var(--band-bg, #1b383e);
+	--lw-band-fg: var(--band-fg, #2ed3c0);
+	--lw-border-color: var(--border-color, rgba(255, 255, 255, 0.1));
+	--lw-rule: var(--rule, rgba(255, 255, 255, 0.06));
+	--lw-input-bg: var(--input-bg, transparent);
+	--lw-input-border: var(--input-border, rgba(255, 255, 255, 0.36));
+	--lw-input-border-hover: var(
+		--input-border-hover,
+		rgba(255, 255, 255, 0.56)
+	);
+	--lw-input-text: var(--input-text, rgba(255, 255, 255, 0.92));
+	--lw-input-placeholder: var(--input-placeholder, rgba(255, 255, 255, 0.5));
+	--lw-skeleton-bg: var(--skeleton-bg, rgba(255, 255, 255, 0.08));
+	--lw-shadow-float: var(
+		--shadow-float,
+		0 8px 24px rgba(0, 0, 0, 0.5),
+		0 0 0 1px rgba(255, 255, 255, 0.06)
+	);
+	--lw-ui-primary-hover: var(--ui-primary-hover, #00a896);
+	--lw-ui-destructive: var(--ui-destructive, #f87171);
+	--lw-ui-destructive-fill: var(--ui-destructive-fill, #dc2626);
+	--lw-ui-destructive-hover: var(--ui-destructive-hover, #b91c1c);
+	--lw-ui-success: var(--ui-success, #34d399);
+	--lw-ui-warning: var(--ui-warning, #f59e0b);
+	--lw-ui-info: var(--ui-info, #93b4e3);
+	--lw-ui-ring: var(--ui-ring, #2ed3c0);
+	--lw-ui-tooltip-bg: var(--ui-tooltip-bg, #f4f4f2);
+	--lw-ui-tooltip-fg: var(--ui-tooltip-fg, #1a1a1a);
+}
+
+/*
+ * The resets the shell's markup relies on, for hosts without Tailwind's preflight. Scoped to the
+ * shell's nodes and stopping at host content ([data-lw-host]: the page, the chat, the updates drawer,
+ * the search slot), so a host's page is never touched. Zero specificity, so every utility wins.
+ */
+@scope ([data-lw-scope]) to ([data-lw-host]) {
+	:where(*, ::before, ::after) {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+		border: 0 solid;
+	}
+	:where(button, input, select, textarea) {
+		font: inherit;
+		color: inherit;
+		background-color: transparent;
+		letter-spacing: inherit;
+	}
+	:where(button, [role='button'], [role='menuitem'], [role='tab']) {
+		cursor: pointer;
+	}
+	:where(button:disabled, [aria-disabled='true']) {
+		cursor: default;
+	}
+	:where(ol, ul, menu) {
+		list-style: none;
+	}
+	:where(a) {
+		color: inherit;
+		text-decoration: inherit;
+	}
+	:where(h1, h2, h3, h4, h5, h6) {
+		font-size: inherit;
+		font-weight: inherit;
+	}
+	:where(img, video) {
+		max-width: 100%;
+		height: auto;
+	}
+}
+
+/* ─── Liquid glass (liquidGlass.ts) ─────────────────────────────────────────
+ * Rules a style attribute cannot carry: pseudo-element rims and glare, @supports and
+ * reduced-transparency fallbacks. The component sets the colours as variables
+ * (--lw-glass-solid, --lw-light-rgb, --lw-rim-alpha, --lw-sheen-alpha). */
+.lw-glass-surface {
+	position: relative;
+	background-color: rgba(255, 255, 255, 0.55);
+	background-image: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.35) 0%,
+		rgba(255, 255, 255, 0) 40%,
+		rgba(15, 23, 42, 0.03) 100%
+	);
+	backdrop-filter: blur(28px) saturate(180%);
+	-webkit-backdrop-filter: blur(28px) saturate(180%);
+	box-shadow:
+		0 24px 60px -12px rgba(15, 23, 42, 0.3),
+		0 2px 8px rgba(15, 23, 42, 0.08),
+		0 0 0 0.5px rgba(15, 23, 42, 0.1),
+		inset 0 1px 0 #ffffff,
+		inset 0 0 24px rgba(255, 255, 255, 0.45);
+}
+.lw-glass-surface.lw-glass-dark {
+	background-color: rgba(30, 36, 48, 0.5);
+	background-image: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.07) 0%,
+		rgba(255, 255, 255, 0) 38%,
+		rgba(0, 0, 0, 0.1) 100%
+	);
+	box-shadow:
+		0 24px 60px -12px rgba(0, 0, 0, 0.65),
+		0 0 0 0.5px rgba(0, 0, 0, 0.6),
+		inset 0 1px 0 rgba(255, 255, 255, 0.16),
+		inset 0 0 24px rgba(255, 255, 255, 0.035);
+}
+/* A rim of light: brightest where light would strike a curved edge, glinting by the pointer. */
+.lw-glass-surface::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1.25px;
+	pointer-events: none;
+	background:
+		radial-gradient(
+			140px circle at var(--lx, -9999px) var(--ly, -9999px),
+			rgba(var(--lw-light-rgb), calc(var(--lw-rim-alpha) * var(--li, 0)))
+				0%,
+			rgba(var(--lw-light-rgb), 0) 70%
+		),
+		linear-gradient(
+			140deg,
+			#ffffff 0%,
+			rgba(255, 255, 255, 0.55) 22%,
+			rgba(255, 255, 255, 0.2) 50%,
+			rgba(255, 255, 255, 0.4) 78%,
+			rgba(255, 255, 255, 0.95) 100%
+		);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask-composite: exclude;
+}
+.lw-glass-surface.lw-glass-dark::before {
+	background:
+		radial-gradient(
+			140px circle at var(--lx, -9999px) var(--ly, -9999px),
+			rgba(var(--lw-light-rgb), calc(var(--lw-rim-alpha) * var(--li, 0)))
+				0%,
+			rgba(var(--lw-light-rgb), 0) 70%
+		),
+		linear-gradient(
+			140deg,
+			rgba(255, 255, 255, 0.5) 0%,
+			rgba(255, 255, 255, 0.1) 22%,
+			rgba(255, 255, 255, 0.03) 50%,
+			rgba(255, 255, 255, 0.08) 78%,
+			rgba(255, 255, 255, 0.28) 100%
+		);
+}
+/* Specular glare across the top-left, with the pointer's light on the surface over it. */
+.lw-glass-surface::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	background:
+		radial-gradient(
+			200px circle at var(--lx, -9999px) var(--ly, -9999px),
+			rgba(
+					var(--lw-light-rgb),
+					calc(var(--lw-sheen-alpha) * var(--li, 0))
+				)
+				0%,
+			rgba(var(--lw-light-rgb), 0) 70%
+		),
+		linear-gradient(
+			135deg,
+			rgba(255, 255, 255, 0.5) 0%,
+			rgba(255, 255, 255, 0) 42%
+		);
+}
+.lw-glass-surface.lw-glass-dark::after {
+	background:
+		radial-gradient(
+			200px circle at var(--lx, -9999px) var(--ly, -9999px),
+			rgba(
+					var(--lw-light-rgb),
+					calc(var(--lw-sheen-alpha) * var(--li, 0))
+				)
+				0%,
+			rgba(var(--lw-light-rgb), 0) 70%
+		),
+		linear-gradient(
+			135deg,
+			rgba(255, 255, 255, 0.09) 0%,
+			rgba(255, 255, 255, 0) 42%
+		);
+}
+@supports not (
+	(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+	.lw-glass-surface {
+		background-color: var(--lw-glass-solid);
+	}
+}
+@media (prefers-reduced-transparency: reduce) {
+	.lw-glass-surface {
+		background-color: var(--lw-glass-solid);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+}
+
+/* The small frosted label beside a rail icon. */
+.lw-glass-label {
+	color: #0b1f1c;
+	background-color: rgba(255, 255, 255, 0.78);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
+	border: 1px solid rgba(255, 255, 255, 0.8);
+	box-shadow:
+		0 8px 24px -6px rgba(15, 23, 42, 0.25),
+		0 0 0 0.5px rgba(15, 23, 42, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	border-radius: 6px;
+	padding: 6px 10px;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.4;
+}
+.lw-glass-label.lw-glass-dark {
+	color: #ffffff;
+	background-color: rgba(30, 36, 48, 0.72);
+	border-color: rgba(255, 255, 255, 0.14);
+	box-shadow:
+		0 8px 24px -6px rgba(0, 0, 0, 0.6),
+		inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+@media (prefers-reduced-transparency: reduce) {
+	.lw-glass-label {
+		background-color: #ffffff;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+	.lw-glass-label.lw-glass-dark {
+		background-color: rgb(30, 36, 48);
+	}
+}
+
+/* A field set into glass: the rest / hover / focus looks come in as variables. */
+.lw-glass-well {
+	background: var(--lw-well-bg);
+	box-shadow: var(--lw-well-shadow);
+	border-radius: 6px;
+	transition:
+		box-shadow 180ms ease,
+		background 180ms ease;
+}
+.lw-glass-well:hover {
+	background: var(--lw-well-hover-bg);
+}
+.lw-glass-well:focus-within {
+	background: var(--lw-well-focus-bg);
+	box-shadow: var(--lw-well-focus-shadow);
+}
+
+/* Motion the inline styles set; reduced motion drops it whatever the inline value. */
+@media (prefers-reduced-motion: reduce) {
+	.lw-motion-none {
+		animation: none !important;
+		transition: none !important;
+	}
+	.lw-motion-fade {
+		transition: opacity 160ms ease !important;
+	}
+	.lw-motion-fade-fast {
+		transition: opacity 120ms ease !important;
+	}
+}
+
+@keyframes lw-tile-in {
+	from {
+		opacity: 0;
+		transform: translateX(-6px) scale(0.8);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes lw-glass-grow {
+	from {
+		transform: scale(0.16, 0.12);
+		opacity: 0;
+	}
+	30% {
+		opacity: 1;
+	}
+	to {
+		transform: none;
+		opacity: 1;
+	}
+}
+@keyframes lw-content-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes lw-skeleton-pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.4;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+/* `contentPadding` (shellLayout.resolveContentPadding): one variable per breakpoint, each falling back
+   to the one below, resolved into the --lumora-content-padding the page and FullBleedSection read. */
+.lw-content-padding {
+	--lumora-content-padding: var(--lw-cp-xs, 0px);
+}
+@media (min-width: 600px) {
+	.lw-content-padding {
+		--lumora-content-padding: var(--lw-cp-sm, var(--lw-cp-xs, 0px));
+	}
+}
+@media (min-width: 900px) {
+	.lw-content-padding {
+		--lumora-content-padding: var(
+			--lw-cp-md,
+			var(--lw-cp-sm, var(--lw-cp-xs, 0px))
+		);
+	}
+}
+@media (min-width: 1200px) {
+	.lw-content-padding {
+		--lumora-content-padding: var(
+			--lw-cp-lg,
+			var(--lw-cp-md, var(--lw-cp-sm, var(--lw-cp-xs, 0px)))
+		);
+	}
+}
+@media (min-width: 1536px) {
+	.lw-content-padding {
+		--lumora-content-padding: var(
+			--lw-cp-xl,
+			var(
+				--lw-cp-lg,
+				var(--lw-cp-md, var(--lw-cp-sm, var(--lw-cp-xs, 0px)))
+			)
+		);
+	}
+}

@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mui/material';
+import { useIsMobile } from '../useMediaQuery';
 import LumoraWrapper from '../LumoraWrapper';
 import {
 	act,
@@ -13,13 +13,13 @@ import {
 } from './testUtils';
 
 // Mock useMediaQuery hook
-jest.mock('@mui/material', () => ({
-	...jest.requireActual('@mui/material'),
-	useMediaQuery: jest.fn()
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
 }));
 
-const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
-	typeof useMediaQuery
+const mockUseMediaQuery = useIsMobile as jest.MockedFunction<
+	typeof useIsMobile
 >;
 
 describe('LumoraWrapper - Responsive Behavior', () => {
@@ -40,9 +40,11 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			</LumoraWrapper>
 		);
 
-		const drawer = document.querySelector('.MuiDrawer-root');
+		const drawer = document.querySelector('[data-slot="rail-drawer"]');
 		expect(drawer).toBeInTheDocument();
-		expect(drawer).toHaveClass('MuiDrawer-root');
+		expect(
+			drawer!.querySelector('[data-slot="rail-drawer-paper"]')
+		).toHaveClass('lw:fixed');
 	});
 
 	// it('renders temporary drawer on mobile', () => {
@@ -61,7 +63,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 	// 	// The drawer should be present even if closed
 	// 	expect(screen.getByTestId('test-content')).toBeInTheDocument();
 	// 	// Check for any drawer-related element in the DOM
-	// 	const drawerElements = document.querySelectorAll('[class*="MuiDrawer"], [role="presentation"]');
+	// 	const drawerElements = document.querySelectorAll('[data-slot="sheet-content"], [role="dialog"]');
 	// 	expect(drawerElements.length).toBeGreaterThan(0);
 	// });
 
@@ -78,9 +80,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			</LumoraWrapper>
 		);
 
-		const contentArea = screen
-			.getByTestId('test-content')
-			.closest('[class*="MuiBox-root"]');
+		const contentArea = screen.getByTestId('test-content').closest('main');
 		expect(contentArea).toHaveStyle('width: calc(100% - 100px)');
 	});
 
@@ -98,9 +98,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			</LumoraWrapper>
 		);
 
-		const contentArea = screen
-			.getByTestId('test-content')
-			.closest('[class*="MuiBox-root"]');
+		const contentArea = screen.getByTestId('test-content').closest('main');
 		expect(contentArea).toHaveStyle('width: calc(100% - 100px)');
 	});
 
@@ -174,7 +172,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(aside).toHaveStyle({ width: '80px', minWidth: '80px' });
 			// The rail spans the full viewport height from the top, with the
 			// logo on top and no header anywhere.
-			expect(aside).toHaveStyle({ height: '100vh', top: '0px' });
+			expect(aside).toHaveClass('lw:h-screen', 'lw:top-0');
 			expect(
 				within(sidebar).getByTestId('sidebar-header-brand')
 			).toBeInTheDocument();
@@ -186,7 +184,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			// Fixed 80px width feeds the content offset.
 			const contentArea = screen
 				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
+				.closest('main');
 			expect(contentArea).toHaveStyle('width: calc(100% - 80px)');
 
 			// Non-collapsible: no expand/collapse toggle.
@@ -269,17 +267,14 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			const sidebar = screen.getByTestId('collapsible-sidebar');
 			const contentArea = screen
 				.getByTestId('test-content')
-				.closest('[class*="MuiBox-root"]');
+				.closest('main');
 			expect(sidebar).toHaveAttribute('data-collapsed', 'true');
 			expect(sidebar).toHaveStyle({ width: '72px', minWidth: '72px' });
 			// The rail spans the full viewport height from the top, with its
 			// own header block for the brand.
 			const aside = sidebar.closest('aside');
-			expect(aside).toHaveStyle({
-				width: '72px',
-				height: '100vh',
-				top: '0px'
-			});
+			expect(aside).toHaveStyle({ width: '72px' });
+			expect(aside).toHaveClass('lw:h-screen', 'lw:top-0');
 			expect(screen.getByTestId('sidebar-header')).toBeInTheDocument();
 			expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 			expect(contentArea).toHaveStyle('width: calc(100% - 72px)');
@@ -288,7 +283,8 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			const panel = await hoverSidebarOpen();
 			expect(sidebar).toHaveAttribute('data-collapsed', 'false');
 			expect(sidebar).toHaveStyle({ width: '288px' });
-			expect(panel).toHaveStyle({ position: 'absolute', width: '288px' });
+			expect(panel).toHaveClass('lw:absolute');
+			expect(panel).toHaveStyle({ width: '288px' });
 			expect(aside).toHaveStyle({ width: '72px' });
 			expect(contentArea).toHaveStyle('width: calc(100% - 72px)');
 
@@ -380,7 +376,9 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			expect(screen.getByText('Log out')).toBeInTheDocument();
 
 			// The menu's backdrop covers the page; over it the panel stays open
-			const backdrop = document.querySelector('.MuiBackdrop-root')!;
+			const backdrop = document.querySelector(
+				'[data-slot="menu-backdrop"]'
+			)!;
 			fireEvent.mouseOver(backdrop);
 			fireEvent.mouseMove(backdrop, { clientX: 600, clientY: 400 });
 			expect(panel).toHaveAttribute('data-expanded', 'true');
@@ -635,8 +633,9 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			);
 			expect(drawerSidebar).toHaveAttribute('data-collapsed', 'false');
 			expect(drawerSidebar).toHaveStyle({ width: '100%' });
-			expect(screen.getByLabelText('Navigation')).toHaveClass(
-				'MuiDrawer-paperAnchorBottom'
+			expect(screen.getByLabelText('Navigation')).toHaveAttribute(
+				'data-side',
+				'bottom'
 			);
 			fireEvent.click(within(drawerSidebar).getByText('Settings'));
 			expect(onLinkClick).toHaveBeenCalledWith('/settings');
@@ -677,8 +676,9 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				})
 			);
 			// A left drawer that holds search and the user row too
-			expect(screen.getByLabelText('Navigation')).toHaveClass(
-				'MuiDrawer-paperAnchorLeft'
+			expect(screen.getByLabelText('Navigation')).toHaveAttribute(
+				'data-side',
+				'left'
 			);
 			expect(
 				await screen.findByPlaceholderText('Global search')
@@ -700,9 +700,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			</LumoraWrapper>
 		);
 
-		const contentArea = screen
-			.getByTestId('test-content')
-			.closest('[class*="MuiBox-root"]');
+		const contentArea = screen.getByTestId('test-content').closest('main');
 		expect(contentArea).toHaveStyle('width: 100%');
 	});
 
@@ -715,9 +713,7 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			</LumoraWrapper>
 		);
 
-		const contentArea = screen
-			.getByTestId('test-content')
-			.closest('[class*="MuiBox-root"]');
+		const contentArea = screen.getByTestId('test-content').closest('main');
 		expect(contentArea).toHaveStyle('width: 100%');
 	});
 
@@ -735,10 +731,10 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 		);
 
 		const drawer = document.querySelector(
-			'.MuiDrawer-paper'
+			'[data-slot="rail-drawer-paper"]'
 		) as HTMLElement;
 		expect(drawer).toBeInTheDocument();
-		expect(drawer).toHaveStyle({ top: '0px' });
+		expect(drawer).toHaveClass('lw:top-0');
 		expect(
 			within(drawer).getByTestId('sidebar-header-brand')
 		).toBeInTheDocument();
@@ -813,13 +809,13 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 			const paperOf = () =>
 				screen
 					.getByText('notification list')
-					.closest('.MuiDrawer-paper') as HTMLElement;
-			expect(paperOf()).toHaveClass('MuiDrawer-paperAnchorLeft');
+					.closest('[data-slot="sheet-content"]') as HTMLElement;
+			expect(paperOf()).toHaveAttribute('data-side', 'left');
 
 			mockUseMediaQuery.mockReturnValue(true);
 			rerender(ui());
 
-			expect(paperOf()).toHaveClass('MuiDrawer-paperAnchorRight');
+			expect(paperOf()).toHaveAttribute('data-side', 'right');
 		});
 
 		it('opens at the left gutter when the rail auto-hides', () => {
@@ -845,8 +841,8 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 
 			const paper = screen
 				.getByText('notification list')
-				.closest('.MuiDrawer-paper') as HTMLElement;
-			expect(paper).toHaveClass('MuiDrawer-paperAnchorLeft');
+				.closest('[data-slot="sheet-content"]') as HTMLElement;
+			expect(paper).toHaveAttribute('data-side', 'left');
 			expect(paper).toHaveStyle({
 				left: '8px',
 				top: '14px',

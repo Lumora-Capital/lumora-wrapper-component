@@ -1,9 +1,6 @@
-import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
-import Fade from '@mui/material/Fade';
-import Popper from '@mui/material/Popper';
-import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '../utils';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	GLIDE_SPRING,
@@ -16,19 +13,19 @@ import {
 	springTiming
 } from './glassMotion';
 import {
-	GLASS_RADIUS_PX,
-	REDUCED_MOTION,
-	glassLabelSx,
+	REDUCED_MOTION_NONE,
+	glassLabel,
+	glassLabelColor,
 	tileIn
 } from './liquidGlass';
 import { RAIL_MAX_SCALE } from './shellLayout';
+import { useIsDark, useShellScopeProps } from './shellTheme';
 import { DOCK_FOLLOW_MS, fitWithin, useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Each page's icon tile: a step up from the rail's buttons, room for its
- * larger glyph. */
+ * larger glyph (36px: the tile's `[&_svg]:size-9`). */
 const TILE_PX = 52;
-const TILE_ICON_PX = 36;
 /** How far the tile under the pointer swells. */
 const TILE_MAX_SCALE = 1.8;
 /** Round tiles: a circle as wide as the tile. */
@@ -86,11 +83,16 @@ const anchorSwellOf = (anchor: HTMLElement) => {
 	return Math.min(ANCHOR_SWELL_SCALE, fit / Math.min(fit, RAIL_MAX_SCALE));
 };
 /** Above the page, its sticky bars and the docked chat (1140); below the
- * MUI drawers and menus, which close the flyout when they open anyway. */
+ * drawers and menus (1200+), which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
 const PANEL_Z_INDEX = 1195;
 /** The tiles' fade as the flyout closes. */
 const EXIT_FADE_MS = 120;
+/** The dim's fade in and out. */
+const SCRIM_ENTER_MS = 220;
+const SCRIM_EXIT_MS = 200;
+/** How close the panel may come to the window's top and bottom. */
+const VIEWPORT_PADDING_PX = 8;
 
 const morph = springTiming(MORPH_SPRING);
 const glide = springTiming(GLIDE_SPRING);
@@ -184,8 +186,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	activeForegroundColor,
 	solidSurface
 }) => {
-	const theme = useTheme();
-	const isDark = theme.palette.mode === 'dark';
+	const isDark = useIsDark();
+	const scope = useShellScopeProps();
 	const open = Boolean(group && anchor);
 
 	// Keep the last group while the glass draws back in
@@ -199,33 +201,76 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	const shown = lastGroup.current;
 
 	// The panel lines up with the rail's edge rather than the icon's, centred
-	// on the icon. A virtual anchor so Popper places it there.
-	const virtualAnchor = React.useMemo(() => {
-		if (!anchor) {
-			return null;
-		}
-		return {
-			contextElement: anchor,
-			getBoundingClientRect: () => {
-				const rect = anchor.getBoundingClientRect();
-				return {
-					x: railEdge,
-					y: rect.top,
-					left: railEdge,
-					right: railEdge,
-					top: rect.top,
-					bottom: rect.bottom,
-					width: 0,
-					height: rect.height,
-					toJSON: () => ({})
-				} as DOMRect;
-			}
-		};
-	}, [anchor, railEdge]);
-	const lastAnchor = React.useRef(virtualAnchor);
-	if (virtualAnchor) {
-		lastAnchor.current = virtualAnchor;
+	// on the icon. The last anchor is kept while the panel fades out.
+	const lastAnchor = React.useRef<{
+		anchor: HTMLElement;
+		railEdge: number;
+	} | null>(null);
+	if (anchor) {
+		lastAnchor.current = { anchor, railEdge };
 	}
+
+	// Mounted while open and while its tiles fade out (FlyoutStage reports
+	// when they have); the dim keeps its own fade
+	const [mounted, setMounted] = React.useState(open);
+	if (open && !mounted) {
+		setMounted(true);
+	}
+	const [scrimMounted, setScrimMounted] = React.useState(open);
+	if (open && !scrimMounted) {
+		setScrimMounted(true);
+	}
+	React.useEffect(() => {
+		if (open) {
+			return undefined;
+		}
+		const timer = setTimeout(() => setScrimMounted(false), SCRIM_EXIT_MS);
+		return () => clearTimeout(timer);
+	}, [open]);
+
+	// Where the panel sits: past the rail's edge, centred on the icon, kept
+	// inside the window's height (what Popper's offset + preventOverflow did)
+	const panelRef = React.useRef<HTMLDivElement>(null);
+	const [position, setPosition] = React.useState<{ x: number; y: number }>({
+		x: 0,
+		y: 0
+	});
+	const place = React.useCallback(() => {
+		const last = lastAnchor.current;
+		const panel = panelRef.current;
+		if (!last || !panel) {
+			return;
+		}
+		const rect = last.anchor.getBoundingClientRect();
+		const height = panel.offsetHeight;
+		const x = Math.round(last.railEdge + PANEL_GAP_PX);
+		const centred = rect.top + rect.height / 2 - height / 2;
+		const max = window.innerHeight - height - VIEWPORT_PADDING_PX;
+		const y = Math.round(
+			Math.max(VIEWPORT_PADDING_PX, Math.min(centred, max))
+		);
+		setPosition(prev => (prev.x === x && prev.y === y ? prev : { x, y }));
+	}, []);
+	React.useLayoutEffect(() => {
+		if (!mounted) {
+			return undefined;
+		}
+		place();
+		window.addEventListener('resize', place);
+		window.addEventListener('scroll', place, true);
+		const observer =
+			typeof ResizeObserver === 'undefined' || !panelRef.current
+				? null
+				: new ResizeObserver(place);
+		if (observer && panelRef.current) {
+			observer.observe(panelRef.current);
+		}
+		return () => {
+			window.removeEventListener('resize', place);
+			window.removeEventListener('scroll', place, true);
+			observer?.disconnect();
+		};
+	}, [mounted, place, anchor, railEdge, groupKey]);
 
 	// The icon swells as its glass opens, like a pressed gel button
 	React.useEffect(() => {
@@ -279,8 +324,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 	// The heading moves only when a tile would reach it: one that grows up
 	// out of the row (its name below it) and, slid along by the dock, still
 	// sits under the heading's span. It follows the scales the dock writes,
-	// watched from the moment it mounts (Popper mounts the row after this
-	// component's effects have run, so a ref callback rather than an effect).
+	// watched from the moment it mounts (the row remounts per group, so a ref
+	// callback rather than an effect).
 	const stopFollowing = React.useRef<() => void>(undefined);
 	const headingRef = React.useCallback((heading: HTMLElement | null) => {
 		stopFollowing.current?.();
@@ -421,28 +466,32 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 
 	// On glass the labels need the theme's text colour to stay legible; the
 	// icons keep the accent in light mode, as on the rail.
-	const labelColor = theme.palette.text.primary;
-	const iconColor = isDark ? theme.palette.text.primary : accentColor;
+	const labelColor = 'var(--lw-text-primary)';
+	const iconColor = isDark ? '#ffffff' : accentColor;
 
 	return (
 		<>
-			<Fade in={open} timeout={{ enter: 220, exit: 200 }} unmountOnExit>
-				<Box
+			{scrimMounted ? (
+				<div
 					data-testid='sidebar-flyout-scrim'
 					data-flyout-scrim=''
+					data-state={open ? 'open' : 'closed'}
 					aria-hidden
 					onClick={() => onClose()}
-					sx={{
-						position: 'fixed',
-						top: 0,
-						right: 0,
-						bottom: 0,
+					className={cn(
+						'lw:fixed lw:inset-y-0 lw:right-0',
+						open
+							? 'lw:animate-in lw:fade-in-0'
+							: 'lw:animate-out lw:fade-out-0 lw:[animation-fill-mode:forwards]'
+					)}
+					style={{
 						left: railShape ? 0 : `${railEdge}px`,
 						// Clicks in the cut-out reach the rail beneath
 						...(railShape
 							? { clipPath: windowLessShape(railShape) }
 							: {}),
 						zIndex: SCRIM_Z_INDEX,
+						animationDuration: `${open ? SCRIM_ENTER_MS : SCRIM_EXIT_MS}ms`,
 						// The flyout's only surface: a wash from the rail across
 						// the page, strongest behind the tiles, fading to the right
 						background: isDark
@@ -450,173 +499,166 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 							: 'linear-gradient(90deg, rgba(236, 239, 243, 0.97) 0%, rgba(236, 239, 243, 0.9) 30%, rgba(236, 239, 243, 0.6) 55%, rgba(236, 239, 243, 0.2) 100%)'
 					}}
 				/>
-			</Fade>
-			<Popper
-				open={open}
-				anchorEl={virtualAnchor ?? lastAnchor.current}
-				placement='right'
-				transition
-				modifiers={[
-					// Both rows centred on the rail icon, a gap from the rail
-					{
-						name: 'offset',
-						options: { offset: [0, PANEL_GAP_PX] }
-					},
-					{ name: 'flip', enabled: false },
-					{ name: 'preventOverflow', options: { padding: 8 } }
-				]}
-				sx={{
-					zIndex: PANEL_Z_INDEX,
-					transition: settled
-						? `transform ${glide.duration}ms ${glide.easing}`
-						: 'none',
-					[REDUCED_MOTION]: { transition: 'none' }
-				}}
-			>
-				{({ TransitionProps }) => (
-					<FlyoutStage
-						in={TransitionProps?.in ?? open}
-						onEnter={TransitionProps?.onEnter}
-						onExited={TransitionProps?.onExited}
-						panelProps={panelProps}
-						groupText={shown?.group.text}
-					>
-						{shown ? (
-							<Box
-								key={shown.key}
-								ref={rowRef}
-								role='menu'
-								aria-label={shown.group.text}
-								{...magnify.containerProps}
-								onBlur={event => {
-									if (
-										!event.currentTarget.contains(
-											event.relatedTarget as Node | null
-										)
-									) {
-										magnify.settle();
-									}
-								}}
-								sx={{
-									position: 'relative',
-									width: layout.width,
-									height:
-										TILE_TOP_PX +
-										TILE_PX +
-										ROW_GAP_PX +
-										NAME_BAND_PX,
-									// The panel stretches as the dock pushes
-									// the pages along, as the Dock's shelf does
-									mr: 'var(--dock-spread, 0px)',
-									transition: `margin-right ${glide.duration}ms ${glide.easing}`,
-									[REDUCED_MOTION]: { transition: 'none' }
-								}}
+			) : null}
+			{mounted && typeof document !== 'undefined'
+				? createPortal(
+						<div
+							ref={panelRef}
+							{...scope}
+							className={cn(
+								'lw:fixed lw:top-0 lw:left-0',
+								REDUCED_MOTION_NONE
+							)}
+							style={{
+								zIndex: PANEL_Z_INDEX,
+								transform: `translate(${position.x}px, ${position.y}px)`,
+								transition: settled
+									? `transform ${glide.duration}ms ${glide.easing}`
+									: 'none'
+							}}
+						>
+							<FlyoutStage
+								in={open}
+								onExited={() => setMounted(false)}
+								panelProps={panelProps}
+								groupText={shown?.group.text}
 							>
-								<Box
-									component='span'
-									ref={headingRef}
-									aria-hidden
-									data-testid='sidebar-flyout-heading'
-									sx={{
-										// Above the tiles and centred over them, so
-										// they stay centred on the rail icon; the
-										// row's name already labels it. It rises only
-										// when a swelling tile would reach it (see the
-										// effect on `headingRef`)
-										position: 'absolute',
-										bottom: '100%',
-										left: '50%',
-										transform: 'translateX(-50%)',
-										mb: `${HEADING_GAP_PX}px`,
-										transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
-										[REDUCED_MOTION]: {
-											transition: 'none'
-										},
-										whiteSpace: 'nowrap',
-										pointerEvents: 'none',
-										fontSize: '1.125rem',
-										fontWeight: 700,
-										letterSpacing: '0.08em',
-										textTransform: 'uppercase',
-										// The pages' own name colour
-										color: glassLabelSx(isDark).color
-									}}
-								>
-									{shown.group.text}
-								</Box>
-								{leaves.map(({ sub, icon }, index) => (
-									<FlyoutTile
-										key={sub.path}
-										ref={el => {
-											tileRefs.current[index] = el;
-										}}
-										nameRef={el => {
-											nameRefs.current[index] = el;
-										}}
-										tileLeft={layout.tiles[index]}
-										nameLeft={layout.names[index]}
-										sub={sub}
-										icon={icon}
-										index={index}
-										active={isSubLinkActive(
-											sub,
-											activePath
-										)}
-										tabIndex={index === focusIndex ? 0 : -1}
-										onClick={event => {
-											// Anything but a plain click is the browser's: a new tab
-											if (!isInAppClick(event)) {
-												return;
-											}
-											event.preventDefault();
-											onNavigate(sub.path!);
-											onClose();
-										}}
-										onKeyDown={event =>
-											onTileKeyDown(event, index)
-										}
-										onFocus={event => {
-											setFocusIndex(index);
-											// A keyboard focus magnifies as a
-											// pointer resting on the tile would
-											const tile =
-												event.currentTarget.querySelector(
-													TILE_SELECTOR
-												);
+								{shown ? (
+									<div
+										key={shown.key}
+										ref={rowRef}
+										role='menu'
+										aria-label={shown.group.text}
+										{...magnify.containerProps}
+										onBlur={event => {
 											if (
-												tile &&
-												event.currentTarget.matches(
-													':focus-visible'
+												!event.currentTarget.contains(
+													event.relatedTarget as Node | null
 												)
 											) {
-												magnify.swellOn(tile);
+												magnify.settle();
 											}
 										}}
-										accentColor={accentColor}
-										activeBackgroundColor={
-											activeBackgroundColor
-										}
-										activeForegroundColor={
-											activeForegroundColor
-										}
-										labelColor={labelColor}
-										iconColor={iconColor}
-										surface={solidSurface}
-										isDark={isDark}
-									/>
-								))}
-							</Box>
-						) : null}
-					</FlyoutStage>
-				)}
-			</Popper>
+										className={cn(
+											'lw:relative',
+											REDUCED_MOTION_NONE
+										)}
+										style={{
+											width: layout.width,
+											height:
+												TILE_TOP_PX +
+												TILE_PX +
+												ROW_GAP_PX +
+												NAME_BAND_PX,
+											// The panel stretches as the dock pushes
+											// the pages along, as the Dock's shelf does
+											marginRight:
+												'var(--dock-spread, 0px)',
+											transition: `margin-right ${glide.duration}ms ${glide.easing}`
+										}}
+									>
+										<span
+											ref={headingRef}
+											aria-hidden
+											data-testid='sidebar-flyout-heading'
+											// Above the tiles and centred over them, so
+											// they stay centred on the rail icon; the
+											// row's name already labels it. It rises only
+											// when a swelling tile would reach it (see the
+											// callback on `headingRef`)
+											className={cn(
+												'lw:pointer-events-none lw:absolute lw:bottom-full lw:left-1/2 lw:-translate-x-1/2 lw:text-[1.125rem] lw:leading-normal lw:font-bold lw:tracking-[0.08em] lw:whitespace-nowrap lw:uppercase',
+												REDUCED_MOTION_NONE
+											)}
+											style={{
+												marginBottom: HEADING_GAP_PX,
+												transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
+												// The pages' own name colour
+												color: glassLabelColor(isDark)
+											}}
+										>
+											{shown.group.text}
+										</span>
+										{leaves.map(({ sub, icon }, index) => (
+											<FlyoutTile
+												key={sub.path}
+												ref={el => {
+													tileRefs.current[index] =
+														el;
+												}}
+												nameRef={el => {
+													nameRefs.current[index] =
+														el;
+												}}
+												tileLeft={layout.tiles[index]}
+												nameLeft={layout.names[index]}
+												sub={sub}
+												icon={icon}
+												index={index}
+												active={isSubLinkActive(
+													sub,
+													activePath
+												)}
+												tabIndex={
+													index === focusIndex
+														? 0
+														: -1
+												}
+												onClick={event => {
+													// Anything but a plain click is the browser's: a new tab
+													if (!isInAppClick(event)) {
+														return;
+													}
+													event.preventDefault();
+													onNavigate(sub.path!);
+													onClose();
+												}}
+												onKeyDown={event =>
+													onTileKeyDown(event, index)
+												}
+												onFocus={event => {
+													setFocusIndex(index);
+													// A keyboard focus magnifies as a
+													// pointer resting on the tile would
+													const tile =
+														event.currentTarget.querySelector(
+															TILE_SELECTOR
+														);
+													if (
+														tile &&
+														event.currentTarget.matches(
+															':focus-visible'
+														)
+													) {
+														magnify.swellOn(tile);
+													}
+												}}
+												accentColor={accentColor}
+												activeBackgroundColor={
+													activeBackgroundColor
+												}
+												activeForegroundColor={
+													activeForegroundColor
+												}
+												labelColor={labelColor}
+												iconColor={iconColor}
+												surface={solidSurface}
+												isDark={isDark}
+											/>
+										))}
+									</div>
+								) : null}
+							</FlyoutStage>
+						</div>,
+						document.body
+					)
+				: null}
 		</>
 	);
 };
 
 interface FlyoutStageProps {
 	in: boolean;
-	onEnter?: () => void;
 	onExited?: () => void;
 	panelProps: SidebarFlyoutProps['panelProps'];
 	groupText?: string;
@@ -626,11 +668,10 @@ interface FlyoutStageProps {
 /**
  * Holds the tiles beside the rail — no surface of its own, each tile and
  * name carries its own. Slides in as the tiles well up one after another,
- * fades out on close, then lets Popper unmount.
+ * fades out on close, then reports `onExited` so the panel unmounts.
  */
 const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	in: inProp,
-	onEnter,
 	onExited,
 	panelProps,
 	groupText,
@@ -658,7 +699,6 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 		const container = containerRef.current;
 		cancelAnimations(container);
 		if (inProp) {
-			onEnter?.();
 			if (canAnimate(container) && !prefersReducedMotion()) {
 				container.animate(
 					[
@@ -674,7 +714,7 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 			onExited?.();
 			return;
 		}
-		// Popper unmounts the tiles only on onExited, so it must come: not only
+		// The tiles unmount only on onExited, so it must come: not only
 		// when the fade finishes, but when it is cancelled or never reports
 		// back (a navigation or a hidden tab mid-fade), else the tiles stayed
 		// on the page with the dim already gone
@@ -698,31 +738,21 @@ const FlyoutStage: React.FC<FlyoutStageProps> = ({
 	}, [inProp]);
 
 	return (
-		<Box
+		<div
 			ref={setContainerRef}
 			onMouseEnter={panelProps.onMouseEnter}
 			onMouseLeave={panelProps.onMouseLeave}
 			data-testid='sidebar-flyout'
 			data-group={groupText}
-			sx={{
-				position: 'relative',
-				// No surface of its own: the scrim's gradient sits behind it.
-				// A tile the dock grows pops out past it.
-				p: `${STAGE_PADDING_PX}px`,
-				// Fills the gap to the rail so the pointer can cross it
-				// without leaving the flyout
-				'&::before': {
-					content: '""',
-					position: 'absolute',
-					top: 0,
-					bottom: 0,
-					left: -PANEL_GAP_PX - 2,
-					width: PANEL_GAP_PX + 2
-				}
-			}}
+			// No surface of its own: the scrim's gradient sits behind it. A
+			// tile the dock grows pops out past it. The ::before fills the gap
+			// to the rail (PANEL_GAP_PX + 2) so the pointer can cross it
+			// without leaving the flyout.
+			className="lw:relative lw:before:absolute lw:before:inset-y-0 lw:before:left-[-12px] lw:before:w-3 lw:before:content-['']"
+			style={{ padding: STAGE_PADDING_PX }}
 		>
 			{children}
-		</Box>
+		</div>
 	);
 };
 
@@ -822,46 +852,28 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 		ref
 	) => {
 		const nameOnTop = nameOnTopAt(index);
-		const card = glassLabelSx(isDark, surface);
-		const enter = {
+		const card = glassLabel(isDark, surface);
+		const nameColor = glassLabelColor(isDark);
+		const enter: React.CSSProperties = {
 			animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
-			animationDelay: `${index * TILE_STAGGER_MS}ms`,
-			[REDUCED_MOTION]: { animation: 'none' }
-		};
-		// The current page: the accent, solid, its icon and text in the
-		// accent's foreground — as the current page on the rail
-		const fill = {
-			background: activeBackgroundColor ?? accentColor,
-			color: activeForegroundColor,
-			'& .MuiSvgIcon-root': { color: activeForegroundColor }
-		};
-		// Hovered or focused, the tile and its name take the rail's hover
-		// colour — a tint of the accent, whatever the accent is — mixed into
-		// the surface so it is solid rather than see-through
-		const hover = {
-			background: `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`
+			animationDelay: `${index * TILE_STAGGER_MS}ms`
 		};
 		// A name is plain text on the panel: it takes the accent on hover
 		// (the light theme's accent; on dark glass, the text colour reads)
-		const accentText = isDark ? card.color : accentColor;
-		const lit = {
-			'& [data-flyout-tile]': active ? {} : hover,
-			'& [data-flyout-name]': { color: accentText, fontWeight: 600 }
-		};
-		// Cards of their own: a surface and a soft shadow, no edge
-		const cardSx = {
-			...card,
-			border: 'none',
-			// Lifted a little more than a resting label: they float over
-			// the page
-			boxShadow: isDark
-				? '0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -6px rgba(0, 0, 0, 0.7)'
-				: '0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 20px -6px rgba(15, 23, 42, 0.28)'
-		};
+		const accentText = isDark ? nameColor : accentColor;
+		const vars = {
+			// Hovered or focused, the tile and its name take the rail's hover
+			// colour — a tint of the accent, whatever the accent is — mixed
+			// into the surface so it is solid rather than see-through
+			'--lw-tile-hover': `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`,
+			'--lw-tile-outline': accentColor,
+			'--lw-name-lit': accentText,
+			// The current page's icon takes the accent's foreground
+			'--lw-tile-icon': active ? activeForegroundColor : iconColor
+		} as React.CSSProperties;
 		return (
-			<ButtonBase
+			<a
 				ref={ref}
-				component='a'
 				href={sub.path}
 				role='menuitem'
 				tabIndex={tabIndex}
@@ -871,137 +883,105 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				onClick={onClick}
 				onKeyDown={onKeyDown}
 				onFocus={onFocus}
-				disableRipple
-				sx={{
-					position: 'absolute',
-					inset: 0,
-					display: 'block',
-					pointerEvents: 'none',
-					'& [data-flyout-tile], & [data-flyout-slot], & [data-flyout-bridge]':
-						{
-							position: 'absolute',
-							pointerEvents: 'auto'
-						},
-					color: labelColor,
-					textDecoration: 'none',
-					'&:hover': lit,
-					'&.Mui-focusVisible': {
-						...lit,
-						'& [data-flyout-tile]': {
-							...(active ? {} : hover),
-							outline: '2px solid',
-							outlineColor: accentColor,
-							outlineOffset: 2
-						}
-					},
-					'&:active [data-flyout-tile]': { transform: 'scale(0.94)' },
-					[REDUCED_MOTION]: {
-						'&:active [data-flyout-tile]': { transform: 'none' }
-					}
-				}}
+				className='lw:group/tile lw:pointer-events-none lw:absolute lw:inset-0 lw:block lw:no-underline lw:outline-none'
+				style={{ ...vars, color: labelColor }}
 			>
 				{/* The page's whole column, name to tile, is the link: no gap
 				    between them (or round the tile's corners) drops the hover.
 				    Tiles never share a column, so it reaches no neighbour. */}
-				<Box
+				<span
 					data-flyout-bridge=''
 					aria-hidden
-					sx={{
-						left: tileLeft,
-						top: 0,
-						width: TILE_PX,
-						height: '100%'
-					}}
+					className='lw:pointer-events-auto lw:absolute lw:top-0 lw:block lw:h-full'
+					style={{ left: tileLeft, width: TILE_PX }}
 				/>
-				<Box
+				<span
 					data-flyout-tile=''
 					data-flyout-grows={nameOnTop ? 'down' : 'up'}
-					sx={{
-						...cardSx,
+					className={cn(
+						card.className,
+						'lw:pointer-events-auto lw:absolute lw:box-border lw:flex lw:items-center lw:justify-center lw:rounded-full lw:p-0',
+						'lw:[&_svg]:size-9 lw:[&_svg]:text-(--lw-tile-icon) lw:[&_svg]:transition-colors lw:[&_svg]:duration-150',
+						// A host's own glyph (an image in a `role="img"` box)
+						// takes the same size
+						'lw:[&_[role=img]]:size-9 lw:[&_[role=img]>img]:size-9',
+						!active &&
+							'lw:group-hover/tile:bg-(--lw-tile-hover)! lw:group-focus-visible/tile:bg-(--lw-tile-hover)!',
+						'lw:group-focus-visible/tile:outline-2 lw:group-focus-visible/tile:outline-offset-2 lw:group-focus-visible/tile:outline-(--lw-tile-outline) lw:group-focus-visible/tile:outline-solid',
+						'lw:group-active/tile:[transform:scale(0.94)] lw:motion-reduce:group-active/tile:[transform:none]',
+						REDUCED_MOTION_NONE
+					)}
+					style={{
+						...card.style,
+						// Cards of their own: a surface and a soft shadow, no
+						// edge, lifted a little more than a resting label
+						border: 'none',
+						boxShadow: isDark
+							? '0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -6px rgba(0, 0, 0, 0.7)'
+							: '0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 20px -6px rgba(15, 23, 42, 0.28)',
 						left: tileLeft,
 						top: TILE_TOP_PX,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						boxSizing: 'border-box',
 						width: TILE_PX,
 						height: TILE_PX,
-						p: 0,
-						borderRadius: `${TILE_RADIUS_PX}px`,
+						borderRadius: TILE_RADIUS_PX,
 						// Grows out of the row, away from its name
 						transformOrigin: nameOnTop
 							? 'center top'
 							: 'center bottom',
 						transition: `scale ${glide.duration}ms ${glide.easing}, ${TILE_TRANSITION}`,
-						'& .MuiSvgIcon-root': {
-							fontSize: TILE_ICON_PX,
-							color: iconColor,
-							transition: 'color 160ms ease'
-						},
-						// A host's own glyph (an image in a `role="img"` box)
-						// takes the same size
-						'& [role="img"], & [role="img"] > img': {
-							width: TILE_ICON_PX,
-							height: TILE_ICON_PX
-						},
-						...(active ? fill : {}),
+						// The current page: the accent, solid, its icon and text in
+						// the accent's foreground — as the current page on the rail
+						...(active
+							? {
+									background:
+										activeBackgroundColor ?? accentColor,
+									color: activeForegroundColor
+								}
+							: {}),
 						...enter
 					}}
 				>
 					{icon}
-				</Box>
+				</span>
 				{/* The name, in its band above or below the tiles */}
-				<Box
+				<span
 					data-flyout-slot=''
-					sx={{
+					className='lw:pointer-events-auto lw:absolute lw:flex'
+					style={{
 						left: nameLeft,
 						top: nameOnTop ? 0 : TILE_TOP_PX + TILE_PX + ROW_GAP_PX,
 						height: NAME_BAND_PX,
-						display: 'flex',
 						// Held against its own tile, not floating mid-band; a
 						// name too long for the band bleeds away from the tile
 						alignItems: nameOnTop ? 'flex-end' : 'flex-start'
 					}}
 				>
-					<Box
-						component='span'
+					<span
 						ref={nameRef}
 						data-flyout-name=''
 						data-text={sub.text}
-						sx={{
-							// No card of its own: text on the panel
-							color: card.color,
-							px: 1,
-							py: 0,
-							fontSize: '0.75rem',
-							lineHeight: '16px',
-							// A long name wraps, split evenly, so it stays as
-							// compact as its tile; never cut short
+						// No card of its own: text on the panel. A long name
+						// wraps, split evenly, so it stays as compact as its
+						// tile; never cut short. The ::after holds room for the
+						// bold it turns on hover, so the measured width (and
+						// with it every column after) never moves.
+						className={cn(
+							'lw:block lw:px-2 lw:py-0 lw:text-center lw:text-[0.75rem] lw:leading-4 lw:text-balance lw:transition-colors lw:duration-150',
+							'lw:after:invisible lw:after:block lw:after:h-0 lw:after:overflow-hidden lw:after:font-semibold lw:after:content-[attr(data-text)]',
+							active ? 'lw:font-semibold' : 'lw:font-medium',
+							'lw:group-hover/tile:font-semibold lw:group-hover/tile:text-(--lw-name-lit)! lw:group-focus-visible/tile:font-semibold lw:group-focus-visible/tile:text-(--lw-name-lit)!',
+							REDUCED_MOTION_NONE
+						)}
+						style={{
 							maxWidth: NAME_MAX_PX,
-							textAlign: 'center',
-							textWrap: 'balance',
-							display: 'block',
-							fontWeight: active ? 600 : 500,
-							// Room for the bold it turns on hover, held from
-							// the start, so the measured width (and with it
-							// every column after) never moves
-							'&::after': {
-								content: 'attr(data-text)',
-								display: 'block',
-								fontWeight: 600,
-								height: 0,
-								overflow: 'hidden',
-								visibility: 'hidden'
-							},
-							...(active ? { color: accentText } : {}),
-							transition: 'color 160ms ease',
+							color: active ? accentText : nameColor,
 							...enter
 						}}
 					>
 						{sub.text}
-					</Box>
-				</Box>
-			</ButtonBase>
+					</span>
+				</span>
+			</a>
 		);
 	}
 );

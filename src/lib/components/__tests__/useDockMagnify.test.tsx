@@ -39,20 +39,17 @@ const Rail = ({ enabled = true }: { enabled?: boolean }) => {
 		enabled,
 		axis: 'y',
 		itemSelector: 'button',
-		glyphSelector: '.MuiSvgIcon-root'
+		glyphSelector: '[data-glyph]'
 	});
 	return (
 		<nav ref={ref} data-testid='rail' {...containerProps}>
 			{[0, 1, 2].map(i => (
 				<button key={i} data-testid={`item-${i}`} data-top={i * 44}>
-					<svg
-						className='MuiSvgIcon-root'
-						data-testid={`glyph-${i}`}
-					/>
+					<svg data-glyph='' data-testid={`glyph-${i}`} />
 				</button>
 			))}
 			<button data-testid='tile' data-top={0} data-left={200}>
-				<svg className='MuiSvgIcon-root' data-testid='tile-glyph' />
+				<svg data-glyph='' data-testid='tile-glyph' />
 			</button>
 		</nav>
 	);

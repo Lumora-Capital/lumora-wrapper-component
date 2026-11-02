@@ -1,10 +1,5 @@
-import { Breakpoint } from '@mui/material';
 import { default as default_2 } from 'react';
-import { PaletteMode } from '@mui/material/styles';
 import * as React_2 from 'react';
-import { SxProps } from '@mui/material';
-import { Theme } from '@mui/material';
-import { ThemeOptions } from '@mui/material/styles';
 
 /**
  * Authentication error codes
@@ -49,6 +44,9 @@ export declare interface AuthTokens {
     refreshToken: string | null;
     user: UserData | null;
 }
+
+/** MUI's breakpoint names, which `contentPadding` objects are keyed by. */
+declare type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * Clear all authentication data from localStorage
@@ -172,7 +170,7 @@ export declare interface FullBleedSectionProps {
     flushTop?: boolean;
     /** Stay pinned to the top while the page scrolls (e.g. a detail header with tabs). */
     sticky?: boolean;
-    /** Section background; defaults to the theme paper color. */
+    /** Section background (any CSS colour); defaults to the surface colour (--bg-surface). */
     background?: string;
     /** Hairline under the section. Default true. */
     divider?: boolean;
@@ -181,7 +179,14 @@ export declare interface FullBleedSectionProps {
      * the rest of the page. Default true; `false` lets content touch the edges.
      */
     inset?: boolean;
-    sx?: SxProps<Theme>;
+    className?: string;
+    style?: React_2.CSSProperties;
+    /**
+     * @deprecated Use `className` / `style`. Only a plain object of CSS
+     * properties is still honoured (merged into `style`); MUI shorthands,
+     * theme callbacks and nested selectors are ignored.
+     */
+    sx?: Record<string, unknown>;
 }
 
 /**
@@ -206,11 +211,10 @@ export declare const getAuthTokens: () => AuthTokens;
 export declare const getCurrentUser: () => UserResult;
 
 /**
- * Lumora design tokens for a light or dark theme. LumoraWrapper builds its
- * own theme from these; host apps can reuse them for a matching outer theme:
- * `createTheme(getDesignTokens(mode))`.
+ * Lumora's MUI design tokens for a light or dark theme, for hosts that still
+ * build an MUI theme: `createTheme(getDesignTokens(mode))`.
  */
-export declare const getDesignTokens: (mode: PaletteMode) => ThemeOptions;
+export declare const getDesignTokens: (mode: PaletteMode) => LumoraDesignTokens;
 
 /**
  * Check if user is authenticated
@@ -229,6 +233,18 @@ export declare const Kbd: React_2.FC<{
  * @param context - Context where the error occurred
  */
 export declare const logAuthError: (error: Error | AuthError, context?: string) => void;
+
+/** The shape `getDesignTokens` returns: an MUI `ThemeOptions` subset. */
+declare type LumoraDesignTokens = {
+    palette: Record<string, unknown> & {
+        mode: PaletteMode;
+    };
+    typography: Record<string, unknown>;
+    shape: {
+        borderRadius: number;
+    };
+    shadows: string[];
+};
 
 /** One entry of the platform switcher opened from the sidebar logo. */
 export declare type LumoraPlatform = {
@@ -495,9 +511,21 @@ export declare interface LumoraWrapperProps {
         onButtonClick?: () => void;
         show?: boolean;
     };
-    style?: SxProps<Theme>;
-    sidebarStyles?: SxProps<Theme>;
-    contentStyles?: SxProps<Theme>;
+    /**
+     * Inline styles for the shell root, the desktop sidebar and the `<main>`
+     * content area. They were MUI `sx` objects; now plain CSS properties
+     * (a flat `sx` object of CSS properties still works as is). Use the
+     * `*ClassName` props for anything else.
+     */
+    style?: default_2.CSSProperties;
+    sidebarStyles?: default_2.CSSProperties;
+    contentStyles?: default_2.CSSProperties;
+    /** Classes for the shell root (beside `style`). */
+    className?: string;
+    /** Classes for the desktop sidebar container (beside `sidebarStyles`). */
+    sidebarClassName?: string;
+    /** Classes for the `<main>` content area (beside `contentStyles`). */
+    contentClassName?: string;
     /**
      * Brand accent; the default for the sidebar accent and the logo tint.
      * Defaults to '#01584f'.
@@ -584,7 +612,7 @@ export declare interface LumoraWrapperProps {
     /** @deprecated Accepted but ignored; there is no header on desktop. */
     showHeader?: boolean;
     /** @deprecated Accepted but ignored; there is no header on desktop. */
-    headerStyles?: SxProps<Theme>;
+    headerStyles?: default_2.CSSProperties;
     /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
     showSearchbar?: boolean;
     /** @deprecated Accepted but ignored; pass your own `searchComponent`. */
@@ -626,6 +654,14 @@ export declare interface NotificationSidebarContentProps {
      */
     initialTab?: UpdatesTab;
 }
+
+/**
+ * Lumora's former MUI design tokens, kept as plain data (no MUI import) so a
+ * host that still builds an MUI theme can match the old shell:
+ * `createTheme(getDesignTokens(mode))`. The shell itself no longer reads
+ * them — it is styled by its stylesheet (styles.css) from Nexa's tokens.
+ */
+declare type PaletteMode = 'light' | 'dark';
 
 /** @deprecated Row of the removed `panel` Settings card; kept for type imports. */
 export declare type SettingsItem = {
