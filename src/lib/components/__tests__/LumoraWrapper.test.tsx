@@ -1,14 +1,12 @@
 import * as React from 'react';
 import LumoraWrapper, { type LumoraWrapperProps } from '../LumoraWrapper';
 import {
-	act,
 	fireEvent,
 	hoverSidebarOpen,
 	lumoraTestRequiredProps,
 	mockSidebarLinks,
 	render,
 	screen,
-	waitFor,
 	within
 } from './testUtils';
 
@@ -433,30 +431,6 @@ describe('LumoraWrapper', () => {
 			).not.toBeInTheDocument();
 			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
 			expect(screen.getByText('close notifications')).toBeInTheDocument();
-		});
-
-		it('does not dim the page, and an outside click still closes it', async () => {
-			const Panel = () => <div>notification list</div>;
-			renderWrapper({
-				showNotifications: true,
-				NotificationSidebarContent: Panel
-			});
-
-			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
-			const backdrop = document.querySelector(
-				'[data-slot="sheet-overlay"]'
-			) as HTMLElement;
-			expect(backdrop).toHaveAttribute('data-invisible', 'true');
-			expect(backdrop).toHaveClass('lw:bg-transparent');
-
-			// Radix listens for the outside press from the next tick
-			await act(() => new Promise(resolve => setTimeout(resolve, 0)));
-			fireEvent.pointerDown(backdrop);
-			await waitFor(() =>
-				expect(
-					screen.queryByText('notification list')
-				).not.toBeInTheDocument()
-			);
 		});
 
 		describe('placement', () => {

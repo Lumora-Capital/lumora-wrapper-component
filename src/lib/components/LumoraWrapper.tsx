@@ -134,6 +134,16 @@ export type SidebarLink = {
 	 * above, pages below). Ignored on the last link of its list.
 	 */
 	dividerAfter?: boolean;
+	/**
+	 * A divider above this link. On the first link it sets the list apart
+	 * from the logo above it.
+	 */
+	dividerBefore?: boolean;
+	/**
+	 * Draws this main link above the search and Ask Nexa, straight under the
+	 * logo, e.g. the app's home page.
+	 */
+	aboveSearch?: boolean;
 };
 
 /** Tabs of the right-side updates drawer. */
@@ -1717,9 +1727,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				    desktop it opens beside the sidebar and as tall as it, by
 				    the bell; otherwise on the right. `key` remounts the content
 				    when a different tab is requested, so hosts that read
-				    `initialTab` once still switch. The backdrop is invisible, so
-				    the page isn't dimmed but an outside click still closes the
-				    drawer. */}
+				    `initialTab` once still switch. */}
 							{showNotifications &&
 								NotificationSidebarContent && (
 									<Sheet
@@ -1734,7 +1742,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													? 'left'
 													: 'right'
 											}
-											overlay='invisible'
 											srTitle='Updates'
 											data-lw-host=''
 											className='lw:border-0'

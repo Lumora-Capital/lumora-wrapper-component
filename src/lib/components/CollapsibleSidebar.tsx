@@ -2,6 +2,7 @@ import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '../utils';
 import Brand from './Brand';
+import HoverTooltip from './HoverTooltip';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	RAIL_ITEM_ATTR,
@@ -520,6 +521,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 	// it scrolls with its item and is clipped with the links instead of
 	// resting on the footer when a short window scrolls the rail.
 	const linksRef = React.useRef<HTMLDivElement>(null);
+	const topLinksRef = React.useRef<HTMLDivElement>(null);
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	useKeepActiveInView(scrollRef, activePath, collapsed);
 	const railScrollbarPx = useScrollbarWidth(scrollRef, useFlyout);
@@ -562,6 +564,22 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		color: activeFill,
 		containerRef: linksRef
 	});
+	// Links drawn above the search have their own drop: the one below is
+	// clipped by the links' scroll container.
+	const topLinksGlass = useActiveGlass({
+		enabled: useFlyout,
+		isDark,
+		color: activeFill,
+		containerRef: topLinksRef
+	});
+	const topLinks = React.useMemo(
+		() => mainLinks.filter(link => link.aboveSearch),
+		[mainLinks]
+	);
+	const listLinks = React.useMemo(
+		() => mainLinks.filter(link => !link.aboveSearch),
+		[mainLinks]
+	);
 	const { close: closeFlyout } = flyout;
 	// A navigation from anywhere (a tile, the browser's back) closes it
 	React.useEffect(() => {
@@ -705,7 +723,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		return (
 			<div key={link.text} className='lw:relative'>
 				{row}
-				<Tooltip title={action.label} side='right' arrow>
+				<HoverTooltip title={action.label} side='right' arrow>
 					<button
 						type='button'
 						aria-label={action.label}
@@ -735,7 +753,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					>
 						{action.icon}
 					</button>
-				</Tooltip>
+				</HoverTooltip>
 			</div>
 		);
 	};
@@ -991,7 +1009,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			);
 		}
 		return (
-			<Tooltip
+			<HoverTooltip
 				key={key}
 				title={label}
 				side='right'
@@ -1005,7 +1023,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 					: {})}
 			>
 				{disabled ? <span>{button}</span> : button}
-			</Tooltip>
+			</HoverTooltip>
 		);
 	};
 
@@ -1132,9 +1150,9 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 		const parentButton = showLabels ? (
 			parentIconButton
 		) : (
-			<Tooltip title={link.text} side='right' arrow>
+			<HoverTooltip title={link.text} side='right' arrow>
 				{parentIconButton}
-			</Tooltip>
+			</HoverTooltip>
 		);
 		// The active group's container stays tinted. collapsible tints the
 		// whole group on hover (original); rail-labeled leaves hover
@@ -1215,23 +1233,28 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 				collapsed ? 'lw:items-center' : 'lw:items-stretch'
 			)}
 		>
-			{links.map((link, index) =>
-				link.dividerAfter && index < links.length - 1 ? (
+			{links.map((link, index) => {
+				const divider = (position: 'before' | 'after') => (
+					<Separator
+						data-testid={`sidebar-divider-${position === 'before' ? 'before-' : ''}${link.text}`}
+						className='lw:self-stretch'
+						style={{
+							marginBlock: useFlyout ? railGap : '8px',
+							width: 'auto'
+						}}
+					/>
+				);
+				const after = link.dividerAfter && index < links.length - 1;
+				return link.dividerBefore || after ? (
 					<React.Fragment key={link.text}>
+						{link.dividerBefore ? divider('before') : null}
 						{renderItem(link)}
-						<Separator
-							data-testid={`sidebar-divider-${link.text}`}
-							className='lw:self-stretch'
-							style={{
-								marginBlock: useFlyout ? railGap : '8px',
-								width: 'auto'
-							}}
-						/>
+						{after ? divider('after') : null}
 					</React.Fragment>
 				) : (
 					renderItem(link)
-				)
-			)}
+				);
+			})}
 		</div>
 	);
 
@@ -1393,6 +1416,19 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 			>
 				{railLens.lens}
 				{headerBar ?? railBrand}
+				{topLinks.length > 0 ? (
+					<div
+						ref={topLinksRef}
+						className='lw:relative lw:shrink-0'
+						style={{
+							marginInline: horizontalPaddingPx,
+							paddingBottom: useFlyout ? railGap : '8px'
+						}}
+					>
+						{topLinksGlass.glass}
+						{renderLinkStack(topLinks)}
+					</div>
+				) : null}
 				{topContent ? (
 					<div
 						className='lw:shrink-0'
@@ -1442,7 +1478,7 @@ const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 						className='lw:relative lw:flex lw:flex-[1_0_auto] lw:flex-col'
 					>
 						{activeGlass.glass}
-						{renderLinkStack(mainLinks)}
+						{renderLinkStack(listLinks)}
 						{/* Bottom group, pinned to the bottom by mt:auto. With a footer
 				    the divider moves below it, between the links and the user. */}
 						{secondaryLinks.length > 0 ? (

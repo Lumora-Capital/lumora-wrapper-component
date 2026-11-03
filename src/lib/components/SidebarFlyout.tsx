@@ -20,14 +20,17 @@ import {
 } from './liquidGlass';
 import { RAIL_MAX_SCALE } from './shellLayout';
 import { useIsDark, useShellScopeProps } from './shellTheme';
-import { DOCK_FOLLOW_MS, fitWithin, useDockMagnify } from './useDockMagnify';
+import { fitWithin, useDockMagnify } from './useDockMagnify';
 import { flattenLeaves, isInAppClick, isSubLinkActive } from './sidebarUtils';
 
 /** Each page's icon tile: a step up from the rail's buttons, room for its
  * larger glyph (36px: the tile's `[&_svg]:size-9`). */
 const TILE_PX = 52;
 /** How far the tile under the pointer swells. */
-const TILE_MAX_SCALE = 1.8;
+const TILE_MAX_SCALE = 2;
+/** The room the tile under the pointer opens either side of it, beyond
+ * its growth, pushing its neighbours a little further away. */
+const TILE_SPACING_PX = 10;
 /** Round tiles: a circle as wide as the tile. */
 const TILE_RADIUS_PX = TILE_PX / 2;
 const TILE_SELECTOR = '[data-flyout-tile]';
@@ -317,8 +320,11 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 		transition: TILE_TRANSITION,
 		// A bigger swell than the rail's: the tiles are the destination
 		maxScale: TILE_MAX_SCALE,
-		// The neighbours make room as it grows
-		carrierSelector: '[role="menuitem"]'
+		// The neighbours make room as it grows, and a little more
+		carrierSelector: '[role="menuitem"]',
+		spacing: TILE_SPACING_PX,
+		// Only the tile under the pointer swells; the rest keep their size
+		hoveredOnly: true
 	});
 
 	// The heading moves only when a tile would reach it: one that grows up
@@ -340,25 +346,31 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 			const headingLeft = heading.offsetLeft - heading.offsetWidth / 2;
 			const headingRight = headingLeft + heading.offsetWidth;
 			let rise = 0;
-			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
-				if (tile.dataset.flyoutGrows !== 'up') {
-					return;
+			// Reaches the heading if it sits under its span and above its gap
+			const reach = (left: number, width: number, top: number) => {
+				if (left < headingRight && left + width > headingLeft) {
+					rise = Math.max(rise, -top - HEADING_GAP_PX);
 				}
+			};
+			row.querySelectorAll<HTMLElement>(TILE_SELECTOR).forEach(tile => {
 				const scale = parseFloat(tile.style.scale) || 1;
-				const slide =
-					parseFloat(
-						tile.closest<HTMLElement>('[role="menuitem"]')?.style
-							.translate ?? ''
-					) || 0;
-				const left =
-					tile.offsetLeft + slide - ((scale - 1) * TILE_PX) / 2;
-				if (
-					left < headingRight &&
-					left + scale * TILE_PX > headingLeft
-				) {
-					rise = Math.max(
-						rise,
-						(scale - 1) * TILE_PX - tile.offsetTop - HEADING_GAP_PX
+				// How far it grows past each edge, about its centre
+				const growth = ((scale - 1) * TILE_PX) / 2;
+				const page = tile.closest<HTMLElement>('[role="menuitem"]');
+				const slide = parseFloat(page?.style.translate ?? '') || 0;
+				reach(
+					tile.offsetLeft + slide - growth,
+					scale * TILE_PX,
+					tile.offsetTop - growth
+				);
+				const name =
+					page?.querySelector<HTMLElement>('[data-flyout-name]');
+				const slot = name?.parentElement;
+				if (name && slot && tile.dataset.flyoutNameSide === 'above') {
+					reach(
+						slot.offsetLeft + slide,
+						name.offsetWidth,
+						slot.offsetTop + name.offsetTop - growth
 					);
 				}
 			});
@@ -554,7 +566,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 											// the pages along, as the Dock's shelf does
 											marginRight:
 												'var(--dock-spread, 0px)',
-											transition: `margin-right ${glide.duration}ms ${glide.easing}`
+											// In step with the pages it makes room for
+											transition: `margin-right var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`
 										}}
 									>
 										<span
@@ -572,7 +585,7 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 											)}
 											style={{
 												marginBottom: HEADING_GAP_PX,
-												transition: `translate ${DOCK_FOLLOW_MS}ms ease-out`,
+												transition: `translate var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`,
 												// The pages' own name colour
 												color: glassLabelColor(isDark)
 											}}
@@ -858,8 +871,9 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			animation: `${tileIn} ${morph.duration}ms ${morph.easing} both`,
 			animationDelay: `${index * TILE_STAGGER_MS}ms`
 		};
-		// A name is plain text on the panel: it takes the accent on hover
-		// (the light theme's accent; on dark glass, the text colour reads)
+		// A name is plain text on the panel: the current page's takes the
+		// accent (the light theme's accent; on dark glass, the text colour
+		// reads). On hover it only turns bold, keeping its colour
 		const accentText = isDark ? nameColor : accentColor;
 		const vars = {
 			// Hovered or focused, the tile and its name take the rail's hover
@@ -867,7 +881,6 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 			// into the surface so it is solid rather than see-through
 			'--lw-tile-hover': `color-mix(in srgb, ${accentColor} ${isDark ? 20 : 12}%, ${surface})`,
 			'--lw-tile-outline': accentColor,
-			'--lw-name-lit': accentText,
 			// The current page's icon takes the accent's foreground
 			'--lw-tile-icon': active ? activeForegroundColor : iconColor
 		} as React.CSSProperties;
@@ -897,7 +910,11 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				/>
 				<span
 					data-flyout-tile=''
-					data-flyout-grows={nameOnTop ? 'down' : 'up'}
+					data-flyout-name-side={nameOnTop ? 'above' : 'below'}
+					// Lit with the swell (the page the dock marks
+					// `data-dock-hovered`, which may not be the one under the
+					// pointer as the last shrinks away); by a plain hover only
+					// while nothing swells (reduced motion)
 					className={cn(
 						card.className,
 						'lw:pointer-events-auto lw:absolute lw:box-border lw:flex lw:items-center lw:justify-center lw:rounded-full lw:p-0',
@@ -906,7 +923,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 						// takes the same size
 						'lw:[&_[role=img]]:size-9 lw:[&_[role=img]>img]:size-9',
 						!active &&
-							'lw:group-hover/tile:bg-(--lw-tile-hover)! lw:group-focus-visible/tile:bg-(--lw-tile-hover)!',
+							'lw:group-has-[[data-dock-hovered]]/tile:bg-(--lw-tile-hover)! lw:[[role=menu]:not(:has([data-dock-hovered]))_[role=menuitem]:hover_&]:bg-(--lw-tile-hover)! lw:group-focus-visible/tile:bg-(--lw-tile-hover)!',
 						'lw:group-focus-visible/tile:outline-2 lw:group-focus-visible/tile:outline-offset-2 lw:group-focus-visible/tile:outline-(--lw-tile-outline) lw:group-focus-visible/tile:outline-solid',
 						'lw:group-active/tile:[transform:scale(0.94)] lw:motion-reduce:group-active/tile:[transform:none]',
 						REDUCED_MOTION_NONE
@@ -924,10 +941,9 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 						width: TILE_PX,
 						height: TILE_PX,
 						borderRadius: TILE_RADIUS_PX,
-						// Grows out of the row, away from its name
-						transformOrigin: nameOnTop
-							? 'center top'
-							: 'center bottom',
+						// Grows about its centre, so the row stays level; its
+						// name moves aside to clear it (see the name's slot)
+						transformOrigin: 'center',
 						transition: `scale ${glide.duration}ms ${glide.easing}, ${TILE_TRANSITION}`,
 						// The current page: the accent, solid, its icon and text in
 						// the accent's foreground — as the current page on the rail
@@ -946,14 +962,23 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 				{/* The name, in its band above or below the tiles */}
 				<span
 					data-flyout-slot=''
-					className='lw:pointer-events-auto lw:absolute lw:flex'
+					className={cn(
+						'lw:pointer-events-auto lw:absolute lw:flex',
+						REDUCED_MOTION_NONE
+					)}
 					style={{
 						left: nameLeft,
 						top: nameOnTop ? 0 : TILE_TOP_PX + TILE_PX + ROW_GAP_PX,
 						height: NAME_BAND_PX,
 						// Held against its own tile, not floating mid-band; a
 						// name too long for the band bleeds away from the tile
-						alignItems: nameOnTop ? 'flex-end' : 'flex-start'
+						alignItems: nameOnTop ? 'flex-end' : 'flex-start',
+						// Pushed away from its tile by as much as the tile
+						// grows towards it (`--dock-scale`, on the page)
+						translate: `0 calc((var(--dock-scale, 1) - 1) * ${
+							nameOnTop ? -TILE_PX / 2 : TILE_PX / 2
+						}px)`,
+						transition: `translate var(--dock-scale-timing, ${glide.duration}ms ${glide.easing})`
 					}}
 				>
 					<span
@@ -969,7 +994,7 @@ const FlyoutTile = React.forwardRef<HTMLAnchorElement, FlyoutTileProps>(
 							'lw:block lw:px-2 lw:py-0 lw:text-center lw:text-[0.75rem] lw:leading-4 lw:text-balance lw:transition-colors lw:duration-150',
 							'lw:after:invisible lw:after:block lw:after:h-0 lw:after:overflow-hidden lw:after:font-semibold lw:after:content-[attr(data-text)]',
 							active ? 'lw:font-semibold' : 'lw:font-medium',
-							'lw:group-hover/tile:font-semibold lw:group-hover/tile:text-(--lw-name-lit)! lw:group-focus-visible/tile:font-semibold lw:group-focus-visible/tile:text-(--lw-name-lit)!',
+							'lw:group-has-[[data-dock-hovered]]/tile:font-semibold lw:[[role=menu]:not(:has([data-dock-hovered]))_[role=menuitem]:hover_&]:font-semibold lw:group-focus-visible/tile:font-semibold',
 							REDUCED_MOTION_NONE
 						)}
 						style={{

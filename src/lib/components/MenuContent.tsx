@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../utils';
+import HoverTooltip from './HoverTooltip';
 import type { SidebarLink, SidebarSubLink } from './LumoraWrapper';
 import {
 	hasChildren,
@@ -147,9 +148,9 @@ const withRailTooltip = (
 	railShowTitles ? (
 		button
 	) : (
-		<Tooltip title={text} side='right' arrow>
+		<HoverTooltip title={text} side='right' arrow>
 			{button}
-		</Tooltip>
+		</HoverTooltip>
 	);
 
 /** Arrow keys move between a menu's rows, as MUI's MenuList did. */
