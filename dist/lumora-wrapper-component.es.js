@@ -6569,7 +6569,6 @@ const qi = ({
               {
                 side: ht ? "left" : "right",
                 srTitle: "Updates",
-                "data-lw-host": "",
                 className: "lw:border-0",
                 style: ht ? {
                   width: 380,
@@ -6582,12 +6581,19 @@ const qi = ({
                   maxWidth: "100vw"
                 },
                 children: /* @__PURE__ */ l(
-                  we,
+                  "div",
                   {
-                    onClose: io,
-                    initialTab: Lt.tab
-                  },
-                  Lt.tab
+                    "data-lw-host": "",
+                    className: "lw:flex lw:min-h-0 lw:flex-1 lw:flex-col",
+                    children: /* @__PURE__ */ l(
+                      we,
+                      {
+                        onClose: io,
+                        initialTab: Lt.tab
+                      },
+                      Lt.tab
+                    )
+                  }
                 )
               }
             )
