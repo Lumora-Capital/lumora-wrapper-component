@@ -433,6 +433,25 @@ describe('LumoraWrapper', () => {
 			expect(screen.getByText('close notifications')).toBeInTheDocument();
 		});
 
+		it('puts the host content below a host boundary, not on the scope root', () => {
+			const NotificationSidebarContent = () => <p>drawer body</p>;
+			renderWrapper({
+				showNotifications: true,
+				notificationCount: 1,
+				NotificationSidebarContent
+			});
+			fireEvent.click(screen.getByRole('button', { name: /notif/i }));
+
+			// The shell's reset is @scope ([data-lw-scope]) to ([data-lw-host]); a scope root is never its own limit.
+			const host = screen
+				.getByText('drawer body')
+				.closest('[data-lw-host]') as HTMLElement;
+			expect(host).not.toHaveAttribute('data-lw-scope');
+			expect(
+				host.parentElement?.closest('[data-lw-scope]')
+			).not.toBeNull();
+		});
+
 		describe('placement', () => {
 			const Panel = () => <div>notification list</div>;
 			let rectSpy: jest.SpyInstance | undefined;

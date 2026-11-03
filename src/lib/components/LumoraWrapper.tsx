@@ -1743,7 +1743,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													: 'right'
 											}
 											srTitle='Updates'
-											data-lw-host=''
 											className='lw:border-0'
 											style={
 												drawerPlacement
@@ -1760,11 +1759,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 														}
 											}
 										>
-											<NotificationSidebarContent
-												key={updatesDrawer.tab}
-												onClose={closeUpdates}
-												initialTab={updatesDrawer.tab}
-											/>
+											{/* SheetContent is a scope root; the reset stops at a host *below* it. */}
+											<div
+												data-lw-host=''
+												className='lw:flex lw:min-h-0 lw:flex-1 lw:flex-col'
+											>
+												<NotificationSidebarContent
+													key={updatesDrawer.tab}
+													onClose={closeUpdates}
+													initialTab={
+														updatesDrawer.tab
+													}
+												/>
+											</div>
 										</SheetContent>
 									</Sheet>
 								)}
