@@ -339,9 +339,9 @@ const il = (e, t) => (n) => {
 }) => {
   const g = c.useRef(0), h = c.useRef(
     /* @__PURE__ */ new WeakMap()
-  ), w = c.useRef(/* @__PURE__ */ new Set()), N = c.useRef(null), S = (v) => {
+  ), w = c.useRef(/* @__PURE__ */ new Set()), S = c.useRef(null), N = (v) => {
     var $;
-    N.current !== v && (($ = N.current) == null || $.removeAttribute("data-dock-hovered"), v == null || v.setAttribute("data-dock-hovered", ""), N.current = v);
+    S.current !== v && (($ = S.current) == null || $.removeAttribute("data-dock-hovered"), v == null || v.setAttribute("data-dock-hovered", ""), S.current = v);
   }, T = c.useRef(/* @__PURE__ */ new Set()), y = s ? `, ${s}` : "", _ = m ? `${lt.duration}ms ${lt.easing}` : `${Jt}ms ease-out`, O = (v) => u ? v.closest(u) : null, E = (v) => {
     const [$ = "0", P = "0"] = v.split(" ").filter(Boolean);
     return n === "x" ? parseFloat($) || 0 : parseFloat(P) || 0;
@@ -397,7 +397,7 @@ const il = (e, t) => (n) => {
     var v, $, P, Z;
     cancelAnimationFrame(g.current), w.current.forEach((H) => {
       H.style.transition = `scale ${lt.duration}ms ${lt.easing}${y}`, H.style.scale = "";
-    }), w.current.clear(), S(null), T.current.forEach((H) => {
+    }), w.current.clear(), N(null), T.current.forEach((H) => {
       H.style.transition = `translate ${lt.duration}ms ${lt.easing}`, H.style.translate = "", H.style.removeProperty("--dock-scale");
     }), T.current.clear(), (v = e.current) == null || v.style.setProperty(
       "--dock-scale-timing",
@@ -405,7 +405,7 @@ const il = (e, t) => (n) => {
     ), ($ = e.current) == null || $.style.removeProperty("--dock-spread"), (P = e.current) == null || P.style.removeProperty("--dock-max-scale"), (Z = e.current) == null || Z.style.removeProperty("--dock-active-scale");
   }, G = (v, $, P) => {
     const Z = n === "x" ? $ : P, H = K(v).map(({ item: j, glyph: V }) => {
-      const we = C(j), J = m ? j === N.current ? 1 : 0 : Zs(Math.abs(Z - we), a), ie = 1 + (Math.max(1, Math.min(F(j, V), B(V))) - 1) * J;
+      const we = C(j), J = m ? j === S.current ? 1 : 0 : Zs(Math.abs(Z - we), a), ie = 1 + (Math.max(1, Math.min(F(j, V), B(V))) - 1) * J;
       V.style.transition = `scale ${_}${y}`, ie > 1.001 ? (V.style.scale = ie.toFixed(3), w.current.add(V)) : w.current.has(V) && (V.style.scale = "", w.current.delete(V));
       const he = n === "x" ? j.offsetWidth : j.offsetHeight, pe = (ie - 1) * he + 2 * d * J;
       return { item: j, centre: we, scale: ie, growth: pe };
@@ -442,13 +442,13 @@ const il = (e, t) => (n) => {
         return;
       }
       if (m) {
-        const V = n === "x" ? P : Z, we = N.current;
+        const V = n === "x" ? P : Z, we = S.current;
         if (!(we && $.contains(we) && A(we, V) <= Vs)) {
           let Q = null, ie = 1 / 0;
           K($).forEach(({ item: he }) => {
             const pe = A(he, V);
             pe < ie && (Q = he, ie = pe);
-          }), Q && S(Q);
+          }), Q && N(Q);
         }
       }
       G($, P, Z);
@@ -457,7 +457,7 @@ const il = (e, t) => (n) => {
     const $ = e.current;
     if (!t || !$ || At())
       return;
-    m && S(v);
+    m && N(v);
     const P = v.getBoundingClientRect();
     G($, P.left + P.width / 2, P.top + P.height / 2);
   };
@@ -503,12 +503,12 @@ const il = (e, t) => (n) => {
     var C;
     const A = (C = R == null ? void 0 : R.closest) == null ? void 0 : C.call(R, n);
     return A && E.contains(A) ? A : null;
-  }, N = (E) => {
+  }, S = (E) => {
     if (!e)
       return;
     const R = w(E.currentTarget, E.target);
     R && h(E.currentTarget, R);
-  }, S = (E) => {
+  }, N = (E) => {
     if (!e)
       return;
     const R = w(E.currentTarget, E.target);
@@ -592,9 +592,9 @@ const il = (e, t) => (n) => {
     ) : null,
     // A scroll inside the container moves the items out from under it
     containerProps: e ? {
-      onMouseOver: N,
+      onMouseOver: S,
       onMouseLeave: y,
-      onFocus: S,
+      onFocus: N,
       onBlur: _,
       onScrollCapture: y
     } : {}
@@ -773,19 +773,19 @@ const il = (e, t) => (n) => {
   activeForegroundColor: g,
   solidSurface: h
 }) => {
-  const w = qe(), N = ln(), S = !!(e && n), T = c.useRef(null);
+  const w = qe(), S = ln(), N = !!(e && n), T = c.useRef(null);
   e && t && (T.current = { group: e, key: t });
   const y = T.current, _ = c.useRef(null);
   n && (_.current = { anchor: n, railEdge: o });
-  const [O, E] = c.useState(S);
-  S && !O && E(!0);
-  const [R, A] = c.useState(S);
-  S && !R && A(!0), c.useEffect(() => {
-    if (S)
+  const [O, E] = c.useState(N);
+  N && !O && E(!0);
+  const [R, A] = c.useState(N);
+  N && !R && A(!0), c.useEffect(() => {
+    if (N)
       return;
     const I = setTimeout(() => A(!1), Co);
     return () => clearTimeout(I);
-  }, [S]);
+  }, [N]);
   const C = c.useRef(null), [K, F] = c.useState({
     x: 0,
     y: 0
@@ -814,7 +814,7 @@ const il = (e, t) => (n) => {
   }, [n]);
   const [M, G] = c.useState(!1);
   c.useEffect(() => {
-    if (!S) {
+    if (!N) {
       G(!1);
       return;
     }
@@ -825,12 +825,12 @@ const il = (e, t) => (n) => {
     return () => {
       cancelAnimationFrame(z), cancelAnimationFrame(I);
     };
-  }, [S]);
+  }, [N]);
   const te = c.useMemo(
     () => y ? Ll(y.group.subitems, y.group.icon) : [],
     [y]
   ), D = c.useRef(null), v = _r(D, {
-    enabled: S,
+    enabled: N,
     axis: "x",
     itemSelector: cl,
     transition: Tr,
@@ -899,14 +899,14 @@ const il = (e, t) => (n) => {
   c.useEffect(() => {
     J(Math.max(V, 0));
   }, [t]), c.useEffect(() => {
-    if (!S || !i)
+    if (!N || !i)
       return;
     const I = setTimeout(() => {
       var z;
       return (z = j.current[0]) == null ? void 0 : z.focus();
     });
     return () => clearTimeout(I);
-  }, [S, i, t]);
+  }, [N, i, t]);
   const Q = (I) => {
     var q;
     const z = Math.max(0, Math.min(I, te.length - 1));
@@ -943,19 +943,19 @@ const il = (e, t) => (n) => {
       {
         "data-testid": "sidebar-flyout-scrim",
         "data-flyout-scrim": "",
-        "data-state": S ? "open" : "closed",
+        "data-state": N ? "open" : "closed",
         "aria-hidden": !0,
         onClick: () => u(),
         className: b(
           "lw:fixed lw:inset-y-0 lw:right-0",
-          S ? "lw:animate-in lw:fade-in-0" : "lw:animate-out lw:fade-out-0 lw:[animation-fill-mode:forwards]"
+          N ? "lw:animate-in lw:fade-in-0" : "lw:animate-out lw:fade-out-0 lw:[animation-fill-mode:forwards]"
         ),
         style: {
           left: r ? 0 : `${o}px`,
           // Clicks in the cut-out reach the rail beneath
           ...r ? { clipPath: ua(r) } : {},
           zIndex: ia,
-          animationDuration: `${S ? da : Co}ms`,
+          animationDuration: `${N ? da : Co}ms`,
           // The flyout's only surface: a wash from the rail across
           // the page, strongest behind the tiles, fading to the right
           background: w ? "linear-gradient(90deg, rgba(24, 30, 40, 0.97) 0%, rgba(24, 30, 40, 0.9) 30%, rgba(24, 30, 40, 0.6) 55%, rgba(24, 30, 40, 0.2) 100%)" : "linear-gradient(90deg, rgba(236, 239, 243, 0.97) 0%, rgba(236, 239, 243, 0.9) 30%, rgba(236, 239, 243, 0.6) 55%, rgba(236, 239, 243, 0.2) 100%)"
@@ -967,7 +967,7 @@ const il = (e, t) => (n) => {
         "div",
         {
           ref: C,
-          ...N,
+          ...S,
           className: b(
             "lw:fixed lw:top-0 lw:left-0",
             $e
@@ -980,7 +980,7 @@ const il = (e, t) => (n) => {
           children: /* @__PURE__ */ l(
             fa,
             {
-              in: S,
+              in: N,
               onExited: () => E(!1),
               panelProps: d,
               groupText: y == null ? void 0 : y.group.text,
@@ -1164,21 +1164,21 @@ const il = (e, t) => (n) => {
     activeBackgroundColor: g,
     activeForegroundColor: h,
     labelColor: w,
-    iconColor: N,
-    surface: S,
+    iconColor: S,
+    surface: N,
     isDark: T
   }, y) => {
-    const _ = Cr(s), O = Fl(T, S), E = ur(T), R = {
+    const _ = Cr(s), O = Fl(T, N), E = ur(T), R = {
       animation: `${Ps} ${$o.duration}ms ${$o.easing} both`,
       animationDelay: `${s * ra}ms`
     }, A = T ? E : p, C = {
       // Hovered or focused, the tile and its name take the rail's hover
       // colour — a tint of the accent, whatever the accent is — mixed
       // into the surface so it is solid rather than see-through
-      "--lw-tile-hover": `color-mix(in srgb, ${p} ${T ? 20 : 12}%, ${S})`,
+      "--lw-tile-hover": `color-mix(in srgb, ${p} ${T ? 20 : 12}%, ${N})`,
       "--lw-tile-outline": p,
       // The current page's icon takes the accent's foreground
-      "--lw-tile-icon": i ? h : N
+      "--lw-tile-icon": i ? h : S
     };
     return /* @__PURE__ */ x(
       "a",
@@ -1579,8 +1579,8 @@ const Da = ({
   brandColor: g,
   activeAccentColor: h = "#01584f",
   activeBackgroundColor: w,
-  groupArrowColor: N,
-  groupAccentColor: S,
+  groupArrowColor: S,
+  groupAccentColor: N,
   activeForegroundColor: T,
   foregroundColor: y,
   surfaceBackgroundColor: _,
@@ -1640,7 +1640,7 @@ const Da = ({
   }, [n, I]);
   const [z, q] = c.useState(
     {}
-  ), U = T ?? Sl(J), ce = { bg: J, fg: U }, le = S ?? Vt(h), Se = Xn(_, G), se = y ?? (G ? "var(--lw-text-primary)" : h), _e = m ?? Se, De = p ?? (m ? Sl(_e) : y ?? (G ? Ta : h)), ge = Vt(De), ke = (f) => {
+  ), U = T ?? Sl(J), ce = { bg: J, fg: U }, le = N ?? Vt(h), Se = Xn(_, G), se = y ?? (G ? "var(--lw-text-primary)" : h), _e = m ?? Se, De = p ?? (m ? Sl(_e) : y ?? (G ? Ta : h)), ge = Vt(De), ke = (f) => {
     o == null || o(f);
   }, ye = (f) => f ? {
     href: f,
@@ -1981,8 +1981,8 @@ const Da = ({
               backgroundColor: L ? J : "transparent",
               ...cn(L),
               "--lw-arrow-right": `${-Oa(ne)}px`,
-              "--lw-arrow-bg": N ?? "currentColor",
-              "--lw-arrow-opacity": N ? 1 : 0.55,
+              "--lw-arrow-bg": S ?? "currentColor",
+              "--lw-arrow-opacity": S ? 1 : 0.55,
               "--lw-arrow-mask": `${Aa} center / contain no-repeat`
             },
             children: f.icon
@@ -2448,10 +2448,10 @@ const $r = () => Ua(Wa), Xa = 6, Ka = 8, Po = (e, t) => typeof e == "object" ? e
   } : void 0, h = $n, w = Xn(
     Po(i, e),
     m
-  ), N = vr(
+  ), S = vr(
     Po(a, e),
     m
-  ), S = br(s), T = g ? /* @__PURE__ */ x("div", { className: "lw:flex lw:flex-col lw:items-center lw:pt-3", children: [
+  ), N = br(s), T = g ? /* @__PURE__ */ x("div", { className: "lw:flex lw:flex-col lw:items-center lw:pt-3", children: [
     /* @__PURE__ */ l(pt, { size: 36 }),
     /* @__PURE__ */ l(
       "div",
@@ -2486,7 +2486,7 @@ const $r = () => Ua(Wa), Xa = 6, Ka = 8, Po = (e, t) => typeof e == "object" ? e
       "data-lw-scope": "",
       "data-lw-theme": e,
       className: "lw:flex lw:min-h-screen",
-      style: { backgroundColor: N },
+      style: { backgroundColor: S },
       children: [
         d && /* @__PURE__ */ x(
           "div",
@@ -2538,7 +2538,7 @@ const $r = () => Ua(Wa), Xa = 6, Ka = 8, Po = (e, t) => typeof e == "object" ? e
             className: "lw-content-padding lw:min-w-0 lw:grow",
             "data-lw-host": "",
             style: {
-              ...S,
+              ...N,
               "--lumora-sticky-top": d ? `${h}px` : "0px",
               padding: "var(--lumora-content-padding)",
               marginTop: d ? h : 0
@@ -2868,22 +2868,22 @@ const ue = {
         }).then((h) => {
           const {
             accessToken: w,
-            refreshToken: N
+            refreshToken: S
           } = h;
           if (a.headers && (a.headers.Authorization = `Bearer ${w}`), d.includes("/auth/logout"))
             try {
               if (typeof a.data == "string") {
-                const S = JSON.parse(
+                const N = JSON.parse(
                   a.data || "{}"
                 );
-                S.refresh_token = N, a.data = JSON.stringify(S);
+                N.refresh_token = S, a.data = JSON.stringify(N);
               } else
-                a.data && typeof a.data == "object" ? a.data.refresh_token = N : a.data = JSON.stringify({
-                  refresh_token: N
+                a.data && typeof a.data == "object" ? a.data.refresh_token = S : a.data = JSON.stringify({
+                  refresh_token: S
                 });
             } catch {
               a.data = JSON.stringify({
-                refresh_token: N
+                refresh_token: S
               });
             }
           return t(a);
@@ -2895,24 +2895,24 @@ const ue = {
         }
       );
       try {
-        const h = await o, { accessToken: w, refreshToken: N } = h.data;
-        if (kr(w, N, null), s(null, {
+        const h = await o, { accessToken: w, refreshToken: S } = h.data;
+        if (kr(w, S, null), s(null, {
           accessToken: w,
-          refreshToken: N
+          refreshToken: S
         }), a.headers && (a.headers.Authorization = `Bearer ${w}`), d.includes("/auth/logout"))
           try {
             if (typeof a.data == "string") {
-              const S = JSON.parse(
+              const N = JSON.parse(
                 a.data || "{}"
               );
-              S.refresh_token = N, a.data = JSON.stringify(S);
+              N.refresh_token = S, a.data = JSON.stringify(N);
             } else
-              a.data && typeof a.data == "object" ? a.data.refresh_token = N : a.data = JSON.stringify({
-                refresh_token: N
+              a.data && typeof a.data == "object" ? a.data.refresh_token = S : a.data = JSON.stringify({
+                refresh_token: S
               });
           } catch {
             a.data = JSON.stringify({
-              refresh_token: N
+              refresh_token: S
             });
           }
         return t(a);
@@ -3227,7 +3227,7 @@ const ri = ({
     };
     return window.addEventListener("keydown", E), () => window.removeEventListener("keydown", E);
   }, [e, d]);
-  const N = n === "docked", S = Wt + i;
+  const S = n === "docked", N = Wt + i;
   let T;
   if (a ? T = {
     top: 0,
@@ -3235,7 +3235,7 @@ const ri = ({
     right: 0,
     bottom: u,
     borderRadius: 0
-  } : N ? T = {
+  } : S ? T = {
     top: 0,
     right: 0,
     bottom: 0,
@@ -3244,15 +3244,15 @@ const ri = ({
     borderRadius: 0,
     borderWidth: "0 0 0 1px"
   } : T = {
-    bottom: S,
+    bottom: N,
     ...o === "left" ? { left: s + Wt } : { right: Wt },
     width: r,
     maxWidth: `calc(100vw - ${Wt * 2}px)`,
-    height: `min(${si}px, calc(100vh - ${S + Wt}px))`,
+    height: `min(${si}px, calc(100vh - ${N + Wt}px))`,
     borderRadius: "12px"
   }, !e && !p)
     return null;
-  const y = e && h, _ = !m.current, O = N ? {
+  const y = e && h, _ = !m.current, O = S ? {
     transform: y ? "none" : "translateX(100%)",
     transition: e ? `transform ${_ ? 0 : bl}ms ${xl}` : `transform ${Gt}ms ${vl}, visibility 0ms linear ${Gt}ms`
   } : {
@@ -3264,7 +3264,7 @@ const ri = ({
   return /* @__PURE__ */ l(
     "div",
     {
-      role: N ? "complementary" : "dialog",
+      role: S ? "complementary" : "dialog",
       "aria-label": "Nexa chat",
       "aria-hidden": e ? void 0 : !0,
       "data-testid": "chat-panel",
@@ -3272,7 +3272,7 @@ const ri = ({
       "data-lw-host": "",
       className: `lw:fixed lw:flex lw:flex-col lw:overflow-hidden lw:border lw:border-solid lw:border-border lw:bg-surface lw:text-foreground lw:shadow-popover ${cr}`,
       style: {
-        zIndex: N ? ai : ii,
+        zIndex: S ? ai : ii,
         visibility: e ? "visible" : "hidden",
         ...T,
         ...O
@@ -3391,14 +3391,14 @@ const wi = 180, Go = 250, fi = "#01584F", Mr = "var(--lw-text-muted)", mi = ({
 }) => {
   const [a, u] = c.useState(!1), d = c.useRef(
     null
-  ), m = c.useRef(null), p = c.useRef(null), g = c.useRef(!1), h = c.useRef(!1), w = c.useId(), N = () => {
+  ), m = c.useRef(null), p = c.useRef(null), g = c.useRef(!1), h = c.useRef(!1), w = c.useId(), S = () => {
     d.current && (clearTimeout(d.current), d.current = null);
-  }, S = () => {
-    N(), d.current = setTimeout(() => {
+  }, N = () => {
+    S(), d.current = setTimeout(() => {
       u(!1), d.current = null;
     }, wi);
   }, T = () => {
-    N(), u(!0);
+    S(), u(!0);
   };
   c.useEffect(() => {
     if (!a)
@@ -3432,7 +3432,7 @@ const wi = 180, Go = 250, fi = "#01584F", Mr = "var(--lw-text-muted)", mi = ({
     onBlur: (F) => {
       var M;
       const B = F.relatedTarget;
-      B && ((M = m.current) != null && M.contains(B)) || S();
+      B && ((M = m.current) != null && M.contains(B)) || N();
     },
     onKeyDown: (F) => {
       F.key === "ArrowDown" && (F.preventDefault(), h.current = !0, T());
@@ -3473,7 +3473,7 @@ const wi = 180, Go = 250, fi = "#01584F", Mr = "var(--lw-text-muted)", mi = ({
           g.current = !0, T();
         },
         onMouseLeave: () => {
-          g.current = !1, S();
+          g.current = !1, N();
         },
         children: Fr(C, e.text, i)
       }
@@ -3497,8 +3497,8 @@ const wi = 180, Go = 250, fi = "#01584F", Mr = "var(--lw-text-muted)", mi = ({
           u(!1);
         },
         onEscapeKeyDown: () => u(!1),
-        onMouseEnter: N,
-        onMouseLeave: S,
+        onMouseEnter: S,
+        onMouseLeave: N,
         "data-testid": `rail-submenu-panel-${e.text}`,
         className: "lw:z-[1300] lw:min-w-0 lw:rounded-sm lw:border lw:border-solid lw:border-border lw:bg-popover lw:py-1 lw:text-popover-foreground lw:shadow-popover",
         style: {
@@ -3791,8 +3791,8 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
   showSettings: g,
   onSettingsClick: h,
   showThemeToggler: w,
-  theme: N,
-  onThemeToggle: S,
+  theme: S,
+  onThemeToggle: N,
   onLogout: T
 }) => {
   const y = (C) => () => {
@@ -3802,14 +3802,14 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
     _ && typeof document < "u" && (E.current = document.activeElement);
   }, [_]);
   const R = Ci[n], A = (C, K) => {
-    const F = N === C;
+    const F = S === C;
     return /* @__PURE__ */ l(
       "button",
       {
         type: "button",
         "aria-pressed": F,
-        disabled: !S,
-        onClick: () => !F && (S == null ? void 0 : S()),
+        disabled: !N,
+        onClick: () => !F && (N == null ? void 0 : N()),
         className: b(
           "lw:h-8 lw:flex-1 lw:cursor-pointer lw:rounded-md lw:text-sm lw:font-medium lw:outline-none lw:transition-colors lw:focus-visible:ring-2 lw:focus-visible:ring-ring lw:disabled:cursor-default lw:disabled:opacity-50",
           F ? "lw:bg-surface lw:text-foreground lw:shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_1px_rgba(0,0,0,0.08)]" : "lw:text-muted-foreground lw:hover:text-foreground"
@@ -3940,7 +3940,7 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
                     className: b(
                       An,
                       // The dark palette's error colors are too dim on the dark menu
-                      N === "dark" ? "lw:text-[hsl(0,90%,65%)]" : "lw:text-destructive"
+                      S === "dark" ? "lw:text-[hsl(0,90%,65%)]" : "lw:text-destructive"
                     ),
                     onSelect: y(T),
                     children: [
@@ -3968,15 +3968,16 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
   haspopup: u,
   isPage: d = !1,
   href: m,
-  testId: p
+  testId: p,
+  hideLabel: g = !1
 }) => {
-  const g = b(
+  const h = b(
     "lw:flex lw:h-full lw:min-w-0 lw:flex-[1_1_0] lw:cursor-pointer lw:flex-col lw:items-center lw:justify-center lw:gap-0.5 lw:border-0 lw:bg-transparent lw:p-0 lw:no-underline lw:outline-none lw:select-none",
     "lw:focus-visible:outline-2 lw:focus-visible:outline-offset-[-4px] lw:focus-visible:outline-(--lw-item-active) lw:focus-visible:outline-solid"
-  ), h = {
+  ), w = {
     color: o ? s : r,
     "--lw-item-active": s
-  }, w = /* @__PURE__ */ x(ve, { children: [
+  }, S = /* @__PURE__ */ x(ve, { children: [
     /* @__PURE__ */ l(
       "span",
       {
@@ -3990,9 +3991,11 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
     /* @__PURE__ */ l(
       "span",
       {
+        "aria-hidden": g || void 0,
         className: b(
           "lw:text-[11px] lw:leading-[1.2] lw:text-inherit",
-          o ? "lw:font-semibold" : "lw:font-medium"
+          o ? "lw:font-semibold" : "lw:font-medium",
+          g && "lw:invisible"
         ),
         children: e
       }
@@ -4004,10 +4007,10 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
     "aria-expanded": u ? o : void 0,
     "aria-current": d && o ? "page" : void 0,
     "data-testid": p,
-    className: g,
-    style: h
+    className: h,
+    style: w
   };
-  return m ? /* @__PURE__ */ l("a", { href: m, ...N, children: w }) : /* @__PURE__ */ l("button", { type: "button", ...N, children: w });
+  return m ? /* @__PURE__ */ l("a", { href: m, ...N, children: S }) : /* @__PURE__ */ l("button", { type: "button", ...N, children: S });
 }, Ii = ({
   onMenuClick: e,
   menuOpen: t,
@@ -4024,11 +4027,11 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
   pinnedLinks: g = [],
   activePath: h,
   onLinkClick: w,
-  ...N
+  ...S
 }) => {
-  const S = g.filter((A) => A.path).slice(0, $i), [T, y] = c.useState(
+  const N = g.filter((A) => A.path).slice(0, $i), [T, y] = c.useState(
     null
-  ), { userName: _ = "User", userAvatar: O, avatarColor: E } = N, R = { color: d, activeColor: m, activeBackground: p };
+  ), { userName: _ = "User", userAvatar: O, avatarColor: E } = S, R = { color: d, activeColor: m, activeBackground: p };
   return /* @__PURE__ */ x(
     "nav",
     {
@@ -4052,7 +4055,7 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
             ...R
           }
         ),
-        S.map((A) => /* @__PURE__ */ l(
+        N.map((A) => /* @__PURE__ */ l(
           Ht,
           {
             label: A.text,
@@ -4073,6 +4076,7 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
           {
             label: "Nexa",
             ariaLabel: "Ask Nexa",
+            hideLabel: !0,
             icon: /* @__PURE__ */ l(
               "span",
               {
@@ -4130,7 +4134,7 @@ const Ti = (e) => e ? ar(e) : "USER", Ai = (e) => e.split(/\s+/).filter(Boolean)
               onClose: () => y(null),
               placement: "above-end",
               width: 280,
-              ...N
+              ...S
             }
           )
         ] })
@@ -4399,16 +4403,16 @@ const Ur = c.createContext(void 0), Bi = ({
       if (!w.width || !w.height)
         return;
       r.x = (g.clientX - w.left) * h.offsetWidth / w.width, r.y = (g.clientY - w.top) * h.offsetHeight / w.height;
-      const N = Math.max(
+      const S = Math.max(
         w.left - g.clientX,
         0,
         g.clientX - w.right
-      ), S = Math.max(
+      ), N = Math.max(
         w.top - g.clientY,
         0,
         g.clientY - w.bottom
       );
-      r.i = Math.max(0, 1 - Math.hypot(N, S) / Ui), s.i < 0.01 && (s.x = r.x, s.y = r.y), d();
+      r.i = Math.max(0, 1 - Math.hypot(S, N) / Ui), s.i < 0.01 && (s.x = r.x, s.y = r.y), d();
     }, p = () => {
       r.i = 0, d();
     };
@@ -4429,10 +4433,10 @@ const Ur = c.createContext(void 0), Bi = ({
   }, u) => {
     const d = c.useRef(null), m = s && Nl;
     Ki(d, i && Nl, a);
-    const p = Wn(), g = `lumora-glass-${c.useId().replace(/[^a-zA-Z0-9-]/g, "")}`, [h, w] = c.useState(null), N = c.useRef(null), S = c.useCallback(
+    const p = Wn(), g = `lumora-glass-${c.useId().replace(/[^a-zA-Z0-9-]/g, "")}`, [h, w] = c.useState(null), S = c.useRef(null), N = c.useCallback(
       (O) => {
         var R;
-        if (d.current = O, typeof u == "function" ? u(O) : u && (u.current = O), (R = N.current) == null || R.disconnect(), N.current = null, !O || !m || !Wi || typeof ResizeObserver > "u")
+        if (d.current = O, typeof u == "function" ? u(O) : u && (u.current = O), (R = S.current) == null || R.disconnect(), S.current = null, !O || !m || !Wi || typeof ResizeObserver > "u")
           return;
         const E = () => {
           const A = O.offsetWidth, C = O.offsetHeight;
@@ -4440,7 +4444,7 @@ const Ur = c.createContext(void 0), Bi = ({
             (K) => (K == null ? void 0 : K.width) === A && K.height === C ? K : A && C ? { width: A, height: C } : null
           );
         };
-        N.current = new ResizeObserver(E), N.current.observe(O), E();
+        S.current = new ResizeObserver(E), S.current.observe(O), E();
       },
       [u, m]
     ), T = c.useMemo(
@@ -4505,7 +4509,7 @@ const Ur = c.createContext(void 0), Bi = ({
       /* @__PURE__ */ l(
         "div",
         {
-          ref: S,
+          ref: N,
           "aria-hidden": !0,
           "data-testid": r,
           "data-refract": y ? "true" : void 0,
@@ -4619,33 +4623,33 @@ const qi = ({
           g.preventDefault(), d("dark");
           break;
       }
-  }, p = (g, h, w, N) => {
-    const S = e === g;
+  }, p = (g, h, w, S) => {
+    const N = e === g;
     return /* @__PURE__ */ l(
       "button",
       {
         type: "button",
-        ref: N,
+        ref: S,
         role: "radio",
-        "aria-checked": S,
+        "aria-checked": N,
         "aria-label": h,
-        tabIndex: S ? 0 : -1,
+        tabIndex: N ? 0 : -1,
         onClick: () => d(g),
         "data-testid": `theme-segment-${g}`,
         className: b(
           "lw:inline-flex lw:h-6 lw:w-8 lw:cursor-pointer lw:items-center lw:justify-center lw:transition-[background-color,color,box-shadow,transform] lw:duration-150 lw:ease-out lw:focus-visible:shadow-[0_0_0_2px_var(--lw-seg-ring)]",
           r ? "lw:rounded-md" : "lw:rounded-full",
-          !S && "lw:text-muted-foreground lw:hover:text-foreground",
+          !N && "lw:text-muted-foreground lw:hover:text-foreground",
           // On glass each mode answers the pointer itself, so the
           // row's lens is not the only thing that moves
           r && "lw:hover:scale-[1.06] lw:active:scale-[0.94]",
-          r && !S && (s ? "lw:hover:bg-white/12" : "lw:hover:bg-white/75"),
+          r && !N && (s ? "lw:hover:bg-white/12" : "lw:hover:bg-white/75"),
           $l
         ),
         style: {
           "--lw-seg-ring": at(n, 0.6),
           // White on dark: the accent is too dim against a dark surface
-          ...S ? {
+          ...N ? {
             color: s ? "#ffffff" : n,
             backgroundColor: o,
             ...r ? wr(s, i) : {}
@@ -4688,8 +4692,8 @@ const qi = ({
   onThemeToggle: g,
   onProfileClick: h,
   onAiUsageClick: w,
-  onLinkClick: N,
-  menuItems: S = [],
+  onLinkClick: S,
+  menuItems: N = [],
   onLogout: T,
   glass: y = !1
 }) => {
@@ -4701,7 +4705,7 @@ const qi = ({
   }), C = (v) => {
     n(), v == null || v();
   }, K = (v) => {
-    n(), v.onClick ? v.onClick() : v.path && (N == null || N(v.path));
+    n(), v.onClick ? v.onClick() : v.path && (S == null || S(v.path));
   }, F = b(
     "lw:min-h-8 lw:gap-1 lw:px-3 lw:py-1.5 lw:text-sm lw:leading-5",
     y ? "lw:rounded-md" : "lw:rounded-lg lw:hover:bg-(--lw-menu-tint) lw:focus-visible:bg-(--lw-menu-tint)"
@@ -4916,7 +4920,7 @@ const qi = ({
                               m ? "lw:pt-0" : "lw:pt-1"
                             ),
                             children: [
-                              S.map((v) => /* @__PURE__ */ x(
+                              N.map((v) => /* @__PURE__ */ x(
                                 Bn,
                                 {
                                   onClick: () => K(v),
@@ -4988,8 +4992,8 @@ const qi = ({
   activeBackgroundColor: g,
   groupArrowColor: h,
   groupAccentColor: w,
-  activeForegroundColor: N,
-  foregroundColor: S,
+  activeForegroundColor: S,
+  foregroundColor: N,
   surfaceBackgroundColor: T,
   flyoutSurfaceColor: y,
   collapsed: _,
@@ -5017,7 +5021,7 @@ const qi = ({
   showThemeToggler: we = !0,
   onThemeToggle: J
 }) => {
-  const Q = qe(), ie = Xn(T, Q), he = C ?? S ?? (Q ? "#ffffff" : p), pe = K ?? w ?? Vt(p), I = F ?? p, z = c.useRef(null), [q, U] = c.useState(!1), ce = te ? ar(te) : void 0, le = (ye) => /* @__PURE__ */ l(
+  const Q = qe(), ie = Xn(T, Q), he = C ?? N ?? (Q ? "#ffffff" : p), pe = K ?? w ?? Vt(p), I = F ?? p, z = c.useRef(null), [q, U] = c.useState(!1), ce = te ? ar(te) : void 0, le = (ye) => /* @__PURE__ */ l(
     jl,
     {
       name: M,
@@ -5130,8 +5134,8 @@ const qi = ({
             activeBackgroundColor: g,
             groupArrowColor: h,
             groupAccentColor: w,
-            activeForegroundColor: N,
-            foregroundColor: S,
+            activeForegroundColor: S,
+            foregroundColor: N,
             surfaceBackgroundColor: ie,
             flyoutSurfaceColor: y,
             collapsed: _,
@@ -5191,11 +5195,11 @@ const qi = ({
       "data-testid": "platform-menu-list",
       className: "lw:p-1",
       children: n.map((w) => {
-        const N = w.key === o, S = w.accentColor ?? s;
+        const S = w.key === o, N = w.accentColor ?? s;
         return /* @__PURE__ */ x(
           Bn,
           {
-            selected: N,
+            selected: S,
             onClick: () => r(w),
             "data-testid": `platform-item-${w.key}`,
             className: b(
@@ -5214,7 +5218,7 @@ const qi = ({
                   "aria-hidden": !0,
                   className: "lw:block lw:size-2.5 lw:rounded-full",
                   style: {
-                    backgroundColor: S,
+                    backgroundColor: N,
                     boxShadow: i ? `0 0 0 3px ${a ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.7)"}` : "none"
                   }
                 }
@@ -5223,12 +5227,12 @@ const qi = ({
                 /* @__PURE__ */ l("span", { className: "lw:block lw:text-sm lw:leading-5 lw:font-semibold lw:text-foreground", children: w.name }),
                 w.description ? /* @__PURE__ */ l("span", { className: "lw:block lw:text-xs lw:leading-[18px] lw:text-muted-foreground", children: w.description }) : null
               ] }),
-              N ? /* @__PURE__ */ l(
+              S ? /* @__PURE__ */ l(
                 Ss,
                 {
                   "data-testid": "platform-current",
                   className: "lw:ml-3 lw:size-[18px] lw:shrink-0",
-                  style: { color: S }
+                  style: { color: N }
                 }
               ) : null
             ]
@@ -5266,8 +5270,8 @@ const qi = ({
               w.preventDefault(), jr(m.current);
             },
             onCloseAutoFocus: (w) => {
-              var N;
-              w.preventDefault(), (N = e == null ? void 0 : e.focus) == null || N.call(e);
+              var S;
+              w.preventDefault(), (S = e == null ? void 0 : e.focus) == null || S.call(e);
             },
             className: "lw:max-w-[calc(100vw-32px)]",
             children: /* @__PURE__ */ l(
@@ -5354,11 +5358,11 @@ const qi = ({
     userName: m = "User",
     userRole: p,
     userAvatar: g
-  } = s, h = c.useRef(null), [w, N] = c.useState(
+  } = s, h = c.useRef(null), [w, S] = c.useState(
     null
-  ), S = !!w, T = c.useRef(e);
+  ), N = !!w, T = c.useRef(e);
   return c.useEffect(() => {
-    e && !T.current && N(null), T.current = e;
+    e && !T.current && S(null), T.current = e;
   }, [e]), !a && !o ? null : /* @__PURE__ */ x(ve, { children: [
     /* @__PURE__ */ x(
       "div",
@@ -5374,10 +5378,10 @@ const qi = ({
             "button",
             {
               type: "button",
-              onClick: () => N(h.current),
+              onClick: () => S(h.current),
               "aria-label": `Account menu for ${m}`,
               "aria-haspopup": "menu",
-              "aria-expanded": S,
+              "aria-expanded": N,
               "data-testid": "sidebar-user",
               className: b(
                 "lw:inline-flex lw:min-w-0 lw:cursor-pointer lw:items-center lw:justify-start lw:gap-2.5 lw:rounded-lg lw:text-left lw:outline-none lw:transition-colors lw:hover:bg-(--lw-hover) lw:focus-visible:outline-2 lw:focus-visible:outline-solid lw:focus-visible:outline-(--lw-fg)",
@@ -5388,7 +5392,7 @@ const qi = ({
                 color: t,
                 "--lw-fg": t,
                 "--lw-hover": n,
-                ...S ? { backgroundColor: n } : {}
+                ...N ? { backgroundColor: n } : {}
               },
               children: /* @__PURE__ */ l(
                 zr,
@@ -5420,7 +5424,7 @@ const qi = ({
       Gr,
       {
         anchorEl: w,
-        onClose: () => N(null),
+        onClose: () => S(null),
         placement: e ? "beside" : "above",
         width: e || (y = h.current) == null ? void 0 : y.clientWidth,
         ...s
@@ -5521,10 +5525,10 @@ const qi = ({
 }, hc = ({ search: e, icon: t, color: n, railTooltip: o, tooltip: r }) => {
   const s = qe();
   Bs(s, at(n, s ? 0.3 : 0.35));
-  const i = `rgb(${Wn()})`, a = Pl(s ? "#1e2430" : "#ffffff"), u = c.useRef(null), d = c.useRef(null), [m, p] = c.useState(!1), g = c.useRef(!1), h = c.useRef(void 0), w = c.useRef(void 0), N = () => {
+  const i = `rgb(${Wn()})`, a = Pl(s ? "#1e2430" : "#ffffff"), u = c.useRef(null), d = c.useRef(null), [m, p] = c.useState(!1), g = c.useRef(!1), h = c.useRef(void 0), w = c.useRef(void 0), S = () => {
     clearTimeout(h.current), clearTimeout(w.current);
-  }, S = c.useCallback(() => {
-    N(), g.current = !1, p(!1);
+  }, N = c.useCallback(() => {
+    S(), g.current = !1, p(!1);
   }, []), T = () => {
     clearTimeout(w.current), m || (clearTimeout(h.current), h.current = setTimeout(
       () => p(!0),
@@ -5535,21 +5539,21 @@ const qi = ({
       !g.current && !uc(d.current) && p(!1);
     }, dc);
   };
-  return c.useEffect(() => N, []), c.useEffect(() => {
+  return c.useEffect(() => S, []), c.useEffect(() => {
     if (!m)
       return;
     const _ = setTimeout(() => Il(d.current)), O = (R) => {
       var C, K;
       const A = R.target;
-      !((C = d.current) != null && C.contains(A)) && !((K = u.current) != null && K.contains(A)) && S();
+      !((C = d.current) != null && C.contains(A)) && !((K = u.current) != null && K.contains(A)) && N();
     }, E = (R) => {
       var A;
-      R.key === "Escape" && (S(), (A = u.current) == null || A.focus());
+      R.key === "Escape" && (N(), (A = u.current) == null || A.focus());
     };
     return document.addEventListener("pointerdown", O), document.addEventListener("keydown", E), () => {
       clearTimeout(_), document.removeEventListener("pointerdown", O), document.removeEventListener("keydown", E);
     };
-  }, [m, S]), /* @__PURE__ */ l(
+  }, [m, N]), /* @__PURE__ */ l(
     "div",
     {
       "data-testid": "sidebar-search",
@@ -5558,7 +5562,7 @@ const qi = ({
         rn,
         {
           open: m,
-          onOpenChange: (_) => !_ && S(),
+          onOpenChange: (_) => !_ && N(),
           modal: !1,
           children: [
             /* @__PURE__ */ l(
@@ -5578,7 +5582,7 @@ const qi = ({
                     onMouseEnter: T,
                     onMouseLeave: y,
                     onClick: () => {
-                      N(), g.current = !0, p(!0);
+                      S(), g.current = !0, p(!0);
                     },
                     className: "lw:inline-flex lw:shrink-0 lw:cursor-pointer lw:items-center lw:justify-center lw:outline-none lw:focus-visible:ring-2 lw:focus-visible:ring-ring",
                     style: {
@@ -5683,22 +5687,22 @@ const qi = ({
         "--edge-glow-y",
         `${y.clientY}px`
       )), d(_);
-    }, N = () => d(!1), S = () => {
+    }, S = () => d(!1), N = () => {
       clearTimeout(n.current), n.current = void 0, o.current === void 0 && (o.current = setTimeout(() => {
         o.current = void 0, s(!1), a(!1);
       }, bc));
     }, T = (y) => {
-      t.current.has(y) || S();
+      t.current.has(y) || N();
     };
     return document.addEventListener("mouseover", T), document.addEventListener("pointermove", w, {
       passive: !0
-    }), document.documentElement.addEventListener("mouseleave", S), document.documentElement.addEventListener("mouseleave", N), () => {
+    }), document.documentElement.addEventListener("mouseleave", N), document.documentElement.addEventListener("mouseleave", S), () => {
       p(), document.removeEventListener("mouseover", T), document.removeEventListener("pointermove", w), document.documentElement.removeEventListener(
         "mouseleave",
-        S
+        N
       ), document.documentElement.removeEventListener(
         "mouseleave",
-        N
+        S
       );
     };
   }, [e]);
@@ -5712,8 +5716,8 @@ const qi = ({
       yc(w.target) && a(!0);
     },
     onBlur: (w) => {
-      const N = w.relatedTarget;
-      (!N || !w.currentTarget.contains(N)) && a(!1);
+      const S = w.relatedTarget;
+      (!S || !w.currentTarget.contains(S)) && a(!1);
     },
     onKeyDown: (w) => {
       w.key === "Escape" && (a(!1), s(!1));
@@ -5800,8 +5804,8 @@ const qi = ({
   onBrandClick: g,
   searchComponent: h,
   searchIcon: w,
-  notificationsIcon: N,
-  searchShortcut: S = !1,
+  notificationsIcon: S,
+  searchShortcut: N = !1,
   brandColor: T,
   contentPadding: y = gr,
   userMenuItems: _,
@@ -6040,7 +6044,7 @@ const qi = ({
       shortcutKeys: go,
       accentColor: Ee
     }
-  ) : null, ds = S ? [er() ? "⌘" : "Ctrl", S.toUpperCase()] : void 0, us = (k) => Pt ? /* @__PURE__ */ l(
+  ) : null, ds = N ? [er() ? "⌘" : "Ctrl", N.toUpperCase()] : void 0, us = (k) => Pt ? /* @__PURE__ */ l(
     pc,
     {
       search: Pt,
@@ -6247,7 +6251,7 @@ const qi = ({
       )
     }
   ), ms = br(y), ht = fe ? null : es;
-  return /* @__PURE__ */ l(rr.Provider, { value: Ce, children: /* @__PURE__ */ l(dr.Provider, { value: Y, children: /* @__PURE__ */ l(Gn.Provider, { value: ae, children: /* @__PURE__ */ l(Ur.Provider, { value: N, children: /* @__PURE__ */ x(
+  return /* @__PURE__ */ l(rr.Provider, { value: Ce, children: /* @__PURE__ */ l(dr.Provider, { value: Y, children: /* @__PURE__ */ l(Gn.Provider, { value: ae, children: /* @__PURE__ */ l(Ur.Provider, { value: S, children: /* @__PURE__ */ x(
     "div",
     {
       ref: co,
