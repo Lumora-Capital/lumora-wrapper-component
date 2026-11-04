@@ -486,6 +486,11 @@ export interface LumoraWrapperProps {
 	assistantActive?: boolean;
 	/** Animate the assistant button's ring/beam — only while a chat is ongoing. */
 	assistantBusy?: boolean;
+	/**
+	 * Name of the assistant in the phone bottom bar: its caption, and
+	 * "Ask <name>" for screen readers. Defaults to 'Nexa'.
+	 */
+	assistantLabel?: string;
 	// Redirect to login function
 	redirectToLogin: () => void;
 	/**
@@ -616,6 +621,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	onAssistantClick,
 	assistantActive = false,
 	assistantBusy = false,
+	assistantLabel = 'Nexa',
 	customNavbar: CustomNavbar,
 	customNavbarProps,
 	redirectToLogin,
@@ -1640,6 +1646,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									}
 									searchOpen={mobileSearchOpen}
 									showAssistant={showAssistant}
+									assistantLabel={assistantLabel}
 									onAssistantClick={onAssistantClick}
 									assistantActive={assistantActive}
 									showProfile={showProfile}

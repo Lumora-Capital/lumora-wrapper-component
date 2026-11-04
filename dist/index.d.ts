@@ -601,6 +601,11 @@ export declare interface LumoraWrapperProps {
     assistantActive?: boolean;
     /** Animate the assistant button's ring/beam — only while a chat is ongoing. */
     assistantBusy?: boolean;
+    /**
+     * Name of the assistant in the phone bottom bar: its caption, and
+     * "Ask <name>" for screen readers. Defaults to 'Nexa'.
+     */
+    assistantLabel?: string;
     redirectToLogin: () => void;
     /**
      * @deprecated Use `searchComponent`. Still rendered in the search slot

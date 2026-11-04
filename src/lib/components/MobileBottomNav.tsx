@@ -24,6 +24,8 @@ interface MobileBottomNavProps extends UserMenuOptions {
 	onSearchClick?: () => void;
 	searchOpen: boolean;
 	showAssistant: boolean;
+	/** The assistant's name: its caption, and "Ask <name>" for screen readers. */
+	assistantLabel?: string;
 	onAssistantClick?: () => void;
 	assistantActive: boolean;
 	showProfile: boolean;
@@ -51,8 +53,6 @@ const Item: React.FC<{
 	/** The page's path: the item is then a real link, so it opens in a new tab too. */
 	href?: string;
 	testId: string;
-	/** Keeps the caption's space but hides it, so the icon stays level with the others. */
-	hideLabel?: boolean;
 }> = ({
 	label,
 	icon,
@@ -65,8 +65,7 @@ const Item: React.FC<{
 	haspopup,
 	isPage = false,
 	href,
-	testId,
-	hideLabel = false
+	testId
 }) => {
 	const className = cn(
 		'lw:flex lw:h-full lw:min-w-0 lw:flex-[1_1_0] lw:cursor-pointer lw:flex-col lw:items-center lw:justify-center lw:gap-0.5 lw:border-0 lw:bg-transparent lw:p-0 lw:no-underline lw:outline-none lw:select-none',
@@ -87,11 +86,9 @@ const Item: React.FC<{
 				{icon}
 			</span>
 			<span
-				aria-hidden={hideLabel || undefined}
 				className={cn(
 					'lw:text-[11px] lw:leading-[1.2] lw:text-inherit',
-					active ? 'lw:font-semibold' : 'lw:font-medium',
-					hideLabel && 'lw:invisible'
+					active ? 'lw:font-semibold' : 'lw:font-medium'
 				)}
 			>
 				{label}
@@ -130,6 +127,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 	onSearchClick,
 	searchOpen,
 	showAssistant,
+	assistantLabel = 'Nexa',
 	onAssistantClick,
 	assistantActive,
 	showProfile,
@@ -194,9 +192,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 			))}
 			{showAssistant && (
 				<Item
-					label='Nexa'
-					ariaLabel='Ask Nexa'
-					hideLabel
+					label={assistantLabel}
+					ariaLabel={`Ask ${assistantLabel}`}
 					icon={
 						<span
 							className='lw:flex lw:h-7 lw:w-10 lw:items-center lw:justify-center lw:rounded-lg lw:border lw:border-solid lw:bg-[rgba(9,193,174,0.1)]'

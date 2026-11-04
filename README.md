@@ -535,17 +535,17 @@ Below the `md` breakpoint (900px) the sidebar goes away and phones get:
 │                                 │
 ├─────────────────────────────────┤
 │  ≡     ▣      N      ⌕     GP   │  bottom bar
-│ Menu  Deals        Search  Acct │  (Deals: mobileBottomBarLinks)
+│ Menu  Deals  Nexa  Search  Acct │  (Deals: mobileBottomBarLinks)
 └─────────────────────────────────┘
 ```
 
-| Bottom bar item | Opens                                                                                                                     | Shown when                   |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Menu            | A sheet rising from the bottom with `sidebarLinks` / `secondarySidebarLinks` (thumb reach; swipe down to close)           | `showSidebar`                |
-| Pinned pages    | Navigates via `onLinkClick`; highlighted from `activePath`                                                                | `mobileBottomBarLinks` (1–2) |
-| Nexa            | Calls `onAssistantClick`; the chat fills the screen above the bar. Logo only, no caption (screen readers hear "Ask Nexa") | `showAssistant`              |
-| Search          | A sheet from the top with your `searchComponent`, its field focused                                                       | `searchComponent` is set     |
-| Account         | The same user menu as desktop                                                                                             | `showProfile`                |
+| Bottom bar item | Opens                                                                                                                                                  | Shown when                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| Menu            | A sheet rising from the bottom with `sidebarLinks` / `secondarySidebarLinks` (thumb reach; swipe down to close)                                        | `showSidebar`                |
+| Pinned pages    | Navigates via `onLinkClick`; highlighted from `activePath`                                                                                             | `mobileBottomBarLinks` (1–2) |
+| Nexa            | Calls `onAssistantClick`; the chat fills the screen above the bar. Captioned with `assistantLabel` (default "Nexa"); screen readers hear `Ask <label>` | `showAssistant`              |
+| Search          | A sheet from the top with your `searchComponent`, its field focused                                                                                    | `searchComponent` is set     |
+| Account         | The same user menu as desktop                                                                                                                          | `showProfile`                |
 
 The notifications bell (with the unread badge) sits at the right of the top bar and opens your `NotificationSidebarContent` drawer; it shows when `showNotifications` is on.
 
@@ -586,17 +586,17 @@ In dark mode, leave them out and the wrapper uses its dark defaults. The shell i
 
 ## Props checklist
 
-| Area         | Pass                                                                                                                                | Notes                                                                                               |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                             | `redirectToLogin` must be stable (`useCallback`).                                                   |
-| Layout       | `sidebarVariant='panel'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`              | The default variant is `rail`; Centra uses `panel` (the collapsible sidebar plus the account menu). |
-| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                              |                                                                                                     |
-| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`       |                                                                                                     |
-| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                    | Not filled in automatically.                                                                        |
-| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle` |                                                                                                     |
-| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `userMenuItems`                                                         | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
-| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                            | Import `FullBleedSection` from the package.                                                         |
-| Look         | the [color props](#8-colors)                                                                                                        |                                                                                                     |
+| Area         | Pass                                                                                                                                            | Notes                                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Required** | `apiBaseUrl`, `redirectToLogin`, `onLogout`, `children`                                                                                         | `redirectToLogin` must be stable (`useCallback`).                                                   |
+| Layout       | `sidebarVariant='panel'`, `sidebarLinks`, `secondarySidebarLinks`, `activePath`, `onLinkClick`, `mobileBottomBarLinks`                          | The default variant is `rail`; Centra uses `panel` (the collapsible sidebar plus the account menu). |
+| Sidebar top  | `appName`, `logo?`, `onBrandClick?`, `searchComponent`                                                                                          |                                                                                                     |
+| Nexa         | `showAssistant`, `onAssistantClick`, `GlobalChatSidebar`, `useChatSidebar`, `onChatClose`, `assistantActive`, `assistantBusy`, `assistantLabel` |                                                                                                     |
+| User         | `userName`, `userRole`, `userAvatar`, `onVerify`                                                                                                | Not filled in automatically.                                                                        |
+| User menu    | `notificationCount`, `NotificationSidebarContent`, `userMenuItems`, `onSettingsClick`, `showThemeToggler`, `theme`, `onThemeToggle`             |                                                                                                     |
+| Account menu | `sidebarVariant='panel'` with `userEmail`, `onProfileClick`, `userMenuItems`                                                                    | Optional; see [the panel variant](#the-panel-variant-account-menu).                                 |
+| Content      | `contentPadding` (per route when needed); wrap detail-page headers in `FullBleedSection`                                                        | Import `FullBleedSection` from the package.                                                         |
+| Look         | the [color props](#8-colors)                                                                                                                    |                                                                                                     |
 
 ## Props reference
 
@@ -648,6 +648,7 @@ Every prop is also documented in the TypeScript definitions, so your editor show
 | `assistantBusy`      | `boolean`                   | `false`     | Animated border while a reply streams.                                                                                           |
 | `assistantPlacement` | `'sidebar' \| 'floating'`   | `'sidebar'` | Button under the brand, or in the bottom-right corner.                                                                           |
 | `assistantShortcut`  | `string \| false`           | `'j'`       | ⌘ / Ctrl + this letter opens Nexa; `false` turns it off.                                                                         |
+| `assistantLabel`     | `string`                    | `'Nexa'`    | Name in the phone bottom bar: its caption, and `Ask <label>` for screen readers.                                                 |
 | `GlobalChatSidebar`  | `React.ComponentType`       | —           | Your chat UI, shown in the chat panel.                                                                                           |
 | `useChatSidebar`     | `() => { isOpen: boolean }` | —           | Hook telling the wrapper whether the chat is open.                                                                               |
 | `onChatClose`        | `() => void`                | —           | Called on Esc while the chat is open.                                                                                            |
