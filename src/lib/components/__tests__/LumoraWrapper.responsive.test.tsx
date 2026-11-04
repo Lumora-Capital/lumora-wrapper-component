@@ -522,6 +522,19 @@ describe('LumoraWrapper - Responsive Behavior', () => {
 				'Search',
 				'Account menu for Riley Carter'
 			]);
+			// Nexa's item has no caption: its slot stays, invisible, so the logo
+			// lines up with the other icons
+			const nexaCaption = within(
+				screen.getByTestId('mobile-nav-nexa')
+			).getByText('Nexa');
+			expect(nexaCaption).toHaveClass('lw:invisible');
+			expect(nexaCaption).toHaveAttribute('aria-hidden', 'true');
+			expect(within(bar).getByText('Menu')).not.toHaveClass(
+				'lw:invisible'
+			);
+			expect(within(bar).getByText('Search')).not.toHaveClass(
+				'lw:invisible'
+			);
 			// Notifications sit at the top right instead
 			expect(
 				within(topBar).getByRole('button', {

@@ -535,17 +535,17 @@ Below the `md` breakpoint (900px) the sidebar goes away and phones get:
 │                                 │
 ├─────────────────────────────────┤
 │  ≡     ▣      N      ⌕     GP   │  bottom bar
-│ Menu  Deals  Nexa  Search  Acct │  (Deals: mobileBottomBarLinks)
+│ Menu  Deals        Search  Acct │  (Deals: mobileBottomBarLinks)
 └─────────────────────────────────┘
 ```
 
-| Bottom bar item | Opens                                                                                                           | Shown when                   |
-| --------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Menu            | A sheet rising from the bottom with `sidebarLinks` / `secondarySidebarLinks` (thumb reach; swipe down to close) | `showSidebar`                |
-| Pinned pages    | Navigates via `onLinkClick`; highlighted from `activePath`                                                      | `mobileBottomBarLinks` (1–2) |
-| Nexa            | Calls `onAssistantClick`; the chat fills the screen above the bar                                               | `showAssistant`              |
-| Search          | A sheet from the top with your `searchComponent`, its field focused                                             | `searchComponent` is set     |
-| Account         | The same user menu as desktop                                                                                   | `showProfile`                |
+| Bottom bar item | Opens                                                                                                                     | Shown when                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Menu            | A sheet rising from the bottom with `sidebarLinks` / `secondarySidebarLinks` (thumb reach; swipe down to close)           | `showSidebar`                |
+| Pinned pages    | Navigates via `onLinkClick`; highlighted from `activePath`                                                                | `mobileBottomBarLinks` (1–2) |
+| Nexa            | Calls `onAssistantClick`; the chat fills the screen above the bar. Logo only, no caption (screen readers hear "Ask Nexa") | `showAssistant`              |
+| Search          | A sheet from the top with your `searchComponent`, its field focused                                                       | `searchComponent` is set     |
+| Account         | The same user menu as desktop                                                                                             | `showProfile`                |
 
 The notifications bell (with the unread badge) sits at the right of the top bar and opens your `NotificationSidebarContent` drawer; it shows when `showNotifications` is on.
 
