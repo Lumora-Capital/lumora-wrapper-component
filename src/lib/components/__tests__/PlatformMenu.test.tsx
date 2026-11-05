@@ -5,6 +5,7 @@ import LumoraWrapper, {
 	type LumoraWrapperProps
 } from '../LumoraWrapper';
 import {
+	act,
 	fireEvent,
 	lumoraTestRequiredProps,
 	render,
@@ -113,6 +114,25 @@ describe('platform switcher', () => {
 		expect(screen.getByTestId('platform-menu')).not.toHaveAttribute(
 			'data-glass'
 		);
+	});
+
+	it('closes when the auto-hiding rail hides', () => {
+		jest.useFakeTimers();
+		try {
+			renderWrapper({ sidebarSubmenu: 'flyout', sidebarAutoHide: true });
+			fireEvent.mouseOver(screen.getByTestId('sidebar-edge-reveal'));
+			act(() => jest.advanceTimersByTime(100));
+			fireEvent.click(brand());
+			expect(screen.getByTestId('platform-menu')).toBeInTheDocument();
+
+			// The pointer leaves for the page
+			fireEvent.mouseOver(screen.getByText('Page'));
+			act(() => jest.advanceTimersByTime(400));
+			expect(screen.queryByTestId('platform-menu')).toBeNull();
+			expect(brand()).toHaveAttribute('aria-expanded', 'false');
+		} finally {
+			jest.useRealTimers();
+		}
 	});
 
 	it('keeps the brand a home link with a single platform', () => {

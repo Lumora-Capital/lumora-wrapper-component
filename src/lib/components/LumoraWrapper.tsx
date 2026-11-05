@@ -748,6 +748,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		!isMobile &&
 		usesAutoHideRail(sidebarAutoHide, sidebarSubmenu, sidebarVariant);
 	const edgeReveal = useEdgeReveal(autoHideRail);
+	// When the rail hides, close what it opened (platform menu, flyouts,
+	// search card, account menu): remounting its contents resets their state.
+	// The updates drawer is the shell's and stays open in the rail's place.
+	const [railGeneration, setRailGeneration] = useState(0);
+	const [railWasShown, setRailWasShown] = useState(edgeReveal.shown);
+	if (railWasShown !== edgeReveal.shown) {
+		setRailWasShown(edgeReveal.shown);
+		if (!edgeReveal.shown) {
+			setRailGeneration(generation => generation + 1);
+			setPlatformAnchor(null);
+		}
+	}
 	// What the rail's top content (Nexa, search) looks like while collapsed:
 	// it expands the panel, or — with nothing to expand — opens a popover.
 	const collapsedTopMode = useFlyoutSubmenu ? 'popover' : 'expand';
@@ -1231,6 +1243,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					style={{ borderRadius: 'inherit' }}
 				/>
 				<div
+					key={railGeneration}
 					className='lw:relative lw:flex lw:min-h-0 lw:flex-auto lw:flex-col lw:overflow-hidden'
 					style={{ borderRadius: 'inherit' }}
 				>
