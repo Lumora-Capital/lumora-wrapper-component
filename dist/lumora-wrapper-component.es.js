@@ -1441,7 +1441,7 @@ Et.displayName = "RowControl";
 const wl = "lw:relative lw:flex lw:w-full lw:min-w-0 lw:grow lw:items-center lw:justify-start lw:text-left lw:no-underline lw:transition-colors lw:duration-150 lw:outline-none lw:focus-visible:bg-selected lw:disabled:opacity-40", Nn = "lw:inline-flex lw:shrink-0 lw:text-inherit lw:[&_svg]:size-6", Sn = "lw:my-1 lw:min-w-0 lw:flex-auto", fl = b(
   "lw:relative lw:inline-flex lw:shrink-0 lw:items-center lw:justify-center lw:p-2 lw:transition-[background-color,border-radius,color] lw:duration-150 lw:disabled:opacity-40 lw:[&_svg]:size-6",
   Ta
-), at = ({ text: e, variant: t = "body1", center: n = !1, fontSize: o, fontWeight: r }) => {
+), it = ({ text: e, variant: t = "body1", center: n = !1, fontSize: o, fontWeight: r }) => {
   const s = c.useRef(null), [i, a] = c.useState(!1), u = c.useCallback(() => {
     const d = s.current;
     d && a(d.scrollWidth > d.clientWidth + 0.5);
@@ -1688,14 +1688,14 @@ const Ga = ({
               className: b(Sn, w.subtitle && "lw:my-0"),
               children: [
                 /* @__PURE__ */ l(
-                  at,
+                  it,
                   {
                     text: w.text,
                     fontWeight: _n
                   }
                 ),
                 w.subtitle ? /* @__PURE__ */ l("span", { className: "lw:block lw:opacity-85", children: /* @__PURE__ */ l(
-                  at,
+                  it,
                   {
                     text: w.subtitle,
                     fontSize: "0.8125rem"
@@ -1765,7 +1765,7 @@ const Ga = ({
               children: [
                 /* @__PURE__ */ l("span", { className: Nn, style: { minWidth: 36 }, children: w.icon }),
                 /* @__PURE__ */ l("span", { className: Sn, children: /* @__PURE__ */ l(
-                  at,
+                  it,
                   {
                     text: w.text,
                     fontWeight: _n
@@ -1781,7 +1781,7 @@ const Ga = ({
               "data-testid": `sidebar-children-${w.text}`,
               className: "lw:pb-1 lw:animate-in lw:fade-in-0",
               children: w.subitems.map(
-                (me) => it(me, G, 1)
+                (me) => ct(me, G, 1)
               )
             }
           ) : null
@@ -1789,13 +1789,13 @@ const Ga = ({
       },
       w.text
     );
-  }, it = (w, k, Q) => {
+  }, ct = (w, k, Q) => {
     const G = yt(k, w), K = Oa + (Q - 1) * $a, V = b(
       wl,
       "lw:mx-1 lw:w-[calc(100%-8px)] lw:rounded-lg lw:py-1.5 lw:pr-4"
     );
     if (St(w)) {
-      const ge = ot(w, n), Ce = Ke(w, n), be = Ae(w, G), ft = Le(Ce, ul);
+      const ge = ot(w, n), Ce = Ke(w, n), be = Ae(w, G), mt = Le(Ce, ul);
       return /* @__PURE__ */ x("div", { "data-testid": `sidebar-group-${w.text}`, children: [
         /* @__PURE__ */ x(
           Et,
@@ -1804,8 +1804,8 @@ const Ga = ({
             "data-testid": `sidebar-subitem-${w.text}`,
             "data-active": ge ? "true" : "false",
             "aria-expanded": be,
-            className: b(V, ft.className),
-            style: { ...ft.style, paddingLeft: K },
+            className: b(V, mt.className),
+            style: { ...mt.style, paddingLeft: K },
             children: [
               w.icon ? /* @__PURE__ */ l(
                 "span",
@@ -1816,7 +1816,7 @@ const Ga = ({
                 }
               ) : null,
               /* @__PURE__ */ l("span", { className: Sn, children: /* @__PURE__ */ l(
-                at,
+                it,
                 {
                   text: w.text,
                   fontWeight: _n
@@ -1832,7 +1832,7 @@ const Ga = ({
             "data-testid": `sidebar-children-${w.text}`,
             className: "lw:animate-in lw:fade-in-0",
             children: w.subitems.map(
-              (_e) => it(_e, G, Q + 1)
+              (_e) => ct(_e, G, Q + 1)
             )
           }
         ) : null
@@ -1852,7 +1852,7 @@ const Ga = ({
         children: [
           w.icon ? /* @__PURE__ */ l("span", { className: Nn, style: { minWidth: 32 }, children: w.icon }) : null,
           /* @__PURE__ */ l("span", { className: Sn, children: /* @__PURE__ */ l(
-            at,
+            it,
             {
               text: w.text,
               fontWeight: _n
@@ -1862,7 +1862,7 @@ const Ga = ({
       },
       G
     );
-  }, ct = b(
+  }, dt = b(
     "lw:rounded-md! lw:[&_svg]:size-6 lw:hover:bg-transparent! lw:active:[transform:scale(0.88)] lw:active:duration-[90ms] lw:motion-reduce:active:[transform:none]",
     $e
   ), un = (w) => ({
@@ -1906,7 +1906,7 @@ const Ga = ({
             // 8px padding on all sides of the item container.
             "lw:flex lw:h-auto lw:w-full lw:max-w-full lw:flex-col lw:gap-0.5 lw:rounded-lg lw:p-2 lw:[&_svg]:size-[22px]"
           ) : G ? "lw:rounded-lg" : "lw:rounded-full",
-          !_ && D && ct
+          !_ && D && dt
         ),
         style: {
           ...Pe.style,
@@ -1916,7 +1916,7 @@ const Ga = ({
         children: [
           Q,
           _ ? /* @__PURE__ */ l(
-            at,
+            it,
             {
               text: k,
               variant: "caption",
@@ -1964,7 +1964,7 @@ const Ga = ({
             [tn]: "",
             className: b(
               fl,
-              ct,
+              dt,
               // The icon stays centred, in line with every other icon
               // down the rail; the arrow sits in the room beside it,
               // just past the button, in the rail's side gutter (drawn
@@ -2018,7 +2018,7 @@ const Ga = ({
         children: [
           _ ? /* @__PURE__ */ l("span", { className: "lw:flex lw:items-center lw:justify-center lw:[&_svg]:size-[22px]", children: w.icon }) : w.icon,
           _ ? /* @__PURE__ */ l(
-            at,
+            it,
             {
               text: w.text,
               variant: "caption",
@@ -2094,7 +2094,7 @@ const Ga = ({
         ] }, k.text) : It(k);
       })
     }
-  ), dt = E ? O : A, fn = () => {
+  ), ut = E ? O : A, fn = () => {
     var me, Pe;
     const { state: w } = v, k = w ? [...e, ...t].find(
       (ge) => St(ge) && yt("", ge) === w.key
@@ -2171,7 +2171,7 @@ const Ga = ({
         }
       )
     }
-  ) : null, ut = _ ? 4 : D ? 6 : E ? 8 : 12, wt = b(
+  ) : null, wt = _ ? 4 : D ? 6 : E ? 8 : 12, ft = b(
     D ? "lw:not-supports-[selector(::-webkit-scrollbar)]:[scrollbar-width:thin] lw:not-supports-[selector(::-webkit-scrollbar)]:[scrollbar-color:transparent_transparent] lw:not-supports-[selector(::-webkit-scrollbar)]:hover:[scrollbar-color:var(--lw-border-color)_transparent] lw:not-supports-[selector(::-webkit-scrollbar)]:has-[:focus-visible]:[scrollbar-color:var(--lw-border-color)_transparent] lw:[&::-webkit-scrollbar]:w-1.5" : "lw:[scrollbar-width:thin] lw:[scrollbar-color:transparent_transparent] lw:hover:[scrollbar-color:var(--lw-border-color)_transparent] lw:has-[:focus-visible]:[scrollbar-color:var(--lw-border-color)_transparent] lw:[&::-webkit-scrollbar]:w-2",
     "lw:[&::-webkit-scrollbar-thumb]:rounded-[4px] lw:[&::-webkit-scrollbar-thumb]:bg-transparent lw:[&:hover::-webkit-scrollbar-thumb]:bg-border lw:[&:has(:focus-visible)::-webkit-scrollbar-thumb]:bg-border"
   );
@@ -2199,7 +2199,7 @@ const Ga = ({
         // flyout's backdrop, which is fixed over the whole window.
         D && "lw:relative lw:[&_:is(button,a,[role=button]):not([data-active=true]):not([data-rail-keep-fill]):hover]:bg-transparent! lw:[&>:not([data-glass-lens],[data-active-glass],[data-flyout-scrim])]:relative"
       ),
-      style: { width: dt, minWidth: dt, backgroundColor: Ee },
+      style: { width: ut, minWidth: ut, backgroundColor: Ee },
       children: [
         j.lens,
         Jn ?? mn,
@@ -2209,7 +2209,7 @@ const Ga = ({
             ref: Z,
             className: "lw:relative lw:shrink-0",
             style: {
-              marginInline: ut,
+              marginInline: wt,
               paddingBottom: D ? nt : "8px"
             },
             children: [
@@ -2223,7 +2223,7 @@ const Ga = ({
           {
             className: "lw:shrink-0",
             style: {
-              paddingInline: ut,
+              paddingInline: wt,
               paddingBlock: D ? 0 : 8
             },
             children: F
@@ -2236,7 +2236,7 @@ const Ga = ({
             "data-testid": "sidebar-links-scroller",
             className: b(
               "lw:flex lw:min-h-0 lw:flex-auto lw:flex-col",
-              wt
+              ft
             ),
             style: {
               overflowY: we ? "auto" : "hidden",
@@ -2247,7 +2247,7 @@ const Ga = ({
               // capsule whether the bar is classic, overlay or absent.
               // (The inline collapsed rail keeps its padding: its open
               // groups tint the full row width.)
-              ...D ? Pa(ne) : { paddingInline: ut },
+              ...D ? Pa(ne) : { paddingInline: wt },
               paddingTop: H && !d ? `${H}px` : D ? nt : "8px",
               paddingBottom: D ? nt : "16px"
             },
@@ -2291,7 +2291,7 @@ const Ga = ({
               "lw:shrink-0 lw:pb-3",
               D && "lw:[&_button_svg]:size-6"
             ),
-            style: { paddingInline: ut },
+            style: { paddingInline: wt },
             children: /* @__PURE__ */ l(
               "div",
               {
@@ -5851,8 +5851,8 @@ const Qi = ({
   darkModeSelector: Le,
   showThemeToggler: et = !1,
   onThemeToggle: dn,
-  GlobalChatSidebar: it,
-  useChatSidebar: ct,
+  GlobalChatSidebar: ct,
+  useChatSidebar: dt,
   chatPanelMode: un = "docked",
   chatPanelPosition: wn = "right",
   chatPanelWidth: Ot = 420,
@@ -5861,12 +5861,12 @@ const Qi = ({
   assistantPlacement: $t = "sidebar",
   assistantShortcut: It = "j",
   onAssistantClick: Ve,
-  assistantActive: dt = !1,
+  assistantActive: ut = !1,
   assistantBusy: fn = !1,
   assistantLabel: Jn = "Nexa",
   customNavbar: mn,
-  customNavbarProps: ut,
-  redirectToLogin: wt,
+  customNavbarProps: wt,
+  redirectToLogin: ft,
   apiBaseUrl: kt
 }) => {
   const w = Ir(), k = Ae === "dark", Q = Ne ?? "#01584f", G = De ?? Q, K = yr(
@@ -5875,7 +5875,7 @@ const Qi = ({
   ), V = i === "collapsible", me = i === "panel", Pe = me && r && !w, ge = i === "rail-labeled", Ce = V || ge, be = jn(
     C,
     k
-  ), ft = E ?? be, _e = ve ?? (k ? "#ffffff" : G), Lt = A ?? Jt(_e), Mt = E ? _l(ft) : _e, Zl = (L) => /* @__PURE__ */ l(
+  ), mt = E ?? be, _e = ve ?? (k ? "#ffffff" : G), Lt = A ?? Jt(_e), Mt = E ? _l(mt) : _e, Zl = (L) => /* @__PURE__ */ l(
     "div",
     {
       role: "img",
@@ -5915,13 +5915,13 @@ const Qi = ({
     p ?? Zl(T ?? _e)
   ), tl = Oc(), We = Kn(a, i), Ue = We || !tl.expanded, Fe = r && !w && qs(u, a, i), Be = Tc(Fe), [Jr, Qr] = Xe(0), [es, ts] = Xe(Be.shown);
   es !== Be.shown && (ts(Be.shown), Be.shown || (Qr((L) => L + 1), pn(null)));
-  const eo = We ? "popover" : "expand", to = We ? Zt : qt, no = We ? "transparent" : be, lo = We && !E ? "transparent" : ft, [ns, oo] = Xe(!1), ls = il(() => oo(!1), []), Ze = vr({
+  const eo = We ? "popover" : "expand", to = We ? Zt : qt, no = We ? "transparent" : be, lo = We && !E ? "transparent" : mt, [ns, oo] = Xe(!1), ls = il(() => oo(!1), []), Ze = vr({
     showSidebar: r,
     isMobile: w,
     sidebarVariant: i,
     sidebarSubmenu: a,
     sidebarAutoHide: u
-  }), [ro, mt] = Xe(!1), [so, nl] = Xe(!1), Me = w && d === "bottom-bar", ao = `calc(${Hr}px + env(safe-area-inset-bottom, 0px))`, [Dt, io] = Xe({ open: !1, tab: "notifications" }), co = () => io((L) => ({ ...L, open: !1 })), os = j && !!ue, uo = yn(null), [rs, ss] = Xe(null), Pt = il(() => {
+  }), [ro, ht] = Xe(!1), [so, nl] = Xe(!1), Me = w && d === "bottom-bar", ao = `calc(${Hr}px + env(safe-area-inset-bottom, 0px))`, [Dt, io] = Xe({ open: !1, tab: "notifications" }), co = () => io((L) => ({ ...L, open: !1 })), os = j && !!ue, uo = yn(null), [rs, ss] = Xe(null), Pt = il(() => {
     const L = w ? null : $c(uo.current), ce = L && Fe ? { ...L, left: lt } : L;
     ss(
       (Re) => Re && ce && Re.left === ce.left && Re.top === ce.top && Re.height === ce.height ? Re : ce
@@ -5931,7 +5931,7 @@ const Qi = ({
     if (Dt.open)
       return Pt(), window.addEventListener("resize", Pt), () => window.removeEventListener("resize", Pt);
   }, [Dt.open, Pt]);
-  const [as, is] = Xe(!0), [cs, ds] = Xe(!1), ll = ct == null ? void 0 : ct(), wo = (ll == null ? void 0 : ll.isOpen) ?? !1, fo = un === "floating" ? "floating" : "docked", us = fo === "docked" && wo && it && !w ? Ot : 0, xn = yn(I), mo = yn(!1), ho = Os(
+  const [as, is] = Xe(!0), [cs, ds] = Xe(!1), ll = dt == null ? void 0 : dt(), wo = (ll == null ? void 0 : ll.isOpen) ?? !1, fo = un === "floating" ? "floating" : "docked", us = fo === "docked" && wo && ct && !w ? Ot : 0, xn = yn(I), mo = yn(!1), ho = Os(
     () => li(kt),
     [kt]
   );
@@ -5961,7 +5961,7 @@ const Qi = ({
       try {
         const { isAuthenticated: Re } = ti();
         if (!Re) {
-          console.log("No session found, redirecting to login"), on(), wt();
+          console.log("No session found, redirecting to login"), on(), ft();
           return;
         }
         if (!mo.current) {
@@ -5979,13 +5979,13 @@ const Qi = ({
         }
         ds(!0);
       } catch (Re) {
-        console.error("Error checking session:", Re), on(), wt();
+        console.error("Error checking session:", Re), on(), ft();
       } finally {
         is(!1);
       }
     })();
-  }, [wt]), Kt(() => {
-    _ && oi(ho, wt);
+  }, [ft]), Kt(() => {
+    _ && oi(ho, ft);
   }, [_, ho]), as || H)
     return /* @__PURE__ */ l(
       Qa,
@@ -6004,8 +6004,8 @@ const Qi = ({
     );
   if (!cs)
     return null;
-  const Bt = h ?? (mn ? /* @__PURE__ */ l(mn, { ...ut }) : null), ws = (L) => {
-    mt(!1), nl(!1), Pt(), io({ open: !0, tab: L });
+  const Bt = h ?? (mn ? /* @__PURE__ */ l(mn, { ...wt }) : null), ws = (L) => {
+    ht(!1), nl(!1), Pt(), io({ open: !0, tab: L });
   }, rl = ue && (() => ws("notifications")), fs = Y + J, go = {
     avatarColor: G,
     // The standard menu only runs `onClick`, so path rows navigate here.
@@ -6039,7 +6039,7 @@ const Qi = ({
     {
       variant: L ? "sidebar-icon" : "sidebar",
       onClick: Ve,
-      active: dt,
+      active: ut,
       busy: fn,
       shortcutKeys: bo,
       accentColor: _e
@@ -6251,7 +6251,7 @@ const Qi = ({
         }
       )
     }
-  ), xs = xr(y), ht = w ? null : rs;
+  ), xs = xr(y), at = w ? null : rs;
   return /* @__PURE__ */ l(sr.Provider, { value: Ae, children: /* @__PURE__ */ l(ur.Provider, { value: G, children: /* @__PURE__ */ l(Hn.Provider, { value: be, children: /* @__PURE__ */ l(Xr.Provider, { value: N, children: /* @__PURE__ */ x(
     "div",
     {
@@ -6265,12 +6265,12 @@ const Qi = ({
           Hi,
           {
             height: kn,
-            onMenuClick: r && !Me ? () => mt(!0) : void 0,
+            onMenuClick: r && !Me ? () => ht(!0) : void 0,
             appName: o,
             logo: el,
             onBrandClick: gn,
             brandMenuOpen: bn,
-            background: ft,
+            background: mt,
             color: Mt,
             brandColor: hn,
             endContent: j ? /* @__PURE__ */ l(
@@ -6428,7 +6428,7 @@ const Qi = ({
           $l,
           {
             open: ro,
-            onOpenChange: mt,
+            onOpenChange: ht,
             children: /* @__PURE__ */ x(
               zn,
               {
@@ -6459,9 +6459,9 @@ const Qi = ({
                       secondaryLinks: n,
                       activePath: B,
                       onLinkClick: (L) => {
-                        M == null || M(L), mt(!1);
+                        M == null || M(L), ht(!1);
                       },
-                      onLinkAction: () => mt(!1),
+                      onLinkAction: () => ht(!1),
                       collapsed: !1,
                       expandedWidth: Me ? "100%" : Ic,
                       activeAccentColor: G,
@@ -6497,14 +6497,14 @@ const Qi = ({
             pinnedLinks: m,
             activePath: B,
             onLinkClick: M,
-            onMenuClick: r ? () => mt(!0) : void 0,
+            onMenuClick: r ? () => ht(!0) : void 0,
             menuOpen: ro,
             onSearchClick: Bt ? () => nl(!0) : void 0,
             searchOpen: so,
             showAssistant: st,
             assistantLabel: Jn,
             onAssistantClick: Ve,
-            assistantActive: dt,
+            assistantActive: ut,
             showProfile: W,
             background: be,
             color: _e,
@@ -6537,7 +6537,7 @@ const Qi = ({
             children: e
           }
         ),
-        it && /* @__PURE__ */ l(
+        ct && /* @__PURE__ */ l(
           hi,
           {
             open: wo,
@@ -6549,7 +6549,7 @@ const Qi = ({
             fullScreen: w,
             fullScreenBottom: Me ? ao : "0px",
             onClose: Zn,
-            children: /* @__PURE__ */ l(it, {})
+            children: /* @__PURE__ */ l(ct, {})
           }
         ),
         st && $t === "floating" && !Me && /* @__PURE__ */ l(
@@ -6559,7 +6559,7 @@ const Qi = ({
             rightOffsetPx: us,
             shortcutKeys: bo,
             onClick: Ve,
-            active: dt,
+            active: ut,
             busy: fn
           }
         ),
@@ -6573,15 +6573,15 @@ const Qi = ({
             children: /* @__PURE__ */ l(
               zn,
               {
-                side: ht ? "left" : "right",
+                side: at ? "left" : "right",
                 srTitle: "Updates",
-                className: "lw:border-0",
-                style: ht ? {
+                className: at ? "lw:overflow-hidden lw:rounded-lg lw:border-0" : "lw:overflow-hidden lw:rounded-l-lg lw:border-0",
+                style: at ? {
                   width: 380,
-                  maxWidth: `calc(100vw - ${ht.left}px)`,
-                  left: ht.left,
-                  top: ht.top,
-                  height: ht.height
+                  maxWidth: `calc(100vw - ${at.left}px)`,
+                  left: at.left,
+                  top: at.top,
+                  height: at.height
                 } : {
                   width: 380,
                   maxWidth: "100vw"

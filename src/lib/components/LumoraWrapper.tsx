@@ -1763,7 +1763,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													: 'right'
 											}
 											srTitle='Updates'
-											className='lw:border-0'
+											className={
+												drawerPlacement
+													? 'lw:overflow-hidden lw:rounded-lg lw:border-0'
+													: 'lw:overflow-hidden lw:rounded-l-lg lw:border-0'
+											}
 											style={
 												drawerPlacement
 													? {
