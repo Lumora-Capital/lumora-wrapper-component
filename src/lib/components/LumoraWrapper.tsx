@@ -1135,10 +1135,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						? collapsedTopMode
 						: 'full'
 			)}
-			// Hover-open only on the rail-labeled rail: the hover panel's footer moves under the pointer as it expands
+			// Hover-open only where the rail never widens on hover (rail-labeled, glass flyout rail): the hover panel's footer moves under the pointer as it expands
 			footer={renderFooter(
 				useRailLabeledSidebar || sidebarCollapsed,
-				useRailLabeledSidebar
+				useRailLabeledSidebar || useFlyoutSubmenu
 			)}
 			submenuMode={useFlyoutSubmenu ? 'flyout' : 'inline'}
 		/>

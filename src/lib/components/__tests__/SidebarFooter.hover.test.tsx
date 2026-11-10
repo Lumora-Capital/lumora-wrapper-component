@@ -1,7 +1,20 @@
+import LumoraWrapper from '../LumoraWrapper';
 import SidebarFooter from '../SidebarFooter';
+import { useIsMobile } from '../useMediaQuery';
 import { FLYOUT_CLOSE_DELAY_MS } from '../useFlyoutIntent';
 import { HOVER_OPEN_DELAY_MS } from '../useHoverPopup';
-import { act, fireEvent, render, screen } from './testUtils';
+import {
+	act,
+	fireEvent,
+	lumoraTestRequiredProps,
+	render,
+	screen
+} from './testUtils';
+
+jest.mock('../useMediaQuery', () => ({
+	...jest.requireActual('../useMediaQuery'),
+	useIsMobile: jest.fn(() => false)
+}));
 
 const mouse = { pointerType: 'mouse' };
 const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
@@ -108,5 +121,30 @@ describe('footer user menu on hover', () => {
 		fireEvent.pointerEnter(user(), { pointerType: 'touch' });
 		advance(1000);
 		expect(menu()).toBeNull();
+	});
+});
+
+describe('footer user menu in the wrapper', () => {
+	beforeEach(() => {
+		jest.useFakeTimers();
+		(useIsMobile as jest.Mock).mockReturnValue(false);
+	});
+	afterEach(() => jest.useRealTimers());
+
+	it('opens on hover on the glass flyout rail', () => {
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				sidebarVariant='collapsible'
+				sidebarSubmenu='flyout'
+				showProfile
+				userName='Riley Carter'
+			>
+				<div>Page</div>
+			</LumoraWrapper>
+		);
+		fireEvent.pointerEnter(user(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(menu()).toBeInTheDocument();
 	});
 });
