@@ -224,7 +224,7 @@ describe('useHoverPopup', () => {
 			y: 0,
 			toJSON: () => ({})
 		});
-		// jsdom has no PointerEvent: a MouseEvent of that type carries clientX
+		// The PointerEvent polyfill carries no clientX: build a MouseEvent
 		const move = (clientX: number, clientY: number) =>
 			act(() => {
 				const event = new MouseEvent('pointermove', {
