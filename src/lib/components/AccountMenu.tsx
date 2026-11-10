@@ -22,6 +22,7 @@ import {
 	focusMenuItem
 } from './ShellMenuList';
 import { withAlpha } from './sidebarUtils';
+import { besideSidebar } from './PlatformMenu';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover';
 import { Separator } from './ui/separator';
 import type { HoverPopupContentProps } from './useHoverPopup';
@@ -239,7 +240,16 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	const isDark = useIsDark();
 	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const listRef = React.useRef<HTMLUListElement>(null);
-	const anchorRef = React.useMemo(() => ({ current: anchorEl }), [anchorEl]);
+	// Hangs past the rail, like the platform menu, so it never covers rail items
+	const anchorRef = React.useMemo(
+		() => ({
+			current: anchorEl && {
+				contextElement: anchorEl,
+				getBoundingClientRect: () => besideSidebar(anchorEl)
+			}
+		}),
+		[anchorEl]
+	);
 	const menuLens = useGlassLens({
 		enabled: glass,
 		isDark,
@@ -367,7 +377,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			modal={!openedByHover}
 		>
 			<PopoverAnchor
-				virtualRef={anchorRef as React.RefObject<HTMLElement>}
+				virtualRef={anchorRef as unknown as React.RefObject<HTMLElement>}
 			/>
 			<PopoverContent
 				{...contentProps}
