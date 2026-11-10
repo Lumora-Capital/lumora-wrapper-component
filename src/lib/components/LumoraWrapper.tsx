@@ -710,6 +710,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			<PlatformSwitcherLogo
 				anchorEl={platformAnchor}
 				onClose={closePlatformMenu}
+				onOpen={setPlatformAnchor}
+				// Not where the rail widens on hover: the logo slides from under the pointer
+				hoverOpen={
+					usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant) ||
+					!(useCollapsibleSidebar || usePanelSidebar)
+				}
 				platforms={platforms!}
 				currentKey={currentPlatformKey}
 				onSelect={selectPlatform}
