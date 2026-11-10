@@ -2,6 +2,7 @@ import * as React from 'react';
 import { cn } from '../utils';
 import NotificationBell from './NotificationBell';
 import { Tooltip } from './ui/tooltip';
+import useHoverPopup from './useHoverPopup';
 import UserMenu, { Identity, type UserMenuOptions } from './UserMenu';
 
 export interface SidebarFooterProps extends UserMenuOptions {
@@ -12,6 +13,8 @@ export interface SidebarFooterProps extends UserMenuOptions {
 	/** Hover background, and the user row's background while its menu is open. */
 	hoverColor: string;
 	showProfile: boolean;
+	/** Open the user menu on hover; off where the panel expands under the pointer (the menu would close or freeze narrow). */
+	hoverOpen?: boolean;
 	/**
 	 * Unread What's New count. The bell opens the updates drawer, which holds
 	 * both tabs, so its badge shows this plus `notificationCount`; the menu's
@@ -29,6 +32,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 	color,
 	hoverColor,
 	showProfile,
+	hoverOpen = false,
 	whatsNewCount = 0,
 	...menuOptions
 }) => {
@@ -47,6 +51,11 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		null
 	);
 	const menuOpen = Boolean(menuAnchor);
+	const menuHover = useHoverPopup({
+		open: menuOpen,
+		onOpen: () => setMenuAnchor(footerRef.current),
+		onClose: () => setMenuAnchor(null)
+	});
 	// The menu hangs off the open panel's footer; it goes when the panel
 	// shrinks to the rail. Only a change closes it: the rail-labeled footer is
 	// always compact and opens its menu from there.
@@ -73,10 +82,16 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 				)}
 			>
 				{showProfile && (
-					<Tooltip title={compact ? userName : ''} side='right' arrow>
+					<Tooltip
+						title={compact ? userName : ''}
+						side='right'
+						arrow
+						disabled={menuOpen}
+					>
 						<button
 							type='button'
 							onClick={() => setMenuAnchor(footerRef.current)}
+							{...(hoverOpen ? menuHover.triggerProps : {})}
 							aria-label={`Account menu for ${userName}`}
 							aria-haspopup='menu'
 							aria-expanded={menuOpen}
@@ -126,6 +141,8 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 				// Above a full-width footer (at its width), beside a compact rail
 				placement={compact ? 'beside' : 'above'}
 				width={compact ? undefined : footerRef.current?.clientWidth}
+				contentProps={menuHover.contentProps}
+				openedByHover={menuHover.openedByHover}
 				{...menuOptions}
 			/>
 		</>

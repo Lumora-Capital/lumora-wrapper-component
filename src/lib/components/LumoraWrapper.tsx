@@ -1028,10 +1028,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		onThemeToggle,
 		onLogout: handleLogout
 	};
-	const renderFooter = (compact: boolean) => (
+	const renderFooter = (compact: boolean, hoverOpen = false) => (
 		<SidebarFooter
 			{...footerProps}
 			compact={compact}
+			hoverOpen={hoverOpen}
 			color={sidebarChromeFg}
 			hoverColor={sidebarChromeHover}
 		/>
@@ -1140,7 +1141,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						? collapsedTopMode
 						: 'full'
 			)}
-			footer={renderFooter(useRailLabeledSidebar || sidebarCollapsed)}
+			// Hover-open only where the rail never widens on hover (rail-labeled, glass flyout rail): the hover panel's footer moves under the pointer as it expands
+			footer={renderFooter(
+				useRailLabeledSidebar || sidebarCollapsed,
+				useRailLabeledSidebar || useFlyoutSubmenu
+			)}
 			submenuMode={useFlyoutSubmenu ? 'flyout' : 'inline'}
 		/>
 	);

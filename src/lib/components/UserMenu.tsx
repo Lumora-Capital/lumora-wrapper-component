@@ -3,6 +3,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../utils';
 import { formatRole } from './sidebarUtils';
+import type { HoverPopupContentProps } from './useHoverPopup';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -162,6 +163,10 @@ interface UserMenuProps extends UserMenuOptions {
 	placement: Placement;
 	/** Menu width in px; defaults to 240. */
 	width?: number;
+	/** Hover intent for the menu (from `useHoverPopup`). */
+	contentProps?: HoverPopupContentProps;
+	/** Opened by a hover: no backdrop (it would cover the trigger) and no focus move. */
+	openedByHover?: boolean;
 }
 
 /**
@@ -173,6 +178,8 @@ const UserMenu: React.FC<UserMenuProps> = ({
 	onClose,
 	placement,
 	width,
+	contentProps,
+	openedByHover = false,
 	avatarColor,
 	showNotifications,
 	notificationCount,
@@ -232,7 +239,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
 			    menu had: a press on it closes the menu, and as a React child
 			    of the opener the pointer over it still counts as inside the
 			    hover sidebar, which stays open beneath the menu. */}
-			{open && typeof document !== 'undefined'
+			{open && !openedByHover && typeof document !== 'undefined'
 				? createPortal(
 						<div
 							aria-hidden='true'
@@ -261,13 +268,24 @@ const UserMenu: React.FC<UserMenuProps> = ({
 					/>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
+					{...contentProps}
 					side={position.side}
 					align={position.align}
 					sideOffset={position.sideOffset}
 					collisionPadding={8}
+					// Radix's dropdown types hide this Menu prop, but it reaches the content
+					{...{
+						onOpenAutoFocus: (event: Event) => {
+							if (openedByHover) {
+								event.preventDefault();
+							}
+						}
+					}}
 					onCloseAutoFocus={event => {
 						event.preventDefault();
-						returnFocus.current?.focus?.();
+						if (!openedByHover) {
+							returnFocus.current?.focus?.();
+						}
 					}}
 					className='lw:min-w-0 lw:rounded-[10px] lw:px-0 lw:py-1 lw:shadow-[0_8px_24px_rgba(0,0,0,0.12)]'
 					style={{
