@@ -59,6 +59,7 @@ import { Sheet, SheetContent } from './ui/sheet';
 import { useIsMobile } from './useMediaQuery';
 import useEdgeReveal from './useEdgeReveal';
 import useHoverExpand from './useHoverExpand';
+import useHoverPopup from './useHoverPopup';
 import {
 	measureUpdatesDrawerPlacement,
 	type UpdatesDrawerPlacement
@@ -705,11 +706,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			window.location.assign(platform.url);
 		}
 	};
+	// Hover-open only where the rail never widens (a widening rail slides the trigger
+	// out from under the pointer and closes the footer menu as it shrinks); not on phones
+	const railNeverWidens =
+		!isMobile &&
+		(usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant) ||
+			!(useCollapsibleSidebar || usePanelSidebar));
 	const withPlatformMenu = (mark: React.ReactNode) =>
 		hasPlatformMenu ? (
 			<PlatformSwitcherLogo
 				anchorEl={platformAnchor}
 				onClose={closePlatformMenu}
+				onOpen={setPlatformAnchor}
+				hoverOpen={railNeverWidens}
 				platforms={platforms!}
 				currentKey={currentPlatformKey}
 				onSelect={selectPlatform}
@@ -748,18 +757,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		!isMobile &&
 		usesAutoHideRail(sidebarAutoHide, sidebarSubmenu, sidebarVariant);
 	const edgeReveal = useEdgeReveal(autoHideRail);
-	// When the rail hides, close what it opened (platform menu, flyouts,
-	// search card, account menu): remounting its contents resets their state.
-	// The updates drawer is the shell's and stays open in the rail's place.
-	const [railGeneration, setRailGeneration] = useState(0);
-	const [railWasShown, setRailWasShown] = useState(edgeReveal.shown);
-	if (railWasShown !== edgeReveal.shown) {
-		setRailWasShown(edgeReveal.shown);
-		if (!edgeReveal.shown) {
-			setRailGeneration(generation => generation + 1);
-			setPlatformAnchor(null);
-		}
-	}
 	// What the rail's top content (Nexa, search) looks like while collapsed:
 	// it expands the panel, or — with nothing to expand — opens a popover.
 	const collapsedTopMode = useFlyoutSubmenu ? 'popover' : 'expand';
@@ -807,15 +804,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [updatesPlacement, setUpdatesPlacement] =
 		useState<UpdatesDrawerPlacement | null>(null);
 	const measureUpdatesPlacement = useCallback(() => {
-		const measured = isMobile
+		const next = isMobile
 			? null
 			: measureUpdatesDrawerPlacement(shellRef.current);
-		// The auto-hiding rail slides away once the pointer leaves it for the
-		// drawer, so the drawer takes the rail's place instead of leaving a gap
-		const next =
-			measured && autoHideRail
-				? { ...measured, left: FLOATING_RAIL_GUTTER_PX }
-				: measured;
 		// Resize fires often; keep the old object when nothing moved
 		setUpdatesPlacement(prev =>
 			prev &&
@@ -826,7 +817,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				? prev
 				: next
 		);
-	}, [isMobile, autoHideRail]);
+	}, [isMobile]);
 	// The sidebar's box changes with the window, so follow it while open.
 	// Re-measure on every change of layout too (the sidebar may have just
 	// mounted or unmounted when the breakpoint flipped).
@@ -837,6 +828,38 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		return () =>
 			window.removeEventListener('resize', measureUpdatesPlacement);
 	}, [updatesDrawer.open, measureUpdatesPlacement]);
+	// Opens the updates drawer on a tab, over any mobile sheet that is open
+	const openUpdates = (tab: UpdatesTab) => {
+		setMobileSidebarOpen(false);
+		setMobileSearchOpen(false);
+		measureUpdatesPlacement();
+		setUpdatesDrawer({ open: true, tab });
+	};
+	// The bell opens the drawer on a hover too (mouse only)
+	const bellHover = useHoverPopup({
+		open: updatesDrawer.open,
+		onOpen: () => openUpdates('notifications'),
+		onClose: closeUpdates
+	});
+	const notificationsTriggerProps = hasUpdatesDrawer
+		? bellHover.triggerProps
+		: undefined;
+	// A hover-opened drawer stands in for the rail: keep the rail shown under it
+	const railShown =
+		edgeReveal.shown ||
+		(autoHideRail && updatesDrawer.open && bellHover.openedByHover);
+	// When the rail hides, close what it opened (platform menu, flyouts,
+	// search card, account menu): remounting its contents resets their state.
+	// The updates drawer is the shell's and stays open in the rail's place.
+	const [railGeneration, setRailGeneration] = useState(0);
+	const [railWasShown, setRailWasShown] = useState(railShown);
+	if (railWasShown !== railShown) {
+		setRailWasShown(railShown);
+		if (!railShown) {
+			setRailGeneration(generation => generation + 1);
+			setPlatformAnchor(null);
+		}
+	}
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
@@ -983,13 +1006,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const searchNode =
 		searchComponent ??
 		(CustomNavbar ? <CustomNavbar {...customNavbarProps} /> : null);
-	// Opens the updates drawer on a tab, over any mobile sheet that is open
-	const openUpdates = (tab: UpdatesTab) => {
-		setMobileSidebarOpen(false);
-		setMobileSearchOpen(false);
-		measureUpdatesPlacement();
-		setUpdatesDrawer({ open: true, tab });
-	};
 	const openNotifications =
 		NotificationSidebarContent && (() => openUpdates('notifications'));
 	// The bell opens the drawer, which holds both tabs, so its badge counts
@@ -1011,6 +1027,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		notificationCount,
 		whatsNewCount,
 		onNotificationsClick: openNotifications,
+		notificationsTriggerProps,
+		notificationsOpen: updatesDrawer.open,
 		showProfile,
 		userName,
 		userRole,
@@ -1022,10 +1040,11 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		onThemeToggle,
 		onLogout: handleLogout
 	};
-	const renderFooter = (compact: boolean) => (
+	const renderFooter = (compact: boolean, hoverOpen = false) => (
 		<SidebarFooter
 			{...footerProps}
 			compact={compact}
+			hoverOpen={hoverOpen}
 			color={sidebarChromeFg}
 			hoverColor={sidebarChromeHover}
 		/>
@@ -1134,7 +1153,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						? collapsedTopMode
 						: 'full'
 			)}
-			footer={renderFooter(useRailLabeledSidebar || sidebarCollapsed)}
+			footer={renderFooter(
+				useRailLabeledSidebar || sidebarCollapsed,
+				railNeverWidens
+			)}
 			submenuMode={useFlyoutSubmenu ? 'flyout' : 'inline'}
 		/>
 	);
@@ -1153,7 +1175,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		<aside
 			{...(autoHideRail ? edgeReveal.rootProps : {})}
 			data-auto-hide={autoHideRail ? 'true' : undefined}
-			data-shown={autoHideRail ? String(edgeReveal.shown) : undefined}
+			data-shown={autoHideRail ? String(railShown) : undefined}
 			className={cn(
 				// Above the page, including its sticky app bars
 				'lw:top-0 lw:z-[1101] lw:h-screen',
@@ -1187,7 +1209,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<div
 					ref={edgeReveal.glowRef as React.RefObject<HTMLDivElement>}
 					data-testid='sidebar-edge-glow'
-					data-visible={String(edgeReveal.nearEdge)}
+					data-visible={String(edgeReveal.nearEdge && !railShown)}
 					aria-hidden='true'
 					className='lw:pointer-events-none lw:absolute lw:inset-y-0 lw:left-0 lw:transition-opacity lw:duration-200 lw:ease-[ease]'
 					style={
@@ -1196,7 +1218,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							width: AUTO_HIDE_GLOW_PX,
 							// A pool of light at the edge, where the pointer is
 							background: `radial-gradient(${AUTO_HIDE_GLOW_PX}px ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px at 0 var(--edge-glow-y), ${withAlpha(sidebarChromeFg, isDark ? 0.5 : 0.4)}, ${withAlpha(sidebarChromeFg, 0)})`,
-							opacity: edgeReveal.nearEdge ? 1 : 0
+							opacity: edgeReveal.nearEdge && !railShown ? 1 : 0
 						} as React.CSSProperties
 					}
 				>
@@ -1226,9 +1248,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					width: FLOATING_RAIL_WIDTH_PX,
 					borderRadius: FLOATING_RAIL_RADIUS_PX,
 					...(autoHideRail && {
-						pointerEvents: edgeReveal.shown ? 'auto' : 'none',
-						opacity: edgeReveal.shown ? 1 : 0,
-						transform: edgeReveal.shown
+						pointerEvents: railShown ? 'auto' : 'none',
+						opacity: railShown ? 1 : 0,
+						transform: railShown
 							? 'none'
 							: `translateX(calc(-100% - ${2 * FLOATING_RAIL_GUTTER_PX}px))`,
 						transition: AUTO_HIDE_TRANSITION
@@ -1290,7 +1312,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const contentPaddingVars = resolveContentPadding(contentPadding);
 
 	// Never beside a sidebar that is no longer there, even before a re-measure
-	const drawerPlacement = isMobile ? null : updatesPlacement;
+	// The auto-hiding rail slides away once the pointer leaves it for the
+	// drawer, so the drawer takes its place; a hover-opened one sits beside the
+	// rail instead, leaving the bell under the pointer
+	const drawerPlacement =
+		isMobile || !updatesPlacement
+			? null
+			: autoHideRail && !bellHover.openedByHover
+				? { ...updatesPlacement, left: FLOATING_RAIL_GUTTER_PX }
+				: updatesPlacement;
 
 	return (
 		<ShellThemeContext.Provider value={themeMode}>
@@ -1453,6 +1483,12 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													? openNotifications
 													: onNotificationsClick
 											}
+											notificationsTriggerProps={
+												notificationsTriggerProps
+											}
+											notificationsOpen={
+												updatesDrawer.open
+											}
 											whatsNewCount={whatsNewCount}
 											onProfileClick={onProfileClick}
 											onAiUsageClick={onAiUsageClick}
@@ -1535,7 +1571,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 												)}
 											</div>
 											<div className='lw:py-3'>
-												{renderFooter(true)}
+												{renderFooter(
+													true,
+													railNeverWidens
+												)}
 											</div>
 										</aside>
 									</div>
@@ -1752,11 +1791,27 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								NotificationSidebarContent && (
 									<Sheet
 										open={updatesDrawer.open}
+										modal={!bellHover.openedByHover}
 										onOpenChange={open => {
 											if (!open) closeUpdates();
 										}}
 									>
 										<SheetContent
+											{...bellHover.contentProps}
+											// Over a hover-opened drawer the pointer is still in the rail
+											onMouseOver={
+												autoHideRail &&
+												bellHover.openedByHover
+													? edgeReveal.rootProps
+															.onMouseOver
+													: undefined
+											}
+											// A hover leaves focus where it was
+											onOpenAutoFocus={event => {
+												if (bellHover.openedByHover) {
+													event.preventDefault();
+												}
+											}}
 											side={
 												drawerPlacement
 													? 'left'

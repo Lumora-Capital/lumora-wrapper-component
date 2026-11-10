@@ -14,6 +14,7 @@ import { useGlassLens } from './RailLens';
 import { useIsDark } from './shellTheme';
 import { ShellMenuItem, ShellMenuList, focusMenuItem } from './ShellMenuList';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover';
+import useHoverPopup, { type HoverPopupContentProps } from './useHoverPopup';
 
 /** One entry of the platform switcher opened from the sidebar logo. */
 export type LumoraPlatform = {
@@ -34,6 +35,27 @@ export type LumoraPlatform = {
 const morph = springTiming(MENU_MORPH_SPRING);
 const settle = springTiming(SETTLE_SPRING);
 const MENU_MIN_WIDTH_PX = 240;
+/** Space between the sidebar's edge and the menu. */
+const SIDEBAR_GAP_PX = 8;
+
+/**
+ * The box the menu hangs from: the logo's, moved past the visible sidebar's
+ * right edge so the menu covers page content, never rail items. Outside a sidebar
+ * (the phone top bar) it is the logo's own box.
+ */
+export const besideSidebar = (anchor: HTMLElement): DOMRect => {
+	const logo = anchor.getBoundingClientRect();
+	// The visible surface: the glass capsule, or the hover panel (which widens
+	// over the rail), else the sidebar itself
+	const sidebar = anchor.closest(
+		'[data-rail-surface], [data-testid="sidebar-hover-panel"], aside'
+	);
+	if (!sidebar) {
+		return logo;
+	}
+	const left = sidebar.getBoundingClientRect().right + SIDEBAR_GAP_PX;
+	return new DOMRect(left, logo.top, 0, logo.height);
+};
 
 /** Card chrome without glass (Nexa's popover card, the menu's 12px corners). */
 const CARD_CLASS =
@@ -49,6 +71,10 @@ export interface PlatformMenuProps {
 	accentColor: string;
 	/** A Liquid Glass card (the glass rail's) in place of the plain one. */
 	glass?: boolean;
+	/** Hover intent for the menu card (from `useHoverPopup`). */
+	contentProps?: HoverPopupContentProps;
+	/** Opened by a hover: non-modal, and focus stays where it was. */
+	openedByHover?: boolean;
 }
 
 /**
@@ -64,13 +90,24 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 	currentKey,
 	onSelect,
 	accentColor,
-	glass = false
+	glass = false,
+	contentProps,
+	openedByHover = false
 }) => {
 	const isDark = useIsDark();
 	const open = Boolean(anchorEl);
 	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const listRef = React.useRef<HTMLUListElement>(null);
-	const anchorRef = React.useMemo(() => ({ current: anchorEl }), [anchorEl]);
+	const anchorRef = React.useMemo(
+		() => ({
+			current: anchorEl && {
+				// Lets floating-ui follow the anchor's scroll parents and resizes
+				contextElement: anchorEl,
+				getBoundingClientRect: () => besideSidebar(anchorEl)
+			}
+		}),
+		[anchorEl]
+	);
 	const lens = useGlassLens({
 		enabled: glass,
 		isDark,
@@ -147,10 +184,12 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 					onClose();
 				}
 			}}
-			modal
+			modal={!openedByHover}
 		>
 			<PopoverAnchor
-				virtualRef={anchorRef as React.RefObject<HTMLElement>}
+				virtualRef={
+					anchorRef as unknown as React.RefObject<HTMLElement>
+				}
 			/>
 			<PopoverContent
 				unstyled
@@ -158,16 +197,31 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 				align='start'
 				sideOffset={8}
 				collisionPadding={16}
+				{...contentProps}
 				// The menu sits inside the brand button in React's tree; its
 				// clicks would bubble up and reopen it
 				onClick={event => event.stopPropagation()}
+				onInteractOutside={event => {
+					contentProps?.onInteractOutside(event);
+					// A press on the brand button pins the menu rather than closing it
+					if (
+						event.target instanceof Node &&
+						anchorEl?.contains(event.target)
+					) {
+						event.preventDefault();
+					}
+				}}
 				onOpenAutoFocus={event => {
 					event.preventDefault();
-					focusMenuItem(listRef.current);
+					if (!openedByHover) {
+						focusMenuItem(listRef.current);
+					}
 				}}
 				onCloseAutoFocus={event => {
 					event.preventDefault();
-					anchorEl?.focus?.();
+					if (!openedByHover) {
+						anchorEl?.focus?.();
+					}
 				}}
 				className='lw:max-w-[calc(100vw-32px)]'
 			>
@@ -221,17 +275,32 @@ export default PlatformMenu;
  * inside it, so a menu rendered from here keeps the sidebar open under it.
  * The wrapper can draw the logo in more than one place (sidebar, phone top
  * bar); each copy opens the menu only for a click on its own brand.
+ * A mouse resting on the logo opens it too; the menu is this span's child in
+ * React's tree, so moving from logo to menu doesn't count as leaving.
  */
 export const PlatformSwitcherLogo: React.FC<
-	PlatformMenuProps & { children: React.ReactNode }
-> = ({ children, anchorEl, ...menuProps }) => {
+	PlatformMenuProps & {
+		children: React.ReactNode;
+		/** Open the menu against `anchor` (the brand button). */
+		onOpen: (anchor: HTMLElement) => void;
+		/** Open on hover; off where the rail widens on hover and moves the logo. */
+		hoverOpen?: boolean;
+	}
+> = ({ children, anchorEl, onOpen, hoverOpen = false, ...menuProps }) => {
 	const ref = React.useRef<HTMLSpanElement>(null);
 	const ownsAnchor = Boolean(
 		anchorEl && ref.current && anchorEl.contains(ref.current)
 	);
+	const hover = useHoverPopup({
+		open: ownsAnchor,
+		// The brand button anchors the menu, as a click on it does
+		onOpen: trigger => onOpen(trigger.closest('button') ?? trigger),
+		onClose: menuProps.onClose
+	});
 	return (
 		<span
 			ref={ref}
+			{...(hoverOpen ? hover.triggerProps : {})}
 			data-testid='platform-switcher-logo'
 			className="lw:relative lw:inline-flex lw:items-center lw:justify-center lw:p-1.5 lw:after:absolute lw:after:right-px lw:after:bottom-px lw:after:border-solid lw:after:[border-width:0_0_5px_5px] lw:after:[border-color:transparent_transparent_currentColor_transparent] lw:after:opacity-55 lw:after:content-['']"
 		>
@@ -239,6 +308,8 @@ export const PlatformSwitcherLogo: React.FC<
 			<PlatformMenu
 				{...menuProps}
 				anchorEl={ownsAnchor ? anchorEl : null}
+				contentProps={hover.contentProps}
+				openedByHover={hover.openedByHover}
 			/>
 		</span>
 	);

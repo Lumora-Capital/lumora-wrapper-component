@@ -35,3 +35,16 @@ globalThis.ResizeObserver = class ResizeObserver {
 	unobserve() {}
 	disconnect() {}
 };
+
+// jsdom lacks PointerEvent; Testing Library falls back to Event and drops pointerType
+if (typeof globalThis.PointerEvent === 'undefined') {
+	class PointerEventPolyfill extends Event {
+		pointerType: string;
+		constructor(type: string, init: PointerEventInit = {}) {
+			super(type, init);
+			this.pointerType = init.pointerType ?? '';
+		}
+	}
+	globalThis.PointerEvent =
+		PointerEventPolyfill as unknown as typeof PointerEvent;
+}

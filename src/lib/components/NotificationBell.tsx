@@ -5,6 +5,7 @@ import { RailGlassContext, useRailTooltipProps } from './RailLens';
 import { FLOATING_RAIL_ITEM_PX } from './shellLayout';
 import { CountBadge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
+import type { HoverPopupTriggerProps } from './useHoverPopup';
 
 /** The host's bell icon (`notificationsIcon`), in place of the default. */
 export const NotificationIconContext =
@@ -13,6 +14,10 @@ export const NotificationIconContext =
 interface NotificationBellProps {
 	count: number;
 	onClick?: () => void;
+	/** Hover intent: the bell opens the drawer on hover too. */
+	triggerProps?: HoverPopupTriggerProps;
+	/** The drawer is open: no tooltip over it. */
+	active?: boolean;
 	color: string;
 	hoverColor: string;
 	tooltipPlacement: 'right' | 'bottom';
@@ -23,6 +28,8 @@ interface NotificationBellProps {
 const NotificationBell: React.FC<NotificationBellProps> = ({
 	count,
 	onClick,
+	triggerProps,
+	active,
 	color,
 	hoverColor,
 	tooltipPlacement,
@@ -34,10 +41,17 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	const onGlassRail = React.useContext(RailGlassContext);
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
 	return (
-		<Tooltip title={label} side={tooltipPlacement} arrow {...railTooltip}>
+		<Tooltip
+			title={label}
+			side={tooltipPlacement}
+			arrow
+			{...railTooltip}
+			disabled={active}
+		>
 			<button
 				type='button'
 				onClick={onClick}
+				{...triggerProps}
 				aria-label={label}
 				data-testid={testId}
 				className={cn(
