@@ -2,6 +2,7 @@ import * as React from 'react';
 import { cn } from '../utils';
 import NotificationBell from './NotificationBell';
 import { Tooltip } from './ui/tooltip';
+import useHoverPopup from './useHoverPopup';
 import UserMenu, { Identity, type UserMenuOptions } from './UserMenu';
 
 export interface SidebarFooterProps extends UserMenuOptions {
@@ -47,6 +48,11 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 		null
 	);
 	const menuOpen = Boolean(menuAnchor);
+	const menuHover = useHoverPopup({
+		open: menuOpen,
+		onOpen: () => setMenuAnchor(footerRef.current),
+		onClose: () => setMenuAnchor(null)
+	});
 	// The menu hangs off the open panel's footer; it goes when the panel
 	// shrinks to the rail. Only a change closes it: the rail-labeled footer is
 	// always compact and opens its menu from there.
@@ -77,6 +83,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 						<button
 							type='button'
 							onClick={() => setMenuAnchor(footerRef.current)}
+							{...menuHover.triggerProps}
 							aria-label={`Account menu for ${userName}`}
 							aria-haspopup='menu'
 							aria-expanded={menuOpen}
@@ -126,6 +133,8 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 				// Above a full-width footer (at its width), beside a compact rail
 				placement={compact ? 'beside' : 'above'}
 				width={compact ? undefined : footerRef.current?.clientWidth}
+				contentProps={menuHover.contentProps}
+				openedByHover={menuHover.openedByHover}
 				{...menuOptions}
 			/>
 		</>
