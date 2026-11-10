@@ -235,6 +235,8 @@ describe('useHoverPopup', () => {
 				Object.defineProperty(event, 'pointerType', { value: 'mouse' });
 				document.body.dispatchEvent(event);
 			});
+		// A real click is always preceded by the pointer entering the trigger
+		fireEvent.pointerEnter(trigger, mouse);
 		fireEvent.click(trigger);
 		fireEvent.click(screen.getByTestId('close'));
 		move(10, 10);
