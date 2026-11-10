@@ -5,10 +5,11 @@ import { act, fireEvent, render, screen } from './testUtils';
 
 const mouse = { pointerType: 'mouse' };
 const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
-const renderFooter = () =>
+const renderFooter = (hoverOpen = true) =>
 	render(
 		<SidebarFooter
-			compact={false}
+			compact
+			hoverOpen={hoverOpen}
 			color='#111111'
 			hoverColor='#eeeeee'
 			showProfile
@@ -53,6 +54,8 @@ describe('footer user menu on hover', () => {
 		renderFooter();
 		fireEvent.pointerEnter(user(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
+		// Radix registers its outside-pointerdown listener in a setTimeout(0)
+		advance(0);
 		fireEvent.pointerDown(user(), mouse);
 		fireEvent.pointerLeave(user(), mouse);
 		advance(1000);
@@ -66,5 +69,44 @@ describe('footer user menu on hover', () => {
 		fireEvent.pointerLeave(user(), mouse);
 		advance(1000);
 		expect(menu()).toBeInTheDocument();
+	});
+
+	it('stays open when the mouse moves into the menu within the grace, and closes when it leaves', () => {
+		renderFooter();
+		fireEvent.pointerEnter(user(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		fireEvent.pointerLeave(user(), mouse);
+		advance(125);
+		fireEvent.pointerEnter(menu()!, mouse);
+		advance(1000);
+		expect(menu()).toBeInTheDocument();
+		fireEvent.pointerLeave(menu()!, mouse);
+		advance(FLYOUT_CLOSE_DELAY_MS + 50);
+		expect(menu()).toBeNull();
+	});
+
+	it('does not open on hover without hoverOpen, but a click does', () => {
+		renderFooter(false);
+		fireEvent.pointerEnter(user(), mouse);
+		advance(1000);
+		expect(menu()).toBeNull();
+		fireEvent.click(user());
+		expect(menu()).toBeInTheDocument();
+	});
+
+	it('does not open when the mouse leaves before the delay', () => {
+		renderFooter();
+		fireEvent.pointerEnter(user(), mouse);
+		advance(HOVER_OPEN_DELAY_MS - 50);
+		fireEvent.pointerLeave(user(), mouse);
+		advance(1000);
+		expect(menu()).toBeNull();
+	});
+
+	it('does not open on touch', () => {
+		renderFooter();
+		fireEvent.pointerEnter(user(), { pointerType: 'touch' });
+		advance(1000);
+		expect(menu()).toBeNull();
 	});
 });

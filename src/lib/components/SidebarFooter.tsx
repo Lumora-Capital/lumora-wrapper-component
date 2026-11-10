@@ -13,6 +13,8 @@ export interface SidebarFooterProps extends UserMenuOptions {
 	/** Hover background, and the user row's background while its menu is open. */
 	hoverColor: string;
 	showProfile: boolean;
+	/** Open the user menu on hover; off where the panel expands under the pointer (the menu would close or freeze narrow). */
+	hoverOpen?: boolean;
 	/**
 	 * Unread What's New count. The bell opens the updates drawer, which holds
 	 * both tabs, so its badge shows this plus `notificationCount`; the menu's
@@ -30,6 +32,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 	color,
 	hoverColor,
 	showProfile,
+	hoverOpen = false,
 	whatsNewCount = 0,
 	...menuOptions
 }) => {
@@ -79,11 +82,16 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 				)}
 			>
 				{showProfile && (
-					<Tooltip title={compact ? userName : ''} side='right' arrow>
+					<Tooltip
+						title={compact ? userName : ''}
+						side='right'
+						arrow
+						disabled={menuOpen}
+					>
 						<button
 							type='button'
 							onClick={() => setMenuAnchor(footerRef.current)}
-							{...menuHover.triggerProps}
+							{...(hoverOpen ? menuHover.triggerProps : {})}
 							aria-label={`Account menu for ${userName}`}
 							aria-haspopup='menu'
 							aria-expanded={menuOpen}
