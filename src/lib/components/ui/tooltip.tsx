@@ -78,14 +78,25 @@ export function Tooltip({
 	// An empty title keeps the same tree (only the tooltip is off), so a
 	// title that toggles never remounts the child under the pointer.
 	const empty = title == null || title === '' || title === false;
+	// Always controlled: switching `open` between false and undefined as
+	// `disabled` toggles makes Radix warn about a controlled/uncontrolled switch
+	const [innerOpen, setInnerOpen] = React.useState(false);
+	// Off means closed: it doesn't pop back up when switched on again
+	if ((disabled || empty) && innerOpen) {
+		setInnerOpen(false);
+	}
+	const handleOpenChange = (next: boolean) => {
+		setInnerOpen(next);
+		onOpenChange?.(next);
+	};
 	return (
 		<TooltipPrimitive.Provider
 			delayDuration={delayDuration}
 			disableHoverableContent={disableHoverableContent}
 		>
 			<TooltipPrimitive.Root
-				open={disabled || empty ? false : open}
-				onOpenChange={onOpenChange}
+				open={disabled || empty ? false : (open ?? innerOpen)}
+				onOpenChange={handleOpenChange}
 			>
 				<TooltipPrimitive.Trigger asChild>
 					{children}
