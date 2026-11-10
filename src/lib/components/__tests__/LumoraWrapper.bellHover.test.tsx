@@ -3,6 +3,7 @@ import LumoraWrapper, {
 	type NotificationSidebarContentProps
 } from '../LumoraWrapper';
 import { FLYOUT_CLOSE_DELAY_MS } from '../useFlyoutIntent';
+import { FLOATING_RAIL_GUTTER_PX } from '../shellLayout';
 import { HOVER_OPEN_DELAY_MS } from '../useHoverPopup';
 import { useIsMobile } from '../useMediaQuery';
 import {
@@ -17,6 +18,11 @@ jest.mock('../useMediaQuery', () => ({
 	...jest.requireActual('../useMediaQuery'),
 	useIsMobile: jest.fn(() => false)
 }));
+// jsdom has no layout: pretend the rail's right edge is at 100px
+jest.mock('../updatesDrawerPlacement', () => ({
+	...jest.requireActual('../updatesDrawerPlacement'),
+	measureUpdatesDrawerPlacement: () => ({ left: 100, top: 10, height: 500 })
+}));
 const mockUseIsMobile = useIsMobile as jest.MockedFunction<typeof useIsMobile>;
 
 const Updates = ({ initialTab }: NotificationSidebarContentProps) => (
@@ -25,12 +31,13 @@ const Updates = ({ initialTab }: NotificationSidebarContentProps) => (
 const mouse = { pointerType: 'mouse' };
 const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 
-const renderWrapper = () =>
+const renderWrapper = (autoHide = false) =>
 	render(
 		<LumoraWrapper
 			{...lumoraTestRequiredProps}
 			sidebarVariant='panel'
 			sidebarSubmenu='flyout'
+			sidebarAutoHide={autoHide}
 			sidebarLinks={[{ text: 'Deals', path: '/deals', icon: <Home /> }]}
 			showNotifications
 			NotificationSidebarContent={Updates}
@@ -111,8 +118,51 @@ describe('bell on hover', () => {
 		renderWrapper();
 		fireEvent.click(bell());
 		expect(updates()).toBeInTheDocument();
+		expect(
+			document.querySelector('[data-slot="sheet-overlay"]')
+		).not.toBeNull();
 		fireEvent.pointerLeave(bell(), mouse);
 		advance(1000);
 		expect(updates()).toBeInTheDocument();
+	});
+
+	it('does not show the bell tooltip over the open drawer', () => {
+		renderWrapper();
+		fireEvent.pointerEnter(bell(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		fireEvent.mouseMove(bell());
+		fireEvent.focus(bell());
+		advance(400);
+		expect(screen.queryByRole('tooltip')).toBeNull();
+	});
+});
+
+describe('bell on hover, auto-hide rail', () => {
+	beforeEach(() => {
+		mockUseIsMobile.mockReturnValue(false);
+		jest.useFakeTimers();
+	});
+	afterEach(() => jest.useRealTimers());
+
+	const rail = () => document.querySelector('[data-auto-hide]')!;
+
+	it('sits beside the rail, not over the bell, and keeps the rail shown', () => {
+		renderWrapper(true);
+		fireEvent.mouseOver(bell());
+		fireEvent.pointerEnter(bell(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect((drawer() as HTMLElement).style.left).toBe('100px');
+		expect(rail()).toHaveAttribute('data-shown', 'true');
+		fireEvent.mouseOver(drawer());
+		advance(1000);
+		expect(rail()).toHaveAttribute('data-shown', 'true');
+	});
+
+	it('takes the rail’s place when opened by click', () => {
+		renderWrapper(true);
+		fireEvent.click(bell());
+		expect((drawer() as HTMLElement).style.left).toBe(
+			`${FLOATING_RAIL_GUTTER_PX}px`
+		);
 	});
 });

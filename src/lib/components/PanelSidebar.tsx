@@ -70,6 +70,8 @@ export interface PanelSidebarProps {
 	onNotificationsClick?: () => void;
 	/** Hover intent for the bell (the wrapper's updates drawer). */
 	notificationsTriggerProps?: HoverPopupTriggerProps;
+	/** The updates drawer is open. */
+	notificationsOpen?: boolean;
 	whatsNewCount?: number;
 	/** Makes the account menu's user header open the profile. */
 	onProfileClick?: () => void;
@@ -126,6 +128,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	notificationCount = 0,
 	onNotificationsClick,
 	notificationsTriggerProps,
+	notificationsOpen,
 	whatsNewCount = 0,
 	onProfileClick,
 	onAiUsageClick,
@@ -176,6 +179,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 			count={bellCount}
 			onClick={onNotificationsClick}
 			triggerProps={notificationsTriggerProps}
+			active={notificationsOpen}
 			color={fg}
 			hoverColor={tint}
 			tooltipPlacement='right'

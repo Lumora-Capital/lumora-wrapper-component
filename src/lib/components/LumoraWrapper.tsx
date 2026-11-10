@@ -817,12 +817,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		const measured = isMobile
 			? null
 			: measureUpdatesDrawerPlacement(shellRef.current);
-		// The auto-hiding rail slides away once the pointer leaves it for the
-		// drawer, so the drawer takes the rail's place instead of leaving a gap
-		const next =
-			measured && autoHideRail
-				? { ...measured, left: FLOATING_RAIL_GUTTER_PX }
-				: measured;
+		const next = measured;
 		// Resize fires often; keep the old object when nothing moved
 		setUpdatesPlacement(prev =>
 			prev &&
@@ -833,7 +828,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				? prev
 				: next
 		);
-	}, [isMobile, autoHideRail]);
+	}, [isMobile]);
 	// The sidebar's box changes with the window, so follow it while open.
 	// Re-measure on every change of layout too (the sidebar may have just
 	// mounted or unmounted when the breakpoint flipped).
@@ -1028,6 +1023,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		whatsNewCount,
 		onNotificationsClick: openNotifications,
 		notificationsTriggerProps,
+		notificationsOpen: updatesDrawer.open,
 		showProfile,
 		userName,
 		userRole,
@@ -1312,7 +1308,15 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const contentPaddingVars = resolveContentPadding(contentPadding);
 
 	// Never beside a sidebar that is no longer there, even before a re-measure
-	const drawerPlacement = isMobile ? null : updatesPlacement;
+	// The auto-hiding rail slides away once the pointer leaves it for the
+	// drawer, so the drawer takes its place; a hover-opened one sits beside the
+	// rail instead, leaving the bell under the pointer
+	const drawerPlacement =
+		isMobile || !updatesPlacement
+			? null
+			: autoHideRail && !bellHover.openedByHover
+				? { ...updatesPlacement, left: FLOATING_RAIL_GUTTER_PX }
+				: updatesPlacement;
 
 	return (
 		<ShellThemeContext.Provider value={themeMode}>
@@ -1477,6 +1481,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 											}
 											notificationsTriggerProps={
 												notificationsTriggerProps
+											}
+											notificationsOpen={
+												updatesDrawer.open
 											}
 											whatsNewCount={whatsNewCount}
 											onProfileClick={onProfileClick}
@@ -1784,6 +1791,14 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 									>
 										<SheetContent
 											{...bellHover.contentProps}
+											// Over a hover-opened drawer the pointer is still in the rail
+											onMouseOver={
+												autoHideRail &&
+												bellHover.openedByHover
+													? edgeReveal.rootProps
+															.onMouseOver
+													: undefined
+											}
 											// A hover leaves focus where it was
 											onOpenAutoFocus={event => {
 												if (bellHover.openedByHover) {

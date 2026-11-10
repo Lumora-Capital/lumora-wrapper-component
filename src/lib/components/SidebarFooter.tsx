@@ -23,6 +23,8 @@ export interface SidebarFooterProps extends UserMenuOptions {
 	whatsNewCount?: number;
 	/** Hover intent for the bell (the wrapper's updates drawer); gated by `hoverOpen` like the avatar. */
 	notificationsTriggerProps?: HoverPopupTriggerProps;
+	/** The updates drawer is open. */
+	notificationsOpen?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 	hoverOpen = false,
 	whatsNewCount = 0,
 	notificationsTriggerProps,
+	notificationsOpen,
 	...menuOptions
 }) => {
 	const {
@@ -134,6 +137,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 						triggerProps={
 							hoverOpen ? notificationsTriggerProps : undefined
 						}
+						active={notificationsOpen}
 						color={color}
 						hoverColor={hoverColor}
 						tooltipPlacement='right'

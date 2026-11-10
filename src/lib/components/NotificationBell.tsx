@@ -16,6 +16,8 @@ interface NotificationBellProps {
 	onClick?: () => void;
 	/** Hover intent: the bell opens the drawer on hover too. */
 	triggerProps?: HoverPopupTriggerProps;
+	/** The drawer is open: no tooltip over it. */
+	active?: boolean;
 	color: string;
 	hoverColor: string;
 	tooltipPlacement: 'right' | 'bottom';
@@ -27,6 +29,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	count,
 	onClick,
 	triggerProps,
+	active,
 	color,
 	hoverColor,
 	tooltipPlacement,
@@ -38,7 +41,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 	const onGlassRail = React.useContext(RailGlassContext);
 	const label = count ? `Notifications, ${count} unread` : 'Notifications';
 	return (
-		<Tooltip title={label} side={tooltipPlacement} arrow {...railTooltip}>
+		<Tooltip
+			title={label}
+			side={tooltipPlacement}
+			arrow
+			{...railTooltip}
+			disabled={active}
+		>
 			<button
 				type='button'
 				onClick={onClick}
