@@ -31,6 +31,41 @@ describe('account menu on hover', () => {
 		expect(menu()).toBeInTheDocument();
 		expect(button()).toHaveAttribute('aria-expanded', 'true');
 		expect(menu()!.contains(document.activeElement)).toBe(false);
+		expect(document.body.style.pointerEvents).toBe('');
+	});
+
+	it('does not open when the mouse leaves before the delay', () => {
+		render(<PanelSidebar {...props} />);
+		fireEvent.pointerEnter(button(), mouse);
+		advance(HOVER_OPEN_DELAY_MS - 50);
+		fireEvent.pointerLeave(button(), mouse);
+		advance(1000);
+		expect(menu()).toBeNull();
+	});
+
+	it('does not open for touch', () => {
+		render(<PanelSidebar {...props} />);
+		fireEvent.pointerEnter(button(), { pointerType: 'touch' });
+		advance(1000);
+		expect(menu()).toBeNull();
+	});
+
+	it('closes on a press outside a hover-opened menu', () => {
+		render(<PanelSidebar {...props} />);
+		fireEvent.pointerEnter(button(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		advance(0);
+		fireEvent.pointerDown(document.body, mouse);
+		expect(menu()).toBeNull();
+	});
+
+	it('closes on Escape for a hover-opened menu', () => {
+		render(<PanelSidebar {...props} />);
+		fireEvent.pointerEnter(button(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		advance(0);
+		fireEvent.keyDown(document, { key: 'Escape' });
+		expect(menu()).toBeNull();
 	});
 
 	it('stays open while the mouse moves into the menu, closes after leaving it', () => {
@@ -51,6 +86,7 @@ describe('account menu on hover', () => {
 		render(<PanelSidebar {...props} />);
 		fireEvent.pointerEnter(button(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
+		advance(0);
 		fireEvent.pointerDown(button(), mouse);
 		fireEvent.pointerLeave(button(), mouse);
 		advance(1000);
