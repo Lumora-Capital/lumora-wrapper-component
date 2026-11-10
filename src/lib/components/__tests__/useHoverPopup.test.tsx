@@ -209,4 +209,42 @@ describe('useHoverPopup', () => {
 		advance(HOVER_OPEN_DELAY_MS);
 		expect(popup()).not.toBeNull();
 	});
+
+	it('keeps suppressing while the pointer is inside the trigger box', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({
+			left: 0,
+			top: 0,
+			right: 40,
+			bottom: 40,
+			width: 40,
+			height: 40,
+			x: 0,
+			y: 0,
+			toJSON: () => ({})
+		});
+		// jsdom has no PointerEvent: a MouseEvent of that type carries clientX
+		const move = (clientX: number, clientY: number) =>
+			act(() => {
+				const event = new MouseEvent('pointermove', {
+					bubbles: true,
+					clientX,
+					clientY
+				});
+				Object.defineProperty(event, 'pointerType', { value: 'mouse' });
+				document.body.dispatchEvent(event);
+			});
+		fireEvent.click(trigger);
+		fireEvent.click(screen.getByTestId('close'));
+		move(10, 10);
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(1000);
+		expect(popup()).toBeNull();
+		move(200, 10);
+		fireEvent.pointerLeave(trigger, mouse);
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(popup()).not.toBeNull();
+	});
 });

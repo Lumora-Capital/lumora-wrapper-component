@@ -78,22 +78,32 @@ const useHoverPopup = ({
 			moveListener.current = undefined;
 		}
 	};
+	// A closing modal layer still takes the pointer's target (html, overlay),
+	// so the trigger's box is what says the mouse hasn't left it.
+	const overTrigger = (event: PointerEvent) => {
+		const el = triggerEl.current;
+		const r = el?.getBoundingClientRect();
+		return (
+			(event.target instanceof Node && !!el?.contains(event.target)) ||
+			(!!r &&
+				event.clientX >= r.left &&
+				event.clientX <= r.right &&
+				event.clientY >= r.top &&
+				event.clientY <= r.bottom)
+		);
+	};
 	const suppressUntilOffTrigger = () => {
 		stopSuppressing();
 		suppressed.current = true;
 		moveListener.current = event => {
-			if (
-				event.pointerType === 'mouse' &&
-				!(
-					event.target instanceof Node &&
-					triggerEl.current?.contains(event.target)
-				)
-			) {
+			if (event.pointerType === 'mouse' && !overTrigger(event)) {
 				stopSuppressing();
 			}
 		};
 		document.addEventListener('pointermove', moveListener.current);
 	};
+	// Keep the [open] effect declared before the unmount effect, or the
+	// listener leaks on unmount while open.
 	// Opening or closing by any means drops pending timers and the pin
 	React.useEffect(
 		() => () => {
