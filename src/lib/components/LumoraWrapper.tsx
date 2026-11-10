@@ -710,6 +710,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			<PlatformSwitcherLogo
 				anchorEl={platformAnchor}
 				onClose={closePlatformMenu}
+				onOpen={setPlatformAnchor}
 				platforms={platforms!}
 				currentKey={currentPlatformKey}
 				onSelect={selectPlatform}
