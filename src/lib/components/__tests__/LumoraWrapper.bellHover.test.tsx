@@ -83,7 +83,7 @@ describe('bell on hover', () => {
 		expect(updates()).toBeNull();
 	});
 
-	it('stays open after a press on the bell when the mouse leaves', () => {
+	it('still closes after a click on the bell when the mouse leaves', () => {
 		renderWrapper();
 		fireEvent.pointerEnter(bell(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
@@ -92,7 +92,7 @@ describe('bell on hover', () => {
 		fireEvent.click(bell());
 		fireEvent.pointerLeave(bell(), mouse);
 		advance(1000);
-		expect(updates()).toBeInTheDocument();
+		expect(updates()).toBeNull();
 	});
 
 	it('closes a hover-opened drawer on Escape', () => {
@@ -114,7 +114,7 @@ describe('bell on hover', () => {
 		expect(updates()).toBeNull();
 	});
 
-	it('still opens on click, modal, and stays open when the mouse leaves', () => {
+	it('opens modal without a mouse press (keyboard), and stays open when the mouse leaves', () => {
 		renderWrapper();
 		fireEvent.click(bell());
 		expect(updates()).toBeInTheDocument();
@@ -158,14 +158,13 @@ describe('bell on hover, auto-hide rail', () => {
 		expect(rail()).toHaveAttribute('data-shown', 'true');
 	});
 
-	it('keeps the rail shown under a pinned drawer until it closes', () => {
+	it('keeps the rail shown under a hover-opened drawer until it closes', () => {
 		renderWrapper(true);
 		fireEvent.mouseOver(bell());
 		fireEvent.pointerEnter(bell(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
-		advance(0);
-		fireEvent.pointerDown(bell(), mouse);
-		fireEvent.click(bell());
+		fireEvent.pointerLeave(bell(), mouse);
+		fireEvent.pointerEnter(drawer()!, mouse);
 		fireEvent.mouseOver(document.body);
 		advance(1000);
 		expect(rail()).toHaveAttribute('data-shown', 'true');

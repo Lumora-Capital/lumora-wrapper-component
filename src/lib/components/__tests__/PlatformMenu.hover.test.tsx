@@ -80,7 +80,7 @@ describe('platform menu on hover', () => {
 		expect(menu()).toBeNull();
 	});
 
-	it('stays open after a press on the logo when the mouse leaves', () => {
+	it('still closes after a click on the logo when the mouse leaves', () => {
 		renderWrapper();
 		fireEvent.pointerEnter(logo(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
@@ -88,7 +88,7 @@ describe('platform menu on hover', () => {
 		fireEvent.click(screen.getAllByTestId('sidebar-header-brand')[0]);
 		fireEvent.pointerLeave(logo(), mouse);
 		advance(1000);
-		expect(menu()).toBeInTheDocument();
+		expect(menu()).not.toBeInTheDocument();
 	});
 
 	it('stays open when the mouse moves into the menu within the grace', () => {
@@ -140,7 +140,7 @@ describe('platform menu on hover', () => {
 		expect(besideSidebar(button).left).toBe(80);
 	});
 
-	it('stays open after a click when the mouse leaves', () => {
+	it('stays open when opened without a mouse press (keyboard)', () => {
 		renderWrapper();
 		fireEvent.click(screen.getAllByTestId('sidebar-header-brand')[0]);
 		expect(menu()).toBeInTheDocument();
