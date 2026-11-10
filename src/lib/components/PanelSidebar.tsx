@@ -10,6 +10,7 @@ import { deriveGroupTint, formatRole } from './sidebarUtils';
 import { CountBadge } from './ui/badge';
 import { UserAvatar } from './UserMenu';
 import type { UserMenuItem } from './UserMenu';
+import useHoverPopup from './useHoverPopup';
 
 /** Host apps often outline every `button:focus`; keep the footer clean after a click. */
 const FOCUS_OUTLINE_FIX = 'lw:outline-none lw:focus:outline-none';
@@ -142,6 +143,11 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 
 	const footerRef = React.useRef<HTMLButtonElement>(null);
 	const [menuOpen, setMenuOpen] = React.useState(false);
+	const accountHover = useHoverPopup({
+		open: menuOpen,
+		onOpen: () => setMenuOpen(true),
+		onClose: () => setMenuOpen(false)
+	});
 
 	// Display only: "SUPER_ADMIN" -> "Super Admin". The stored role is untouched.
 	const roleLabel = userRole ? formatRole(userRole) : undefined;
@@ -178,6 +184,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 			type='button'
 			ref={footerRef}
 			onClick={() => setMenuOpen(true)}
+			{...accountHover.triggerProps}
 			aria-haspopup='menu'
 			aria-expanded={menuOpen}
 			aria-label='Account menu'
@@ -301,6 +308,8 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					menuItems={menuItems}
 					onLogout={onLogout}
 					glass={submenuMode === 'flyout'}
+					contentProps={accountHover.contentProps}
+					openedByHover={accountHover.openedByHover}
 				/>
 			) : null}
 		</div>

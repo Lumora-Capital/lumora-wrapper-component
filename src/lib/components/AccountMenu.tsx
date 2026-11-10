@@ -24,6 +24,7 @@ import {
 import { withAlpha } from './sidebarUtils';
 import { Popover, PopoverAnchor, PopoverContent } from './ui/popover';
 import { Separator } from './ui/separator';
+import type { HoverPopupContentProps } from './useHoverPopup';
 import type { UserMenuItem } from './UserMenu';
 
 /** Host apps often outline every `button:focus`; the focus ring is drawn instead. */
@@ -202,6 +203,10 @@ export interface AccountMenuProps {
 	 * row with a drop of glass.
 	 */
 	glass?: boolean;
+	/** Hover intent for the menu card (from `useHoverPopup`). */
+	contentProps?: HoverPopupContentProps;
+	/** Opened by a hover: non-modal, and focus stays where it was. */
+	openedByHover?: boolean;
 }
 
 /**
@@ -227,7 +232,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	onLinkClick,
 	menuItems = [],
 	onLogout,
-	glass = false
+	glass = false,
+	contentProps,
+	openedByHover = false
 }) => {
 	const isDark = useIsDark();
 	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
@@ -357,12 +364,13 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					onClose();
 				}
 			}}
-			modal
+			modal={!openedByHover}
 		>
 			<PopoverAnchor
 				virtualRef={anchorRef as React.RefObject<HTMLElement>}
 			/>
 			<PopoverContent
+				{...contentProps}
 				unstyled
 				side='top'
 				align='start'
@@ -370,11 +378,15 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 				collisionPadding={16}
 				onOpenAutoFocus={event => {
 					event.preventDefault();
-					focusMenuItem(listRef.current);
+					if (!openedByHover) {
+						focusMenuItem(listRef.current);
+					}
 				}}
 				onCloseAutoFocus={event => {
 					event.preventDefault();
-					anchorEl?.focus?.();
+					if (!openedByHover) {
+						anchorEl?.focus?.();
+					}
 				}}
 				className='lw:max-w-[calc(100vw-32px)]'
 			>
