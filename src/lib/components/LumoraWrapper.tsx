@@ -706,7 +706,8 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			window.location.assign(platform.url);
 		}
 	};
-	// Hover-open only where the rail never widens under the pointer, and not on phones
+	// Hover-open only where the rail never widens (a widening rail slides the trigger
+	// out from under the pointer and closes the footer menu as it shrinks); not on phones
 	const railNeverWidens =
 		!isMobile &&
 		(usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant) ||
