@@ -706,17 +706,18 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			window.location.assign(platform.url);
 		}
 	};
+	// Hover-open only where the rail never widens under the pointer, and not on phones
+	const railNeverWidens =
+		!isMobile &&
+		(usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant) ||
+			!(useCollapsibleSidebar || usePanelSidebar));
 	const withPlatformMenu = (mark: React.ReactNode) =>
 		hasPlatformMenu ? (
 			<PlatformSwitcherLogo
 				anchorEl={platformAnchor}
 				onClose={closePlatformMenu}
 				onOpen={setPlatformAnchor}
-				// Not where the rail widens on hover: the logo slides from under the pointer
-				hoverOpen={
-					usesFlyoutSubmenu(sidebarSubmenu, sidebarVariant) ||
-					!(useCollapsibleSidebar || usePanelSidebar)
-				}
+				hoverOpen={railNeverWidens}
 				platforms={platforms!}
 				currentKey={currentPlatformKey}
 				onSelect={selectPlatform}
@@ -802,10 +803,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const [updatesPlacement, setUpdatesPlacement] =
 		useState<UpdatesDrawerPlacement | null>(null);
 	const measureUpdatesPlacement = useCallback(() => {
-		const measured = isMobile
+		const next = isMobile
 			? null
 			: measureUpdatesDrawerPlacement(shellRef.current);
-		const next = measured;
 		// Resize fires often; keep the old object when nothing moved
 		setUpdatesPlacement(prev =>
 			prev &&
@@ -1152,10 +1152,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 						? collapsedTopMode
 						: 'full'
 			)}
-			// Hover-open only where the rail never widens on hover (rail-labeled, glass flyout rail): the hover panel's footer moves under the pointer as it expands
 			footer={renderFooter(
 				useRailLabeledSidebar || sidebarCollapsed,
-				useRailLabeledSidebar || useFlyoutSubmenu
+				railNeverWidens
 			)}
 			submenuMode={useFlyoutSubmenu ? 'flyout' : 'inline'}
 		/>
@@ -1571,7 +1570,10 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 												)}
 											</div>
 											<div className='lw:py-3'>
-												{renderFooter(true)}
+												{renderFooter(
+													true,
+													railNeverWidens
+												)}
 											</div>
 										</aside>
 									</div>

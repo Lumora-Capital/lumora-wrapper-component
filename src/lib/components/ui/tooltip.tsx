@@ -86,7 +86,7 @@ export function Tooltip({
 		setInnerOpen(false);
 	}
 	const handleOpenChange = (next: boolean) => {
-		setInnerOpen(next);
+		if (open === undefined) setInnerOpen(next);
 		onOpenChange?.(next);
 	};
 	return (

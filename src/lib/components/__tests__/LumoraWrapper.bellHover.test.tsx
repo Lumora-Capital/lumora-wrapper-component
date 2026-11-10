@@ -186,3 +186,43 @@ describe('bell on hover, auto-hide rail', () => {
 		);
 	});
 });
+
+describe('footer on hover, fixed rail', () => {
+	beforeEach(() => {
+		mockUseIsMobile.mockReturnValue(false);
+		jest.useFakeTimers();
+	});
+	afterEach(() => jest.useRealTimers());
+
+	const renderRail = () =>
+		render(
+			<LumoraWrapper
+				{...lumoraTestRequiredProps}
+				sidebarVariant='rail'
+				sidebarLinks={[
+					{ text: 'Deals', path: '/deals', icon: <Home /> }
+				]}
+				showNotifications
+				NotificationSidebarContent={Updates}
+			>
+				<div>Page</div>
+			</LumoraWrapper>
+		);
+
+	it('opens the drawer when the bell is hovered', () => {
+		renderRail();
+		fireEvent.pointerEnter(
+			screen.getByTestId('sidebar-notifications'),
+			mouse
+		);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(updates()).toBeInTheDocument();
+	});
+
+	it('opens the account menu when the avatar is hovered', () => {
+		renderRail();
+		fireEvent.pointerEnter(screen.getByTestId('sidebar-user'), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(screen.getByRole('menu')).toBeInTheDocument();
+	});
+});
