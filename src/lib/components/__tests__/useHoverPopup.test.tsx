@@ -13,7 +13,6 @@ const Harness = () => {
 		onOpen: () => setOpen(true),
 		onClose: () => setOpen(false)
 	});
-	const { onInteractOutside: _guard, ...contentPointer } = contentProps;
 	return (
 		<>
 			<button
@@ -35,7 +34,8 @@ const Harness = () => {
 				<div
 					data-testid='popup'
 					data-by-hover={String(openedByHover)}
-					{...contentPointer}
+					onPointerEnter={contentProps.onPointerEnter}
+					onPointerLeave={contentProps.onPointerLeave}
 				>
 					Popup
 				</div>
