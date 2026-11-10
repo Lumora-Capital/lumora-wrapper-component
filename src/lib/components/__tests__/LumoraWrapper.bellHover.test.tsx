@@ -158,6 +158,26 @@ describe('bell on hover, auto-hide rail', () => {
 		expect(rail()).toHaveAttribute('data-shown', 'true');
 	});
 
+	it('keeps the rail shown under a pinned drawer until it closes', () => {
+		renderWrapper(true);
+		fireEvent.mouseOver(bell());
+		fireEvent.pointerEnter(bell(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		advance(0);
+		fireEvent.pointerDown(bell(), mouse);
+		fireEvent.click(bell());
+		fireEvent.mouseOver(document.body);
+		advance(1000);
+		expect(rail()).toHaveAttribute('data-shown', 'true');
+		expect(updates()).toBeInTheDocument();
+		fireEvent.keyDown(document, { key: 'Escape' });
+		advance(500);
+		expect(updates()).toBeNull();
+		fireEvent.mouseOver(document.body);
+		advance(1000);
+		expect(rail()).toHaveAttribute('data-shown', 'false');
+	});
+
 	it('takes the rail’s place when opened by click', () => {
 		renderWrapper(true);
 		fireEvent.click(bell());

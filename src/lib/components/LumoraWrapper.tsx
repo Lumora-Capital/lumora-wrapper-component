@@ -755,18 +755,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		!isMobile &&
 		usesAutoHideRail(sidebarAutoHide, sidebarSubmenu, sidebarVariant);
 	const edgeReveal = useEdgeReveal(autoHideRail);
-	// When the rail hides, close what it opened (platform menu, flyouts,
-	// search card, account menu): remounting its contents resets their state.
-	// The updates drawer is the shell's and stays open in the rail's place.
-	const [railGeneration, setRailGeneration] = useState(0);
-	const [railWasShown, setRailWasShown] = useState(edgeReveal.shown);
-	if (railWasShown !== edgeReveal.shown) {
-		setRailWasShown(edgeReveal.shown);
-		if (!edgeReveal.shown) {
-			setRailGeneration(generation => generation + 1);
-			setPlatformAnchor(null);
-		}
-	}
 	// What the rail's top content (Nexa, search) looks like while collapsed:
 	// it expands the panel, or — with nothing to expand — opens a popover.
 	const collapsedTopMode = useFlyoutSubmenu ? 'popover' : 'expand';
@@ -855,6 +843,22 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const notificationsTriggerProps = hasUpdatesDrawer
 		? bellHover.triggerProps
 		: undefined;
+	// A hover-opened drawer stands in for the rail: keep the rail shown under it
+	const railShown =
+		edgeReveal.shown ||
+		(autoHideRail && updatesDrawer.open && bellHover.openedByHover);
+	// When the rail hides, close what it opened (platform menu, flyouts,
+	// search card, account menu): remounting its contents resets their state.
+	// The updates drawer is the shell's and stays open in the rail's place.
+	const [railGeneration, setRailGeneration] = useState(0);
+	const [railWasShown, setRailWasShown] = useState(railShown);
+	if (railWasShown !== railShown) {
+		setRailWasShown(railShown);
+		if (!railShown) {
+			setRailGeneration(generation => generation + 1);
+			setPlatformAnchor(null);
+		}
+	}
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
@@ -1171,7 +1175,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		<aside
 			{...(autoHideRail ? edgeReveal.rootProps : {})}
 			data-auto-hide={autoHideRail ? 'true' : undefined}
-			data-shown={autoHideRail ? String(edgeReveal.shown) : undefined}
+			data-shown={autoHideRail ? String(railShown) : undefined}
 			className={cn(
 				// Above the page, including its sticky app bars
 				'lw:top-0 lw:z-[1101] lw:h-screen',
@@ -1205,7 +1209,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 				<div
 					ref={edgeReveal.glowRef as React.RefObject<HTMLDivElement>}
 					data-testid='sidebar-edge-glow'
-					data-visible={String(edgeReveal.nearEdge)}
+					data-visible={String(edgeReveal.nearEdge && !railShown)}
 					aria-hidden='true'
 					className='lw:pointer-events-none lw:absolute lw:inset-y-0 lw:left-0 lw:transition-opacity lw:duration-200 lw:ease-[ease]'
 					style={
@@ -1214,7 +1218,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 							width: AUTO_HIDE_GLOW_PX,
 							// A pool of light at the edge, where the pointer is
 							background: `radial-gradient(${AUTO_HIDE_GLOW_PX}px ${AUTO_HIDE_GLOW_HALF_HEIGHT_PX}px at 0 var(--edge-glow-y), ${withAlpha(sidebarChromeFg, isDark ? 0.5 : 0.4)}, ${withAlpha(sidebarChromeFg, 0)})`,
-							opacity: edgeReveal.nearEdge ? 1 : 0
+							opacity: edgeReveal.nearEdge && !railShown ? 1 : 0
 						} as React.CSSProperties
 					}
 				>
@@ -1244,9 +1248,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 					width: FLOATING_RAIL_WIDTH_PX,
 					borderRadius: FLOATING_RAIL_RADIUS_PX,
 					...(autoHideRail && {
-						pointerEvents: edgeReveal.shown ? 'auto' : 'none',
-						opacity: edgeReveal.shown ? 1 : 0,
-						transform: edgeReveal.shown
+						pointerEvents: railShown ? 'auto' : 'none',
+						opacity: railShown ? 1 : 0,
+						transform: railShown
 							? 'none'
 							: `translateX(calc(-100% - ${2 * FLOATING_RAIL_GUTTER_PX}px))`,
 						transition: AUTO_HIDE_TRANSITION
