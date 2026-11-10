@@ -25,11 +25,12 @@ const platforms: LumoraPlatform[] = [
 const mouse = { pointerType: 'mouse' };
 const advance = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 
-const renderWrapper = () =>
+const renderWrapper = (flyout = true) =>
 	render(
 		<LumoraWrapper
 			{...lumoraTestRequiredProps}
 			sidebarVariant='panel'
+			sidebarSubmenu={flyout ? 'flyout' : undefined}
 			sidebarLinks={[{ text: 'Deals', path: '/deals', icon: <Home /> }]}
 			platforms={platforms}
 			currentPlatformKey='centra'
@@ -37,6 +38,19 @@ const renderWrapper = () =>
 			<div>Page</div>
 		</LumoraWrapper>
 	);
+
+const rect = (left: number, top: number, width: number, height: number) =>
+	({
+		left,
+		top,
+		width,
+		height,
+		right: left + width,
+		bottom: top + height,
+		x: left,
+		y: top,
+		toJSON: () => ({})
+	}) as DOMRect;
 
 const logo = () => screen.getAllByTestId('platform-switcher-logo')[0];
 const menu = () => screen.queryByTestId('platform-menu');
@@ -71,9 +85,59 @@ describe('platform menu on hover', () => {
 		fireEvent.pointerEnter(logo(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
 		fireEvent.pointerDown(logo(), mouse);
+		fireEvent.click(screen.getAllByTestId('sidebar-header-brand')[0]);
 		fireEvent.pointerLeave(logo(), mouse);
 		advance(1000);
 		expect(menu()).toBeInTheDocument();
+	});
+
+	it('stays open when the mouse moves into the menu within the grace', () => {
+		renderWrapper();
+		fireEvent.pointerEnter(logo(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		fireEvent.pointerLeave(logo(), mouse);
+		advance(FLYOUT_CLOSE_DELAY_MS / 2);
+		fireEvent.pointerEnter(menu()!, mouse);
+		advance(1000);
+		expect(menu()).toBeInTheDocument();
+		fireEvent.pointerLeave(menu()!, mouse);
+		advance(FLYOUT_CLOSE_DELAY_MS + 50);
+		expect(menu()).toBeNull();
+	});
+
+	it('does not open when the mouse leaves before the delay', () => {
+		renderWrapper();
+		fireEvent.pointerEnter(logo(), mouse);
+		advance(HOVER_OPEN_DELAY_MS - 50);
+		fireEvent.pointerLeave(logo(), mouse);
+		advance(1000);
+		expect(menu()).toBeNull();
+	});
+
+	it('ignores touch', () => {
+		renderWrapper();
+		fireEvent.pointerEnter(logo(), { pointerType: 'touch' });
+		advance(1000);
+		expect(menu()).toBeNull();
+	});
+
+	it('does not open on hover where the rail widens on hover, but opens on click', () => {
+		renderWrapper(false);
+		fireEvent.pointerEnter(logo(), mouse);
+		advance(1000);
+		expect(menu()).toBeNull();
+		fireEvent.click(screen.getAllByTestId('sidebar-header-brand')[0]);
+		expect(menu()).toBeInTheDocument();
+	});
+
+	it('hangs past the glass capsule, not the outer aside', () => {
+		renderWrapper();
+		const button = screen.getAllByTestId('sidebar-header-brand')[0];
+		const capsule = button.closest('[data-rail-surface]') as HTMLElement;
+		expect(capsule).not.toBeNull();
+		capsule.getBoundingClientRect = () => rect(8, 8, 64, 784);
+		button.getBoundingClientRect = () => rect(16, 12, 40, 40);
+		expect(besideSidebar(button).left).toBe(80);
 	});
 
 	it('stays open after a click when the mouse leaves', () => {
@@ -87,19 +151,6 @@ describe('platform menu on hover', () => {
 });
 
 describe('besideSidebar', () => {
-	const rect = (left: number, top: number, width: number, height: number) =>
-		({
-			left,
-			top,
-			width,
-			height,
-			right: left + width,
-			bottom: top + height,
-			x: left,
-			y: top,
-			toJSON: () => ({})
-		}) as DOMRect;
-
 	it('moves the logo box past the sidebar right edge, keeping its height', () => {
 		const aside = document.createElement('aside');
 		const button = document.createElement('button');

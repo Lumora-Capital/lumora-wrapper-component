@@ -39,13 +39,17 @@ const MENU_MIN_WIDTH_PX = 240;
 const SIDEBAR_GAP_PX = 8;
 
 /**
- * The box the menu hangs from: the logo's, moved past the sidebar's right
- * edge so the menu covers page content, never rail items. Outside a sidebar
+ * The box the menu hangs from: the logo's, moved past the visible sidebar's
+ * right edge so the menu covers page content, never rail items. Outside a sidebar
  * (the phone top bar) it is the logo's own box.
  */
 export const besideSidebar = (anchor: HTMLElement): DOMRect => {
 	const logo = anchor.getBoundingClientRect();
-	const sidebar = anchor.closest('aside');
+	// The visible surface: the glass capsule, or the hover panel (which widens
+	// over the rail), else the sidebar itself
+	const sidebar = anchor.closest(
+		'[data-rail-surface], [data-testid="sidebar-hover-panel"], aside'
+	);
 	if (!sidebar) {
 		return logo;
 	}
@@ -97,6 +101,8 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 	const anchorRef = React.useMemo(
 		() => ({
 			current: anchorEl && {
+				// Lets floating-ui follow the anchor's scroll parents and resizes
+				contextElement: anchorEl,
 				getBoundingClientRect: () => besideSidebar(anchorEl)
 			}
 		}),
@@ -181,7 +187,9 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 			modal={!openedByHover}
 		>
 			<PopoverAnchor
-				virtualRef={anchorRef as React.RefObject<HTMLElement>}
+				virtualRef={
+					anchorRef as unknown as React.RefObject<HTMLElement>
+				}
 			/>
 			<PopoverContent
 				unstyled
@@ -194,6 +202,7 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 				// clicks would bubble up and reopen it
 				onClick={event => event.stopPropagation()}
 				onInteractOutside={event => {
+					contentProps?.onInteractOutside(event);
 					// A press on the brand button pins the menu rather than closing it
 					if (
 						event.target instanceof Node &&
@@ -274,8 +283,10 @@ export const PlatformSwitcherLogo: React.FC<
 		children: React.ReactNode;
 		/** Open the menu against `anchor` (the brand button). */
 		onOpen: (anchor: HTMLElement) => void;
+		/** Open on hover; off where the rail widens on hover and moves the logo. */
+		hoverOpen?: boolean;
 	}
-> = ({ children, anchorEl, onOpen, ...menuProps }) => {
+> = ({ children, anchorEl, onOpen, hoverOpen = false, ...menuProps }) => {
 	const ref = React.useRef<HTMLSpanElement>(null);
 	const ownsAnchor = Boolean(
 		anchorEl && ref.current && anchorEl.contains(ref.current)
@@ -289,7 +300,7 @@ export const PlatformSwitcherLogo: React.FC<
 	return (
 		<span
 			ref={ref}
-			{...hover.triggerProps}
+			{...(hoverOpen ? hover.triggerProps : {})}
 			data-testid='platform-switcher-logo'
 			className="lw:relative lw:inline-flex lw:items-center lw:justify-center lw:p-1.5 lw:after:absolute lw:after:right-px lw:after:bottom-px lw:after:border-solid lw:after:[border-width:0_0_5px_5px] lw:after:[border-color:transparent_transparent_currentColor_transparent] lw:after:opacity-55 lw:after:content-['']"
 		>
