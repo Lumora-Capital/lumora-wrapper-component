@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from '../utils';
 import NotificationBell from './NotificationBell';
 import { Tooltip } from './ui/tooltip';
-import useHoverPopup from './useHoverPopup';
+import useHoverPopup, { type HoverPopupTriggerProps } from './useHoverPopup';
 import UserMenu, { Identity, type UserMenuOptions } from './UserMenu';
 
 export interface SidebarFooterProps extends UserMenuOptions {
@@ -21,6 +21,8 @@ export interface SidebarFooterProps extends UserMenuOptions {
 	 * Notifications entry shows `notificationCount` alone.
 	 */
 	whatsNewCount?: number;
+	/** Hover intent for the bell (the wrapper's updates drawer); gated by `hoverOpen` like the avatar. */
+	notificationsTriggerProps?: HoverPopupTriggerProps;
 }
 
 /**
@@ -34,6 +36,7 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 	showProfile,
 	hoverOpen = false,
 	whatsNewCount = 0,
+	notificationsTriggerProps,
 	...menuOptions
 }) => {
 	const {
@@ -128,6 +131,9 @@ const SidebarFooter: React.FC<SidebarFooterProps> = ({
 					<NotificationBell
 						count={notificationCount + whatsNewCount}
 						onClick={onNotificationsClick}
+						triggerProps={
+							hoverOpen ? notificationsTriggerProps : undefined
+						}
 						color={color}
 						hoverColor={hoverColor}
 						tooltipPlacement='right'

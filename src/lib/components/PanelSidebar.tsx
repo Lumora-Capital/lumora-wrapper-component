@@ -10,7 +10,7 @@ import { deriveGroupTint, formatRole } from './sidebarUtils';
 import { CountBadge } from './ui/badge';
 import { UserAvatar } from './UserMenu';
 import type { UserMenuItem } from './UserMenu';
-import useHoverPopup from './useHoverPopup';
+import useHoverPopup, { type HoverPopupTriggerProps } from './useHoverPopup';
 
 /** Host apps often outline every `button:focus`; keep the footer clean after a click. */
 const FOCUS_OUTLINE_FIX = 'lw:outline-none lw:focus:outline-none';
@@ -68,6 +68,8 @@ export interface PanelSidebarProps {
 	/** The bell's badge shows this plus `whatsNewCount`. */
 	notificationCount?: number;
 	onNotificationsClick?: () => void;
+	/** Hover intent for the bell (the wrapper's updates drawer). */
+	notificationsTriggerProps?: HoverPopupTriggerProps;
 	whatsNewCount?: number;
 	/** Makes the account menu's user header open the profile. */
 	onProfileClick?: () => void;
@@ -123,6 +125,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	showNotifications = true,
 	notificationCount = 0,
 	onNotificationsClick,
+	notificationsTriggerProps,
 	whatsNewCount = 0,
 	onProfileClick,
 	onAiUsageClick,
@@ -172,6 +175,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 		<NotificationBell
 			count={bellCount}
 			onClick={onNotificationsClick}
+			triggerProps={notificationsTriggerProps}
 			color={fg}
 			hoverColor={tint}
 			tooltipPlacement='right'

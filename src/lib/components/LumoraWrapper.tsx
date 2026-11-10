@@ -59,6 +59,7 @@ import { Sheet, SheetContent } from './ui/sheet';
 import { useIsMobile } from './useMediaQuery';
 import useEdgeReveal from './useEdgeReveal';
 import useHoverExpand from './useHoverExpand';
+import useHoverPopup from './useHoverPopup';
 import {
 	measureUpdatesDrawerPlacement,
 	type UpdatesDrawerPlacement
@@ -843,6 +844,22 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		return () =>
 			window.removeEventListener('resize', measureUpdatesPlacement);
 	}, [updatesDrawer.open, measureUpdatesPlacement]);
+	// Opens the updates drawer on a tab, over any mobile sheet that is open
+	const openUpdates = (tab: UpdatesTab) => {
+		setMobileSidebarOpen(false);
+		setMobileSearchOpen(false);
+		measureUpdatesPlacement();
+		setUpdatesDrawer({ open: true, tab });
+	};
+	// The bell opens the drawer on a hover too (mouse only)
+	const bellHover = useHoverPopup({
+		open: updatesDrawer.open,
+		onOpen: () => openUpdates('notifications'),
+		onClose: closeUpdates
+	});
+	const notificationsTriggerProps = hasUpdatesDrawer
+		? bellHover.triggerProps
+		: undefined;
 	const [isCheckingSession, setIsCheckingSession] = useState(true);
 	const [hasSession, setHasSession] = useState(false);
 	const chatSidebarHook = useChatSidebar?.();
@@ -989,13 +1006,6 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 	const searchNode =
 		searchComponent ??
 		(CustomNavbar ? <CustomNavbar {...customNavbarProps} /> : null);
-	// Opens the updates drawer on a tab, over any mobile sheet that is open
-	const openUpdates = (tab: UpdatesTab) => {
-		setMobileSidebarOpen(false);
-		setMobileSearchOpen(false);
-		measureUpdatesPlacement();
-		setUpdatesDrawer({ open: true, tab });
-	};
 	const openNotifications =
 		NotificationSidebarContent && (() => openUpdates('notifications'));
 	// The bell opens the drawer, which holds both tabs, so its badge counts
@@ -1017,6 +1027,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 		notificationCount,
 		whatsNewCount,
 		onNotificationsClick: openNotifications,
+		notificationsTriggerProps,
 		showProfile,
 		userName,
 		userRole,
@@ -1464,6 +1475,9 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 													? openNotifications
 													: onNotificationsClick
 											}
+											notificationsTriggerProps={
+												notificationsTriggerProps
+											}
 											whatsNewCount={whatsNewCount}
 											onProfileClick={onProfileClick}
 											onAiUsageClick={onAiUsageClick}
@@ -1763,11 +1777,19 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 								NotificationSidebarContent && (
 									<Sheet
 										open={updatesDrawer.open}
+										modal={!bellHover.openedByHover}
 										onOpenChange={open => {
 											if (!open) closeUpdates();
 										}}
 									>
 										<SheetContent
+											{...bellHover.contentProps}
+											// A hover leaves focus where it was
+											onOpenAutoFocus={event => {
+												if (bellHover.openedByHover) {
+													event.preventDefault();
+												}
+											}}
 											side={
 												drawerPlacement
 													? 'left'
