@@ -65,14 +65,48 @@ const useHoverPopup = ({
 		clearTimeout(timer.current);
 		timer.current = undefined;
 	};
+	// Closing by click or Escape leaves the mouse on the trigger, and Radix's
+	// modal pointer-events then make it re-enter: don't hover-reopen until the
+	// pointer has moved off the trigger.
+	const closedByHook = React.useRef(false);
+	const suppressed = React.useRef(false);
+	const moveListener = React.useRef<(event: PointerEvent) => void>(undefined);
+	const stopSuppressing = () => {
+		suppressed.current = false;
+		if (moveListener.current) {
+			document.removeEventListener('pointermove', moveListener.current);
+			moveListener.current = undefined;
+		}
+	};
+	const suppressUntilOffTrigger = () => {
+		stopSuppressing();
+		suppressed.current = true;
+		moveListener.current = event => {
+			if (
+				event.pointerType === 'mouse' &&
+				!(
+					event.target instanceof Node &&
+					triggerEl.current?.contains(event.target)
+				)
+			) {
+				stopSuppressing();
+			}
+		};
+		document.addEventListener('pointermove', moveListener.current);
+	};
 	// Opening or closing by any means drops pending timers and the pin
 	React.useEffect(
 		() => () => {
 			clear();
 			pinned.current = false;
+			if (open && !closedByHook.current) {
+				suppressUntilOffTrigger();
+			}
+			closedByHook.current = false;
 		},
 		[open]
 	);
+	React.useEffect(() => stopSuppressing, []);
 
 	const leave: PointerHandler = event => {
 		if (event.pointerType !== 'mouse') {
@@ -84,10 +118,10 @@ const useHoverPopup = ({
 			latest.current.openedByHover &&
 			!pinned.current
 		) {
-			timer.current = setTimeout(
-				() => latest.current.onClose(),
-				FLYOUT_CLOSE_DELAY_MS
-			);
+			timer.current = setTimeout(() => {
+				closedByHook.current = true;
+				latest.current.onClose();
+			}, FLYOUT_CLOSE_DELAY_MS);
 		}
 	};
 
@@ -98,7 +132,7 @@ const useHoverPopup = ({
 			}
 			clear();
 			triggerEl.current = event.currentTarget;
-			if (latest.current.open) {
+			if (latest.current.open || suppressed.current) {
 				return;
 			}
 			const trigger = event.currentTarget;

@@ -169,4 +169,44 @@ describe('useHoverPopup', () => {
 		});
 		expect(onElsewhere).not.toHaveBeenCalled();
 	});
+
+	it('does not reopen a popup closed by other means while the mouse stays on the trigger', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		fireEvent.click(trigger);
+		fireEvent.click(screen.getByTestId('close'));
+		fireEvent.pointerEnter(trigger, mouse);
+		fireEvent.pointerMove(trigger, mouse);
+		advance(1000);
+		expect(popup()).toBeNull();
+		fireEvent.pointerMove(document.body, mouse);
+		fireEvent.pointerLeave(trigger, mouse);
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(popup()).not.toBeNull();
+	});
+
+	it('does not swallow the next hover after a close elsewhere', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		fireEvent.click(trigger);
+		fireEvent.click(screen.getByTestId('close'));
+		fireEvent.pointerMove(document.body, mouse);
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(popup()).not.toBeNull();
+	});
+
+	it('does not suppress hover after a hover close', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		fireEvent.pointerLeave(trigger, mouse);
+		advance(FLYOUT_CLOSE_DELAY_MS);
+		expect(popup()).toBeNull();
+		fireEvent.pointerEnter(trigger, mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		expect(popup()).not.toBeNull();
+	});
 });
