@@ -82,18 +82,19 @@ describe('account menu on hover', () => {
 		expect(menu()).toBeNull();
 	});
 
-	it('stays open after a press on the avatar when the mouse leaves', () => {
+	it('still closes after a click on the avatar when the mouse leaves', () => {
 		render(<PanelSidebar {...props} />);
 		fireEvent.pointerEnter(button(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
 		advance(0);
 		fireEvent.pointerDown(button(), mouse);
+		fireEvent.click(button());
 		fireEvent.pointerLeave(button(), mouse);
 		advance(1000);
-		expect(menu()).toBeInTheDocument();
+		expect(menu()).not.toBeInTheDocument();
 	});
 
-	it('stays open after a click when the mouse leaves', () => {
+	it('stays open when opened without a mouse press (keyboard)', () => {
 		render(<PanelSidebar {...props} />);
 		button().focus();
 		fireEvent.click(button());

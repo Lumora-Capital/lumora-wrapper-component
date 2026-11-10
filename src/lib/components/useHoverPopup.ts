@@ -7,7 +7,7 @@ export const HOVER_OPEN_DELAY_MS = 150;
 
 type PointerHandler = (event: React.PointerEvent<HTMLElement>) => void;
 
-/** For the trigger: hover intent, and a press that pins a hover-opened popup. */
+/** For the trigger: hover intent; a mouse press counts as hover too. */
 export type HoverPopupTriggerProps = {
 	onPointerEnter: PointerHandler;
 	onPointerLeave: PointerHandler;
@@ -28,10 +28,10 @@ export type HoverPopupContentProps = {
 /**
  * Hover intent for a popup that otherwise opens on click. A mouse resting on
  * the trigger opens it; once hover-opened, leaving both the trigger and the
- * popup closes it after the flyouts' grace, unless a press on the trigger
- * pinned it. Spread `triggerProps` on the trigger and `contentProps` on the
+ * popup closes it after the flyouts' grace. A mouse press never pins it: a
+ * mouse click that opens it counts as a hover open too. Spread `triggerProps` on the trigger and `contentProps` on the
  * popup's Radix content. Touch and pen are ignored, and a popup opened any
- * other way (click, keyboard) has `openedByHover` false, so it stays modal
+ * other way (keyboard, touch) has `openedByHover` false, so it stays modal
  * and closes only as before. `openedByHover` keeps its value through the
  * close, for close-focus handling.
  */
@@ -46,8 +46,6 @@ const useHoverPopup = ({
 }) => {
 	const timer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
 	const triggerEl = React.useRef<HTMLElement | null>(null);
-	// Pressed while hover-opened: stays open when the pointer leaves
-	const pinned = React.useRef(false);
 	const [hoverOpening, setHoverOpening] = React.useState(false);
 	const [openedByHover, setOpenedByHover] = React.useState(false);
 	const [wasOpen, setWasOpen] = React.useState(open);
@@ -104,11 +102,10 @@ const useHoverPopup = ({
 	};
 	// Keep the [open] effect declared before the unmount effect, or the
 	// listener leaks on unmount while open.
-	// Opening or closing by any means drops pending timers and the pin
+	// Opening or closing by any means drops pending timers
 	React.useEffect(
 		() => () => {
 			clear();
-			pinned.current = false;
 			if (open && !closedByHook.current) {
 				suppressUntilOffTrigger();
 			}
@@ -123,11 +120,10 @@ const useHoverPopup = ({
 			return;
 		}
 		clear();
-		if (
-			latest.current.open &&
-			latest.current.openedByHover &&
-			!pinned.current
-		) {
+		if (!latest.current.open) {
+			// A press that didn't open it (dragged off) is no longer hover intent
+			setHoverOpening(false);
+		} else if (latest.current.openedByHover) {
 			timer.current = setTimeout(() => {
 				closedByHook.current = true;
 				latest.current.onClose();
@@ -156,10 +152,15 @@ const useHoverPopup = ({
 			}, HOVER_OPEN_DELAY_MS);
 		},
 		onPointerLeave: leave,
-		onPointerDown: () => {
-			if (latest.current.open && latest.current.openedByHover) {
-				clear();
-				pinned.current = true;
+		// The click that follows opens it as a hover would, so leaving closes it
+		onPointerDown: event => {
+			if (event.pointerType !== 'mouse') {
+				return;
+			}
+			clear();
+			triggerEl.current = event.currentTarget;
+			if (!latest.current.open) {
+				setHoverOpening(true);
 			}
 		}
 	};

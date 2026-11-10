@@ -130,15 +130,38 @@ describe('useHoverPopup', () => {
 		expect(popup()).toBeNull();
 	});
 
-	it('stays open after a press on the trigger', () => {
+	it('still closes after a press on the trigger when the mouse leaves', () => {
 		render(<Harness />);
 		const trigger = screen.getByTestId('trigger');
 		fireEvent.pointerEnter(trigger, mouse);
 		advance(HOVER_OPEN_DELAY_MS);
 		fireEvent.pointerDown(trigger, mouse);
+		fireEvent.click(trigger);
 		fireEvent.pointerLeave(trigger, mouse);
-		advance(1000);
-		expect(popup()).not.toBeNull();
+		advance(FLYOUT_CLOSE_DELAY_MS);
+		expect(popup()).toBeNull();
+	});
+
+	it('treats a mouse click that opens it as a hover open', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		fireEvent.pointerEnter(trigger, mouse);
+		fireEvent.pointerDown(trigger, mouse);
+		fireEvent.click(trigger);
+		expect(popup()).toHaveAttribute('data-by-hover', 'true');
+		fireEvent.pointerLeave(trigger, mouse);
+		advance(FLYOUT_CLOSE_DELAY_MS);
+		expect(popup()).toBeNull();
+	});
+
+	it('forgets a press that did not open it', () => {
+		render(<Harness />);
+		const trigger = screen.getByTestId('trigger');
+		fireEvent.pointerEnter(trigger, mouse);
+		fireEvent.pointerDown(trigger, mouse);
+		fireEvent.pointerLeave(trigger, mouse);
+		fireEvent.click(trigger);
+		expect(popup()).toHaveAttribute('data-by-hover', 'false');
 	});
 
 	it('treats the trigger as inside the popup for outside interactions', () => {

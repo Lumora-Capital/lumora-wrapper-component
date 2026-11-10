@@ -63,19 +63,20 @@ describe('footer user menu on hover', () => {
 		expect(menu()).toBeNull();
 	});
 
-	it('stays open after a press on the trigger when the mouse leaves', () => {
+	it('still closes after a click on the trigger when the mouse leaves', () => {
 		renderFooter();
 		fireEvent.pointerEnter(user(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
 		// Radix registers its outside-pointerdown listener in a setTimeout(0)
 		advance(0);
 		fireEvent.pointerDown(user(), mouse);
+		fireEvent.click(user());
 		fireEvent.pointerLeave(user(), mouse);
 		advance(1000);
-		expect(menu()).toBeInTheDocument();
+		expect(menu()).not.toBeInTheDocument();
 	});
 
-	it('keeps the backdrop and stays open when clicked open', () => {
+	it('keeps the backdrop and stays open when opened without a mouse press', () => {
 		renderFooter();
 		fireEvent.click(user());
 		expect(backdrop()).not.toBeNull();
