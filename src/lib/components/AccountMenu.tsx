@@ -240,7 +240,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	const isDark = useIsDark();
 	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const listRef = React.useRef<HTMLUListElement>(null);
-	// Hangs past the rail, like the platform menu, so it never covers rail items
+	// Beside the avatar past the rail, like the platform menu, so it never covers rail items
 	const anchorRef = React.useMemo(
 		() => ({
 			current: anchorEl && {
@@ -382,9 +382,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			<PopoverContent
 				{...contentProps}
 				unstyled
-				side='top'
-				align='start'
-				sideOffset={8}
+				side='right'
+				align='end'
+				sideOffset={0}
 				collisionPadding={16}
 				onOpenAutoFocus={event => {
 					event.preventDefault();

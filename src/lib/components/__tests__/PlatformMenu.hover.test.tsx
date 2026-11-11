@@ -140,6 +140,15 @@ describe('platform menu on hover', () => {
 		expect(besideSidebar(button).left).toBe(80);
 	});
 
+	it('opens beside the logo, to its right', () => {
+		renderWrapper();
+		fireEvent.pointerEnter(logo(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		const content = menu()!.closest('[data-side]');
+		expect(content).toHaveAttribute('data-side', 'right');
+		expect(content).toHaveAttribute('data-align', 'start');
+	});
+
 	it('stays open when opened without a mouse press (keyboard)', () => {
 		renderWrapper();
 		fireEvent.click(screen.getAllByTestId('sidebar-header-brand')[0]);

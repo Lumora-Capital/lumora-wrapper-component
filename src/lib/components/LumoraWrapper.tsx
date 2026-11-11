@@ -1820,7 +1820,7 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 											srTitle='Updates'
 											className={
 												drawerPlacement
-													? 'lw:overflow-hidden lw:rounded-lg lw:border-0'
+													? 'lw-slide-from-edge lw:overflow-hidden lw:rounded-lg lw:border-0'
 													: 'lw:overflow-hidden lw:rounded-l-lg lw:border-0'
 											}
 											style={
