@@ -59,6 +59,15 @@ describe('account menu on hover', () => {
 		expect(menu()).toBeNull();
 	});
 
+	it('opens beside the avatar, to its right, bottoms level', () => {
+		render(<PanelSidebar {...props} />);
+		fireEvent.pointerEnter(button(), mouse);
+		advance(HOVER_OPEN_DELAY_MS);
+		const content = menu()!.closest('[data-side]');
+		expect(content).toHaveAttribute('data-side', 'right');
+		expect(content).toHaveAttribute('data-align', 'end');
+	});
+
 	it('closes on Escape for a hover-opened menu', () => {
 		render(<PanelSidebar {...props} />);
 		fireEvent.pointerEnter(button(), mouse);

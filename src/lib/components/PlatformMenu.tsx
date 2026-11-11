@@ -37,19 +37,20 @@ const settle = springTiming(SETTLE_SPRING);
 const MENU_MIN_WIDTH_PX = 240;
 /** Space between the sidebar's edge and the menu. */
 const SIDEBAR_GAP_PX = 8;
+// The visible surface: the glass capsule, or the hover panel (which widens
+// over the rail), else the sidebar itself
+const SIDEBAR_SURFACE =
+	'[data-rail-surface], [data-testid="sidebar-hover-panel"], aside';
 
 /**
- * The box the menu hangs from: the logo's, moved past the visible sidebar's
- * right edge so the menu covers page content, never rail items. Outside a sidebar
- * (the phone top bar) it is the logo's own box.
+ * The box a menu opens beside: the trigger's, moved past the visible
+ * sidebar's right edge so the menu covers page content, never rail items, and
+ * sits level with its trigger. Outside a sidebar (the phone top bar) it is the
+ * trigger's own box.
  */
 export const besideSidebar = (anchor: HTMLElement): DOMRect => {
 	const logo = anchor.getBoundingClientRect();
-	// The visible surface: the glass capsule, or the hover panel (which widens
-	// over the rail), else the sidebar itself
-	const sidebar = anchor.closest(
-		'[data-rail-surface], [data-testid="sidebar-hover-panel"], aside'
-	);
+	const sidebar = anchor.closest(SIDEBAR_SURFACE);
 	if (!sidebar) {
 		return logo;
 	}
@@ -96,6 +97,8 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 }) => {
 	const isDark = useIsDark();
 	const open = Boolean(anchorEl);
+	// Beside the logo in a sidebar; under it in the phone top bar
+	const inSidebar = Boolean(anchorEl?.closest(SIDEBAR_SURFACE));
 	const surface = useSidebarSurface(isDark ? 'hsl(220, 30%, 7%)' : '#ffffff');
 	const listRef = React.useRef<HTMLUListElement>(null);
 	const anchorRef = React.useMemo(
@@ -193,9 +196,9 @@ const PlatformMenu: React.FC<PlatformMenuProps> = ({
 			/>
 			<PopoverContent
 				unstyled
-				side='bottom'
+				side={inSidebar ? 'right' : 'bottom'}
 				align='start'
-				sideOffset={8}
+				sideOffset={inSidebar ? 0 : 8}
 				collisionPadding={16}
 				{...contentProps}
 				// The menu sits inside the brand button in React's tree; its

@@ -152,6 +152,8 @@ describe('bell on hover, auto-hide rail', () => {
 		fireEvent.pointerEnter(bell(), mouse);
 		advance(HOVER_OPEN_DELAY_MS);
 		expect((drawer() as HTMLElement).style.left).toBe('100px');
+		// Slides out from under the sidebar's edge, not from the window's
+		expect(drawer()).toHaveClass('lw-slide-from-edge');
 		expect(rail()).toHaveAttribute('data-shown', 'true');
 		fireEvent.mouseOver(drawer());
 		advance(1000);
