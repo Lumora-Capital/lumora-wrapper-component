@@ -28,6 +28,10 @@ export const FLOATING_RAIL_GUTTER_PX = 8;
  * go further: there is room around them). */
 export const RAIL_MAX_SCALE = 1.4;
 export const FLOATING_RAIL_RADIUS_PX = GLASS_RADIUS_PX;
+/** What the auto-hidden rail covers when it slides in: the capsule and its
+ * gutters. It sits over dialogs, so apps keep their dialogs clear of it. */
+export const AUTO_HIDE_RAIL_WIDTH_PX =
+	FLOATING_RAIL_WIDTH_PX + 2 * FLOATING_RAIL_GUTTER_PX;
 
 /** Content padding: 16px (2 theme spacing units) on phones, 18px from `md`. */
 export const DEFAULT_CONTENT_PADDING = { xs: 2, md: '18px' };

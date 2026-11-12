@@ -22,6 +22,7 @@ import LumoraWrapper, {
 	type UpdatesTab
 } from './components/LumoraWrapper';
 import type { UserMenuItem } from './components/UserMenu';
+export { AUTO_HIDE_RAIL_WIDTH_PX } from './components/shellLayout';
 
 export * from './authUtils';
 export { getDesignTokens } from './theme';

@@ -101,6 +101,31 @@ describe('flyout submenus', () => {
 		expect(screen.getByTestId('sidebar-flyout-scrim')).toBeInTheDocument();
 	});
 
+	it('lifts the tiles over dialogs only from an auto-hidden rail', () => {
+		const panelZ = () => {
+			let el: HTMLElement | null = screen.getByTestId('sidebar-flyout');
+			while (el && !el.style.zIndex) el = el.parentElement;
+			return el?.style.zIndex;
+		};
+		const { unmount } = renderRail();
+		hoverOpen('CRM');
+		expect(panelZ()).toBe('1195');
+		unmount();
+
+		render(
+			<div data-auto-hide='true'>
+				<CollapsibleSidebar
+					mainLinks={mainLinks}
+					activePath='/deals'
+					collapsed
+					submenuMode='flyout'
+				/>
+			</div>
+		);
+		hoverOpen('CRM');
+		expect(panelZ()).toBe('1355');
+	});
+
 	it('does not stack the group’s pages under its icon', () => {
 		renderRail({ activePath: '/crm/people' });
 		// Open by the active path in inline mode; never in flyout mode

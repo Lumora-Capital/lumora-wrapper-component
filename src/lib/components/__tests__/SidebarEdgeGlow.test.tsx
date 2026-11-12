@@ -72,6 +72,18 @@ describe('auto-hide rail edge glow', () => {
 		expect(glow()).toHaveAttribute('data-visible', 'false');
 	});
 
+	it('sits above dialogs (1300) only while it auto-hides', () => {
+		const { unmount } = renderWrapper();
+		const rail = screen.getByTestId('sidebar-edge-reveal').closest('aside');
+		expect(rail).toHaveClass('lw:z-[1350]');
+		unmount();
+
+		renderWrapper({ sidebarAutoHide: false });
+		const pinned = document.querySelector('aside[class*="lw:z-"]');
+		expect(pinned).toHaveClass('lw:z-[1101]');
+		expect(pinned).not.toHaveClass('lw:z-[1350]');
+	});
+
 	it('is not drawn when the rail does not auto-hide', () => {
 		renderWrapper({ sidebarAutoHide: false });
 		expect(screen.queryByTestId('sidebar-edge-glow')).toBeNull();

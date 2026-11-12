@@ -45,6 +45,10 @@ export declare interface AuthTokens {
     user: UserData | null;
 }
 
+/** What the auto-hidden rail covers when it slides in: the capsule and its
+ * gutters. It sits over dialogs, so apps keep their dialogs clear of it. */
+export declare const AUTO_HIDE_RAIL_WIDTH_PX: number;
+
 /** MUI's breakpoint names, which `contentPadding` objects are keyed by. */
 declare type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 

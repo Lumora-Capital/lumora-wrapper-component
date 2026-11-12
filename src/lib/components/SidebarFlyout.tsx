@@ -89,6 +89,9 @@ const anchorSwellOf = (anchor: HTMLElement) => {
  * drawers and menus (1200+), which close the flyout when they open anyway. */
 const SCRIM_Z_INDEX = 1190;
 const PANEL_Z_INDEX = 1195;
+/** An auto-hidden rail sits over dialogs (1350), and its scrim with it, so
+ * its tiles go above both; still under menus and popovers (1400). */
+const AUTO_HIDE_PANEL_Z_INDEX = 1355;
 /** The tiles' fade as the flyout closes. */
 const EXIT_FADE_MS = 120;
 /** The dim's fade in and out. */
@@ -522,7 +525,11 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({
 								REDUCED_MOTION_NONE
 							)}
 							style={{
-								zIndex: PANEL_Z_INDEX,
+								zIndex: lastAnchor.current?.anchor.closest(
+									'[data-auto-hide="true"]'
+								)
+									? AUTO_HIDE_PANEL_Z_INDEX
+									: PANEL_Z_INDEX,
 								transform: `translate(${position.x}px, ${position.y}px)`,
 								transition: settled
 									? `transform ${glide.duration}ms ${glide.easing}`

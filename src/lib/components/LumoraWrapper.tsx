@@ -27,6 +27,7 @@ import LumoraShellSkeleton, { type ShellColor } from './LumoraShellSkeleton';
 import {
 	COLLAPSIBLE_COLLAPSED_WIDTH_PX,
 	type ContentPadding,
+	AUTO_HIDE_RAIL_WIDTH_PX,
 	DEFAULT_CONTENT_PADDING,
 	FLOATING_RAIL_GAP_PX,
 	FLOATING_RAIL_GUTTER_PX,
@@ -72,12 +73,12 @@ const MOBILE_DRAWER_WIDTH_PX = 300;
 const COLLAPSIBLE_EXPANDED_WIDTH_PX = 288;
 const HOVER_PANEL_TRANSITION =
 	'width 220ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease';
-/** The strip at the window's left edge that brings an auto-hidden rail in. */
-const AUTO_HIDE_EDGE_PX = 18;
 /** Reach of the glow at the edge that hints the hidden rail comes in there. */
 const AUTO_HIDE_GLOW_PX = 72;
 /** Half the height of the glow, centred on the pointer. */
 const AUTO_HIDE_GLOW_HALF_HEIGHT_PX = 90;
+/** The strip at the window's left edge that brings an auto-hidden rail in. */
+const AUTO_HIDE_EDGE_PX = 18;
 const AUTO_HIDE_TRANSITION =
 	'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease';
 
@@ -1178,18 +1179,16 @@ const LumoraWrapper: React.FC<LumoraWrapperProps> = ({
 			data-shown={autoHideRail ? String(railShown) : undefined}
 			className={cn(
 				// Above the page, including its sticky app bars
-				'lw:top-0 lw:z-[1101] lw:h-screen',
+				'lw:top-0 lw:h-screen',
 				autoHideRail
-					? 'lw:pointer-events-none lw:fixed lw:left-0'
-					: 'lw:sticky lw:shrink-0 lw:self-start'
+					? // and above dialogs (1300), so a modal never covers the
+						// edge; under menus, popovers and toasts (1400)
+						'lw:pointer-events-none lw:fixed lw:left-0 lw:z-[1350]'
+					: 'lw:sticky lw:z-[1101] lw:shrink-0 lw:self-start'
 			)}
 			style={
 				autoHideRail
-					? {
-							width:
-								FLOATING_RAIL_WIDTH_PX +
-								2 * FLOATING_RAIL_GUTTER_PX
-						}
+					? { width: AUTO_HIDE_RAIL_WIDTH_PX }
 					: {
 							width: desktopSidebarWidthPx,
 							minWidth: desktopSidebarWidthPx,
