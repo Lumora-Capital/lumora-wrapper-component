@@ -296,45 +296,49 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	);
 	// White on dark: the accent is too dim against a dark surface
 	const linkColor = isDark ? '#ffffff' : accentColor;
+	// The cost sits on its own line under the links: beside them it squeezed
+	// the links onto two lines each and cut itself off.
 	const headerLinks = onAiUsageClick ? (
-		<div
-			data-testid='account-menu-links'
-			className='lw:mt-0.5 lw:flex lw:flex-row lw:items-center lw:gap-1.5'
-		>
-			{onProfileClick ? (
-				<>
-					<button
-						type='button'
-						onClick={() => closeMenuThen(onProfileClick)}
-						data-testid='account-menu-view-profile'
-						className={linkClass}
-						style={{ color: linkColor }}
-					>
-						View profile
-					</button>
-					<span aria-hidden className='lw:text-xs lw:text-faint'>
-						·
-					</span>
-				</>
-			) : null}
-			<button
-				type='button'
-				onClick={() => closeMenuThen(onAiUsageClick)}
-				data-testid='account-menu-ai-usage'
-				className={linkClass}
-				style={{ color: linkColor }}
+		<>
+			<div
+				data-testid='account-menu-links'
+				className='lw:mt-0.5 lw:flex lw:flex-row lw:items-center lw:gap-1.5 lw:whitespace-nowrap'
 			>
-				My AI usage
-			</button>
+				{onProfileClick ? (
+					<>
+						<button
+							type='button'
+							onClick={() => closeMenuThen(onProfileClick)}
+							data-testid='account-menu-view-profile'
+							className={linkClass}
+							style={{ color: linkColor }}
+						>
+							View profile
+						</button>
+						<span aria-hidden className='lw:text-xs lw:text-faint'>
+							·
+						</span>
+					</>
+				) : null}
+				<button
+					type='button'
+					onClick={() => closeMenuThen(onAiUsageClick)}
+					data-testid='account-menu-ai-usage'
+					className={linkClass}
+					style={{ color: linkColor }}
+				>
+					My AI usage
+				</button>
+			</div>
 			{aiUsageCaption ? (
-				<span
+				<p
 					data-testid='account-menu-ai-usage-caption'
 					className='lw:truncate lw:text-xs lw:leading-[18px] lw:text-faint'
 				>
 					{aiUsageCaption}
-				</span>
+				</p>
 			) : null}
-		</div>
+		</>
 	) : null;
 
 	// Name / email / role. With onProfileClick the whole row opens the
@@ -391,7 +395,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			modal={!openedByHover}
 		>
 			<PopoverAnchor
-				virtualRef={anchorRef as unknown as React.RefObject<HTMLElement>}
+				virtualRef={
+					anchorRef as unknown as React.RefObject<HTMLElement>
+				}
 			/>
 			<PopoverContent
 				{...contentProps}
