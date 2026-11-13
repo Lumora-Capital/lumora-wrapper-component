@@ -464,6 +464,11 @@ export declare interface LumoraWrapperProps {
      */
     onAiUsageClick?: () => void;
     /**
+     * `panel` account menu: a short figure after "My AI usage", in the host's
+     * words (e.g. "$12.34 this month").
+     */
+    aiUsageCaption?: string;
+    /**
      * @deprecated The `panel` account menu no longer has a Settings card;
      * ignored. Link to a settings page from `userMenuItems` instead.
      */

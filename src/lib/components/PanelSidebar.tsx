@@ -77,6 +77,8 @@ export interface PanelSidebarProps {
 	onProfileClick?: () => void;
 	/** Adds a "My AI usage" link beside "View profile" in the account menu. */
 	onAiUsageClick?: () => void;
+	/** A short figure after "My AI usage" (e.g. "$12.34 this month"). */
+	aiUsageCaption?: string;
 	/** Host rows in the account menu (Settings, help…), below Theme. */
 	menuItems?: UserMenuItem[];
 	onLogout?: () => void;
@@ -132,6 +134,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 	whatsNewCount = 0,
 	onProfileClick,
 	onAiUsageClick,
+	aiUsageCaption,
 	menuItems,
 	onLogout,
 	theme: themeMode = 'light',
@@ -312,6 +315,7 @@ const PanelSidebar: React.FC<PanelSidebarProps> = ({
 					onThemeToggle={onThemeToggle}
 					onProfileClick={onProfileClick}
 					onAiUsageClick={onAiUsageClick}
+					aiUsageCaption={aiUsageCaption}
 					onLinkClick={onLinkClick}
 					menuItems={menuItems}
 					onLogout={onLogout}

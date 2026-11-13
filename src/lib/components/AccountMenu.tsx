@@ -193,6 +193,11 @@ export interface AccountMenuProps {
 	 * the two as separate links, always shown, instead of being one button.
 	 */
 	onAiUsageClick?: () => void;
+	/**
+	 * A short figure after the "My AI usage" link — the host's own wording,
+	 * e.g. "$12.34 this month". Nothing is drawn without it.
+	 */
+	aiUsageCaption?: string;
 	/** Navigates menu items that carry a `path` and no `onClick`. */
 	onLinkClick?: (path: string) => void;
 	/** Host rows between Theme and Log out, in the given order. */
@@ -230,6 +235,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	onThemeToggle,
 	onProfileClick,
 	onAiUsageClick,
+	aiUsageCaption,
 	onLinkClick,
 	menuItems = [],
 	onLogout,
@@ -320,6 +326,14 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 			>
 				My AI usage
 			</button>
+			{aiUsageCaption ? (
+				<span
+					data-testid='account-menu-ai-usage-caption'
+					className='lw:truncate lw:text-xs lw:leading-[18px] lw:text-faint'
+				>
+					{aiUsageCaption}
+				</span>
+			) : null}
 		</div>
 	) : null;
 
