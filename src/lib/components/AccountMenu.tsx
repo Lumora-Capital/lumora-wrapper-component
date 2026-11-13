@@ -219,6 +219,9 @@ export interface AccountMenuProps {
  * Account menu for the `panel` sidebar: one Popover whose transparent paper
  * holds the menu card. Escape or an outside click closes it.
  */
+/** How much wider than the sidebar the card may grow to fit the AI usage cost. */
+const CAPTION_EXTRA_PX = 80;
+
 const AccountMenu: React.FC<AccountMenuProps> = ({
 	open,
 	anchorEl,
@@ -296,49 +299,54 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 	);
 	// White on dark: the accent is too dim against a dark surface
 	const linkColor = isDark ? '#ffffff' : accentColor;
-	// The cost sits on its own line under the links: beside them it squeezed
-	// the links onto two lines each and cut itself off.
+	// "View profile · My AI usage · $0.14 this month" on one line. The links
+	// never wrap; the card grows to fit the cost (see the card's width below)
+	// and, past that, the cost is what gets cut off.
+	const separator = (
+		<span aria-hidden className='lw:shrink-0 lw:text-xs lw:text-faint'>
+			·
+		</span>
+	);
 	const headerLinks = onAiUsageClick ? (
-		<>
-			<div
-				data-testid='account-menu-links'
-				className='lw:mt-0.5 lw:flex lw:flex-row lw:items-center lw:gap-1.5 lw:whitespace-nowrap'
-			>
-				{onProfileClick ? (
-					<>
-						<button
-							type='button'
-							onClick={() => closeMenuThen(onProfileClick)}
-							data-testid='account-menu-view-profile'
-							className={linkClass}
-							style={{ color: linkColor }}
-						>
-							View profile
-						</button>
-						<span aria-hidden className='lw:text-xs lw:text-faint'>
-							·
-						</span>
-					</>
-				) : null}
-				<button
-					type='button'
-					onClick={() => closeMenuThen(onAiUsageClick)}
-					data-testid='account-menu-ai-usage'
-					className={linkClass}
-					style={{ color: linkColor }}
-				>
-					My AI usage
-				</button>
-			</div>
-			{aiUsageCaption ? (
-				<p
-					data-testid='account-menu-ai-usage-caption'
-					className='lw:-mt-1 lw:truncate lw:text-xs lw:leading-4 lw:text-faint'
-				>
-					{aiUsageCaption}
-				</p>
+		<div
+			data-testid='account-menu-links'
+			className='lw:mt-0.5 lw:flex lw:min-w-0 lw:flex-row lw:items-center lw:gap-1.5 lw:whitespace-nowrap'
+		>
+			{onProfileClick ? (
+				<>
+					<button
+						type='button'
+						onClick={() => closeMenuThen(onProfileClick)}
+						data-testid='account-menu-view-profile'
+						className={cn(linkClass, 'lw:shrink-0')}
+						style={{ color: linkColor }}
+					>
+						View profile
+					</button>
+					{separator}
+				</>
 			) : null}
-		</>
+			<button
+				type='button'
+				onClick={() => closeMenuThen(onAiUsageClick)}
+				data-testid='account-menu-ai-usage'
+				className={cn(linkClass, 'lw:shrink-0')}
+				style={{ color: linkColor }}
+			>
+				My AI usage
+			</button>
+			{aiUsageCaption ? (
+				<>
+					{separator}
+					<span
+						data-testid='account-menu-ai-usage-caption'
+						className='lw:min-w-0 lw:truncate lw:text-xs lw:leading-[18px] lw:text-faint'
+					>
+						{aiUsageCaption}
+					</span>
+				</>
+			) : null}
+		</div>
 	) : null;
 
 	// Name / email / role. With onProfileClick the whole row opens the
@@ -433,8 +441,13 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 					)}
 					style={
 						{
-							width,
+							// With a cost beside "My AI usage" the card grows to fit that line
+							// (up to CAPTION_EXTRA_PX wider); otherwise it is the sidebar's width.
+							width: aiUsageCaption ? 'max-content' : width,
 							minWidth: width,
+							maxWidth: aiUsageCaption
+								? width + CAPTION_EXTRA_PX
+								: width,
 							'--lw-menu-tint': tint,
 							'--lw-link-ring': withAlpha(accentColor, 0.6)
 						} as React.CSSProperties
