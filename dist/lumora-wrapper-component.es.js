@@ -5038,7 +5038,7 @@ const cc = ({
       "p",
       {
         "data-testid": "account-menu-ai-usage-caption",
-        className: "lw:truncate lw:text-xs lw:leading-[18px] lw:text-faint",
+        className: "lw:-mt-1 lw:truncate lw:text-xs lw:leading-4 lw:text-faint",
         children: R
       }
     ) : null
